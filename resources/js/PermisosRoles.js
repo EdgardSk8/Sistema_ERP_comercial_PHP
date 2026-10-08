@@ -3,6 +3,7 @@ export default function initPermisos() {
     document.getElementById('titulo').textContent = 'GESTION DE PERMISOS POR ROL';
 
     const selectRol = document.getElementById('selectRol');
+    const buscarPermiso = document.getElementById('buscarPermiso');
     const contenedor = document.getElementById('contenedorPermisos');
     const estadoSinRol = document.getElementById('estadoSinRol');
 
@@ -10,6 +11,12 @@ export default function initPermisos() {
     let rolSeleccionado = null;
 
     const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const escapar = valor => {
+        const elemento = document.createElement('span');
+        elemento.textContent = valor ?? '';
+        return elemento.innerHTML;
+    };
+    const normalizar = valor => String(valor ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
     // ═══════════════════════════════════════
     // 1. CARGAR DATOS INICIALES
@@ -29,23 +36,29 @@ export default function initPermisos() {
     // 2. LLENAR SELECT ROLES
     // ═══════════════════════════════════════
     function llenarRoles(roles) {
+        selectRol.replaceChildren(new Option('', ''));
+        roles.forEach(rol => selectRol.add(new Option(rol.nombre_rol, rol.id_rol)));
 
-        roles.forEach(rol => {
-
-            selectRol.innerHTML += `
-                <option value="${rol.id_rol}">
-                    ${rol.nombre_rol}
-                </option>
-            `;
-        });
+        const $selectRol = window.jQuery ? window.jQuery(selectRol) : null;
+        if ($selectRol && window.jQuery.fn.select2) {
+            if ($selectRol.hasClass('select2-hidden-accessible')) $selectRol.select2('destroy');
+            $selectRol.select2({
+                width: '100%',
+                placeholder: 'Seleccione un rol',
+                allowClear: true,
+                minimumResultsForSearch: 0,
+                dropdownParent: window.jQuery(selectRol).closest('.permisos-selector')
+            });
+        }
     }
 
     // ═══════════════════════════════════════
     // 3. CAMBIO DE ROL
     // ═══════════════════════════════════════
-    selectRol.addEventListener('change', (e) => {
-
-        rolSeleccionado = parseInt(e.target.value);
+    const cambioRol = () => {
+        rolSeleccionado = parseInt(selectRol.value, 10);
+        buscarPermiso.value = '';
+        buscarPermiso.disabled = !rolSeleccionado;
 
         if (!rolSeleccionado) {
             contenedor.innerHTML = '';
@@ -55,7 +68,14 @@ export default function initPermisos() {
 
         mostrarPermisos();
         renderPermisos(rolSeleccionado);
-    });
+    };
+    if (window.jQuery) {
+        window.jQuery(selectRol).off('change.permisos').on('change.permisos', cambioRol);
+        window.jQuery(buscarPermiso).off('input.permisos').on('input.permisos', filtrarPermisos);
+    } else {
+        selectRol.addEventListener('change', cambioRol);
+        buscarPermiso.addEventListener('input', filtrarPermisos);
+    }
 
     // ═══════════════════════════════════════
     // 4. UI STATES (ESTADO VACÍO / CONTENIDO)
@@ -63,11 +83,13 @@ export default function initPermisos() {
     function mostrarEstadoSinRol() {
         estadoSinRol.style.display = 'flex';
         contenedor.style.display = 'none';
+        buscarPermiso.disabled = true;
     }
 
     function mostrarPermisos() {
         estadoSinRol.style.display = 'none';
         contenedor.style.display = 'block';
+        buscarPermiso.disabled = false;
     }
 
     // ═══════════════════════════════════════
@@ -101,10 +123,10 @@ export default function initPermisos() {
                 const checked = rol.permisos.some(rp => rp.id_permiso === permiso.id_permiso);
 
                 itemsHTML += `
-                <label class="permiso-card">
+                <label class="permiso-card" data-search="${escapar(`${permiso.descripcion_permiso || ''} ${permiso.nombre_permiso || ''}`)}">
 
                     <span class="permiso-label">
-                        ${permiso.nombre_permiso}
+                        ${escapar(permiso.descripcion_permiso || permiso.nombre_permiso)}
                     </span>
 
                     <input type="checkbox"
@@ -117,10 +139,10 @@ export default function initPermisos() {
             });
 
             contenedor.innerHTML += `
-                <div class="modulo-permisos">
+                <div class="modulo-permisos" data-modulo="${escapar(modulo)}">
 
                     <div class="modulo-titulo">
-                        ${modulo}
+                        ${escapar(modulo.replace(/_/g, ' '))}
                     </div>
 
                     <div class="permisos-grid">
@@ -134,6 +156,35 @@ export default function initPermisos() {
         }
 
         activarEventosCheckbox();
+        filtrarPermisos();
+    }
+
+    function filtrarPermisos() {
+        const consulta = normalizar(buscarPermiso.value);
+        let visibles = 0;
+
+        contenedor.querySelectorAll('.modulo-permisos').forEach(modulo => {
+            const coincideModulo = consulta && normalizar(modulo.dataset.modulo).includes(consulta);
+            let visiblesModulo = 0;
+
+            modulo.querySelectorAll('.permiso-card').forEach(card => {
+                const coincide = !consulta || coincideModulo || normalizar(card.dataset.search || card.textContent).includes(consulta);
+                card.style.display = coincide ? '' : 'none';
+                if (coincide) visiblesModulo++;
+            });
+
+            modulo.style.display = visiblesModulo ? '' : 'none';
+            visibles += visiblesModulo;
+        });
+
+        let sinResultados = contenedor.querySelector('.sin-resultados-permisos');
+        if (!sinResultados) {
+            sinResultados = document.createElement('p');
+            sinResultados.className = 'sin-resultados-permisos';
+            sinResultados.textContent = 'No se encontraron permisos.';
+            contenedor.appendChild(sinResultados);
+        }
+        sinResultados.style.display = consulta && visibles === 0 ? 'block' : 'none';
     }
 
     // ═══════════════════════════════════════

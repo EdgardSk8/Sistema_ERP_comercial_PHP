@@ -45,23 +45,6 @@
                                 required>
                         </div>
 
-                        <div class="col-12">
-                            <label for="crear_estado_variacion" class="form-label">
-                                Estado
-                            </label>
-
-                            <select
-                                id="crear_estado_variacion"
-                                name="estado_variacion"
-                                class="form-select form-select-sm"
-                                required>
-
-                                <option value="1" selected>Activo</option>
-                                <option value="0">Inactivo</option>
-
-                            </select>
-                        </div>
-
                     </div>
 
                 </div>

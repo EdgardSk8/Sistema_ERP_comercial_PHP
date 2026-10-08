@@ -60,7 +60,7 @@
 
             <!-- ╔════════════ VENTAS ════════════╗ -->
 
-            <div class="sidebar-section">
+            <div class="sidebar-section" data-accordion-section data-section-label="Ventas">
                 Ventas
             </div>
 
@@ -95,7 +95,7 @@
 
             <!-- ╔════════════ COMPRAS ════════════╗ -->
 
-            <div class="sidebar-section">
+            <div class="sidebar-section" data-accordion-section data-section-label="Compras">
                 Compras
             </div>
 
@@ -130,7 +130,7 @@
 
             <!-- ╔════════════ CAJA ════════════╗ -->
 
-            <div class="sidebar-section">
+            <div class="sidebar-section" data-accordion-section data-section-label="Caja">
                 Caja
             </div>
 
@@ -156,7 +156,7 @@
 
             <!-- ╔════════════ CUENTAS ════════════╗ -->
 
-            <div class="sidebar-section">
+            <div class="sidebar-section" data-accordion-section data-section-label="Cuentas">
                 Cuentas
             </div>
 
@@ -180,7 +180,7 @@
 
             <!-- ╔════════════ TRANSFERENCIAS ════════════╗ -->
 
-            <div class="sidebar-section">
+            <div class="sidebar-section" data-accordion-section data-section-label="Transferencias">
                 Transferencias
             </div>
 
@@ -197,7 +197,7 @@
 
             <!-- ╔════════════ GASTOS ════════════╗ -->
 
-            <div class="sidebar-section">
+            <div class="sidebar-section" data-accordion-section data-section-label="Gastos">
                 Gastos
             </div>
 
@@ -232,7 +232,7 @@
 
             <!-- ╔════════════ INVENTARIO ════════════╗ -->
 
-            <div class="sidebar-section">
+            <div class="sidebar-section" data-accordion-section data-section-label="Inventario">
                 Inventario
             </div>
 
@@ -242,6 +242,24 @@
                 data-turbo-frame="contenido-dinamico">
                     <i class="ph ph-package text-primary"></i>
                     Productos
+                </a>
+            @endif
+
+            @if(in_array('vista_producto_variaciones', session('permisos', [])))
+                <a href="{{ route('producto-variaciones') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-squares-four text-success"></i>
+                    Variaciones de Productos
+                </a>
+            @endif
+
+            @if(in_array('vista_producto_variaciones_detalle', session('permisos', [])))
+                <a href="{{ route('producto-variaciones-detalles') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-list-dashes text-primary"></i>
+                    Detalle de Variación
                 </a>
             @endif
 
@@ -263,11 +281,29 @@
                 </a>
             @endif
 
+            @if(in_array('vista_tipos_medidas', session('permisos', [])))
+                <a href="{{ route('tipos.medidas') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="fa-solid fa-ruler-combined text-primary"></i>
+                    Tipos de Medidas
+                </a>
+            @endif
+
+            @if(in_array('vista_medidas', session('permisos', [])))
+                <a href="{{ route('medidas') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="fa-solid fa-ruler text-success"></i>
+                    Medidas
+                </a>
+            @endif
+
             <hr>
 
             <!-- ╔════════════ ADMINISTRACIÓN ════════════╗ -->
 
-            <div class="sidebar-section">
+            <div class="sidebar-section" data-accordion-section data-section-label="Administración">
                 Administración
             </div>
 
@@ -300,7 +336,7 @@
 
             <hr>
 
-            <div class="sidebar-section">
+            <div class="sidebar-section" data-accordion-section data-section-label="Reportes">
                 Reportes
             </div>
 
@@ -315,7 +351,7 @@
 
             <!-- ╔════════════ CONFIG ════════════╗ -->
 
-            <div class="sidebar-section">
+            <div class="sidebar-section" data-accordion-section data-section-label="Configuración">
                 Configuración
             </div>
 
@@ -346,8 +382,6 @@
                 </a>
             @endif
 
-            <hr>
-            
             @if(in_array('vista_credenciales', session('permisos', [])))
                 <a href="{{ route('credenciales') }}"
                 class="sidebar-link"
@@ -366,24 +400,6 @@
                 </a>
             @endif
 
-            @if(in_array('vista_tipos_medidas', session('permisos', [])))
-                <a href="{{ route('tipos.medidas') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                    <i class="fa-solid fa-ruler-combined text-primary"></i>
-                    Tipos de Medidas
-                </a>
-            @endif
-
-            @if(in_array('vista_medidas', session('permisos', [])))
-                <a href="{{ route('medidas') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                    <i class="fa-solid fa-ruler text-success"></i>
-                    Medidas
-                </a>
-            @endif
-
             <hr>
             
             <div class="modos">
@@ -394,25 +410,6 @@
             </div>
 
             <!-- ------------------------------------------------ -->
-
-            <a href="{{ route('producto-variaciones') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                    <i class="ph ph-squares-four text-success"></i>
-                    Variaciones de Productos
-            </a>
-
-            <a href="{{ route('producto-variaciones-detalles') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                    <i class="ph ph-list-dashes text-primary"></i>
-                    Detalle de Variación
-            </a>
-
-           
-            <!-- ------------------------------------------------ -->
-
-           
 
             <div style="margin-top: 50px"></div>
 
@@ -469,6 +466,91 @@ const btn = document.getElementById("theme-toggle");
 const icon = btn.querySelector("i");
 const texto = document.getElementById("modos");
 
+try {
+    html.dataset.theme = localStorage.getItem("theme") === "dark" ? "dark" : "light";
+} catch (_) {
+    html.dataset.theme = "light";
+}
+
+// Convierte los encabezados y enlaces existentes en grupos desplegables.
+const sidebarMenu = document.querySelector(".sidebar-menu");
+const sections = [...sidebarMenu.querySelectorAll("[data-accordion-section]")];
+let groupIndex = 0;
+const sectionIcons = {
+    Ventas: "ph-chart-line-up",
+    Compras: "ph-shopping-cart",
+    Caja: "ph-wallet",
+    Cuentas: "ph-bank",
+    Transferencias: "ph-arrows-left-right",
+    Gastos: "ph-receipt",
+    Inventario: "ph-package",
+    Administración: "ph-users-three",
+    Reportes: "ph-chart-bar",
+    Configuración: "ph-gear-six",
+};
+
+sections.forEach((heading) => {
+    const group = document.createElement("section");
+    group.className = "sidebar-group";
+    group.dataset.section = heading.dataset.sectionLabel;
+    groupIndex += 1;
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "sidebar-group-toggle";
+    button.setAttribute("aria-expanded", "false");
+    const label = heading.textContent.trim();
+    const categoryIcon = document.createElement("i");
+    categoryIcon.className = `ph ${sectionIcons[label] || "ph-squares-four"}`;
+    categoryIcon.setAttribute("aria-hidden", "true");
+
+    const labelElement = document.createElement("span");
+    labelElement.className = "sidebar-group-label";
+    labelElement.textContent = label;
+
+    const chevron = document.createElement("i");
+    chevron.className = "ph ph-caret-down sidebar-group-chevron";
+    chevron.setAttribute("aria-hidden", "true");
+
+    button.append(categoryIcon, labelElement, chevron);
+
+    const panel = document.createElement("div");
+    panel.className = "sidebar-group-panel";
+    panel.id = `sidebar-group-${groupIndex}`;
+    button.setAttribute("aria-controls", panel.id);
+
+    group.append(button, panel);
+    heading.replaceWith(group);
+});
+
+// Los separadores delimitan cada grupo en el markup original; el resto son sus enlaces.
+let activePanel = null;
+[...sidebarMenu.children].forEach((item) => {
+    if (item.classList.contains("sidebar-group")) {
+        activePanel = item.querySelector(".sidebar-group-panel");
+        return;
+    }
+    if (item.matches("hr")) {
+        item.remove();
+        activePanel = null;
+        return;
+    }
+    if (activePanel && item.matches(".sidebar-link")) activePanel.append(item);
+});
+
+sidebarMenu.querySelectorAll(".sidebar-group").forEach((group) => {
+    const button = group.querySelector(".sidebar-group-toggle");
+    const panel = group.querySelector(".sidebar-group-panel");
+    if (!panel.children.length) {
+        group.remove();
+        return;
+    }
+    button.addEventListener("click", () => {
+        const isOpen = group.classList.toggle("is-open");
+        button.setAttribute("aria-expanded", String(isOpen));
+    });
+});
+
 function actualizarTema() {
     const dark = html.dataset.theme === "dark";
 
@@ -489,6 +571,10 @@ btn.addEventListener("click", () => {
             html.dataset.theme === "dark"
                 ? "light"
                 : "dark";
+
+        try {
+            localStorage.setItem("theme", html.dataset.theme);
+        } catch (_) {}
 
         actualizarTema();
 

@@ -5,6 +5,7 @@
 <div class="contenedor-principal">
 
 
+
     <!-- ╔════════════════════════════════════╗
         ║         CARDS REPORTES            ║
         ╚════════════════════════════════════╝ -->
@@ -84,14 +85,21 @@
 
 
 
-    <div class="card">
+    <section class="reportes-panel">
+
+        <div class="reportes-panel-heading">
+            <div>
+                <h3>Resultado del reporte</h3>
+                <p>Filtra los resultados y utiliza las opciones de exportación.</p>
+            </div>
+        </div>
 
         <div class="contenedor-filtros">
 
             <!-- FECHA INICIO -->
             <div class="grupo-filtro">
 
-                <label class="label-filtro"> Fecha Inicio </label>
+                <label class="label-filtro" for="FechaInicio">Fecha inicio</label>
                 <input type="date" id="FechaInicio" placeholder="Fecha inicio"
                     autocomplete="off" class="Fecha-Input-Reporte">
 
@@ -100,7 +108,7 @@
             <!-- FECHA FIN -->
             <div class="grupo-filtro">
 
-                <label class="label-filtro"> Fecha Fin</label>
+                <label class="label-filtro" for="FechaFin">Fecha fin</label>
                 
                 <input type="date" id="FechaFin"  autocomplete="off"  placeholder="Fecha Fin"  class="Fecha-Input-Reporte">
 
@@ -109,23 +117,25 @@
             <!-- LIMITE -->
             <div class="grupo-filtro">
 
-                <label class="label-filtro"> Cantidad Datos </label>
+                <label class="label-filtro" for="LimiteDatos">Cantidad de datos</label>
                 <input type="number" id="LimiteDatos" class="form-control form-control-sm" min="1" value="">
 
             </div>
 
 
-            <div class="grupo-filtro">
+            <div class="grupo-filtro grupo-filtro-orden">
 
+                <label class="label-filtro" for="Orden-Datos">Orden</label>
                 <select class="select" name="Orden-Datos" id="Orden-Datos">
 
                     <option value="desc">Descendente</option>
                     <option value="asc">Ascendente</option>
 
                 </select>
+            </div>
 
-                <button id="limpiafiltroreporte" class="btn-reporte">Limpiar Filtros</button>
-
+            <div class="grupo-filtro grupo-acciones">
+                <button id="limpiafiltroreporte" type="button" class="btn-reporte">Limpiar filtros</button>
             </div>
 
         </div>
@@ -138,7 +148,7 @@
 
         </table>
 
-    </div>
+    </section>
 
 </div>
 

@@ -1,4 +1,30 @@
+let tablaReporteActiva = null;
+let solicitudReporteActiva = null;
+
+function limpiarModuloReportes() {
+    $(document).off('.reporte');
+    if (solicitudReporteActiva) {
+        solicitudReporteActiva.abort();
+        solicitudReporteActiva = null;
+    }
+    if (tablaReporteActiva) {
+        if ($.fn.DataTable.isDataTable(tablaReporteActiva.table().node())) {
+            tablaReporteActiva.destroy();
+        }
+        tablaReporteActiva = null;
+    }
+}
+
+document.addEventListener('turbo:before-frame-render', (event) => {
+    if (event.target.id === 'contenido-dinamico' && event.target.querySelector('#Reportes')) {
+        limpiarModuloReportes();
+    }
+});
+
 export default function initReportes() {
+
+    if (tablaReporteActiva && tablaReporteActiva.table().node() === document.getElementById('Reportes')) return;
+    limpiarModuloReportes();
 
     $('input[name="tipo_exportacion"]').on('change', function () {
 
@@ -75,143 +101,130 @@ const PlantillaPDF = function (config = {}) {
     return {
         extend: 'pdfHtml5',
         orientation: 'landscape',
-        pageSize: 'A4', 
-        filename: config.filename || 'REPORTE', 
-        title: config.title || 'REPORTE',
-        footer: false ,exportOptions: { columns: ':visible' },
+        pageSize: 'A4',
+        filename: config.filename || 'REPORTE',
+        title: '',
+        footer: false,
+        exportOptions: { columns: () => true },
 
         customize: function (doc) {
 
             const empresaData = window.AppContext?.credenciales || {};
             const usuarioData = window.AppContext?.usuario || {};
 
-            const empresa   = empresaData.nombre_empresa || 'SIN EMPRESA';
-            const direccion = empresaData.direccion_empresa || '';
-            const telefono  = empresaData.telefono_empresa || '';
-
-            const usuario   = usuarioData.nombre || 'INVITADO';
-
-            const fecha = formatearFechaDiaHora
-                ? formatearFechaDiaHora(new Date())
-                : new Date().toLocaleString();
-
-            const tipoReporte = config.tipoReporte || 'REPORTE GENERAL';
-
-            // =================================================
-            // ESTILO GENERAL
-            // =================================================
-            doc.pageMargins = [5, 5, 5, 5];
-
-            doc.defaultStyle = {
-                fontSize: 9
+            const empresa = empresaData.nombre_empresa || 'Empresa';
+            const direccion = [empresaData.direccion_empresa, empresaData.telefono_empresa]
+                .filter(Boolean)
+                .join('\n');
+            const usuario = usuarioData.nombre || 'Usuario no identificado';
+            const ahora = new Date();
+            const fecha = ahora.toLocaleDateString('es-NI', { day: 'numeric', month: 'long', year: 'numeric' });
+            const hora = ahora.toLocaleTimeString('es-NI', { hour: 'numeric', minute: '2-digit', hour12: true });
+            const fechaHora = `${fecha}, ${hora}`;
+            const nombresReportes = {
+                ventas: 'ventas',
+                inventario: 'inventario',
+                movimientoinventario: 'movimientos de inventario',
+                clientes: 'clientes',
+                usuarios: 'usuarios',
+                cajas: 'cajas'
             };
+            const tipoReporte = nombresReportes[config.tipoReporte] || config.tipoReporte || 'general';
+            const tituloReporte = `reporte de ${tipoReporte} · ${fechaHora}`;
 
-            // =================================================
-            // HEADER PDF
-            // =================================================
-            doc.content.unshift({
+            doc.pageMargins = [8, 78, 8, 26];
+            doc.defaultStyle = { fontSize: 7, color: '#111111' };
+
+            // Encabezado repetido en cada página, con tres columnas de ancho estable.
+            doc.header = () => ({
+                margin: [24, 13, 24, 0],
                 stack: [
-
                     {
-                        text: empresa,
+                        columns: [
+                            { width: '*', text: direccion || ' ', alignment: 'left', fontSize: 7, color: '#333333' },
+                            { width: '*', text: empresa, alignment: 'center', fontSize: 9, bold: true, color: '#111111' },
+                            { width: '*', text: `Exportó: ${usuario}\n${fechaHora}`, alignment: 'right', fontSize: 7, color: '#333333' }
+                        ],
+                        columnGap: 10
+                    },
+                    {
+                        text: tituloReporte,
+                        alignment: 'center',
                         fontSize: 15,
                         bold: true,
-                        alignment: 'center',
-                        color: '#1f2937'
+                        color: '#111111',
+                        margin: [0, 9, 0, 0]
                     },
-
-                    {
-                        text: direccion,
-                        alignment: 'center',
-                        fontSize: 9,
-                        color: '#6b7280'
-                    },
-
-                    {
-                        // text: telefono,
-                        // alignment: 'center',
-                        // fontSize: 9,
-                        // color: '#6b7280'
-                    },
-
-                    {
-                        text: tipoReporte,
-                        alignment: 'center',
-                        fontSize: 12,
-                        bold: true,
-                        color: '#2563eb',
-                        margin: [0, 2, 0, 2]
-                    },
-
-                    {
-                        text: `Usuario: ${usuario} | ${fecha}`,
-                        alignment: 'center',
-                        fontSize: 8,
-                        color: '#374151'
-                    }
-
-                ],
-                margin: [0, 0, 0, 10]
+                    { canvas: [{ type: 'line', x1: 0, y1: 6, x2: 794, y2: 6, lineWidth: 0.7, lineColor: '#555555' }] }
+                ]
             });
 
-            // =================================================
-            // BUSCAR TABLA
-            // =================================================
-            let table = doc.content.find(c => c.table);
-                if (!table) return;
-            let body = table.table.body;
+            doc.footer = (pagina, paginas) => ({
+                text: `Página ${pagina} de ${paginas}`,
+                alignment: 'right',
+                margin: [24, 0, 24, 12],
+                fontSize: 7,
+                color: '#333333'
+            });
 
-            // =================================================
-            // ESTILO TABLA
-            // =================================================
-            table.layout = {
-                fillColor: function (rowIndex) {
-                    return rowIndex === 0 ? '#1f2937' : null;
-                },
-                hLineColor: () => '#e5e7eb',
-                vLineColor: () => '#e5e7eb',
-                paddingLeft: () => 6,
-                paddingRight: () => 6,
-                paddingTop: () => 4,
-                paddingBottom: () => 4
+            const tabla = doc.content.find(item => item.table);
+            if (!tabla) return;
+
+            const body = tabla.table.body;
+            const cantidadColumnas = body[0]?.length || 0;
+            const textoCelda = celda => {
+                const valor = typeof celda === 'object' && celda !== null ? celda.text : celda;
+                if (Array.isArray(valor)) {
+                    return valor.map(segmento => typeof segmento === 'object' && segmento !== null ? segmento.text : segmento).join('');
+                }
+                return String(valor ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            };
+
+            // Mide el contenido de toda la columna para dar espacio también a los campos largos.
+            const longitudes = Array.from({ length: cantidadColumnas }, (_, columna) => {
+                const encabezado = textoCelda(body[0]?.[columna]).trim().toLowerCase();
+                const longitudEncabezado = textoCelda(body[0]?.[columna]).length;
+                const longitudesValores = body.slice(1).map(fila => textoCelda(fila[columna]).trim().length);
+                const longitudPromedio = longitudesValores.length
+                    ? longitudesValores.reduce((total, longitud) => total + longitud, 0) / longitudesValores.length
+                    : 0;
+                // Evita que un solo texto largo fuerce espacio vacío para todos los valores cortos.
+                const anchoBase = Math.max(longitudEncabezado, longitudPromedio * 1.25, 3);
+                if (encabezado === 'id' || encabezado.startsWith('id ')) return Math.max(3, Math.min(anchoBase, 7));
+                return Math.max(5, Math.min(anchoBase, 28));
+            });
+            const anchoPagina = 841.89; // A4 horizontal en puntos PDF.
+            const anchoDisponible = anchoPagina - doc.pageMargins[0] - doc.pageMargins[2];
+            const espacioInterno = (cantidadColumnas * 2) + ((cantidadColumnas + 1) * 0.35);
+            const anchoUtil = Math.max(1, anchoDisponible - espacioInterno);
+            const sumaProporciones = longitudes.reduce((total, longitud) => total + longitud, 0) || 1;
+
+            // La suma de los anchos de contenido más padding y bordes nunca excede la página.
+            tabla.table.widths = longitudes.map(longitud => (longitud / sumaProporciones) * anchoUtil);
+            tabla.table.headerRows = 1;
+            tabla.table.keepWithHeaderRows = 1;
+            tabla.table.dontBreakRows = true;
+            tabla.layout = {
+                fillColor: fila => fila === 0 ? '#e5e5e5' : null,
+                hLineColor: () => '#888888',
+                vLineColor: () => '#b0b0b0',
+                hLineWidth: fila => fila === 0 || fila === 1 ? 0.8 : 0.35,
+                vLineWidth: () => 0.35,
+                paddingLeft: () => 1,
+                paddingRight: () => 1,
+                paddingTop: () => 2,
+                paddingBottom: () => 2
             };
 
             doc.styles.tableHeader = {
-                fillColor: '#1f2937',
-                color: 'white',
+                fillColor: '#e5e5e5',
+                color: '#111111',
                 bold: true,
-                fontSize: 10,
+                fontSize: 7,
                 alignment: 'center'
             };
-
-            doc.styles.tableBodyOdd = {
-                alignment: 'center'
-            };
-
-            doc.styles.tableBodyEven = {
-                alignment: 'center'
-            };
-
-            // =================================================
-            // ZEBRA STRIPES
-            // =================================================
-            for (let i = 1; i < body.length; i++) {
-                body[i].forEach(cell => {
-                    cell.fillColor = (i % 2 === 0) ? '#f9fafb' : null;
-                });
-            }
-
-            // =================================================
-            // FOOTER TABLA
-            // =================================================
-            let lastRow = body[body.length - 1];
-
-            if (lastRow) {
-                lastRow.forEach(cell => {
-                    cell.fillColor = '#e5e7eb';
-                    cell.bold = true;
-                });
-            }
+            doc.styles.tableBodyOdd = { color: '#111111', fontSize: 7, alignment: 'center' };
+            doc.styles.tableBodyEven = { color: '#111111', fontSize: 7, alignment: 'center' };
         }
     };
 };
@@ -366,12 +379,13 @@ const  PlantillaExcel = function (config = {}) {
 
     /* INICIALIZACION DE FLATPICKR */
 
-    FlatPickr(FechaInicio);
-    flatpickr(FechaFin);
+    if (window.flatpickr) {
+        window.flatpickr('#FechaInicio', { dateFormat: 'Y-m-d', allowInput: true });
+        window.flatpickr('#FechaFin', { dateFormat: 'Y-m-d', allowInput: true });
+    }
 
     /* VARIABLES DE ESTADO */
 
-    let cargando = false;
     let tablaReportes = null;
     let requestActual = null;
 
@@ -482,9 +496,6 @@ const  PlantillaExcel = function (config = {}) {
 
     function cargarReporte(reporte) {
 
-        if (cargando) return;
-        cargando = true;
-
         if (requestActual) { requestActual.abort(); }
 
         requestActual = $.ajax({
@@ -498,7 +509,6 @@ const  PlantillaExcel = function (config = {}) {
 
             success: function (respuesta) {
 
-                cargando = false;
                 if (!respuesta.success) return;
 
                 if (!respuesta.datos || !respuesta.columnas) { console.error("RESPUESTA INVÁLIDA:", respuesta); return; }
@@ -535,32 +545,14 @@ const  PlantillaExcel = function (config = {}) {
                 `);
 
 
-                setTimeout(() => {
-
-                    tablaReportes = $('#Reportes').DataTable({
-
-                        ajax: function (data, callback) {
-
-                            //if (requestActual) requestActual.abort();
-
-                            requestActual = $.ajax({
-                                url: rutasReportes[reporte], type: 'GET',
-
-                                data: {
-                                    fecha_inicio: $fechaInicio.val(),
-                                    fecha_fin: $fechaFin.val(),
-                                    limite: $limite.val() || null
-                                },
-
-                                success: function (respuesta) { callback({ data: respuesta.datos }); }
-                            });
-                        },
+                tablaReportes = $('#Reportes').DataTable({
+                        data: respuesta.datos,
 
                         /* CONFIGURAR FILTROS */
                         initComplete: function () {
 
                             ConfigurarFiltrosDataTable(
-                                tablaReportes,
+                                this.api(),
                                 configuracionFiltros[reporte] || {}
                             );
                         },
@@ -570,15 +562,17 @@ const  PlantillaExcel = function (config = {}) {
                         
 
                     });
-
-                }, 0);
+                tablaReporteActiva = tablaReportes;
 
             },
 
             error: function (xhr, status) {
 
-                cargando = false;
                 if (status !== 'abort') { console.error("ERROR AJAX:", xhr.responseText); }
+            },
+
+            complete: function () {
+                if (solicitudReporteActiva === requestActual) solicitudReporteActiva = null;
             }
 
         });
@@ -594,6 +588,8 @@ const  PlantillaExcel = function (config = {}) {
 
         $('#Reportes').off(); // 🔥 elimina eventos colgados
         $('#Reportes').empty();
+        tablaReporteActiva = null;
+        tablaReportes = null;
     }
 
     /* FUNCION UTILITARIA */
@@ -613,11 +609,10 @@ const  PlantillaExcel = function (config = {}) {
     function generarBotones(reporte) {
 
         const nombre = generarNombreArchivo(reporte);
-
         return [
 
             PlantillaExcel({ filename: nombre, title: nombre }),
-            PlantillaPDF({ filename: nombre, title: nombre }),
+            PlantillaPDF({ filename: nombre, tipoReporte: reporte }),
             PlantillaCSV({ filename: nombre, title: nombre }),
 
             { extend: 'copyHtml5', text: '📋 Copiar', className: 'btn btn-danger' },
@@ -629,7 +624,16 @@ const  PlantillaExcel = function (config = {}) {
     /* MANEJO DE EVENTOS */
 
     $(document).off('change.reporte').on('change.reporte', 'input[name="reporte"]', function () { cargarReporte($(this).val()); });
-    $('#limpiafiltroreporte').on('click', function () { $fechaInicio.val(''); $fechaFin.val(''); $limite.val(''); recargarReporte(); });
+    $('#limpiafiltroreporte').off('click.reporte').on('click.reporte', function () {
+        $fechaInicio.val('');
+        $fechaFin.val('');
+        $limite.val('');
+        if (tablaReportes) {
+            tablaReportes.search('').columns().search('');
+            $(tablaReportes.table().footer()).find('input, select').val('');
+        }
+        recargarReporte();
+    });
 
     $fechaInicio.add($fechaFin).on('change', function () {
 

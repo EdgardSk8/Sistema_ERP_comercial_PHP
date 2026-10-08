@@ -9,7 +9,7 @@ class permisosSeeder extends Seeder
 {
     public function run()
     {
-        DB::table('permisos')->insert([
+        DB::table('permisos')->insertOrIgnore([
 
             /* ═════════════ DASHBOARD ═════════════ */
             ['nombre_permiso' => 'vista_dashboard','descripcion_permiso' => 'Ver vista dashboard','modulo_permiso' => 'dashboard'],
@@ -72,6 +72,36 @@ class permisosSeeder extends Seeder
             ['nombre_permiso'=>'editar_productos','descripcion_permiso'=>'Editar productos','modulo_permiso'=>'productos'],
             ['nombre_permiso'=>'actualizar_productos','descripcion_permiso'=>'Actualizar productos','modulo_permiso'=>'productos'],
             ['nombre_permiso'=>'cambiar_estado_productos','descripcion_permiso'=>'Cambiar estado productos','modulo_permiso'=>'productos'],
+
+            /* VARIACIONES DE PRODUCTOS */
+            ['nombre_permiso'=>'vista_producto_variaciones','descripcion_permiso'=>'Ver variaciones de productos','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'mostrar_producto_variaciones','descripcion_permiso'=>'Listar variaciones de productos','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'mostrar_productos_select_variaciones','descripcion_permiso'=>'Listar productos para asignar variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'crear_producto_variaciones','descripcion_permiso'=>'Crear variaciones de productos','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'editar_producto_variaciones','descripcion_permiso'=>'Consultar variaciones para editar','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'actualizar_producto_variaciones','descripcion_permiso'=>'Actualizar variaciones de productos','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'cambiar_estado_producto_variaciones','descripcion_permiso'=>'Cambiar estado de variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'eliminar_producto_variaciones','descripcion_permiso'=>'Eliminar variaciones de productos','modulo_permiso'=>'producto_variaciones'],
+
+            /* DETALLE DE VARIACIONES */
+            ['nombre_permiso'=>'vista_producto_variaciones_detalle','descripcion_permiso'=>'Ver detalle de variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'mostrar_variacion_imagenes','descripcion_permiso'=>'Listar imágenes de variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'crear_variacion_imagenes','descripcion_permiso'=>'Agregar imágenes a variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'editar_variacion_imagenes','descripcion_permiso'=>'Consultar imágenes para editar','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'actualizar_variacion_imagenes','descripcion_permiso'=>'Actualizar imágenes de variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'cambiar_orden_variacion_imagenes','descripcion_permiso'=>'Cambiar orden de imágenes','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'eliminar_variacion_imagenes','descripcion_permiso'=>'Quitar imágenes de variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'mostrar_variacion_tallas','descripcion_permiso'=>'Listar tallas asignadas a variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'crear_variacion_tallas','descripcion_permiso'=>'Asignar tallas a variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'editar_variacion_tallas','descripcion_permiso'=>'Consultar tallas de variaciones para editar','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'actualizar_variacion_tallas','descripcion_permiso'=>'Actualizar tallas y stock de variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'eliminar_variacion_tallas','descripcion_permiso'=>'Quitar tallas de variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'mostrar_tallas','descripcion_permiso'=>'Listar tallas para variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'crear_tallas','descripcion_permiso'=>'Crear tallas','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'editar_tallas','descripcion_permiso'=>'Consultar tallas para editar','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'actualizar_tallas','descripcion_permiso'=>'Actualizar tallas','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'cambiar_estado_tallas','descripcion_permiso'=>'Cambiar estado de tallas','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'eliminar_tallas','descripcion_permiso'=>'Eliminar tallas','modulo_permiso'=>'producto_variaciones'],
 
             /* ═════════════ VENTAS ═════════════ */
             ['nombre_permiso'=>'vista_ventas','descripcion_permiso'=>'Ver vista ventas','modulo_permiso'=>'ventas'],

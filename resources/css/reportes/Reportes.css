@@ -1,514 +1,76 @@
 .contenedor-principal{
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.contenedor-reportes{
-    width: 100%;
-    height: auto;
-    display: flex;
-    flex-direction: row;
-    /* align-items: center; */
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-/* ╔════════════════════════════════════╗
-   ║          CARD REPORTE             ║
-   ╚════════════════════════════════════╝ */
-
-
-/* CARDS */
-.card-reporte{
-    flex: 1;      
-    /* min-width: 0; */
-    height: 100%;
-    border-radius: 14px;
-    border: 2px solid transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: .3s ease;
-    user-select: none;
-    font-weight: 600;
-    white-space: nowrap;  /* evita salto de texto */
-}
-
-
-.contenedor-radio-exportar{
-    display: flex;
-    flex-direction: row;    
-    flex-wrap: nowrap;
-    gap: 10px;
-    border-radius: 8px;
-    color: white;
-}
-
-.card-reporte span{
-    font-size: 18px;
-    /* border: 1px solid blue; */
-}
-
-.card-reporte small{
-    font-size:12px;
-    font-weight:700;
-    /* border: 1px solid red; */
-}
-
-.card-reporte:hover{
-    transform:translateY(3px);
-}
-
-/* ╔════════════════════════════════════╗
-   ║             COLORES               ║
-   ╚════════════════════════════════════╝ */
-
-.ventas{
-    background:#2563eb;
-    color:#fff;
-}
-
-.inventario{
-    background:#16a34a;
-    color:#fff;
-}
-
-.clientes{
-    background:#9333ea;
-    color:#fff;
-}
-
-.usuarios{
-    background:#db2777;
-    color:#fff;
-}
-
-.cajas{
-    background:#d97706;
-    color:#fff;
-}
-
-.movimientos{
-    background:#0891b2;
-    color:#fff;
-}
-
-.gastos{
-    background:#dc2626;
-    color:#fff;
-}
-
-.detalle{
-    background:#374151;
-    color:#fff;
-}
-
-/* ╔════════════════════════════════════╗
-   ║        CARD SELECCIONADA          ║
-   ╚════════════════════════════════════╝ */
-
-input[name="reporte"]:checked + .ventas{
-    background:#1d4ed8;
-    border-color:#93c5fd;
-    box-shadow: 1px 0 10px 0 rgba(37,99,235,.5);
-}
-
-input[name="reporte"]:checked + .inventario{
-    background:#15803d;
-    border-color:#86efac;
-    box-shadow:0 0 14px rgba(22,163,74,.5);
-}
-
-input[name="reporte"]:checked + .clientes{
-    background:#7e22ce;
-    border-color:#d8b4fe;
-    box-shadow:0 0 14px rgba(147,51,234,.5);
-}
-
-input[name="reporte"]:checked + .usuarios{
-    background:#be185d;
-    border-color:#f9a8d4;
-    box-shadow:0 0 14px rgba(219,39,119,.5);
-}
-
-input[name="reporte"]:checked + .cajas{
-    background:#b45309;
-    border-color:#fde68a;
-    box-shadow:0 0 14px rgba(217,119,6,.5);
-}
-
-input[name="reporte"]:checked + .movimientos{
-    background:#0e7490;
-    border-color:#67e8f9;
-    box-shadow:0 0 14px rgba(8,145,178,.5);
-}
-
-input[name="reporte"]:checked + .gastos{
-    background:#b91c1c;
-    border-color:#fca5a5;
-    box-shadow:0 0 14px rgba(220,38,38,.5);
-}
-
-input[name="reporte"]:checked + .detalle{
-    background:#111827;
-    border-color:#d1d5db;
-    box-shadow:0 0 14px rgba(17,24,39,.5);
-}
-
-/* ╔════════════════════════════════════╗
-   ║             FILTROS               ║
-   ╚════════════════════════════════════╝ */
-
-.contenedor-filtros{
     display:flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap:15px;
-    
+    height:100%;
+    min-height:0;
+    flex-direction:column;
+    gap:14px;
+    overflow:hidden;
+    padding:4px;
+    color:var(--text);
 }
 
-.grupo-filtro{
-    display: flex;              /* ← obligatorio */
-    flex-direction: row;       /* horizontal */
-    align-items: center;
-    min-width: 190px;
-    flex-wrap: nowrap;         /* ← evita que bajen */
-    gap: 10px;          
+.reportes-header,
+.reportes-panel{
+    flex-shrink:0;
+    border:1px solid var(--border);
+    border-radius:14px;
+    background:var(--surface);
+    box-shadow:var(--shadow);
 }
 
-.label-filtro{
-    display: block;        /* o inline-block, pero NO flex */
-    font-size: 12px;
-    font-weight: 700;
-    color: #374151;
-    white-space: nowrap;   /* ← clave: evita salto de línea */
+.reportes-header{display:flex;align-items:center;justify-content:space-between;padding:10px 15px}
+.reportes-eyebrow{color:var(--verde-hover);font-size:9px;font-weight:700;letter-spacing:.12em}
+.reportes-header h2{margin:2px 0;color:var(--text);font-size:18px;font-weight:700}
+.reportes-header p,.reportes-panel-heading p{margin:0;color:var(--text-soft);font-size:12px}
+
+.contenedor-reportes{display:grid;grid-template-columns:repeat(6,minmax(90px,1fr));gap:10px;margin:0}
+.contenedor-reportes input[type="radio"]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.contenedor-reportes .card-reporte{display:flex;height:auto;min-height:40px;flex-direction:row;align-items:center;justify-content:center;gap:7px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text-soft);box-shadow:var(--shadow);font-weight:600;white-space:nowrap;cursor:pointer;user-select:none;transition:background-color .18s ease,border-color .18s ease,color .18s ease,transform .18s ease}
+.contenedor-reportes .card-reporte i{color:var(--verde);font-size:16px}
+.contenedor-reportes .card-reporte small{font-size:11px;font-weight:600}
+.contenedor-reportes .card-reporte:hover{transform:translateY(-2px);border-color:var(--verde-light);color:var(--text)}
+.contenedor-reportes input[type="radio"]:checked+.card-reporte{transform:none;border-color:var(--verde);background:var(--verde-soft);color:var(--verde-hover);box-shadow:0 0 0 2px color-mix(in srgb,var(--verde) 14%,transparent)}
+.contenedor-reportes input[type="radio"]:focus-visible+.card-reporte{outline:2px solid var(--verde);outline-offset:2px}
+
+.reportes-panel{display:flex;flex:1;min-height:0;flex-direction:column;overflow:hidden;padding:11px}
+.reportes-panel-heading{margin-bottom:9px}
+.reportes-panel-heading h3{margin:0 0 2px;color:var(--text);font-size:14px;font-weight:700}
+.contenedor-filtros{display:flex;align-items:flex-end;justify-content:flex-start;gap:9px;margin-bottom:9px;padding:9px;border:1px solid var(--table-border);border-radius:10px;background:var(--bg)}
+.grupo-filtro{display:flex;flex:1 1 135px;min-width:110px;flex-direction:column;align-items:stretch;gap:4px}
+.grupo-filtro.grupo-acciones{flex:0 0 auto;align-items:flex-end}
+.label-filtro{color:var(--text-soft);font-size:11px;font-weight:600;white-space:nowrap}
+.Fecha-Input-Reporte,.grupo-filtro input[type="number"],.grupo-filtro select{width:100%;min-width:0;height:32px;padding:4px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:12px;text-align:left}
+.grupo-filtro select{flex:1 1 130px}
+.grupo-filtro-orden{flex:0 0 145px;min-width:145px}
+.grupo-filtro-orden select{width:145px;max-width:100%;flex:none}
+.Fecha-Input-Reporte:focus,.grupo-filtro input:focus,.grupo-filtro select:focus{border-color:var(--verde);outline:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--verde) 16%,transparent)}
+.grupo-filtro .btn-reporte{height:32px;padding:0 10px;border:1px solid var(--verde);border-radius:8px;background:var(--verde);color:var(--text-on-accent);font-size:11px}
+.grupo-filtro .btn-reporte:hover{border-color:var(--verde-hover);background:var(--verde-hover);opacity:1}
+
+.reportes-panel .dataTables_wrapper{flex:1;min-height:0}
+.reportes-panel .table thead th{background:var(--table-header-bg);color:var(--text)}
+.reportes-panel .table td{color:var(--text)}
+.reportes-panel .dt-buttons{justify-content:flex-end;margin:0 0 8px}
+.reportes-panel .dt-button{padding:5px 10px!important;border:1px solid var(--border)!important;border-radius:8px!important;background:var(--surface)!important;color:var(--text)!important;font-size:12px!important}
+.reportes-panel .dt-button:hover{border-color:var(--verde)!important;background:var(--verde-soft)!important;color:var(--verde-hover)!important}
+.reportes-panel tfoot input,.reportes-panel tfoot select{max-width:100%;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)}
+
+.footer-reportes{display:flex;width:100%;flex-direction:row;align-items:flex-start;gap:7px;margin-top:auto}
+.dt-buttons{display:flex;justify-content:center;gap:8px;margin-top:5px}
+.dt-button{padding:0 15px!important;border:1px solid var(--border)!important;border-radius:8px!important;background:var(--surface)!important;color:var(--text)!important;font-size:13px!important;font-weight:600!important;transition:.2s ease!important;box-shadow:none!important}
+.dt-button:hover{border-color:var(--verde)!important;background:var(--verde-soft)!important;color:var(--verde-hover)!important}
+
+/* La exportación PDF conserva sus reglas monocromáticas definidas en su módulo. */
+
+@media(max-width:900px){
+    .contenedor-reportes{grid-template-columns:repeat(3,minmax(90px,1fr))}
+    .contenedor-filtros{flex-wrap:wrap}
+    .grupo-filtro.grupo-acciones{flex:1 1 auto}
 }
 
-/* --------------------------------------- */
-
-/* ╔════════════════════════════════════╗
-   ║      CONTROLES EXPORTACION        ║
-   ╚════════════════════════════════════╝ */
-
-.radio-exportacion,
-.btn-reporte{
-    position: relative;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    gap: 6px;
-
-    padding: 6px 14px;
-
-    border: 1px solid #374151;
-    border-radius: 10px;
-
-    background: #1f2937;
-    color: #e5e7eb;
-
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: .2px;
-
-    cursor: pointer;
-    user-select: none;
-
-    transition:
-        border-color .25s ease,
-        transform .18s ease,
-        box-shadow .25s ease;
+@media(max-width:560px){
+    .contenedor-reportes{grid-template-columns:repeat(2,minmax(100px,1fr))}
+    .reportes-panel{padding:10px}
+    .contenedor-filtros{gap:9px;padding:9px}
+    .grupo-filtro{flex-basis:calc(50% - 9px)}
 }
-
-/* PDF */
-.radio-exportacion.pdf:hover{
-    background: linear-gradient(135deg,#dc2626,#ef4444);
-    border-color: #f87171;
-    color: white;
-}
-
-/* EXCEL */
-.radio-exportacion.excel:hover{
-    background: linear-gradient(135deg,#15803d,#22c55e);
-    border-color: #4ade80;
-    color: white;
-}
-
-/* SELECCIONADO PDF */
-#exportPDF:checked + .radio-exportacion.pdf{
-    background: linear-gradient(135deg,#dc2626,#ef4444);
-    border-color: #f87171;
-    color: white;
-
-    box-shadow: 0 0 0 3px rgba(239,68,68,.18);
-}
-
-/* SELECCIONADO EXCEL */
-
-#exportExcel:checked + .radio-exportacion.excel{
-    background: linear-gradient(135deg,#15803d,#22c55e);
-    border-color: #4ade80;
-    color: white;
-
-    box-shadow: 0 0 0 3px rgba(34,197,94,.18);
-}
-
-/* BOTON GENERAR */
-
-.btn-reporte{
-    background: #297afc !important;
-    border-color: #60a5fa;
-}
-
-.btn-reporte:hover{
-    background: #0057e2 !important;
-    border-color: #4583ca;
-}
-
-.btn-reporte:active{
-     transform: scale(0.96);
-}
-
-/* DESHABILITADO */
-
-.btn-reporte:disabled{
-    opacity: .45;
-    cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none !important;
-}
-
-/* MISMO EFECTO QUE TU CSS */
-
-#exportPDF:checked + .radio-exportacion,
-#exportExcel:checked + .radio-exportacion{
-    transform:scale(.90);
-}
-
-
-/* ------------------------------------------------------------ */
-/* 
-.top { flex-shrink: 0; display: flex; justify-content: space-between; }
-
-
-
-.contenedor-reporte{
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;     
-    overflow: hidden; 
-    border: 3px solid orange;
-}
-
-.dataTables_scrollBody { margin-top: -1px; }
-
-.dataTables_scroll, .row{
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0; 
-    overflow: hidden;
-    white-space: nowrap;
-}
-
-.dataTables_scrollBody, .row{
-    flex: 1;
-    min-height: 0;
-    border: 2px solid black;
-    border-collapse: collapse;
-}
-
-.table { margin: 0 auto;  white-space: nowrap; flex-wrap: nowrap; } 
-
-.row{
-    border: 2px solid black;
-}
-
-
-.dt-scroll-foot{
-    bottom: 1px;
-}
-
-.dt-scroll-footInner{
-    border: 2px solid black;
-    width: 100vh;
-}
- */
-
-tfoot strong, span{
-    font-size: 12px !important;
-}
-
-.footer-reportes{
-    display: flex;
-    flex-direction: row; 
-
-    align-items: flex-start;
-    gap: 7px;
-    width: 100%;
-    margin-top: auto;
-}
-
-/* .bottom { flex-shrink: 0; display: flex; justify-content: space-between;} */
-
-.Fecha-Input-Reporte{ 
-    
-    border:1px solid #bfc3ca;
-    border-radius:8px;
-    color: black;
-    outline:none;
-    transition:.2s;
-    cursor: pointer;
-    padding:0 8px;
-    text-align: center;
-
-}
-
-
-/* CONTENEDOR */
-
-.dt-buttons{
-    margin-top: 5px;
-    display:flex;
-    gap: 8px;
-    justify-content: center;
-}
-
-/* BOTONES */
-
-.dt-button{
-    border:2px solid #374151 !important;
-    background:#1f2937 !important;
-    color:white !important;
-    border-radius:10px !important;
-    padding: 0 15px !important;
-    font-size:13px !important;
-    font-weight:600 !important;
-    transition:.2s ease !important;
-    box-shadow:none !important;
-}
-
-.dt-button:hover{
-    filter:brightness(1.08);
-}
-
-.buttons-excel:hover{
-    background:#15803d !important;
-    border-color:transparent !important;
-}
-
-/* PRINT */
-
-.buttons-print:hover{
-    background:#1d4ed8 !important;
-    border-color:transparent !important;
-}
-
-/* COPY */
-
-.buttons-copy:hover{
-    background:#7c3aed !important;
-    border-color:transparent !important;
-}
-
-/* CSV */
-
-.buttons-csv:hover{
-    background:#0f766e !important;
-    border-color:transparent !important;
-}
-
-.buttons-pdf:hover{
-    background:#b91c1c !important;
-    border-color:transparent !important;
-}
-
-
-
-
-
-
-
-.btn-reporte{
-    height:34px;
-    border:none;
-    border-radius:8px;
-    background:#1f2937;
-    color:white;
-    padding:0 12px;
-    font-size:12px;
-    font-weight:600;
-    cursor:pointer;
-    transition:
-        transform .12s ease,
-        opacity .2s ease,
-        box-shadow .2s ease;
-
-    box-shadow:0 2px 6px rgba(0,0,0,.15);
-     white-space: nowrap;
-}
-
-.btn-reporte:hover{
-    opacity:.9;
-}
-
-.btn-reporte:active{
-    transform:scale(.90);
-    box-shadow:0 1px 3px rgba(0,0,0,.2);
-}
-
-select{
-    flex:1;
-    min-width:0;
-    width:100%;
-    background:#111827;
-    border:1px solid #374151;
-    color:#f4f6f9;
-    height: 32px;
-    padding:0 8px;
-    border-radius:8px;
-    font-size:14px;
-    outline:none;
-    transition:.2s;
-    cursor: pointer;
-}
-
-
-/* focus (importante para UX) */
-select:focus{
-    border-color:#60a5fa;
-    box-shadow:0 0 0 3px rgba(59,130,246,0.35);
-}
-
-select::-webkit-scrollbar{
-    width:10px;
-}
-
-select::-webkit-scrollbar-track{
-    background:#1e293b;
-    border-radius:10px;
-}
-
-select::-webkit-scrollbar-thumb{
-    background:#111722;
-    border-radius:10px;
-}
-
-select::-webkit-scrollbar-thumb:hover{
-    background:#061025;
-}
-
-/* .table thead th{ 
-    font-size: 12px !important;
-}
-
-.table td{
-    font-size: 12px !important;
-} */

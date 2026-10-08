@@ -1,4 +1,28 @@
+let tablaProductosPOSActiva = null;
+
+function limpiarFacturacion() {
+    $(document).off('.facturacion');
+
+    if (tablaProductosPOSActiva) {
+        if ($.fn.DataTable.isDataTable(tablaProductosPOSActiva.table().node())) {
+            tablaProductosPOSActiva.destroy();
+        }
+        tablaProductosPOSActiva = null;
+    }
+}
+
+document.addEventListener('turbo:before-frame-render', (event) => {
+    if (event.target.id === 'contenido-dinamico' && event.target.querySelector('#btnFacturar')) {
+        limpiarFacturacion();
+    }
+});
+
 export default function initFacturacion() {
+
+    const tablaActual = document.getElementById('tablaProductos');
+    if (tablaProductosPOSActiva && tablaProductosPOSActiva.table().node() === tablaActual) return;
+
+    limpiarFacturacion();
 
     let carrito = [];
     let imprimirFacturaActivo = false;
@@ -6,6 +30,7 @@ export default function initFacturacion() {
     document.getElementById('titulo').textContent = 'SISTEMA DE FACTURACION';
 
     const tablaProductos = inicializarTablaProductos();
+    tablaProductosPOSActiva = tablaProductos;
     eventosProductos(tablaProductos);
 
 /*-------------------------------------------------------------------------------------------------------------------*/
@@ -252,7 +277,7 @@ export default function initFacturacion() {
 
     });
 
-    $(document).on('keydown', '#pagoCordobas, #pagoDolares', function (e) {
+    $(document).on('keydown.facturacion', '#pagoCordobas, #pagoDolares', function (e) {
         if (document.activeElement !== this) return;
         if (e.key === 'Enter') { e.preventDefault(); $('#btnFacturar').trigger('click'); }
     });
@@ -1141,7 +1166,7 @@ async function obtenerCredencialesEmpresa() {
     $(document).off('click.abrirCaja', '#btnAbrirCaja');
 
     // 🔥 Registrar SOLO UNA VEZ
-    $(document).on('click.abrirCaja', '#btnAbrirCaja', function () {
+    $(document).on('click.facturacion', '#btnAbrirCaja', function () {
 
         const btn = $(this);
 
@@ -1168,7 +1193,7 @@ async function obtenerCredencialesEmpresa() {
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════  */
 
-    $(document).on('keydown', '#montoInicialCaja', function (e) {
+    $(document).on('keydown.facturacion', '#montoInicialCaja', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             $('#confirmarAbrirCaja').trigger('click');
@@ -1177,7 +1202,7 @@ async function obtenerCredencialesEmpresa() {
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════  */
 
-    $(document).on('click', '#confirmarAbrirCaja', function () {
+    $(document).on('click.facturacion', '#confirmarAbrirCaja', function () {
 
         let monto = $('#montoInicialCaja').val();
 
@@ -1213,7 +1238,7 @@ async function obtenerCredencialesEmpresa() {
 
 /*  ═════════ Cerrar Caja ══════════  */
 
-$(document).on('click', '#btnCerrarCaja', function () {
+$(document).on('click.facturacion', '#btnCerrarCaja', function () {
 
     $.post('/caja/cerrar', {
         _token: $('meta[name="csrf-token"]').attr('content')

@@ -8,6 +8,7 @@
     <title>Login - Sistema POS</title>
 
     @include('principal.links')
+    @vite(['resources/css/variables.css'])
     @vite(['resources/css/login/login.css'])
 
     <script src="{{ Vite::asset('resources/js/Login.js') }}"></script>
@@ -16,7 +17,7 @@
 
 </head>
 
-<body class="bg-light">
+<body>
 
     <!-- Fondo -->
     <div class="position-fixed top-0 start-0 w-100 h-100 overflow-hidden" style="z-index:0;">

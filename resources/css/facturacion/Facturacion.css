@@ -45,7 +45,7 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
-    border: 1px solid rgb(172, 167, 167);
+    border: 1px solid var(--border-strong);
 }
 
 .card{
@@ -60,8 +60,9 @@
 .contenedor-botones{
     display: flex;
     align-items: center;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     justify-content:space-between;
+    gap:8px;
     width: 100%;
     margin-bottom: 10px;
 }
@@ -70,46 +71,68 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2px 12px;
-    border-radius: .25rem;
+    min-height:32px;
+    padding: 6px 10px;
+    margin:0;
+    border:1px solid transparent;
+    border-radius: .375rem;
     font-size: 12px;
     font-weight: 500;
+    line-height:1.2;
+    white-space:nowrap;
     cursor: pointer;
     user-select: none;
     gap: 10px;
-    color: white;
+    color: var(--text-on-accent);
     transition:
         border-color .25s ease,
         transform .60s ease,
         box-shadow .25s ease;
-        background-color: #1f2937;
+        background-color: var(--neutral-800);
     transition: all 0.15s ease;
 }
 
 #btnLimpiarCaja {
-    background: #dc3545;
-    color: white;
+    background: var(--rojo);
+    color: var(--text-on-accent);
     font-weight: bold;
     font-size: 12px;
+    min-height:32px;
+    padding:6px 10px;
+    line-height:1.2;
+    white-space:nowrap;
     transition: .25s ease;
 }
 
+.contenedor-botones > .btn{
+    min-height:32px;
+    padding:6px 10px;
+    line-height:1.2;
+    white-space:nowrap;
+}
+
+.contenedor-botones i{font-size:14px;line-height:1}
+
+@media(max-width:900px){
+    .contenedor-botones{justify-content:flex-start}
+}
+
 #btnLimpiarCaja:hover {
-    background: #ee0018;
-    color: white;
+    background: var(--rojo-hover);
+    color: var(--text-on-accent);
 }
 
 /* ------------------------------------------------- */
 
 #btnFacturar{
     transition: all 0.15s ease;
-    background: #22C55E;
-    color: white;
+    background: var(--verde);
+    color: var(--text-on-accent);
     border: none;
 }
 
 #btnFacturar:hover{
-    background: #1ca74f;
+    background: var(--verde-hover);
 }
 
 #btnFacturar:active{
@@ -117,47 +140,47 @@
 }
 
 .btn-factura:hover {
-    background: #41a174; /* más claro */
-    border-color: #198754;
-    color: white;
-    box-shadow: 0 0 10px rgba(25,135,84,.25);
+    background: var(--success-hover);
+    border-color: var(--success-strong);
+    color: var(--text-on-accent);
+    box-shadow: 0 0 10px var(--success-soft);
 }
 
 /* CLICK / ACTIVE (presionado) */
 .btn-factura:active {
-    background: #157347;
-    border-color: #145c3a;
+    background: var(--success-strong);
+    border-color: var(--verde-hover);
     transform: scale(0.98);
 }
 
 #toggleFactura:checked + .btn-factura {
-    background: #198754;
-    border-color: #145c3a;
-    color: white;
-    box-shadow: 0 0 16px rgba(25,135,84,.55);
+    background: var(--verde);
+    border-color: var(--verde-hover);
+    color: var(--text-on-accent);
+    box-shadow: 0 0 16px var(--success-soft);
 }
 
 /* ------------------------------------------------- */
 
 .btn-proforma:hover {
-    background: #63a1fd; /* más claro */
-    border-color: #0d6efd;
-    color: white;
-    box-shadow: 0 0 10px rgba(13,110,253,.25);
+    background: var(--azul);
+    border-color: var(--azul-hover);
+    color: var(--text-on-accent);
+    box-shadow: 0 0 10px var(--focus-ring);
 }
 
 /* CLICK / ACTIVE (presionado) */
 .btn-proforma:active {
-    background: #0b5ed7;
-    border-color: #0a58ca;
+    background: var(--azul-hover);
+    border-color: var(--selection-hover);
     transform: scale(0.98);
 }
 
 #toggleProformaFactura:checked + .btn-proforma {
-    background: #0d6efd;
-    border-color: #0d6efd;
-    color: white;
-    box-shadow: 0 0 12px rgba(13,110,253,.45);
+    background: var(--azul);
+    border-color: var(--azul);
+    color: var(--text-on-accent);
+    box-shadow: 0 0 12px var(--focus-ring);
 }
 
 /* ------------------------------------------------------------ */
@@ -172,23 +195,23 @@
 }
 
 .cantidad:focus{
-    border-color: rgb(180, 180, 180);
+    border-color: var(--border-strong);
 }
 
 .col-cantidad{ width: 5%; }
 
 .eliminar{
-    background: #dc3545;
-    border: 1px solid #dc3545;
-    color: white;
+    background: var(--rojo);
+    border: 1px solid var(--rojo);
+    color: var(--text-on-accent);
     border-radius: .35rem;
     transition: .2s ease;
     cursor: pointer;
 }
 
 .eliminar:hover{
-    background: #bb2d3b;
-    border-color: #b02a37;
+    background: var(--rojo-hover);
+    border-color: var(--danger-strong);
 
     transform: scale(1.05);
 }
@@ -203,9 +226,8 @@
 .carrito-scroll {
     overflow-y: auto;
     max-height: 45vh;
-    border: 1px solid rgb(190, 190, 190);
+    border: 1px solid var(--border-strong);
 }
 
 /* Selectores (Select2)*/
 .select2-results__options { max-height: 70vh !important; }
-

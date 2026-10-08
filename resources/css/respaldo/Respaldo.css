@@ -10,18 +10,62 @@
     gap: 15px;
 }
 
-.text-secondary{ color: var(--text); }
+.respaldo-view .text-secondary{ color: var(--text-soft)!important; }
 
-.row{ margin-left: 0 !important; margin-right: 0 !important; }
+.respaldo-view .row{ margin-left: 0 !important; margin-right: 0 !important; }
 
-.card{ border-radius: 14px; }
+.respaldo-view .card-respaldo{ border-radius: 14px; }
 
 .upload{
-    border: 2px dashed #4b5563;
+    border: 2px dashed var(--neutral-700);
     border-radius: 12px;
     padding: 25px 15px;
 }
 
-.border-secondary{background: var(--bg); }
-.btn{ border-radius: 10px; font-weight: 600; }
-.btn-check:checked + .btn{ transform: scale(.98); }
+.respaldo-view .btn{ border-radius: 10px; font-weight: 600; }
+.respaldo-view .btn-check:checked + .btn{ transform: scale(.98); }
+
+.respaldo-view{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    height:100%;
+    min-height:0;
+    overflow:auto;
+    padding:2px;
+    color:var(--text);
+}
+.respaldo-card-principal{display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:var(--shadow)}
+.respaldo-card-principal .exportacion-body{gap:11px}
+.respaldo-view .row{margin:0!important}
+.respaldo-header{padding:1px 2px 0}
+.respaldo-header h4{display:flex;align-items:center;gap:8px;color:var(--text);font-size:17px}
+.respaldo-header h4 i{color:var(--verde)}
+.respaldo-header small{color:var(--text-soft)!important;font-size:12px}
+.respaldo-view .row.g-3{flex:1;align-items:stretch;--bs-gutter-y:.6rem;--bs-gutter-x:.6rem}
+.respaldo-view [class*="col-lg-"]{display:flex}
+.card-respaldo{display:flex;flex:1;flex-direction:column;min-width:0;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:var(--shadow)}
+.card-header-respaldo{padding:10px 13px;border-bottom:1px solid var(--border);color:var(--text);font-size:13px;font-weight:700}
+.card-header-respaldo i{color:var(--verde)}
+.card-respaldo .card-body{padding:12px}
+.formato-respaldo{display:flex;min-height:62px;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:1px solid var(--border)!important;border-radius:9px!important;background:var(--bg)!important;color:var(--text-soft)!important;font-size:11px;font-weight:600}
+.formato-respaldo i{color:var(--verde);font-size:18px}
+.btn-check:checked+.formato-respaldo{border-color:var(--verde)!important;background:var(--verde-soft)!important;color:var(--verde-hover)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--verde) 12%,transparent)}
+.formato-respaldo:hover{border-color:var(--verde)!important;color:var(--verde-hover)!important}
+.formatos-info{display:grid;gap:5px;padding:9px 11px;border:1px solid var(--table-border);border-radius:9px;background:var(--bg);color:var(--text-soft);font-size:11px}
+.formatos-info strong{color:var(--text)}
+.btn-exportar,.btn-restaurar{min-height:35px;border:0;border-radius:8px;font-size:12px;font-weight:700}
+.btn-exportar{background:var(--verde);color:var(--text-on-accent)}
+.btn-exportar:hover{background:var(--verde-hover);color:var(--text-on-accent)}
+.btn-restaurar{background:var(--rojo);color:var(--text-on-accent)}
+.btn-restaurar:hover{background:var(--rojo-hover);color:var(--text-on-accent)}
+.alerta-restauracion{padding:9px 10px;border:1px solid color-mix(in srgb,var(--rojo) 24%,var(--border));border-radius:9px;background:var(--rojo-soft);color:var(--text);font-size:11px}
+.alerta-restauracion i{color:var(--rojo)}
+.upload-respaldo{display:flex;flex:1;flex-direction:column;justify-content:center;gap:7px;padding:13px 11px;border:1px dashed var(--border);border-radius:10px;background:var(--bg)}
+.upload-respaldo>i{color:var(--verde);font-size:26px}
+.upload-respaldo small{color:var(--text-soft)!important}
+.archivo-respaldo{width:100%;border-color:var(--border);background:var(--surface);color:var(--text);font-size:12px}
+.archivo-respaldo:focus{border-color:var(--verde);box-shadow:0 0 0 3px color-mix(in srgb,var(--verde) 15%,transparent)}
+
+@media(max-width:991px){.respaldo-view .row.g-3{flex:initial}.card-respaldo{min-height:100%}}
+@media(max-width:575px){.respaldo-card-principal{padding:10px}.respaldo-view{gap:8px}.respaldo-header h4{font-size:16px}.card-respaldo .card-body{padding:10px}.formato-respaldo{min-height:56px}}

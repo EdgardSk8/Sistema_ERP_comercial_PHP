@@ -42,29 +42,12 @@
                             </label>
 
                             <input
-                                type="text"
                                 id="editar_color"
                                 name="color"
+                                type="text"
                                 class="form-control form-control-sm"
-                                maxlength="100"
-                                required>
-                        </div>
-
-                        <div class="col-12">
-                            <label for="editar_estado_variacion" class="form-label">
-                                Estado
-                            </label>
-
-                            <select
-                                id="editar_estado_variacion"
-                                name="estado_variacion"
-                                class="form-select form-select-sm"
-                                required>
-
-                                <option value="1">Activo</option>
-                                <option value="0">Inactivo</option>
-
-                            </select>
+                                maxlength="50"
+                                placeholder="Agregar un color nuevo">
                         </div>
 
                     </div>

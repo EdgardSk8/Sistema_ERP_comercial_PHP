@@ -39,47 +39,24 @@ button:disabled,
 
 /* ══════════════════════════════════════════════════════════════════════════════════════ */
 
-/* BOTON DETALLES
-.btn-detalle { background-color: #0d6efd; color:white; }
-
-.btn.btn-detalle:active { background-color: #0c5cd3; color:white; transform: scale(0.90); } */
+/* BOTON DETALLES: color definido por tokens de interfaz. */
 
 
 
 
 
-/* BOTON DE TRANSFERIR
-.btn-transferir { background-color: #198754;color: white; }
-.btn-transferir:hover { background-color: #157347;color: white; } 
-.btn-transferir:active { background-color: #146c43; color: white; transform: scale(0.90); } */
+/* BOTON DE TRANSFERIR: color definido por tokens de interfaz. */
 
-/* BOTON DE AGREGAR SALDO */
-/* .agregar-saldo { background-color: #198754; color: white; }
-.agregar-saldo:hover { background-color: #157347; color: white; }
-.btn.agregar-saldo:active { background-color: #146c43; color: white; transform: scale(0.90); } */
+/* BOTON DE AGREGAR SALDO: color definido por tokens de interfaz. */
 
-/* .retirar-saldo { background-color: #ffc107; color: black; }
-.retirar-saldo:hover { background-color: #e0a800; color: black; }
-.btn.retirar-saldo:active { background-color: #d39e00; color: black; transform: scale(0.90); } */
+/* BOTON DE RETIRAR SALDO: color definido por tokens de interfaz. */
 
-/* BOTON PAGAR */
-/* .pagar-gasto { background-color: #198754; color: white; }
-.pagar-gasto:hover { background-color: #157347; color: white; }
-.btn.pagar-gasto:active { background-color: #146c43; color: white; transform: scale(0.90); } */
+/* BOTON PAGAR: color definido por tokens de interfaz. */
 
-/* BOTON ACTIVAR
-.btn-alta { background-color: #0d6efd; color:white; }
-.btn-alta:hover { background-color: #0c5cd3; color:white; }
-.btn.btn-baja:active { background-color: #0c5cd3; color:white; transform: scale(0.90); } */
+/* BOTON ACTIVAR: color definido por tokens de interfaz. */
 
-/* BOTON EDITAR */
-/* .btn-editar{ background:#22c55e; color:white; }
-.btn-editar:hover{ background:#16a34a; color:white; }
-.btn.btn-editar:active { background:#16a34a; color:white; transform: scale(0.90); } */
+/* BOTON EDITAR: color definido por tokens de interfaz. */
 
 /* BOTON DAR DE BAJA */
 
-/* 
-.estado-activo{ background:#22c55e; color:white; } ACTIVO 
-.estado-inactivo{ background:#ef4444; color:white; } /* INACTIVO */
-.estado-pendiente{ background-color: #ef4444; color: white; } /* PENDIENTE */
+/* Estados: color definido por tokens de interfaz. */

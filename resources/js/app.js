@@ -178,6 +178,7 @@ import initRespaldo from './Respaldo'
 import initMostrarTiposMedidas from './MostrarTiposMedidas'
 import initMostrarMedidas from './MostrarMedidas'
 import initMostrarProductoVariaciones from './MostrarProductoVariacion'
+import initMostrarProductoVariacionDetalle from './MostrarProductoVariacionDetalle'
 
 /*
 |--------------------------------------------------------------------------
@@ -216,7 +217,8 @@ const modulos = [
     ['#tablaTiposMedidas', initMostrarTiposMedidas],
     ['#tablaMedidas', initMostrarMedidas],
 
-    ['#tablaProductoVariaciones', initMostrarProductoVariaciones]
+    ['#tablaProductoVariaciones', initMostrarProductoVariaciones],
+    ['#tablaProductoVariacionDetalle', initMostrarProductoVariacionDetalle]
 
 
 
@@ -331,7 +333,7 @@ function cargarInicial(primero) {
     if (!url) {console.warn("No hay ruta para:", primero); return; }
 
     // document.getElementById('contenido-dinamico').setAttribute('src', url);
-    document.getElementById('contenido-dinamico').setAttribute('src', '/producto-variaciones');
+    document.getElementById('contenido-dinamico').setAttribute('src', '/reportes');
 }
 
 fetch('/cargar-permisos').then(r => r.json())
@@ -348,7 +350,3 @@ fetch('/cargar-permisos').then(r => r.json())
     .catch(err => {
         console.error("Error cargando permisos:", err);
     });
-
-
-
-    

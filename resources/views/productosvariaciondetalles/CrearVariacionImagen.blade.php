@@ -21,8 +21,7 @@
 
             </div>
 
-            <form id="formCrearVariacionImagen"
-                enctype="multipart/form-data">
+            <form id="formCrearVariacionImagen" enctype="multipart/form-data">
 
                 @csrf
 
@@ -44,8 +43,12 @@
                                 class="form-control form-control-sm"
                                 id="crear_imagen"
                                 name="imagen"
-                                accept="image/*"
+                                accept="image/jpeg,image/png,image/gif,image/webp"
                                 required>
+                            <img id="crear_preview_imagen"
+                                class="img-thumbnail mt-2 d-none d-block mx-auto"
+                                alt="Vista previa de la imagen seleccionada"
+                                style="max-height: 120px;">
 
                         </div>
 
@@ -61,6 +64,7 @@
                                 name="orden"
                                 min="0"
                                 value="0"
+                                readonly
                                 required>
 
                         </div>

@@ -1,5 +1,7 @@
 export default function initMostrarCompras() {
 
+    $(document).off('.mostrarCompras');
+
     document.getElementById('titulo').textContent = 'HISTORIAL DE COMPRAS';
 
     $('#tablaCompras').DataTable({
@@ -43,7 +45,7 @@ export default function initMostrarCompras() {
 
     configurarToggleColumnas('tablaCompras');
 
-    $(document).on('click', '.detalle-compra', function () {
+    $(document).on('click.mostrarCompras', '.detalle-compra', function () {
 
         const btn = $(this); // Solucion Temporal
 
@@ -251,4 +253,4 @@ $(document)
 });
 
 
-}; 
+};

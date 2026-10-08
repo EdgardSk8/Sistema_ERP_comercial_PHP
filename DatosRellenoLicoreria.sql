@@ -1,3 +1,7 @@
+-- Ejecutar despues de `php artisan migrate` y `php artisan db:seed`.
+-- Este archivo asume los IDs creados por los seeders base (usuarios,
+-- proveedores, impuestos, metodos de pago y tipos de factura).
+
 -- CLIENTES
 
 INSERT INTO clientes
@@ -597,3 +601,157 @@ INSERT INTO devoluciones
 VALUES
 (5,27,1,2,130,'Cliente recibió producto equivocado','2026-05-05 10:00:00'),
 (6,20,2,1,450,'Botella dañada','2026-05-06 15:00:00');
+-- =========================================================
+-- MEDIDAS DE PRODUCTOS
+-- Se ejecuta despues de las migraciones y seeders base.
+-- Los productos 1-30 son los insertados en este mismo archivo.
+-- =========================================================
+
+INSERT INTO tipos_medidas
+(id_tipo_medida, nombre_tipo_medida, descripcion_tipo_medida, estado_tipo_medida)
+VALUES
+(1,'Volumen','Contenido neto de bebidas y licores',1),
+(2,'Presentacion','Unidades y paquetes de venta',1);
+
+INSERT INTO medidas
+(id_medida, id_tipo_medida, nombre_medida, abreviatura_medida, orden_medida, estado_medida)
+VALUES
+(1,1,'250 mililitros','250 ml',1,1),
+(2,1,'330 mililitros','330 ml',2,1),
+(3,1,'355 mililitros','355 ml',3,1),
+(4,1,'375 mililitros','375 ml',4,1),
+(5,1,'500 mililitros','500 ml',5,1),
+(6,1,'700 mililitros','700 ml',6,1),
+(7,1,'750 mililitros','750 ml',7,1),
+(8,1,'1 litro','1 L',8,1),
+(9,1,'1.75 litros','1.75 L',9,1),
+(10,2,'Unidad','und',1,1),
+(11,2,'Paquete de 6','pack 6',2,1);
+
+UPDATE productos SET id_medida = 7 WHERE id_producto BETWEEN 1 AND 24;
+UPDATE productos SET id_medida = 3 WHERE id_producto BETWEEN 25 AND 28;
+UPDATE productos SET id_medida = 7 WHERE id_producto = 29;
+UPDATE productos SET id_medida = 1 WHERE id_producto = 30;
+
+-- Relaciona cada metodo de pago con la cuenta donde se registra.
+INSERT INTO metodo_pago_cuenta
+(id_metodo_pago, id_cuenta, estado, created_at, updated_at)
+VALUES
+(1,1,1,'2026-01-01 00:00:00','2026-01-01 00:00:00'),
+(2,2,1,'2026-01-01 00:00:00','2026-01-01 00:00:00'),
+(3,2,1,'2026-01-01 00:00:00','2026-01-01 00:00:00'),
+(4,2,1,'2026-01-01 00:00:00','2026-01-01 00:00:00');
+
+-- =========================================================
+-- VARIACIONES, IMAGENES Y STOCK POR MEDIDA
+-- Productos seleccionados para mostrar ejemplos de volumen/color.
+-- =========================================================
+
+INSERT INTO tallas (id_talla, talla, estado_talla) VALUES
+(1,'250 ml',1),
+(2,'330 ml',1),
+(3,'355 ml',1),
+(4,'375 ml',1),
+(5,'500 ml',1),
+(6,'700 ml',1),
+(7,'750 ml',1),
+(8,'1 L',1),
+(9,'1.75 L',1);
+
+INSERT INTO producto_variaciones
+(id_variacion, id_producto, color, estado_variacion)
+VALUES
+(1,1,'Ambar',1),
+(2,2,'Ambar',1),
+(3,3,'Ambar',1),
+(4,4,'Ambar',1),
+(5,5,'Ambar',1),
+(6,6,'Ambar',1),
+(7,7,'Ambar oscuro',1),
+(8,8,'Ambar',1),
+(9,9,'Ambar',1),
+(10,10,'Ambar oscuro',1),
+(11,11,'Transparente',1),
+(12,12,'Transparente',1),
+(13,13,'Transparente',1),
+(14,14,'Transparente',1),
+(15,15,'Dorado',1),
+(16,16,'Dorado',1),
+(17,17,'Transparente',1),
+(18,18,'Transparente',1),
+(19,19,'Transparente',1),
+(20,20,'Tinto',1),
+(21,21,'Tinto',1),
+(22,22,'Tinto',1),
+(23,23,'Blanco',1),
+(24,24,'Blanco',1),
+(25,25,'Rubia',1),
+(26,26,'Rubia',1),
+(27,27,'Rubia',1),
+(28,28,'Rubia',1),
+(29,29,'Crema',1),
+(30,30,'Dorado',1);
+
+INSERT INTO variacion_imagenes (id_variacion, imagen, orden) VALUES
+(1,'imagenes/productos/ImagenProducto1.png',1),
+(2,'imagenes/productos/ImagenProducto2.png',1),
+(3,'imagenes/productos/ImagenProducto3.png',1),
+(4,'imagenes/productos/ImagenProducto4.png',1),
+(5,'imagenes/productos/ImagenProducto5.png',1),
+(6,'imagenes/productos/ImagenProducto6.png',1),
+(7,'imagenes/productos/ImagenProducto7.png',1),
+(8,'imagenes/productos/ImagenProducto8.png',1),
+(9,'imagenes/productos/ImagenProducto9.png',1),
+(10,'imagenes/productos/ImagenProducto10.png',1),
+(11,'imagenes/productos/ImagenProducto11.png',1),
+(12,'imagenes/productos/ImagenProducto12.png',1),
+(13,'imagenes/productos/ImagenProducto13.png',1),
+(14,'imagenes/productos/ImagenProducto14.png',1),
+(15,'imagenes/productos/ImagenProducto15.png',1),
+(16,'imagenes/productos/ImagenProducto16.png',1),
+(17,'imagenes/productos/ImagenProducto17.png',1),
+(18,'imagenes/productos/ImagenProducto18.png',1),
+(19,'imagenes/productos/ImagenProducto19.png',1),
+(20,'imagenes/productos/ImagenProducto20.png',1),
+(21,'imagenes/productos/ImagenProducto21.png',1),
+(22,'imagenes/productos/ImagenProducto22.png',1),
+(23,'imagenes/productos/ImagenProducto23.png',1),
+(24,'imagenes/productos/ImagenProducto24.png',1),
+(25,'imagenes/productos/ImagenProducto25.png',1),
+(26,'imagenes/productos/ImagenProducto26.png',1),
+(27,'imagenes/productos/ImagenProducto27.png',1),
+(28,'imagenes/productos/ImagenProducto28.png',1),
+(29,'imagenes/productos/ImagenProducto29.png',1),
+(30,'imagenes/productos/ImagenProducto30.png',1);
+
+INSERT INTO variacion_tallas (id_variacion, id_talla, stock) VALUES
+(1,7,30),
+(2,7,20),
+(3,7,50),
+(4,7,50),
+(5,7,40),
+(6,7,40),
+(7,7,50),
+(8,7,50),
+(9,7,50),
+(10,7,50),
+(11,7,50),
+(12,7,50),
+(13,7,40),
+(14,7,50),
+(15,7,50),
+(16,7,30),
+(17,7,30),
+(18,7,50),
+(19,7,50),
+(20,7,50),
+(21,7,50),
+(22,7,50),
+(23,7,50),
+(24,7,50),
+(25,3,300),
+(26,3,300),
+(27,3,200),
+(28,3,300),
+(29,7,30),
+(30,1,200);

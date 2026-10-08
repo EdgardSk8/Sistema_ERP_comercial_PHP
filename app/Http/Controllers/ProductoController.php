@@ -186,7 +186,7 @@ class ProductoController extends Controller
                     'precio_compra' => $request->precio_compra,
                     'precio_venta' => $request->precio_venta,
                     'stock_actual' => $request->stock_actual,
-                    'id_medida' => $request->id_medida,
+                    // 'id_medida' => $request->id_medida,
                 ],
                 [
                     'nombre_producto' => 'required|max:150',
@@ -200,7 +200,7 @@ class ProductoController extends Controller
                     'precio_compra' => 'required|numeric|min:0',
                     'precio_venta' => 'required|numeric|min:0',
                     'stock_actual' => 'nullable|integer|min:0',
-                    'id_medida' => 'nullable|exists:medidas,id_medida',
+                    // 'id_medida' => 'nullable|exists:medidas,id_medida',
                 ]
             );
 

@@ -8,48 +8,46 @@ export default function initMostrarProductoVariaciones() {
         ajax:{
             url:'/producto-variaciones/mostrar',
             type:'GET',
-            dataSrc:'variaciones'
+            dataSrc:function(response){
+                const grupos = new Map();
+                (response.variaciones || []).forEach(variacion => {
+                    const id = variacion.id_producto;
+                    if(!grupos.has(id)){
+                        grupos.set(id,{
+                            id_producto:id,
+                            nombre_producto:variacion.producto?.nombre_producto || '—',
+                            variaciones:[]
+                        });
+                    }
+                    grupos.get(id).variaciones.push(variacion);
+                });
+                return Array.from(grupos.values());
+            }
         },
 
         columns:[
-            { data:'producto.nombre_producto', defaultContent:'—' },
-            { data:'color', defaultContent:'—' },
+            { data:'nombre_producto', defaultContent:'—' },
+            { data:'variaciones', render:function(variaciones){
+                if(!variaciones?.length) return '<span class="text-muted">Sin colores</span>';
+                return variaciones.map(variacion => {
+                    const color=$('<div>').text(variacion.color || '').html();
+                    const clase=variacion.estado_variacion == 1 ? 'bg-success' : 'bg-secondary';
+                    return `<span class="badge ${clase} me-1 mb-1">${color}</span>`;
+                }).join('');
+            }},
 
-            { data:'estado_variacion',
-                render:function(data){
-                    return data == 1
-                    ? '<span class="estado estado-activo">Activo</span>'
-                    : '<span class="estado estado-inactivo">Inactivo</span>';
-                }
-            },
+            { data:'variaciones', render:function(variaciones){
+                const activos=(variaciones || []).filter(v => v.estado_variacion == 1).length;
+                const inactivos=(variaciones || []).length-activos;
+                if(!variaciones?.length) return '<span class="estado estado-inactivo">Sin variaciones</span>';
+                return `${activos ? `<span class="estado estado-activo me-1">${activos} activo(s)</span>` : ''}${inactivos ? `<span class="estado estado-inactivo">${inactivos} inactivo(s)</span>` : ''}`;
+            }},
             {
-                data:'id_variacion',
+                data:'id_producto',
                 orderable:false,
                 searchable:false,
-
-                render:function(data,type,row){
-
-                    let botonEstado = row.estado_variacion == 1
-
-                    ? `<button class="btn-baja bajaProductoVariacion" data-id="${data}">
-                            <i class="fa-solid fa-ban"></i>
-                    </button>`
-
-                    : `<button class="btn-alta bajaProductoVariacion" data-id="${data}">
-                            <i class="fa-solid fa-circle-check"></i>
-                    </button>`;
-
-                    return `
-                        <button class="btn-editar editarProductoVariacion" data-id="${data}">
-                            <i class="fa-solid fa-pencil-alt"></i>
-                        </button>
-
-                        <button class="btn-detalle detalleProductoVariacion" data-id="${data}">
-                            <i class="fa-solid fa-eye"></i>
-                        </button>
-
-                        ${botonEstado}
-                    `;
+                render:function(data){
+                    return `<button class="btn-editar editarProductoVariacion" data-id="${data}"><i class="fa-solid fa-pencil-alt"></i></button>`;
                 }
             }
         ],
@@ -62,7 +60,6 @@ export default function initMostrarProductoVariaciones() {
 
         initComplete:function(){
             ConfigurarFiltrosDataTable(this,{
-                columnasSelect:[0,1],
                 columnasIgnorar:[3]
             });
         }
@@ -85,8 +82,50 @@ export default function initMostrarProductoVariaciones() {
 
         if(!ocultar) return true; 
         
-        return data[2].includes('Activo');
+        return data[2].includes('activo(s)');
     });
+
+    // CARGAR PRODUCTOS EN LOS SELECTS
+    $.get('/producto-variaciones/mostrar-producto',function(response){
+        if(!response.success || !Array.isArray(response.productos)){
+            mostrarToast(response.mensaje || 'No se pudieron obtener los productos','danger');
+            return;
+        }
+        ['#crear_id_producto','#editar_id_producto'].forEach(selector => {
+            const select=$(selector);
+            select.html('<option value="">Seleccione un producto</option>');
+            response.productos.forEach(producto => {
+                select.append(`<option value="${producto.id_producto}">${$('<div>').text(producto.nombre_producto).html()}</option>`);
+            });
+        });
+        const $productoCrear=$('#crear_id_producto');
+        if($productoCrear.hasClass('select2-hidden-accessible')) $productoCrear.select2('destroy');
+        $productoCrear.select2({
+            width:'100%',
+            dropdownParent:$('#modalCrearProductoVariacion'),
+            placeholder:'Buscar producto',
+            allowClear:false
+        });
+    }).fail(function(xhr){
+        mostrarToast(xhr.responseJSON?.mensaje || 'Error al obtener los productos','danger');
+    });
+
+    let variacionesEnEdicion=[];
+    let variacionesPorEliminar=new Set();
+
+    function obtenerGrupo(idProducto){
+        return tabla.rows().data().toArray().find(grupo => String(grupo.id_producto) === String(idProducto));
+    }
+
+    function renderizarColoresEdicion(){
+        const visibles=variacionesEnEdicion.filter(v => !variacionesPorEliminar.has(String(v.id_variacion)));
+        const html=visibles.length ? visibles.map(v => `
+            <div class="d-flex justify-content-between align-items-center border rounded mb-2 px-2 colorVariacionEdicion">
+                <span class="badge ${v.estado_variacion == 1 ? 'bg-success' : 'bg-secondary'}">${$('<div>').text(v.color || '').html()}</span>
+                <button type="button" class="btn btn-sm text-danger quitarColorVariacion" data-id="${v.id_variacion}" title="Quitar color"><i class="fa-solid fa-xmark"></i></button>
+            </div>`).join('') : '<div class="text-muted small">No hay colores asignados</div>';
+        $('#listaColoresEditarVariacion').html(html);
+    }
 
 
     function Validacion(id_producto,color) {
@@ -106,7 +145,9 @@ export default function initMostrarProductoVariaciones() {
 
 
     // EVENTO DE GUARDAR VARIACION
-    $('#btnGuardarProductoVariacion').off('click').on('click',function(){
+    $('#formCrearProductoVariacion').off('submit').on('submit',function(e){
+
+        e.preventDefault();
 
         const producto = $('#crear_id_producto').val();
         const color = $('#crear_color').val().trim();
@@ -156,151 +197,87 @@ export default function initMostrarProductoVariaciones() {
 
 
     // EVENTO DE EDITAR VARIACION
-    $('#tablaProductoVariaciones').off('click').on('click','.editarProductoVariacion',function(){
+    $('#tablaProductoVariaciones').off('click.editar').on('click.editar','.editarProductoVariacion',function(){
+        const idProducto=$(this).data('id');
+        const grupo=obtenerGrupo(idProducto);
+        if(!grupo || !grupo.variaciones.length){
+            mostrarToast('No se encontraron colores para este producto','danger');
+            return;
+        }
 
-        const id=$(this).data('id');
+        $.get(`/producto-variaciones/editar/${grupo.variaciones[0].id_variacion}`,function(res){
+            if(!res.success || !res.variacion){
+                mostrarToast(res.mensaje || 'No se pudo obtener la variación','danger');
+                return;
+            }
 
-        $.get(`/producto-variaciones/editar/${id}`,function(res){
-
-            const variacion=res.variacion;
-
-            $('#editar_id_variacion').val(variacion.id_variacion);
-            $('#editar_id_producto').val(variacion.id_producto);
-            $('#editar_color').val(variacion.color);
-            $('#editar_estado_variacion').val(variacion.estado_variacion);
-
-            new bootstrap.Modal(document.getElementById('modalEditarProductoVariacion')).show();
-
+            variacionesEnEdicion=grupo.variaciones;
+            variacionesPorEliminar=new Set();
+            $('#editar_id_variacion').val(res.variacion.id_variacion);
+            $('#editar_id_producto').val(grupo.id_producto).prop('disabled',true);
+            const $color=$('#editar_color');
+            $color.val('').attr('placeholder','Agregar un color nuevo');
+            $color.closest('.col-12').find('label').text('Agregar color');
+            if(!document.getElementById('listaColoresEditarVariacion')){
+                $('#editar_color').closest('.col-12').before('<div class="col-12"><label class="form-label">Colores asignados</label><div id="listaColoresEditarVariacion"></div></div>');
+            }
+            renderizarColoresEdicion();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarProductoVariacion')).show();
+        }).fail(function(xhr){
+            mostrarToast(xhr.responseJSON?.mensaje || xhr.responseJSON?.message || 'Error al obtener la variación','danger');
         });
+    });
 
+    $('#modalEditarProductoVariacion').off('click.quitar','.quitarColorVariacion').on('click.quitar','.quitarColorVariacion',function(){
+        const id=String($(this).data('id'));
+        variacionesPorEliminar.add(id);
+        $(this).closest('.colorVariacionEdicion').addClass('bg-danger-subtle border-danger').html('<span class="badge bg-danger">Se quitará</span>');
     });
 
 
     // EVENTO DE ACTUALIZAR VARIACION
-    $('#btnActualizarProductoVariacion').off('click').on('click',function(){
+    $('#formEditarProductoVariacion').off('submit').on('submit',function(e){
 
-        const id=$('#editar_id_variacion').val();
+        e.preventDefault();
+
         const producto=$('#editar_id_producto').val();
-        const color=$('#editar_color').val().trim();
-        const estado=$('#editar_estado_variacion').val();
+        const color=($('#editar_color').val() || '').trim();
 
-        if(!Validacion(producto,color)) return;
+        if(!producto){ mostrarToast('Seleccione un producto','danger'); return; }
+        if(color && color.length > 50){ mostrarToast('El color no puede exceder 50 caracteres','danger'); return; }
 
-        $.ajax({
+        const conservar=variacionesEnEdicion.filter(v => !variacionesPorEliminar.has(String(v.id_variacion)));
+        if(color && variacionesEnEdicion.some(v => !variacionesPorEliminar.has(String(v.id_variacion)) && String(v.color).trim().toLocaleLowerCase() === color.toLocaleLowerCase())){
+            mostrarToast('Ese color ya está asignado al producto','warning');
+            return;
+        }
 
-            url:`/producto-variaciones/actualizar/${id}`,
+        const tareas=[];
+        variacionesPorEliminar.forEach(idVariacion => tareas.push($.ajax({
+            url:`/producto-variaciones/eliminar/${idVariacion}`,
+            type:'DELETE',
+            data:{_token:$('meta[name="csrf-token"]').attr('content')}
+        })));
+        conservar.forEach(variacion => tareas.push($.ajax({
+            url:`/producto-variaciones/actualizar/${variacion.id_variacion}`,
             type:'PUT',
+            data:{id_producto:producto,color:variacion.color,estado_variacion:variacion.estado_variacion,_token:$('meta[name="csrf-token"]').attr('content')}
+        })));
+        if(color) tareas.push($.ajax({
+            url:'/producto-variaciones/crear',
+            type:'POST',
+            data:{id_producto:producto,color,_token:$('meta[name="csrf-token"]').attr('content')}
+        }));
 
-            data:{
-                id_producto:producto,
-                color:color,
-                estado_variacion:estado,
-                _token:$('meta[name="csrf-token"]').attr('content')
-            },
-
-            success:function(){
-                mostrarToast('Variación actualizada correctamente','success');
-                bootstrap.Modal.getInstance(document.getElementById('modalEditarProductoVariacion')).hide();
-                tabla.ajax.reload(null,false);
-            },
-
-            error:function(xhr){
-
-                let mensaje='Ocurrió un error al actualizar la variación.';
-
-                if(xhr.responseJSON?.mensaje){
-                    mensaje=xhr.responseJSON.mensaje;
-                }else if(xhr.responseJSON?.message){
-                    mensaje=xhr.responseJSON.message;
-                }
-
-                mostrarToast(mensaje,'danger');
-            }
-
+        if(!tareas.length){ mostrarToast('No hay cambios para guardar','info'); return; }
+        $.when.apply($,tareas).done(function(){
+            mostrarToast('Variaciones actualizadas correctamente','success');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarProductoVariacion')).hide();
+            tabla.ajax.reload(null,false);
+        }).fail(function(xhr){
+            mostrarToast(xhr.responseJSON?.mensaje || xhr.responseJSON?.message || 'Error al actualizar las variaciones','danger');
         });
 
-    });
-
-
-    // EVENTO PARA MOSTRAR DETALLE DE VARIACION
-    $('#tablaProductoVariaciones').off('click.detalle').on('click.detalle','.detalleProductoVariacion',function(){
-
-        const id=$(this).data('id');
-
-        window.location.href=`/producto-variaciones/detalle/${id}`;
-
-    });
-
-
-    document.addEventListener("click",async function(e){
-
-        if(e.target.classList.contains("bajaProductoVariacion")){
-
-            const id=e.target.dataset.id;
-            let modalElement=document.getElementById("modalConfirmarEstadoProductoVariacion");
-
-            if(!modalElement){
-
-                const modalHTML=`
-                    <div class="modal fade" id="modalConfirmarEstadoProductoVariacion" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
-
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Confirmar acción</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-
-                                <div class="modal-body">
-                                    <div class="card-responsive">
-                                        ¿Deseas cambiar el estado de esta variación?
-                                    </div>
-                                </div>
-
-                                <div class="modal-footer">
-                                    <button class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">Cancelar</button>
-                                    <button type="button" class="btn actualizar btn-sm-modal" id="confirmarCambioEstadoProductoVariacion">Confirmar</button>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>`;
-
-                document.body.insertAdjacentHTML("beforeend",modalHTML);
-                modalElement=document.getElementById("modalConfirmarEstadoProductoVariacion");
-            }
-
-            const modal=new bootstrap.Modal(modalElement);
-            modal.show();
-
-            modalElement.querySelector("#confirmarCambioEstadoProductoVariacion").onclick=async function(){
-
-                try{
-
-                    const response=await fetch(`/producto-variaciones/cambiar-estado/${id}`,{
-                        method:"PUT",
-                        headers:{
-                            "X-CSRF-TOKEN":document.querySelector('meta[name="csrf-token"]').getAttribute("content")
-                        }
-                    });
-
-                    const data=await response.json();
-
-                    if(data.success){
-                        mostrarToast("Estado de la variación actualizado","success");
-                        $('#tablaProductoVariaciones').DataTable().ajax.reload(null,false);
-                    }else{
-                        mostrarToast("Error al cambiar estado","danger");
-                    }
-
-                }catch(error){
-                    mostrarToast("Error de conexión","danger");
-                    console.error(error);
-                }
-
-                modal.hide();
-            };
-        }
     });
 
 

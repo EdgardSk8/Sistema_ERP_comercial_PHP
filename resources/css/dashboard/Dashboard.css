@@ -126,9 +126,9 @@
     padding: 6px 6px;
     border:1px solid var(--border);
     border-radius:var(--radius);
-    box-shadow:0 2px 8px rgba(17,24,39,.05);
+    box-shadow:var(--shadow);
     cursor:pointer;
-    background-color:var(--blanco);
+    background-color:var(--surface);
     /* border: 1px solid black; */
 }
 
@@ -140,15 +140,15 @@
 /* TOAST DE LOS FILTROS GRAFICAS */
 
 .tooltip-inner{
-    background: #1f2937;
-    color: #fff;
+    background: var(--neutral-800);
+    color: var(--text-on-accent);
     font-size: .85rem;
     padding: .6rem .8rem;
     border-radius: 10px;
     max-width: 280px;
 }
 
-.tooltip .tooltip-arrow::before{ border-top-color: #1f2937 !important; }
+.tooltip .tooltip-arrow::before{ border-top-color: var(--neutral-800) !important; }
 
 /* ================= CONTENEDOR GRAFICA ================= */
 
@@ -189,7 +189,7 @@
 .Chart_1 canvas, .Chart_2 canvas, .Chart_2 canvas{ width:100% !important; height:100% !important; }
 
 .Tabla_1 { display: flex; flex-direction: column; max-height: 36vh; min-height: 36vh; }
-.Tabla_1 .Titulo-Tabla { font-weight: bold; color: #666; text-align: center; font-size: var(--fs-sm); }
+.Tabla_1 .Titulo-Tabla { font-weight: bold; color: var(--text-soft); text-align: center; font-size: var(--fs-sm); }
 
 .Tabla_1 .table thead th, .Tabla_1 .table td{
     padding: 0 !important;
@@ -208,7 +208,7 @@ canvas{ max-width:100%; }
 
 .GrupoBotones{
     display: inline-flex;
-    border: 1px solid #d4d4d4;
+    border: 1px solid var(--border-strong);
     border-radius: 8px;
     overflow: hidden;
 }
@@ -219,9 +219,9 @@ canvas{ max-width:100%; }
 
 .BotonGrupo{
     padding: 4px 16px;
-    background: var(--blanco);
+    background: var(--surface);
     color: var(--verde);
-    border-right: 1px solid #d4d4d4;
+    border-right: 1px solid var(--border-strong);
     cursor: pointer;
     user-select: none;
     white-space: nowrap;
@@ -236,7 +236,7 @@ canvas{ max-width:100%; }
 }
 
 .BotonGrupo:hover{
-    background: #ebebeb;
+    background: var(--surface-hover);
 }
 
 .GrupoBotones input:checked + .BotonGrupo{

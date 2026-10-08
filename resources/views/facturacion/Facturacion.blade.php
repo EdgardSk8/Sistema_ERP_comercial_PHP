@@ -114,7 +114,7 @@
                                     top:50%;
                                     transform:translateY(-50%);
                                     font-size: 0.85rem;
-                                    color: black;">
+                                    color: var(--text-soft);">
                                     C$
                                 </span>
 
@@ -127,7 +127,7 @@
                             <!-- DÓLARES -->
                             <div class="col-6 position-relative">
                                 <span style=" position:absolute; left:10px; top:50%; transform:translateY(-50%);
-                                    font-size: 0.85rem; color: black;">
+                                    font-size: 0.85rem; color: var(--text-soft);">
                                     $
                                 </span>
 

@@ -1,5 +1,7 @@
 export default function initMostrarMetodosPagosCuenta() {
 
+    $(document).off('.metodoPagoCuenta');
+
     //MOSTRAR DATOS EN DATATABLES
     const tabla = $('#tablaMetodoPagoCuenta').DataTable({
         ajax: { url: '/metodos-pago-cuenta/mostrar', type: 'GET', dataSrc: 'referencias' },
@@ -94,7 +96,7 @@ export default function initMostrarMetodosPagosCuenta() {
     });
 
     //CREAR VINCULO DE METODO DE PAGOS Y CUENTAS
-    $(document).on('click', '#btnGuardarMetodoPagoCuenta', function() {
+    $(document).on('click.metodoPagoCuenta', '#btnGuardarMetodoPagoCuenta', function() {
 
         let id_metodo_pago = $('#id_metodo_pago').val();
         let id_cuenta = $('#id_cuenta').val();
@@ -127,7 +129,7 @@ export default function initMostrarMetodosPagosCuenta() {
     });
 
     //EDITAR VINCULOS DE LAS CUENTAS ASOCIADAS A METODOS
-    $(document).on('click', '.editarMetodoPagoCuenta', function() {
+    $(document).on('click.metodoPagoCuenta', '.editarMetodoPagoCuenta', function() {
 
         let id = $(this).data('id');
         console.log("id metodo: ", id);
@@ -198,7 +200,7 @@ export default function initMostrarMetodosPagosCuenta() {
     });
 
     //QUITAR LOS VINCULOS RELACIONADOS
-    $(document).on('click', '.quitarCuentaVinculada', function() {
+    $(document).on('click.metodoPagoCuenta', '.quitarCuentaVinculada', function() {
 
         const id = $(this).data('id');
 
@@ -218,7 +220,7 @@ export default function initMostrarMetodosPagosCuenta() {
     });
 
     //FUNCION DE ACTUALIZAR VINCULOS
-    $(document).on('click', '#btnActualizarMetodoPagoCuenta', function() {
+    $(document).on('click.metodoPagoCuenta', '#btnActualizarMetodoPagoCuenta', function() {
 
         let idMetodoPagoCuenta = $('#editar_id_metodo_pago_cuenta').val();
         let cuentasEliminar = [];
@@ -250,7 +252,7 @@ export default function initMostrarMetodosPagosCuenta() {
 
     // CAMBIAR ESTADO
     $(document).on(
-        'click',
+        'click.metodoPagoCuenta',
         '.cambiarEstado',
         function() {
 

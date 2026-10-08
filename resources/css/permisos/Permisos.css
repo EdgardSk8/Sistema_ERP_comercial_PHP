@@ -1,201 +1,264 @@
-
-#selectRol {
-    border-radius: 10px;
-    border: 1px solid #e5e7eb;
-    padding: 2px;
-    font-size: 14px;
-    transition: 0.2s ease;
-    margin: 10px 10px 0px 10px;
-}
-
-#selectRol:focus {
-    border-color: #6199f5;
-    box-shadow: 0 0 0 3px rgba(97, 153, 245, 0.2);
-    outline: none;
-}
-
-/* ════════════════════════
-    CONTENEDOR PRINCIPAL
-════════════════════════ */
-
-.dropdown{
-    padding-bottom: 10px;
-    background-color: #374151;
-}
-
 .padre-permisos {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    height: 100%; 
-    display: flex; 
-    flex-direction: column; 
-    min-height: 0; 
-    overflow: hidden;
-}
-
-.hijo-permisos {
-    flex: 1;
-    overflow-y: auto;
-}
-
-/* scroll elegante */
-.hijo-permisos::-webkit-scrollbar {
-    width: 8px;
-}
-
-.hijo-permisos::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
-}
-
-/* ════════════════════════
-    MÓDULOS
-════════════════════════ */
-
-.modulo-permisos {
-    padding: 8px;
-    margin: 12px;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    background: #f4f6f9;
-}
-
-.modulo-titulo {
-    font-weight: 700;
-    font-size: 12px;
-    letter-spacing: 1px;
-    color: black;
-
-    text-transform: uppercase;
-
     display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    flex: 1 1 auto;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+.permisos-header {
+    display: flex;
+    flex: 0 0 auto;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
 }
 
-.modulo-titulo::before {
-    content: "";
-    width: 6px;
-    height: 18px;
-    background: black;
-    border-radius: 4px;
+.permisos-heading h2 {
+    margin: 0 0 3px;
+    color: var(--text);
+    font-size: 1.1rem;
+    font-weight: 650;
 }
 
-/* ════════════════════════
-    GRID PERMISOS
-════════════════════════ */
+.permisos-heading p {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 0.85rem;
+}
 
-.permisos-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+.permisos-controles {
+    display: flex;
+    width: min(580px, 62%);
+    align-items: flex-end;
     gap: 10px;
 }
 
-/* ════════════════════════
-    CARD PERMISO
-════════════════════════ */
+.permisos-selector,
+.permisos-busqueda {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 5px;
+}
 
-.card{
-    background-color: #111827;
+.permisos-selector { position: relative; }
+.permisos-selector .select2-container--open { z-index: 20; }
+
+.permisos-selector label,
+.permisos-busqueda label {
+    color: var(--text-soft);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+#selectRol,
+#buscarPermiso,
+.permisos-selector .select2-container {
+    width: 100%;
+}
+
+#buscarPermiso,
+#selectRol,
+.permisos-selector .select2-container--default .select2-selection--single {
+    height: 36px;
+    color: var(--text);
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 0.88rem;
+}
+
+#buscarPermiso,
+.permisos-selector .select2-container--default .select2-selection--single .select2-selection__rendered {
+    padding: 7px 10px;
+    line-height: 20px;
+}
+
+#buscarPermiso:focus,
+.permisos-selector .select2-container--focus .select2-selection--single,
+.permisos-selector .select2-container--open .select2-selection--single {
+    border-color: var(--verde);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--verde) 16%, transparent);
+    outline: none;
+}
+
+.permisos-selector .select2-selection__arrow {
+    height: 34px !important;
+}
+
+.permisos-selector .select2-dropdown {
+    color: var(--text);
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+.permisos-selector .select2-results__option {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+}
+
+.hijo-permisos {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: auto;
+    padding: 8px 14px 14px;
+    scrollbar-color: var(--text-soft) transparent;
+    scrollbar-width: thin;
+}
+
+.hijo-permisos::-webkit-scrollbar { width: 7px; }
+.hijo-permisos::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 8px;
+}
+
+.modulo-permisos {
+    margin: 6px 0 10px;
+    padding: 12px;
+    background: color-mix(in srgb, var(--celeste-soft) 35%, var(--surface));
+    border: 1px solid var(--celeste-soft-border);
+    border-radius: 9px;
+}
+
+.modulo-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    color: var(--text);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.modulo-titulo::before {
+    width: 3px;
+    height: 15px;
+    background: var(--verde);
+    border-radius: 3px;
+    content: "";
+}
+
+.permisos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 7px;
 }
 
 .permiso-card {
     display: flex;
+    min-width: 0;
     align-items: center;
     justify-content: space-between;
-    padding: 3px 10px;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    background: #c8ccd6;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    min-width: max-content;
     gap: 10px;
+    padding: 8px 10px;
+    color: var(--text);
+    background: var(--celeste-soft);
+    border: 1px solid var(--celeste-soft-border);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .permiso-card:hover {
-    border-color: #6199f5;
-    box-shadow: 0 4px 12px rgba(97, 153, 245, 0.18);
-    transform: translateY(-1px);
+    background: var(--verde-soft);
+    border-color: var(--verde);
 }
 
 .permiso-label {
-    font-size: 0.85rem;
-    margin: 0;
-    color: #1f2937;
-    user-select: none;
-
-    flex: 1;
     min-width: 0;
-
-    white-space: normal;
-    overflow-wrap: break-word;
-    word-break: break-word;
+    flex: 1;
+    margin: 0;
+    color: var(--text);
+    font-size: 0.83rem;
+    overflow-wrap: anywhere;
+    user-select: none;
 }
 
 .permiso-card input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin: 0;
+    accent-color: var(--verde);
     cursor: pointer;
-    accent-color: #22c55e;
-
-    flex-shrink: 0; /* evita que se aplaste */
 }
 
-
-/* estado activo */
 .permiso-card input[type="checkbox"]:checked + .permiso-label {
+    color: var(--verde);
     font-weight: 600;
-    color: #6199f5;
 }
-
-/* ════════════════════════
-    TOAST
-════════════════════════ */
-
-.toast-container {
-    z-index: 9999;
-}
-
-
-
-/* ------------------------------- */
-
 
 .estado-sin-rol {
     display: flex;
+    min-height: 100%;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    height: 100%;
+    justify-content: center;
+    padding: 24px 16px;
+    color: var(--text-soft);
     text-align: center;
-    padding: 40px;
-    color: #cbd5e1;
 }
 
-.estado-sin-rol .icono {
-    font-size: 60px;
-    margin-bottom: 15px;
-    opacity: 0.8;
+.estado-sin-rol-icono {
+    margin-bottom: 10px;
+    color: var(--text-soft);
+    font-size: 1.5rem;
 }
 
-.estado-sin-rol h2 {
-    font-size: 22px;
-    font-weight: 600;
-    color: #e5e7eb;
-    margin-bottom: 5px;
+.estado-sin-rol h3 {
+    margin: 0 0 5px;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 650;
 }
 
 .estado-sin-rol p {
-    font-size: 14px;
-    color: #94a3b8;
-    max-width: 300px;
+    max-width: 360px;
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 0.85rem;
 }
 
+.sin-resultados-permisos {
+    margin: 24px 8px;
+    color: var(--text-soft);
+    text-align: center;
+}
 
+@media (max-width: 640px) {
+    .permisos-header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px;
+        padding: 14px;
+    }
 
+    .permisos-controles {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
 
+    .permisos-selector,
+    .permisos-busqueda { width: 100%; flex-basis: auto; }
 
-
-
+    .hijo-permisos { padding: 6px 9px 10px; }
+    .modulo-permisos { padding: 10px; }
+    .permisos-grid { grid-template-columns: minmax(0, 1fr); }
+}

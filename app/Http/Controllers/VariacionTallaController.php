@@ -198,4 +198,31 @@ class VariacionTallaController extends Controller
         }
     }
 
+    public function EliminarVariacionTalla($id)
+    {
+        try {
+            $variacion_talla = VariacionTalla::find($id);
+
+            if (!$variacion_talla) {
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'Talla de variación no encontrada'
+                ], 404);
+            }
+
+            $variacion_talla->delete();
+
+            return response()->json([
+                'success' => true,
+                'mensaje' => 'Talla quitada de la variación correctamente'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al quitar talla de la variación',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 } // Fin de controlador

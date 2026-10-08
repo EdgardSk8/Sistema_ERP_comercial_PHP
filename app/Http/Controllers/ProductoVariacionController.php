@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\ProductoVariacion;
+use App\Models\Producto;
 
 
 class ProductoVariacionController extends Controller
@@ -196,6 +197,33 @@ class ProductoVariacionController extends Controller
         }
     }
 
+    public function EliminarProductoVariacion($id)
+    {
+        try {
+            $variacion = ProductoVariacion::find($id);
+
+            if (!$variacion) {
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'Variación no encontrada'
+                ], 404);
+            }
+
+            $variacion->delete();
+
+            return response()->json([
+                'success' => true,
+                'mensaje' => 'Variación eliminada correctamente'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al eliminar la variación',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 /*  ╔════════════ Mostrar Variaciones ════════════╗
     ╚═════════════════════════════════════════════╝ */
@@ -215,6 +243,29 @@ class ProductoVariacionController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener variaciones',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function MostrarProductosSelect()
+    {
+        try {
+
+            $productos = Producto::select('id_producto', 'nombre_producto')
+                ->where('estado_producto', 1)
+                ->orderBy('nombre_producto')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'productos' => $productos
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => true,
+                'mensaje' => 'Error al obtener productos',
                 'detalle' => $e->getMessage()
             ], 500);
         }

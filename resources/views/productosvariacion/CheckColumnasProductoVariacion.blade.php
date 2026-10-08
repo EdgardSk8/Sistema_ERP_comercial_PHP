@@ -20,18 +20,13 @@
                     <label class="form-check-label" for="colColor">Color</label>
                 </div>
 
-                <!-- <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="2" id="colFecha" >
-                    <label class="form-check-label" for="colFecha">Fecha de Creación</label>
-                </div> -->
-
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="3" id="colEstado" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="2" id="colEstado" checked>
                     <label class="form-check-label" for="colEstado">Estado</label>
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="4" id="colAcciones" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="3" id="colAcciones" checked>
                     <label class="form-check-label" for="colAcciones">Acciones</label>
                 </div>
 

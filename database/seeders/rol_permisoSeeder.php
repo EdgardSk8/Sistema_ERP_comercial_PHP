@@ -80,6 +80,29 @@ class rol_permisoSeeder extends Seeder
             'editar_productos',
             'actualizar_productos',
 
+            /* VARIACIONES Y DETALLE DE PRODUCTOS */
+            'vista_producto_variaciones',
+            'vista_producto_variaciones_detalle',
+            'mostrar_producto_variaciones',
+            'mostrar_productos_select_variaciones',
+            'crear_producto_variaciones',
+            'editar_producto_variaciones',
+            'actualizar_producto_variaciones',
+            'cambiar_estado_producto_variaciones',
+            'eliminar_producto_variaciones',
+            'mostrar_variacion_imagenes',
+            'crear_variacion_imagenes',
+            'editar_variacion_imagenes',
+            'actualizar_variacion_imagenes',
+            'cambiar_orden_variacion_imagenes',
+            'eliminar_variacion_imagenes',
+            'mostrar_variacion_tallas',
+            'crear_variacion_tallas',
+            'editar_variacion_tallas',
+            'actualizar_variacion_tallas',
+            'eliminar_variacion_tallas',
+            'mostrar_tallas',
+
             /* MOVIMIENTO INVENTARIO */
             'vista_movimientos_inventario',
             'mostrar_movimiento_inventario',
@@ -201,6 +224,6 @@ class rol_permisoSeeder extends Seeder
             }
         }
 
-        DB::table('rol_permiso')->insert($rolesPermisos);
+        DB::table('rol_permiso')->insertOrIgnore($rolesPermisos);
     }
 }

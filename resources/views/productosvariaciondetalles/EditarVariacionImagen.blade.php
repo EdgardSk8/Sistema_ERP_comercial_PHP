@@ -21,8 +21,7 @@
 
             </div>
 
-            <form id="formEditarVariacionImagen"
-                enctype="multipart/form-data">
+            <form id="formEditarVariacionImagen" enctype="multipart/form-data">
 
                 @csrf
 
@@ -48,7 +47,8 @@
                                 class="form-control form-control-sm"
                                 id="editar_imagen"
                                 name="imagen"
-                                accept="image/*">
+                                accept="image/jpeg,image/png,image/gif,image/webp">
+                            <img id="editar_preview_imagen" class="img-thumbnail mt-2 d-none" alt="Imagen actual" style="max-height: 120px;">
 
                         </div>
 

@@ -42,65 +42,176 @@
     --text-white: white;
     --text-soft:#6B7280;
     --border:#E5E7EB;
+    --table-header-bg:#F0F8F2;
+    --table-row-hover:#F2FAF4;
+    --table-row-alt:#FAFCFA;
+    --table-border:#E5EDE7;
     --radius:10px;
     --space-1: 1px;
     --space-2: 8px;
     --space-3: 12px;
     --space-4: 16px;
     --shadow: 0 1px 2px rgba(0,0,0,.04);
+
+    /* Tokens semánticos de interfaz (valores claros actuales) */
+    --text-on-accent: #FFFFFF;
+    --surface-muted: #F4F6F9;
+    --surface-hover: #F2F7F3;
+    --border-muted: #E9ECEF;
+    --border-strong: #D1D5DB;
+    --neutral-100: #F8FAFC;
+    --neutral-300: #CBD5E1;
+    --neutral-500: #6B7280;
+    --neutral-700: #374151;
+    --neutral-800: #1F2937;
+    --selection: #2563EB;
+    --selection-hover: #1D4ED8;
+    --focus-ring: rgba(13, 110, 253, .25);
+    --focus-ring-success: rgba(34, 197, 94, .25);
+    --success: #22C55E;
+    --success-hover: #16A34A;
+    --success-strong: #15803D;
+    --success-soft: rgba(34, 197, 94, .12);
+    --success-text: #16A34A;
+    --danger: #EF4444;
+    --danger-hover: #DC2626;
+    --danger-strong: #B91C1C;
+    --danger-soft: rgba(239, 68, 68, .12);
+    --danger-text: #DC2626;
+    --warning-strong: #F59E0B;
+    --warning-hover-strong: #D97706;
+    --warning-soft: rgba(245, 158, 11, .12);
+    --info: #0EA5E9;
+    --info-hover: #0284C7;
+    --info-soft: rgba(14, 165, 233, .12);
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, .12);
+
+    /* Puente para clases y componentes Bootstrap */
+    --bs-body-bg: var(--bg);
+    --bs-body-color: var(--text);
+    --bs-secondary-color: var(--text-soft);
+    --bs-border-color: var(--border);
+    --bs-primary: var(--azul);
+    --bs-primary-rgb: 59, 130, 246;
+    --bs-success: var(--verde);
+    --bs-success-rgb: 34, 197, 94;
+    --bs-danger: var(--rojo);
+    --bs-danger-rgb: 239, 68, 68;
+    --bs-warning: var(--amarillo);
+    --bs-warning-rgb: 255, 193, 7;
+    --bs-light: var(--surface-muted);
+    --bs-light-rgb: 244, 246, 249;
+    --bs-dark: var(--neutral-800);
+    --bs-dark-rgb: 31, 41, 55;
+    --bs-secondary: var(--neutral-500);
+    --bs-secondary-rgb: 107, 114, 128;
+    --bs-btn-color: var(--text-on-accent);
+    --bs-btn-hover-color: var(--text-on-accent);
+    --bs-btn-active-color: var(--text-on-accent);
+    --bs-btn-disabled-color: var(--text-on-accent);
 }
 
 /* MODO OSCURO */
 [data-theme="dark"]{
+    /* Superficies gris carbón */
+    --bg: #24272B;
+    --surface: #2D3136;
+    --surface-muted: #343940;
+    --surface-hover: #3A4047;
+    --table-header-bg: #343A40;
+    --table-row-hover: #373E44;
+    --table-row-alt: #30363B;
 
-    /* Fondos */
-    --bg: #0F1412;
-    --surface: #171D1A;
-
-    /* Textos */
-    --text: #F3F4F6;
+    /* Texto, bordes y neutros */
+    --text: #E7E9EC;
     --text-white: #FFFFFF;
-    --text-soft: #9CA3AF;
+    --text-on-accent: #F7FFF9;
+    --text-soft: #AEB4BB;
+    --border: #454B52;
+    --border-muted: #3D434A;
+    --border-strong: #555D65;
+    --table-border: #41484E;
+    --sidebar-text: #C7CCD2;
+    --sidebar-text-hover: #F0F2F4;
+    --sidebar-text-active: #8BE0AD;
+    --sidebar-hover-bg: #373E44;
+    --sidebar-active-bg: #293D33;
+    --neutral-100: #343940;
+    --neutral-300: #69717A;
+    --neutral-500: #AEB4BB;
+    --neutral-700: #454B52;
+    --neutral-800: #2D3136;
 
-    /* Bordes */
-    --border: #2A3530;
+    /* Verde de marca y acentos suavizados */
+    --verde: #35C978;
+    --verde-light: #72D99D;
+    --verde-hover: #2DAE67;
+    --verde-soft: #293D33;
+    --amarillo: #F2C45C;
+    --amarillo-light: #F6D88D;
+    --amarillo-hover: #D9AA43;
+    --amarillo-soft: #403A2D;
+    --celeste: #86B8E8;
+    --celeste-soft: #303B46;
+    --celeste-soft-border: #526273;
+    --gris: #69717A;
+    --gris-hover: #818A94;
+    --gris-soft: #383E44;
+    --rojo: #E97979;
+    --rojo-hover: #D96565;
+    --rojo-soft: #443234;
+    --azul: #78AEE8;
+    --azul-hover: #6498D2;
+    --azul-soft: #303B49;
+    --warning: #E9A767;
+    --warning-hover: #D58E4A;
 
-    /* Verde */
-    --verde: #22C55E;
-    --verde-light: #4ADE80;
-    --verde-hover: #16A34A;
-    --verde-soft: #16291D;
+    /* Estados y foco */
+    --selection: #78AEE8;
+    --selection-hover: #6498D2;
+    --focus-ring: rgba(120, 174, 232, .28);
+    --focus-ring-success: rgba(53, 201, 120, .24);
+    --success: #35C978;
+    --success-hover: #2DAE67;
+    --success-strong: #29985B;
+    --success-soft: rgba(53, 201, 120, .14);
+    --success-text: #72D99D;
+    --danger: #E97979;
+    --danger-hover: #D96565;
+    --danger-strong: #C95454;
+    --danger-soft: rgba(233, 121, 121, .14);
+    --danger-text: #F08A8A;
+    --warning-strong: #E9B85D;
+    --warning-hover-strong: #D9A746;
+    --warning-soft: rgba(233, 184, 93, .15);
+    --info: #78AEE8;
+    --info-hover: #6498D2;
+    --info-soft: rgba(120, 174, 232, .14);
 
-    /* Amarillo */
-    --amarillo: #FBBF24;
-    --amarillo-light: #FCD34D;
-    --amarillo-hover: #F59E0B;
-    --amarillo-soft: #2A2413;
+    --shadow: 0 1px 3px rgba(0, 0, 0, .22);
+    --shadow-card: 0 10px 28px rgba(0, 0, 0, .22);
 
-    /* Celeste */
-    --celeste: #93C5FD;
-    --celeste-soft: #172438;
-    --celeste-soft-border: #29405E;
-
-    /* Gris */
-    --gris: #64748B;
-    --gris-hover: #94A3B8;
-    --gris-soft: #252B28;
-
-    /* Rojo */
-    --rojo: #F87171;
-    --rojo-hover: #EF4444;
-    --rojo-soft: #321B1B;
-
-    /* Azul */
-    --azul: #60A5FA;
-    --azul-hover: #3B82F6;
-    --azul-soft: #17263D;
-
-    /* Warning */
-    --warning: #F87171;
-    --warning-hover: #EF4444;
-
-    /* Sombra */
-    --shadow: 0 1px 3px rgba(0, 0, 0, .35);
+    /* Bootstrap usa los tokens del tema */
+    --bs-body-bg: var(--bg);
+    --bs-body-color: var(--text);
+    --bs-secondary-color: var(--text-soft);
+    --bs-border-color: var(--border);
+    --bs-primary: var(--azul);
+    --bs-primary-rgb: 120, 174, 232;
+    --bs-success: var(--verde);
+    --bs-success-rgb: 53, 201, 120;
+    --bs-danger: var(--rojo);
+    --bs-danger-rgb: 233, 121, 121;
+    --bs-warning: var(--amarillo);
+    --bs-warning-rgb: 242, 196, 92;
+    --bs-light: var(--surface-muted);
+    --bs-light-rgb: 52, 57, 64;
+    --bs-dark: var(--text);
+    --bs-dark-rgb: 231, 233, 236;
+    --bs-secondary: var(--text-soft);
+    --bs-secondary-rgb: 174, 180, 187;
+    --bs-btn-color: var(--text-on-accent);
+    --bs-btn-hover-color: var(--text-on-accent);
+    --bs-btn-active-color: var(--text-on-accent);
+    --bs-btn-disabled-color: var(--text-on-accent);
 }

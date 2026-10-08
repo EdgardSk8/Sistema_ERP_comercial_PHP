@@ -1,13 +1,15 @@
 export default function initRespaldo() {
 
-    document.getElementById('titulo').textContent = 'RESPALDO Y RESTAURACION DE BASE DE DATOS';
-
+    $(document).off('.respaldo');
+    const titulo = document.getElementById('titulo');
+    if (titulo) titulo.textContent = 'RESPALDO Y RESTAURACIÓN DE BASE DE DATOS';
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+    $(document).on('click.respaldo', '#btnExportarSistema', async function () {
 
     // =========================================================
     // EXPORTAR SISTEMA
     // =========================================================
-    $(document).on('click', '#btnExportarSistema', async function () {
 
         const btn = this;
 
@@ -109,7 +111,7 @@ export default function initRespaldo() {
     // =========================================================
     // IMPORTAR SISTEMA SQL
     // =========================================================
-    $(document).on('click', '#btnImportarSistema', async function () {
+    $(document).on('click.respaldo', '#btnImportarSistema', async function () {
 
         const input = document.getElementById('archivoSql');
         const btn = this;
