@@ -263,6 +263,15 @@
                 </a>
             @endif
 
+            @if(in_array('vista_tallas', session('permisos', [])))
+                <a href="{{ route('tallas') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-ruler text-success"></i>
+                    Tallas
+                </a>
+            @endif
+
             @if(in_array('vista_categorias', session('permisos', [])))
                 <a href="{{ route('categorias') }}"
                 class="sidebar-link"
@@ -553,6 +562,10 @@ sidebarMenu.querySelectorAll(".sidebar-group").forEach((group) => {
 
 function actualizarTema() {
     const dark = html.dataset.theme === "dark";
+
+    try {
+        localStorage.setItem("theme", dark ? "dark" : "light");
+    } catch (_) {}
 
     icon.className = dark ? "ph ph-sun" : "ph ph-moon";
     texto.textContent = dark ? "Modo oscuro" : "Modo claro";

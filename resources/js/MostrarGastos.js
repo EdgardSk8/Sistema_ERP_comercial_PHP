@@ -4,14 +4,21 @@ export default function initMostrarGastos() {
 
     /* ═════════════ FILTRO INACTIVOS ═════════════ */
 
-    $.fn.dataTable.ext.search.push(function (settings, data) {
+    const filtrosDataTable = $.fn.dataTable.ext.search;
+    for (let i = filtrosDataTable.length - 1; i >= 0; i--) {
+        if (filtrosDataTable[i]._filtroInactivosGastos) filtrosDataTable.splice(i, 1);
+    }
+
+    const filtrarGastosInactivos = function (settings, data) {
+        if (settings.nTable.id !== 'tablaGastos') return true;
         const ocultar = $('#toggleInactivosGastos').is(':checked');
         if (!ocultar) return true;
-        const estado = data[7];
-        return estado.includes('Activo');
-    });
+        return String(data[7] ?? '').includes('Activo');
+    };
+    filtrarGastosInactivos._filtroInactivosGastos = true;
+    filtrosDataTable.push(filtrarGastosInactivos);
 
-    $('#toggleInactivosGastos').off('change.toggleInactivosGastos').on('change', function () { tabla.draw(); });
+    $('#toggleInactivosGastos').off('change.toggleInactivosGastos').on('change.toggleInactivosGastos', function () { tabla.draw(); });
 
     /* ═════════════ TABLA ═════════════ */$.fn.dataTable.ext.errMode = 'throw';
 
@@ -83,6 +90,11 @@ export default function initMostrarGastos() {
 
         $.get(`/gastos/editar/${id}`, function (res) {
 
+            if (!res.success || !res.gasto) {
+                mostrarToast(res.mensaje || 'No se pudo cargar el gasto', 'danger');
+                return;
+            }
+
             const gasto = res.gasto;
 
             $('#editar_id_gasto').val(gasto.id_gasto);
@@ -90,11 +102,11 @@ export default function initMostrarGastos() {
             $('#editar_descripcion_gasto').val(gasto.descripcion_gasto);
             $('#editar_estado_gasto').val(gasto.estado_gasto);
 
-            cargarTiposGastoEditar(gasto.id_tipo_gasto);
+            cargarTiposGastoEditar(gasto.id_tipo_gasto)
+                .then(() => bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarGasto')).show())
+                .catch(() => mostrarToast('No se pudieron cargar los tipos de gasto', 'danger'));
 
-            new bootstrap.Modal(document.getElementById("modalEditarGasto")).show();
-
-        });
+        }).fail(xhr => mostrarToast(xhr.responseJSON?.mensaje || 'Error al cargar el gasto', 'danger'));
     }
 
     /* ═════════════ TIPOS GASTO ═════════════ */
@@ -103,9 +115,14 @@ export default function initMostrarGastos() {
 
         const select = $('#editar_id_tipo_gasto');
 
-        fetch('/tipo-gasto/mostrar')
-            .then(res => res.json())
+        return fetch('/tipo-gasto/mostrar')
+            .then(res => {
+                if (!res.ok) throw new Error('No se pudieron cargar los tipos de gasto');
+                return res.json();
+            })
             .then(data => {
+
+                if (!data.tipos_gasto) throw new Error('Respuesta de tipos de gasto inválida');
 
                 select.empty();
 
@@ -122,15 +139,21 @@ export default function initMostrarGastos() {
                         </option>
                     `);
                 });
-            })
-            .catch(err => console.error(err));
+            });
     }
 
     /* ═════════════ ACTUALIZAR GASTO ═════════════ */
 
-    $('#btnActualizarGasto').click(function () {
+    $('#btnActualizarGasto').off('click.actualizarGasto').on('click.actualizarGasto', function () {
+
+        const btn = $(this);
+        if (btn.data('loading')) return;
 
         const id = $('#editar_id_gasto').val();
+        if (!id) {
+            mostrarToast('No se identificó el gasto que desea editar', 'danger');
+            return;
+        }
 
         const datos = {
 
@@ -141,19 +164,25 @@ export default function initMostrarGastos() {
             _token: $('meta[name="csrf-token"]').attr('content')
         };
 
+        btn.data('loading', true).prop('disabled', true);
         $.ajax({
 
             url: `/gastos/actualizar/${id}`,
             type: 'POST',
             data: datos,
 
-            success: function () {
+            success: function (res) {
+
+                if (!res.success) {
+                    mostrarToast(res.mensaje || 'No se pudo actualizar el gasto', 'danger');
+                    return;
+                }
 
                 mostrarToast('Gasto actualizado correctamente', 'success');
 
-                tabla.ajax.reload();
+                tabla.ajax.reload(null, false);
 
-                bootstrap.Modal.getInstance(document.getElementById("modalEditarGasto")).hide();
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarGasto')).hide();
             },
 
             error: function (err) {
@@ -168,7 +197,8 @@ export default function initMostrarGastos() {
                 else {
                     mostrarToast('Error inesperado del servidor', 'danger');
                 }
-            }
+            },
+            complete: function () { btn.data('loading', false).prop('disabled', false); }
         });
     });
 
@@ -182,8 +212,8 @@ export default function initMostrarGastos() {
     // CREAR GASTO
     function cargarTipoGasto() {
 
-        FlatPickr(crear_fecha_pago);
-        FlatPickr(pagar_nueva_fecha);
+        FlatPickr(document.getElementById('crear_fecha_pago'));
+        FlatPickr(document.getElementById('pagar_nueva_fecha'));
 
         const modal = document.getElementById("modalCrearGasto");
         const selectTipo = document.getElementById("crear_id_tipo_gasto");
@@ -197,8 +227,10 @@ export default function initMostrarGastos() {
 
             try {
 
-                const res = await fetch("/tipo-gasto/mostrar");
+                const res = await fetch('/tipo-gasto/mostrar');
+                if (!res.ok) throw new Error('No se pudieron cargar los tipos de gasto');
                 const data = await res.json();
+                if (!data.tipos_gasto) throw new Error('Respuesta de tipos de gasto inválida');
 
                 selectTipo.innerHTML = '<option disabled selected value="">Seleccione</option>';
 
@@ -220,7 +252,10 @@ export default function initMostrarGastos() {
 
 /* ═══════════════════════════════════════════════════════ */
 
-    $('#btnGuardarGasto').off('click.guardarGasto').on('click', function () {
+    $('#btnGuardarGasto').off('click.guardarGasto').on('click.guardarGasto', function () {
+
+        const btn = $(this);
+        if (btn.data('loading')) return;
 
         const nombre = $('#crear_nombre_gasto').val().trim();
         const tipo = $('#crear_id_tipo_gasto').val();
@@ -237,6 +272,12 @@ export default function initMostrarGastos() {
             return;
         }
 
+        if (!fecha_pago) {
+            mostrarToast('Seleccione la fecha de vencimiento', 'danger');
+            return;
+        }
+
+        btn.data('loading', true).prop('disabled', true);
         $.ajax({
             url: '/gastos/crear',
             method: 'POST',
@@ -255,8 +296,7 @@ export default function initMostrarGastos() {
                     mostrarToast('Gasto creado correctamente', 'success');
 
                     const modalEl = document.getElementById('modalCrearGasto');
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    modal.hide();
+                    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
 
                     $('#tablaGastos').DataTable().ajax.reload(null, false);
 
@@ -267,9 +307,11 @@ export default function initMostrarGastos() {
                 }
             },
 
-            error: function () {
-                mostrarToast('Error del servidor', 'danger');
-            }
+            error: function (xhr) {
+                const errores = xhr.responseJSON?.errors;
+                mostrarToast(errores ? Object.values(errores)[0][0] : (xhr.responseJSON?.mensaje || 'Error al crear el gasto'), 'danger');
+            },
+            complete: function () { btn.data('loading', false).prop('disabled', false); }
         });
     });
 
@@ -305,24 +347,29 @@ export default function initMostrarGastos() {
         let cajasCache = [];
         let cuentasCache = [];
 
-        function cargarOrigenes(callback) {
+        let origenesPromise = null;
+        let gastoDetalleActualId = null;
 
-            let loaded = 0;
-
-            $.get('/gastos-cajas/mostrar', function (res) {
-                if (res.success) cajasCache = res.cajas;
-                loaded++;
-                if (loaded === 2 && callback) callback();
-            });
-
-            $.get('/gastos-cuentas/mostrar', function (res) {
-                if (res.success) cuentasCache = res.cuentas;
-                loaded++;
-                if (loaded === 2 && callback) callback();
-            });
+        function escapeHtml(valor) {
+            return $('<div>').text(valor ?? '').html();
         }
 
-        cargarOrigenes();
+        function cargarOrigenes() {
+            if (!origenesPromise) {
+                origenesPromise = Promise.all([
+                    $.getJSON('/gastos-cajas/mostrar'),
+                    $.getJSON('/gastos-cuentas/mostrar')
+                ]).then(([resCajas, resCuentas]) => {
+                    if (!resCajas.success || !resCuentas.success) throw new Error('No se pudieron cargar los orígenes de pago');
+                    cajasCache = resCajas.cajas || [];
+                    cuentasCache = resCuentas.cuentas || [];
+                }).catch(error => {
+                    origenesPromise = null;
+                    throw error;
+                });
+            }
+            return origenesPromise;
+        }
 
         /* ═══════════════════════════════
             HELPERS
@@ -333,22 +380,30 @@ export default function initMostrarGastos() {
             let html = `<select class="form-select form-select-sm origen-edit">`;
             html += `<option value="">Seleccione</option>`;
 
+            if (m.id_caja && !cajasCache.some(c => Number(c.id) === Number(m.id_caja))) {
+                html += `<option value="caja-${Number(m.id_caja)}" selected>Caja #${Number(m.id_caja)} (cerrada o no disponible)</option>`;
+            }
+
             html += `<optgroup label="Cajas">`;
 
             cajasCache.forEach(c => {
                 html += `
-                    <option value="caja-${c.id}" ${m.id_caja == c.id ? 'selected' : ''}>
-                        Caja #${c.id} - ${c.display}
+                    <option value="caja-${Number(c.id)}" ${Number(m.id_caja) === Number(c.id) ? 'selected' : ''}>
+                        ${escapeHtml(c.display)}
                     </option>
                 `;
             });
 
             html += `</optgroup><optgroup label="Cuentas">`;
 
+            if (m.id_cuenta && !cuentasCache.some(c => Number(c.id) === Number(m.id_cuenta))) {
+                html += `<option value="cuenta-${Number(m.id_cuenta)}" selected>Cuenta #${Number(m.id_cuenta)} (inactiva o no disponible)</option>`;
+            }
+
             cuentasCache.forEach(c => {
                 html += `
-                    <option value="cuenta-${c.id}" ${m.id_cuenta == c.id ? 'selected' : ''}>
-                        ${c.display}
+                    <option value="cuenta-${Number(c.id)}" ${Number(m.id_cuenta) === Number(c.id) ? 'selected' : ''}>
+                        ${escapeHtml(c.display)}
                     </option>
                 `;
             });
@@ -449,6 +504,59 @@ export default function initMostrarGastos() {
             });
         });
 
+        async function cargarDetalleGasto(id, abrirModal = true) {
+            try {
+                await cargarOrigenes();
+                const res = await $.getJSON(`/gastos/detalle/${id}`);
+                if (!res.success || !res.gasto) throw new Error(res.mensaje || 'No se pudo cargar el detalle');
+
+                gastoDetalleActualId = Number(id);
+                const gasto = res.gasto;
+                $('#detalleNombreGasto').text(gasto.nombre_gasto ?? '—');
+                $('#detalleTipoGasto').text(gasto.tipo ?? '—');
+                $('#detalleDescripcion').text(gasto.descripcion_gasto ?? '—');
+                $('#detalleUltimoPago').text(gasto.ultimo_pago_fecha ? formatearFechaDiaHora(gasto.ultimo_pago_fecha) : 'Nunca');
+
+                const filas = (gasto.movimientos ?? []).map(movimiento => {
+                    const origenTexto = movimiento.id_caja
+                        ? `Caja #${Number(movimiento.id_caja)}`
+                        : (movimiento.cuenta ?? 'Cuenta no disponible');
+                    const monto = Number(movimiento.monto ?? 0);
+
+                    return `
+                        <tr data-id="${Number(movimiento.id)}">
+                            <td>${escapeHtml(formatearFechaDiaHora(movimiento.fecha))}</td>
+                            <td>
+                                <span class="monto-text">${moneda(monto)}</span>
+                                <input type="number" class="form-control form-control-sm d-none monto-edit" min="0.01" step="0.01" value="${monto.toFixed(2)}">
+                            </td>
+                            <td>
+                                <span class="origen-text">${escapeHtml(origenTexto)}</span>
+                                <div class="d-none origen-edit-container">${buildOrigenSelect(movimiento)}</div>
+                            </td>
+                            <td>${escapeHtml(movimiento.usuario?.nombre ?? '—')}</td>
+                            <td>
+                                <button class="btn btn-success btn-sm editarPago" type="button">Editar</button>
+                                <button class="btn btn-danger btn-sm cancelarPago d-none" type="button">Cancelar</button>
+                                <button class="btn btn-success btn-sm guardarPago d-none" type="button">Guardar</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                $('#tablaHistorialGasto').html(filas);
+                if (abrirModal) bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDetalleGasto')).show();
+            } catch (error) {
+                mostrarToast(error.responseJSON?.mensaje || error.message || 'No se pudo cargar el detalle', 'danger');
+            }
+        }
+
+        $('#tablaGastos').off('click', '.detalleGasto')
+            .off('click.detalleGasto', '.detalleGasto')
+            .on('click.detalleGasto', '.detalleGasto', function () {
+                cargarDetalleGasto($(this).data('id'));
+            });
+
         /* ═══════════════════════════════
             EDITAR
         ═══════════════════════════════ */
@@ -477,7 +585,7 @@ export default function initMostrarGastos() {
         });
 
         // GUARDAR
-        $('#tablaHistorialGasto').off('click.guardarPago', '.guardarPago').on('click', '.guardarPago', function () {
+        $('#tablaHistorialGasto').off('click.guardarPago', '.guardarPago').on('click.guardarPago', '.guardarPago', function () {
 
             const btn = $(this);
 
@@ -530,10 +638,8 @@ export default function initMostrarGastos() {
                         tr.find('.editarPago').removeClass('d-none');
                         tr.find('.guardarPago, .cancelarPago').addClass('d-none');
 
-                        // opcional: actualizar texto en pantalla sin recargar todo
-                        tr.find('.monto-text').text(monto);
-
-                        // refresca tabla principal
+                        // Vuelve a obtener el historial para reflejar monto y origen persistidos.
+                        cargarDetalleGasto(gastoDetalleActualId, false);
                         $('#tablaGastos').DataTable().ajax.reload(null, false);
                     } else {
                         mostrarToast(res.mensaje || 'Error al actualizar', 'danger');
@@ -545,7 +651,7 @@ export default function initMostrarGastos() {
                     console.log("STATUS:", xhr.status);
                     console.log("RESPUESTA:", xhr.responseText);
 
-                    mostrarToast('Error del servidor', 'danger');
+                    mostrarToast(xhr.responseJSON?.mensaje || 'Error al actualizar el pago', 'danger');
                 },
 
                 complete: function () {
@@ -565,22 +671,26 @@ export default function initMostrarGastos() {
 
         // CARGAR CAJAS
         function cargarCajas() {
-            $.get('/gastos-cajas/mostrar', function (res) {
-                if (!res.success) return;
+            return $.getJSON('/gastos-cajas/mostrar').then(function (res) {
+                if (!res.success) throw new Error(res.mensaje || 'No se pudieron cargar las cajas');
                 let html = '<option value="">Seleccione caja</option>';
-                res.cajas.forEach(caja => { html += `<option value="${caja.id}" data-saldo="${caja.saldo}"> ${caja.display} </option>`; });
+                res.cajas.forEach(caja => { html += `<option value="${Number(caja.id)}" data-saldo="${Number(caja.saldo)}"> ${escapeHtml(caja.display)} </option>`; });
                 $('#pagar_id_caja').html(html);
             });
         }
 
         // CARGAR CUENTAS
         function cargarCuentas() {
-            $.get('/gastos-cuentas/mostrar', function (res) {
-                if (!res.success) return;
+            return $.getJSON('/gastos-cuentas/mostrar').then(function (res) {
+                if (!res.success) throw new Error(res.mensaje || 'No se pudieron cargar las cuentas');
                 let html = '<option value="">Seleccione cuenta</option>';
-                res.cuentas.forEach(cuenta => { html += `<option value="${cuenta.id}" data-saldo="${cuenta.saldo}"> ${cuenta.display} </option>`; });
+                res.cuentas.forEach(cuenta => { html += `<option value="${Number(cuenta.id)}" data-saldo="${Number(cuenta.saldo)}"> ${escapeHtml(cuenta.display)} </option>`; });
                 $('#pagar_id_cuenta').html(html);
             });
+        }
+
+        function escapeHtml(valor) {
+            return $('<div>').text(valor ?? '').html();
         }
 
         function validarPago({ monto, id_caja, id_cuenta, fecha }) {
@@ -588,20 +698,19 @@ export default function initMostrarGastos() {
             const saldoCaja = parseFloat($('#pagar_id_caja option:selected').data('saldo') || 0);
             const saldoCuenta = parseFloat($('#pagar_id_cuenta option:selected').data('saldo') || 0);
 
-            if (!monto) { mostrarToast('Debe ingresar un monto', 'danger'); return false; }
-            if (monto == 0) { mostrarToast('No se permiten pagos en 0', 'danger'); return false; }
-            if (monto < 0) { mostrarToast('No se permiten pagos negativos', 'danger'); return false;}
+            if (!Number.isFinite(monto) || monto <= 0) { mostrarToast('Ingrese un monto mayor a 0', 'danger'); return false; }
             if (!id_caja && !id_cuenta) { mostrarToast('Debe seleccionar una caja o cuenta', 'danger'); return false;}
             if (id_caja && id_cuenta) { mostrarToast('Seleccione solo caja o cuenta, no ambos', 'danger'); return false; }
             if (fecha && isNaN(new Date(fecha).getTime())) { mostrarToast('La fecha ingresada no es válida', 'danger'); return false; }
-            if (monto > saldoCaja) { mostrarToast('Saldo insuficiente en la caja seleccionada', 'danger'); return false; }
-            if (monto > saldoCuenta) { mostrarToast('Saldo insuficiente en la cuenta seleccionada', 'danger'); return false; }
+            if (id_caja && monto > saldoCaja) { mostrarToast('Saldo insuficiente en la caja seleccionada', 'danger'); return false; }
+            if (id_cuenta && monto > saldoCuenta) { mostrarToast('Saldo insuficiente en la cuenta seleccionada', 'danger'); return false; }
+            if ($('#pagar_renovar_fecha').val() === 'manual' && !fecha) { mostrarToast('Seleccione la nueva fecha de vencimiento', 'danger'); return false; }
             return true;
         }
 
         // SOLO UNO (CAJA / CUENTA)
-        $('#pagar_id_caja').on('change', function () { if ($(this).val()) $('#pagar_id_cuenta').val(''); });
-        $('#pagar_id_cuenta').on('change', function () {if ($(this).val()) $('#pagar_id_caja').val(''); });
+        $('#pagar_id_caja').off('change.pagoGasto').on('change.pagoGasto', function () { if ($(this).val()) $('#pagar_id_cuenta').val(''); });
+        $('#pagar_id_cuenta').off('change.pagoGasto').on('change.pagoGasto', function () { if ($(this).val()) $('#pagar_id_caja').val(''); });
 
         // VALIDAR SALDO
         function validarSaldo() {
@@ -621,39 +730,30 @@ export default function initMostrarGastos() {
         $('#pagar_monto').off('input.validarSaldo').on('input', validarSaldo);
 
         // ABRIR MODAL (CORREGIDO)
-        $('#tablaGastos').off('click.pagarGasto', '.pagarGasto').on('click', '.pagarGasto', function () {
-
-            const tabla = $('#tablaGastos').DataTable();
-            const fila = tabla.row($(this).closest('tr')).data();
-
+        $('#tablaGastos').off('click.pagarGasto', '.pagarGasto').on('click.pagarGasto', '.pagarGasto', async function () {
+            const fila = $('#tablaGastos').DataTable().row($(this).closest('tr')).data();
             if (!fila) return;
 
-            const modal = new bootstrap.Modal(document.getElementById('modalPagarGasto'));
-            modal.show();
-
-            setTimeout(() => {
-
+            try {
+                await Promise.all([cargarCajas(), cargarCuentas()]);
                 $('#pagar_id_gasto').val(fila.id_gasto);
                 $('#pagar_nombre_gasto').val(fila.nombre_gasto);
-                $('#pagar_ultimo_pago').val(fila.ultimo_pago_fecha ?? 'Nunca');
-                $('#pagar_ultimo_pago').val( fila.ultimo_pago_fecha ? formatearFechaDiaHora(fila.ultimo_pago_fecha) : 'Nunca' );
+                $('#pagar_ultimo_pago').val(fila.ultimo_pago_fecha ? formatearFechaDiaHora(fila.ultimo_pago_fecha) : 'Nunca');
                 $('#pagar_ultimo_monto').val(fila.ultimo_pago_monto ?? '0.00');
                 $('#pagar_monto').val(fila.ultimo_pago_monto ?? '');
-                $('#pagar_id_caja').val('');
-                $('#pagar_id_cuenta').val('');
+                $('#pagar_id_caja, #pagar_id_cuenta').val('');
                 $('#pagar_renovar_fecha').val('auto');
                 $('#grupo_fecha_manual').addClass('d-none');
                 $('#pagar_nueva_fecha').val('');
-                cargarCajas();
-                cargarCuentas();
-
-            }, 150);
-
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPagarGasto')).show();
+            } catch (error) {
+                mostrarToast(error.responseJSON?.mensaje || error.message || 'No se pudieron cargar los orígenes de pago', 'danger');
+            }
         });
 
         // PAGAR (ANTI DOBLE CLICK)
 
-        $('#btnPagarGasto').off('click.pagarGasto').on('click', function () {
+        $('#btnPagarGasto').off('click.pagarGasto').on('click.pagarGasto', function () {
 
             const btn = $(this);
             if (btn.data('loading')) return;
@@ -665,6 +765,11 @@ export default function initMostrarGastos() {
 
             const renovar = $('#pagar_renovar_fecha').val();
             const nueva_fecha = $('#pagar_nueva_fecha').val();
+
+            if (!id_gasto) {
+                mostrarToast('No se identificó el gasto que desea pagar', 'danger');
+                return;
+            }
 
             if (!validarPago({ monto, id_caja, id_cuenta, fecha: nueva_fecha })) { return; }
 
@@ -688,13 +793,13 @@ export default function initMostrarGastos() {
                     if (res.success) {
 
                         mostrarToast('Pago registrado correctamente', 'success');
-                        bootstrap.Modal.getInstance(document.getElementById('modalPagarGasto')).hide();
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPagarGasto')).hide();
                         $('#tablaGastos').DataTable().ajax.reload(null, false);
 
                     } else { mostrarToast(res.mensaje || 'Error al pagar', 'danger'); }
                 },
 
-                error: function () { mostrarToast('Error del servidor', 'danger'); },
+                error: function (xhr) { mostrarToast(xhr.responseJSON?.mensaje || 'Error al registrar el pago', 'danger'); },
                 complete: function () { btn.data('loading', false).prop('disabled', false); }
 
             });

@@ -1,14 +1,5 @@
 /*Turbo.session.drive = true
 
-import initDashboard from './Dashboard'
-import initFacturacion from './Facturacion'
-import initMostrarVentas from './MostrarVentas'
-import initMostrarCliente from './MostrarCliente'
-import initCrearCompras from './RealizarCompras'
-import initMostrarCompras from './MostrarCompras'
-import initMostrarProveedores from './MostrarProveedor'
-import initMostrarCajas from './MostrarCajas'
-import initMovimientoCajas from './Movimientos_Caja'
 import initCuentas from './MostrarCuentas' 
 import initMovimientoCuenta from './Movimientos_Cuentas' 
 import initCajaTransferencia from './MostrarCajaTransferencia'
@@ -122,63 +113,6 @@ document.addEventListener("turbo:frame-load", (event) => {
 
 Turbo.session.drive = true
 
-/* DASHBOARD */
-import initDashboard from './Dashboard'
-
-/* FACTURACION */
-import initFacturacion from './Facturacion'
-
-/* VENTAS */
-import initMostrarVentas from './MostrarVentas'
-
-/* CLIENTES */
-import initMostrarCliente from './MostrarCliente'
-
-/* COMPRAS */
-import initCrearCompras from './RealizarCompras'
-import initMostrarCompras from './MostrarCompras'
-
-/* PROVEEDORES */
-import initMostrarProveedores from './MostrarProveedor'
-
-/* CAJAS */
-import initMostrarCajas from './MostrarCajas'
-import initMovimientoCajas from './Movimientos_Caja'
-
-/* CUENTAS */
-import initCuentas from './MostrarCuentas'
-import initMovimientoCuenta from './Movimientos_Cuentas'
-import initCajaTransferencia from './MostrarCajaTransferencia'
-
-/* GASTOS */
-import initMostrarGastos from './MostrarGastos'
-import initMostrarTipoGastos from './MostrarTipoGasto'
-import initMovimientoGasto from './Movimientos_Gastos'
-
-/* INVENTARIO */
-import initMostrarProductos from './MostrarProducto'
-import initMostrarCategorias from './MostrarCategoria'
-import initMovimientoInventario from './Movimientos_Inventario'
-
-/* USUARIOS */
-import initMostrarUsuarios from './MostrarUsuarios'
-import initMostrarRoles from './MostrarRoles'
-import initPermisos from './PermisosRoles'
-
-/* REPORTES */
-import initReportes from './Reportes'
-
-/* CONFIGURACION */
-import initMostrarImpuestos from './MostrarImpuestos'
-import initMostrarMetodosPagos from './MostrarMetodoPago'
-import initMostrarMetodosPagosCuenta from './MostrarMetodoPagoCuenta'
-import initCredenciales from './Credenciales'
-import initRespaldo from './Respaldo'
-
-import initMostrarTiposMedidas from './MostrarTiposMedidas'
-import initMostrarMedidas from './MostrarMedidas'
-import initMostrarProductoVariaciones from './MostrarProductoVariacion'
-import initMostrarProductoVariacionDetalle from './MostrarProductoVariacionDetalle'
 
 /*
 |--------------------------------------------------------------------------
@@ -187,38 +121,38 @@ import initMostrarProductoVariacionDetalle from './MostrarProductoVariacionDetal
 */
 
 const modulos = [
-    ['#Chart_1', initDashboard],
-    ['#btnFacturar', initFacturacion],
-    ['#tablaVentas', initMostrarVentas],
-    ['#tablaClientes', initMostrarCliente],
-    ['#tabla_carrito', initCrearCompras],
-    ['#tablaCompras', initMostrarCompras],
-    ['#tablaProveedores', initMostrarProveedores],
-    ['#tablaCajas', initMostrarCajas],
-    ['#tablaMovimientosCaja', initMovimientoCajas],
-    ['#tablaCuentas', initCuentas],
-    ['#tablaMovimientosCuenta', initMovimientoCuenta],
-    ['#tablaCajaCuenta', initCajaTransferencia],
-    ['#tablaGastos', initMostrarGastos],
-    ['#tablaTipoGasto', initMostrarTipoGastos],
-    ['#tablaMovimientosGastos', initMovimientoGasto],
-    ['#TablaMostrarProductos', initMostrarProductos],
-    ['#tablaCategorias', initMostrarCategorias],
-    ['#tablaKardex', initMovimientoInventario],
-    ['#tablaUsuarios', initMostrarUsuarios],
-    ['#tablaRoles', initMostrarRoles],
-    ['#selectRol', initPermisos],
-    ['#Reportes', initReportes],
-    ['#tablaImpuestos', initMostrarImpuestos],
-    ['#tablaMetodosPago', initMostrarMetodosPagos],
-    ['#tablaMetodoPagoCuenta', initMostrarMetodosPagosCuenta],
-    ['#nombre_empresa', initCredenciales],
-    ['#btnExportarSistema', initRespaldo],
-    ['#tablaTiposMedidas', initMostrarTiposMedidas],
-    ['#tablaMedidas', initMostrarMedidas],
-
-    ['#tablaProductoVariaciones', initMostrarProductoVariaciones],
-    ['#tablaProductoVariacionDetalle', initMostrarProductoVariacionDetalle]
+    ['#Chart_1', () => import('./Dashboard')],
+    ['#btnFacturar', () => import('./Facturacion')],
+    ['#tablaVentas', () => import('./MostrarVentas')],
+    ['#tablaClientes', () => import('./MostrarCliente')],
+    ['#tabla_carrito', () => import('./RealizarCompras')],
+    ['#tablaCompras', () => import('./MostrarCompras')],
+    ['#tablaProveedores', () => import('./MostrarProveedor')],
+    ['#tablaCajas', () => import('./MostrarCajas')],
+    ['#tablaMovimientosCaja', () => import('./Movimientos_Caja')],
+    ['#tablaCuentas', () => import('./MostrarCuentas')],
+    ['#tablaMovimientosCuenta', () => import('./Movimientos_Cuentas')],
+    ['#tablaCajaCuenta', () => import('./MostrarCajaTransferencia')],
+    ['#tablaGastos', () => import('./MostrarGastos')],
+    ['#tablaTipoGasto', () => import('./MostrarTipoGasto')],
+    ['#tablaMovimientosGastos', () => import('./Movimientos_Gastos')],
+    ['#TablaMostrarProductos', () => import('./MostrarProducto')],
+    ['#tablaCategorias', () => import('./MostrarCategoria')],
+    ['#tablaKardex', () => import('./Movimientos_Inventario')],
+    ['#tablaUsuarios', () => import('./MostrarUsuarios')],
+    ['#tablaRoles', () => import('./MostrarRoles')],
+    ['#selectRol', () => import('./PermisosRoles')],
+    ['#Reportes', () => import('./Reportes')],
+    ['#tablaImpuestos', () => import('./MostrarImpuestos')],
+    ['#tablaMetodosPago', () => import('./MostrarMetodoPago')],
+    ['#tablaMetodoPagoCuenta', () => import('./MostrarMetodoPagoCuenta')],
+    ['#nombre_empresa', () => import('./Credenciales')],
+    ['#btnExportarSistema', () => import('./Respaldo')],
+    ['#tablaTiposMedidas', () => import('./MostrarTiposMedidas')],
+    ['#tablaMedidas', () => import('./MostrarMedidas')],
+    ['#tablaTallas', () => import('./MostrarTallas')],
+    ['#tablaProductoVariaciones', () => import('./MostrarProductoVariacion')],
+    ['#tablaProductoVariacionDetalle', () => import('./MostrarProductoVariacionDetalle')]
 
 
 
@@ -230,8 +164,23 @@ const modulos = [
 |--------------------------------------------------------------------------
 */
 
+let generacionModulos = 0;
+const modulosInicializados = new WeakMap();
+
 function iniciarModulos(scope = document) {
-    modulos.forEach(([selector, init]) => { if (scope.querySelector(selector)) { init(); } });
+    modulos.forEach(([selector, cargarModulo]) => {
+        const elemento = scope.querySelector(selector);
+        if (!elemento || modulosInicializados.get(elemento) === generacionModulos) return;
+
+        const generacion = generacionModulos;
+        modulosInicializados.set(elemento, generacion);
+        cargarModulo().then(({ default: inicializar }) => {
+            if (elemento.isConnected && generacion === generacionModulos) inicializar();
+        }).catch(error => {
+            modulosInicializados.delete(elemento);
+            console.error(`No se pudo cargar el módulo de ${selector}`, error);
+        });
+    });
 }
 
 /*
@@ -269,6 +218,7 @@ document.addEventListener('turbo:frame-load', (event) => {
 */
 
 document.addEventListener('turbo:before-cache', () => {
+    generacionModulos++;
     $('.dataTable').each(function () { if ($.fn.DataTable.isDataTable(this)) {  $(this).DataTable().destroy();} })
 })
 
@@ -319,7 +269,8 @@ const rutas = {
     vista_respaldo: '/respaldo',
     vista_reportes: '/reportes',
 
-    vista_producto_variacion: '/producto-variaciones'
+    vista_producto_variacion: '/producto-variaciones',
+    vista_tallas: '/tallas'
 
 
 
@@ -333,7 +284,7 @@ function cargarInicial(primero) {
     if (!url) {console.warn("No hay ruta para:", primero); return; }
 
     // document.getElementById('contenido-dinamico').setAttribute('src', url);
-    document.getElementById('contenido-dinamico').setAttribute('src', '/reportes');
+    document.getElementById('contenido-dinamico').setAttribute('src', '/gastos');
 }
 
 fetch('/cargar-permisos').then(r => r.json())

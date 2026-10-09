@@ -13,6 +13,9 @@ class DetalleVenta extends Model
     protected $fillable = [
         'id_venta',
         'id_producto',
+        'id_variacion_talla',
+        'descripcion_variacion',
+        'sku_variacion',
         'cantidad_venta',
         'precio_unitario_venta',
         'subtotal_detalle_venta',
@@ -28,6 +31,11 @@ class DetalleVenta extends Model
     public function venta()
     {
         return $this->belongsTo(Venta::class, 'id_venta', 'id_venta');
+    }
+
+    public function variacionTalla()
+    {
+        return $this->belongsTo(VariacionTalla::class, 'id_variacion_talla', 'id_variacion_talla');
     }
 
 }

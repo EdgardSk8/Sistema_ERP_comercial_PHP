@@ -9,9 +9,21 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 
 use App\Models\Usuario;
+use App\Models\Credenciales;
 
 class LoginController extends Controller
 {
+    public function mostrarLogin()
+    {
+        $nombreEmpresa = Credenciales::query()->value('nombre_empresa');
+        $logoEmpresa = Credenciales::query()->value('logo_empresa');
+        if ($logoEmpresa && !filter_var($logoEmpresa, FILTER_VALIDATE_URL)) {
+            $logoEmpresa = asset($logoEmpresa);
+        }
+
+        return view('login.Login', compact('nombreEmpresa', 'logoEmpresa'));
+    }
+
     public function login(Request $request)
     {
         try {

@@ -8,46 +8,113 @@ use Illuminate\Support\Facades\Validator;
 
 class TallaController extends Controller
 {
-    public function CrearTalla(Request $request)
+    public function MostrarTalla(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'talla' => 'required|string|max:20|unique:tallas,talla',
-            'estado_talla' => 'nullable|boolean',
+            'buscar' => ['nullable', 'string', 'max:100'],
+            'estado' => ['nullable', 'boolean'],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errores' => $validator->errors()
+                'mensaje' => 'Los filtros enviados no son válidos.',
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        $talla = Talla::create([
-            'talla' => $request->talla,
-            'estado_talla' => $request->estado_talla ?? true,
+        try {
+            $query = Talla::withCount('variaciones')
+                ->withCount(['variaciones as variantes_con_stock_count' => function ($variantes) {
+                    $variantes->where('stock', '>', 0);
+                }]);
+
+            if ($request->filled('buscar')) {
+                $buscar = trim($request->input('buscar'));
+                $query->where('talla', 'like', '%' . $buscar . '%');
+            }
+
+            if ($request->has('estado')) {
+                $query->where('estado_talla', $request->boolean('estado'));
+            }
+
+            $tallas = $query->orderBy('talla')->get();
+
+            return response()->json([
+                'success' => true,
+                'total' => $tallas->count(),
+                'tallas' => $tallas,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al obtener las tallas.',
+                'detalle' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function CrearTalla(Request $request)
+    {
+        $request->merge(['talla' => trim((string) $request->input('talla'))]);
+
+        $validator = Validator::make($request->all(), [
+            'talla' => ['required', 'string', 'max:20', 'unique:tallas,talla'],
+            'estado_talla' => ['nullable', 'boolean'],
+        ], [
+            'talla.required' => 'El nombre de la talla es obligatorio.',
+            'talla.max' => 'La talla no puede exceder 20 caracteres.',
+            'talla.unique' => 'Ya existe una talla con ese nombre.',
+            'estado_talla.boolean' => 'El estado de la talla no es válido.',
         ]);
 
-        return response()->json([
-            'success' => true,
-            'mensaje' => 'Talla creada correctamente.',
-            'talla' => $talla
-        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'No se pudo crear la talla.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $talla = Talla::create([
+                'talla' => $request->input('talla'),
+                'estado_talla' => $request->has('estado_talla')
+                    ? $request->boolean('estado_talla')
+                    : true,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'mensaje' => 'Talla creada correctamente.',
+                'talla' => $talla,
+            ], 201);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al crear la talla.',
+                'detalle' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function EditarTalla($id)
     {
-        $talla = Talla::find($id);
+        $talla = Talla::withCount('variaciones')
+            ->withCount(['variaciones as variantes_con_stock_count' => function ($variantes) {
+                $variantes->where('stock', '>', 0);
+            }])->find($id);
 
         if (!$talla) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Talla no encontrada.'
+                'mensaje' => 'Talla no encontrada.',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'talla' => $talla
+            'talla' => $talla,
         ]);
     }
 
@@ -58,32 +125,60 @@ class TallaController extends Controller
         if (!$talla) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Talla no encontrada.'
+                'mensaje' => 'Talla no encontrada.',
             ], 404);
         }
 
+        $request->merge(['talla' => trim((string) $request->input('talla'))]);
+
         $validator = Validator::make($request->all(), [
-            'talla' => 'required|string|max:20|unique:tallas,talla,' . $id . ',id_talla',
-            'estado_talla' => 'required|boolean',
+            'talla' => ['required', 'string', 'max:20', 'unique:tallas,talla,' . $talla->id_talla . ',id_talla'],
+            'estado_talla' => ['required', 'boolean'],
+        ], [
+            'talla.required' => 'El nombre de la talla es obligatorio.',
+            'talla.max' => 'La talla no puede exceder 20 caracteres.',
+            'talla.unique' => 'Ya existe una talla con ese nombre.',
+            'estado_talla.required' => 'El estado de la talla es obligatorio.',
+            'estado_talla.boolean' => 'El estado de la talla no es válido.',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errores' => $validator->errors()
+                'mensaje' => 'No se pudo actualizar la talla.',
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        $talla->update([
-            'talla' => $request->talla,
-            'estado_talla' => $request->estado_talla,
-        ]);
+        if (!$request->boolean('estado_talla') && $this->tieneStockAsignado($talla)) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'No se puede desactivar esta talla porque tiene existencias en una o más variantes.',
+            ], 409);
+        }
 
-        return response()->json([
-            'success' => true,
-            'mensaje' => 'Talla actualizada correctamente.',
-            'talla' => $talla
-        ]);
+        try {
+            $talla->update([
+                'talla' => $request->input('talla'),
+                'estado_talla' => $request->boolean('estado_talla'),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'mensaje' => 'Talla actualizada correctamente.',
+                'talla' => $talla->fresh()->loadCount('variaciones')->loadCount([
+                    'variaciones as variantes_con_stock_count' => function ($variantes) {
+                        $variantes->where('stock', '>', 0);
+                    }
+                ]),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al actualizar la talla.',
+                'detalle' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function CambiarEstadoTalla($id)
@@ -93,46 +188,71 @@ class TallaController extends Controller
         if (!$talla) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Talla no encontrada.'
+                'mensaje' => 'Talla no encontrada.',
             ], 404);
         }
 
-        $talla->estado_talla = !$talla->estado_talla;
-        $talla->save();
+        if ($talla->estado_talla && $this->tieneStockAsignado($talla)) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'No se puede desactivar esta talla porque tiene existencias en una o más variantes.',
+            ], 409);
+        }
 
-        return response()->json([
-            'success' => true,
-            'mensaje' => 'Estado de la talla actualizado correctamente.',
-            'estado_talla' => $talla->estado_talla
-        ]);
-    }
+        try {
+            $talla->estado_talla = !$talla->estado_talla;
+            $talla->save();
 
-    public function MostrarTalla()
-    {
-        $tallas = Talla::orderBy('talla')->get();
-
-        return response()->json([
-            'success' => true,
-            'tallas' => $tallas
-        ]);
+            return response()->json([
+                'success' => true,
+                'mensaje' => 'Estado de la talla actualizado correctamente.',
+                'estado_talla' => (bool) $talla->estado_talla,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al cambiar el estado de la talla.',
+                'detalle' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function EliminarTalla($id)
     {
-        $talla = Talla::find($id);
+        $talla = Talla::withCount('variaciones')->find($id);
 
         if (!$talla) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Talla no encontrada.'
+                'mensaje' => 'Talla no encontrada.',
             ], 404);
         }
 
-        $talla->delete();
+        if ($talla->variaciones_count > 0) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Esta talla está vinculada a variantes y no se puede eliminar. Puedes desactivarla cuando deje de utilizarse.',
+            ], 409);
+        }
 
-        return response()->json([
-            'success' => true,
-            'mensaje' => 'Talla eliminada correctamente.'
-        ]);
+        try {
+            $talla->delete();
+
+            return response()->json([
+                'success' => true,
+                'mensaje' => 'Talla eliminada correctamente.',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al eliminar la talla.',
+                'detalle' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function tieneStockAsignado(Talla $talla): bool
+    {
+        return $talla->variaciones()->where('stock', '>', 0)->exists();
     }
 }

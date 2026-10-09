@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use App\Models\VariacionTalla;
+use App\Models\Talla;
 
 
 class VariacionTallaController extends Controller
@@ -21,7 +23,10 @@ class VariacionTallaController extends Controller
                 [
                     'id_variacion' => $request->id_variacion,
                     'id_talla' => $request->id_talla,
-                    'stock' => $request->stock
+                    'stock' => $request->stock,
+                    'sku' => $request->sku,
+                    'precio_compra' => $request->precio_compra,
+                    'precio_venta' => $request->precio_venta,
                 ],
                 [
                     'id_variacion' => [
@@ -36,7 +41,10 @@ class VariacionTallaController extends Controller
                         'required',
                         'integer',
                         'min:0'
-                    ]
+                    ],
+                    'sku' => ['nullable', 'string', 'max:100', 'unique:variacion_tallas,sku'],
+                    'precio_compra' => ['nullable', 'numeric', 'min:0'],
+                    'precio_venta' => ['nullable', 'numeric', 'min:0']
                 ],
                 [
                     'id_variacion.required' => 'La variación es obligatoria.',
@@ -56,15 +64,25 @@ class VariacionTallaController extends Controller
                 ], 422);
             }
 
-            VariacionTalla::create([
+            $variacion = \App\Models\ProductoVariacion::with('producto')->findOrFail($request->id_variacion);
+            $talla = Talla::findOrFail($request->id_talla);
+            $sku = $request->filled('sku')
+                ? strtoupper(trim($request->sku))
+                : $this->generarSku($variacion->producto->nombre_producto, $variacion->color, $talla->talla);
+
+            $variacionTalla = VariacionTalla::create([
                 'id_variacion' => $request->id_variacion,
                 'id_talla' => $request->id_talla,
-                'stock' => $request->stock
+                'stock' => $request->stock,
+                'sku' => $sku,
+                'precio_compra' => $request->filled('precio_compra') ? $request->precio_compra : $variacion->producto->precio_compra,
+                'precio_venta' => $request->filled('precio_venta') ? $request->precio_venta : $variacion->producto->precio_venta,
             ]);
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Talla agregada correctamente'
+                'mensaje' => 'Talla agregada correctamente',
+                'variacion_talla' => $variacionTalla
             ], 200);
 
         } catch (\Exception $e) {
@@ -84,7 +102,7 @@ class VariacionTallaController extends Controller
     {
         try {
 
-            $variacion_talla = VariacionTalla::find($id);
+            $variacion_talla = VariacionTalla::with(['variacion.producto', 'talla'])->find($id);
 
             if (!$variacion_talla) {
                 return response()->json([
@@ -127,7 +145,10 @@ class VariacionTallaController extends Controller
             $validator = Validator::make(
                 [
                     'id_talla' => $request->id_talla,
-                    'stock' => $request->stock
+                    'stock' => $request->stock,
+                    'sku' => $request->sku,
+                    'precio_compra' => $request->precio_compra,
+                    'precio_venta' => $request->precio_venta,
                 ],
                 [
                     'id_talla' => [
@@ -138,7 +159,10 @@ class VariacionTallaController extends Controller
                         'required',
                         'integer',
                         'min:0'
-                    ]
+                    ],
+                    'sku' => ['nullable', 'string', 'max:100', 'unique:variacion_tallas,sku,' . $variacion_talla->id_variacion_talla . ',id_variacion_talla'],
+                    'precio_compra' => ['nullable', 'numeric', 'min:0'],
+                    'precio_venta' => ['nullable', 'numeric', 'min:0']
                 ],
                 [
                     'id_talla.required' => 'La talla es obligatoria.',
@@ -158,6 +182,17 @@ class VariacionTallaController extends Controller
 
             $variacion_talla->id_talla = $request->id_talla;
             $variacion_talla->stock = $request->stock;
+            if ($request->has('sku')) {
+                $variacion_talla->sku = $request->filled('sku')
+                    ? strtoupper(trim($request->sku))
+                    : ($variacion_talla->sku ?: $this->generarSku(
+                        $variacion_talla->variacion->producto->nombre_producto,
+                        $variacion_talla->variacion->color,
+                        $variacion_talla->talla->talla
+                    ));
+            }
+            if ($request->has('precio_compra')) $variacion_talla->precio_compra = $request->precio_compra;
+            if ($request->has('precio_venta')) $variacion_talla->precio_venta = $request->precio_venta;
             $variacion_talla->save();
 
             return response()->json([
@@ -182,7 +217,17 @@ class VariacionTallaController extends Controller
     {
         try {
 
-            $variaciones_tallas = VariacionTalla::all();
+            $variaciones_tallas = VariacionTalla::query()
+                ->select(
+                    'id_variacion_talla',
+                    'id_variacion',
+                    'id_talla',
+                    'stock',
+                    'sku',
+                    'precio_compra',
+                    'precio_venta'
+                )
+                ->get();
 
             return response()->json([
                 'success' => true,
@@ -223,6 +268,20 @@ class VariacionTallaController extends Controller
                 'detalle' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function generarSku(string $producto, string $color, string $talla): string
+    {
+        $base = Str::upper(Str::slug($producto . '-' . $color . '-' . $talla));
+        $base = substr($base ?: 'VARIANTE', 0, 85);
+        $sku = $base;
+        $sufijo = 1;
+
+        while (VariacionTalla::where('sku', $sku)->exists()) {
+            $sku = $base . '-' . $sufijo++;
+        }
+
+        return $sku;
     }
 
 } // Fin de controlador

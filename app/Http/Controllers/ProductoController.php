@@ -370,7 +370,27 @@ class ProductoController extends Controller
     {
         try {
 
-            $productos = Producto::with(['categoria', 'impuesto', 'ubicacion', 'medida'])->get();
+            $productos = Producto::query()
+                ->select([
+                    'id_producto',
+                    'nombre_producto',
+                    'id_categoria',
+                    'id_impuesto',
+                    'id_ubicacion',
+                    'id_medida',
+                    'imagen_producto',
+                    'precio_compra',
+                    'precio_venta',
+                    'stock_actual',
+                    'estado_producto',
+                ])
+                ->with([
+                    'categoria:id_categoria,nombre_categoria',
+                    'impuesto:id_impuesto,nombre_impuesto,porcentaje_impuesto',
+                    'ubicacion:id_ubicacion,nombre_ubicacion',
+                    'medida:id_medida,nombre_medida',
+                ])
+                ->get();
 
             return response()->json([
                 'success' => true,

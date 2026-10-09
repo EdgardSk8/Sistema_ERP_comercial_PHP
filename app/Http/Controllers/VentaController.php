@@ -10,6 +10,7 @@ use App\Models\Cuenta;
 use App\Models\MovimientoCaja;
 use App\Models\Caja;
 use App\Models\MovimientoCuenta;
+use App\Models\VariacionTalla;
 use Illuminate\Support\Facades\DB;
 
 class VentaController extends Controller
@@ -24,10 +25,9 @@ class VentaController extends Controller
         try {
 
             $ventas = Venta::with([
-                'cliente',
-                'usuario',
-                'metodoPago',
-                'detalles',
+                'cliente:id_cliente,nombre_cliente',
+                'usuario:id_usuario,nombre_usuario',
+                'metodoPago:id_metodo_pago,nombre_metodo_pago',
                 // 'caja'
             ])->get();
 
@@ -80,16 +80,33 @@ class VentaController extends Controller
                     throw new \Exception('Producto no encontrado');
                 }
 
-                // SUMAR STOCK
-                $producto->increment('stock_actual', $detalle->cantidad_venta);
+                $esDetalleDeVariacion = !empty($detalle->descripcion_variacion);
+                $variacionTalla = $detalle->id_variacion_talla
+                    ? VariacionTalla::with(['variacion', 'talla'])->find($detalle->id_variacion_talla)
+                    : null;
+
+                if ($esDetalleDeVariacion && !$variacionTalla) {
+                    throw new \Exception('No se puede devolver el stock: la variante vendida ya fue eliminada');
+                }
+
+                // Devolver el inventario al nivel donde se descontó en la venta.
+                if ($variacionTalla) {
+                    $variacionTalla->increment('stock', $detalle->cantidad_venta);
+                    $stockResultante = $variacionTalla->fresh()->stock;
+                    $motivo = 'Anulación de venta - ' . trim(($variacionTalla->variacion->color ?? '') . ' ' . ($variacionTalla->talla->talla ?? ''));
+                } else {
+                    $producto->increment('stock_actual', $detalle->cantidad_venta);
+                    $stockResultante = $producto->fresh()->stock_actual;
+                    $motivo = 'Anulación de venta';
+                }
 
                 // KARDEX
                 MovimientoInventario::create([
                     'id_producto' => $producto->id_producto,
                     'tipo_movimiento' => 'ENTRADA',
                     'cantidad_movimiento' => $detalle->cantidad_venta,
-                    'stock_resultante' => $producto->stock_actual,
-                    'motivo_movimiento' => 'Anulación de venta',
+                    'stock_resultante' => $stockResultante,
+                    'motivo_movimiento' => $motivo,
                     'id_referencia' => $venta->id_venta,
                     'tipo_referencia' => 'DEVOLUCION',
                     'precio_unitario' => $detalle->precio_unitario_venta,
@@ -171,7 +188,9 @@ class VentaController extends Controller
                 'cliente',
                 'usuario',
                 'metodoPago',
-                'detalles.producto'
+                'detalles.producto',
+                'detalles.variacionTalla.variacion',
+                'detalles.variacionTalla.talla'
             ])->findOrFail($id);
 
             return response()->json([

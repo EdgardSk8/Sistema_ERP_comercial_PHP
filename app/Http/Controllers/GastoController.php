@@ -11,9 +11,33 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use App\Models\Cuenta;
 use App\Models\Caja;
+use Carbon\Carbon;
 
 class GastoController extends Controller
 {
+
+    private function calcularEstadoPago(Gasto $gasto, ?MovimientoGasto $ultimo): string
+    {
+        $fechaVencimiento = $gasto->proximo_pago ?: $gasto->fecha_pago;
+        $ultimoPago = $ultimo?->fecha ?? $gasto->ultimo_pago;
+
+        if (!$fechaVencimiento) {
+            return strtoupper($gasto->estado_pago ?? 'SIN PAGAR');
+        }
+
+        $vencimiento = Carbon::parse($fechaVencimiento)->startOfDay();
+        $fechaUltimoPago = $ultimoPago ? Carbon::parse($ultimoPago)->startOfDay() : null;
+
+        if ($fechaUltimoPago && $fechaUltimoPago->greaterThanOrEqualTo($vencimiento)) {
+            return 'PAGADO';
+        }
+
+        if ($vencimiento->lessThan(today())) {
+            return 'ATRASADO';
+        }
+
+        return strtoupper($gasto->estado_pago ?? '') === 'PAGADO' ? 'PAGADO' : 'SIN PAGAR';
+    }
 
 /*  ╔════════════ Mostrar Gastos ════════════╗ 
     ╚════════════════════════════════════════╝ */
@@ -22,7 +46,7 @@ class GastoController extends Controller
     {
         try {
 
-            $hoy = now()->startOfDay();
+            $hoy = today();
 
             $gastos = Gasto::with(['tipoGasto', 'movimientosGasto'])
                 ->get()
@@ -30,9 +54,11 @@ class GastoController extends Controller
 
                     $ultimo = $gasto->movimientosGasto
                         ->sortByDesc('fecha')
+                        ->sortByDesc('id_movimiento_gasto')
                         ->first();
 
-                    $estadoPago = 'SIN PAGAR';
+                    $fechaBase = $gasto->proximo_pago ?: $gasto->fecha_pago;
+                    $estadoPago = $this->calcularEstadoPago($gasto, $ultimo);
                     $dias_restantes = null;
                     $dias_atraso = null;
 
@@ -40,26 +66,14 @@ class GastoController extends Controller
                     🔹 BASE REAL: PROXIMO PAGO
                     ═══════════════════════════════════════ */
 
-                    $fechaBase = $gasto->proximo_pago
-                        ? \Carbon\Carbon::parse($gasto->proximo_pago)->startOfDay()
-                        : ($gasto->fecha_pago
-                            ? \Carbon\Carbon::parse($gasto->fecha_pago)->startOfDay()
-                            : null
-                        );
-
-                        if ($fechaBase) {
-
-                            if ($hoy->gt($fechaBase)) {
-
-                                $estadoPago = $ultimo ? 'PAGADO' : 'ATRASADO';
-                                $dias_atraso = $fechaBase->diffInDays($hoy);
-
-                            } else {
-
-                                $estadoPago = $ultimo ? 'PAGADO' : 'SIN PAGAR';
-                                $dias_restantes = $hoy->diffInDays($fechaBase);
-                            }
+                    if ($fechaBase) {
+                        $fechaBase = Carbon::parse($fechaBase)->startOfDay();
+                        if ($estadoPago === 'ATRASADO') {
+                            $dias_atraso = $fechaBase->diffInDays($hoy);
+                        } elseif ($estadoPago === 'SIN PAGAR' && $fechaBase->gt($hoy)) {
+                            $dias_restantes = $hoy->diffInDays($fechaBase);
                         }
+                    }
 
                     return [
                         'id_gasto' => $gasto->id_gasto,
@@ -69,14 +83,14 @@ class GastoController extends Controller
 
                         'tipo' => $gasto->tipoGasto->nombre_tipo_gasto ?? 'N/A',
 
-                        'fecha_pago' => $gasto->fecha_pago,
+                        'fecha_pago' => $fechaBase?->toDateString(),
                         'proximo_pago' => $gasto->proximo_pago,
 
                         'estado_pago' => $estadoPago,
                         'dias_restantes' => $dias_restantes,
                         'dias_atraso' => $dias_atraso,
 
-                        'ultimo_pago_fecha' => $ultimo?->fecha,
+                        'ultimo_pago_fecha' => $ultimo?->fecha ?? $gasto->ultimo_pago,
                         'ultimo_pago_monto' => $ultimo?->monto,
                     ];
                 });
@@ -305,6 +319,9 @@ class GastoController extends Controller
         ], 404);
     }
 
+    $movimientos = $gasto->movimientosGasto->sortByDesc('fecha')->values();
+    $ultimo = $movimientos->first();
+
     return response()->json([
         'success' => true,
         'gasto' => [
@@ -312,14 +329,14 @@ class GastoController extends Controller
             'nombre_gasto' => $gasto->nombre_gasto,
             'descripcion_gasto' => $gasto->descripcion_gasto,
             'tipo' => $gasto->tipoGasto->nombre_tipo_gasto ?? '—',
-            'estado_pago' => $gasto->estado_pago ?? 'SIN PAGAR',
+            'estado_pago' => $this->calcularEstadoPago($gasto, $ultimo),
 
             // 🔥 FIX REAL: asegurar orden correcto del último pago
             'ultimo_pago_fecha' =>
-                optional($gasto->movimientosGasto->sortByDesc('fecha')->first())->fecha,
+                $ultimo?->fecha ?? $gasto->ultimo_pago,
 
             // 🔥 HISTORIAL
-            'movimientos' => $gasto->movimientosGasto->map(function ($m) {
+            'movimientos' => $movimientos->map(function ($m) {
 
                 return [
                     'id' => $m->id_movimiento_gasto,
@@ -390,6 +407,12 @@ class GastoController extends Controller
 
             $montoNuevo = (float) $request->monto;
             $montoViejo = (float) $mov->monto;
+            $idUsuario = session('usuario.id');
+
+            if (!$idUsuario) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'mensaje' => 'Usuario no autenticado'], 401);
+            }
 
             /* =====================================================
                 🔴 REVERSAR MOVIMIENTO ANTERIOR
@@ -402,9 +425,6 @@ class GastoController extends Controller
                 if ($cajaOld) {
 
                     // devolver dinero
-                    $cajaOld->monto_inicial += $montoViejo;
-                    $cajaOld->save();
-
                     // reverso lógico (opcional auditoría)
                     MovimientoCaja::create([
                         'id_caja' => $cajaOld->id_caja,
@@ -412,7 +432,7 @@ class GastoController extends Controller
                         'concepto_movimiento_caja' => 'Reverso edición gasto',
                         'monto_movimiento_caja' => $montoViejo,
                         'fecha_movimiento_caja' => now(),
-                        'id_usuario' => session('usuario.id')
+                        'id_usuario' => $idUsuario
                     ]);
                 }
             }
@@ -432,7 +452,7 @@ class GastoController extends Controller
                         'descripcion' => 'Reverso edición gasto',
                         'monto' => $montoViejo,
                         'fecha' => now(),
-                        'id_usuario' => session('usuario.id')
+                        'id_usuario' => $idUsuario
                     ]);
                 }
             }
@@ -480,9 +500,6 @@ class GastoController extends Controller
                 }
 
                 // descontar
-                $caja->monto_inicial -= $montoNuevo;
-                $caja->save();
-
                 // movimiento auditoría
                 MovimientoCaja::create([
                     'id_caja' => $caja->id_caja,
@@ -490,7 +507,7 @@ class GastoController extends Controller
                     'concepto_movimiento_caja' => 'Edición gasto',
                     'monto_movimiento_caja' => $montoNuevo,
                     'fecha_movimiento_caja' => now(),
-                    'id_usuario' => session('usuario.id')
+                    'id_usuario' => $idUsuario
                 ]);
 
                 $mov->origen = 'CAJA';
@@ -506,6 +523,14 @@ class GastoController extends Controller
                 if (!$cuenta) {
                     DB::rollBack();
                     return response()->json(['success' => false, 'mensaje' => 'Cuenta no encontrada'], 404);
+                }
+
+                if (!$cuenta->estado) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'mensaje' => 'No se puede usar una cuenta inactiva'
+                    ], 422);
                 }
 
                 if ($montoNuevo > $cuenta->saldo_actual) {
@@ -525,7 +550,7 @@ class GastoController extends Controller
                     'descripcion' => 'Edición gasto',
                     'monto' => $montoNuevo,
                     'fecha' => now(),
-                    'id_usuario' => session('usuario.id')
+                    'id_usuario' => $idUsuario
                 ]);
 
                 $mov->origen = 'CUENTA';
@@ -549,9 +574,21 @@ class GastoController extends Controller
                 'mensaje' => 'Movimiento actualizado correctamente'
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Errores de validación',
+                'errors' => $e->errors()
+            ], 422);
+
         } catch (\Throwable $e) {
 
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
 
             \Log::error('ERROR EDITAR MOVIMIENTO', [
                 'mensaje' => $e->getMessage(),
@@ -577,8 +614,8 @@ class GastoController extends Controller
                 'monto' => 'required|numeric|min:0.01',
                 'id_caja' => 'nullable|exists:cajas,id_caja',
                 'id_cuenta' => 'nullable|exists:cuentas,id_cuenta',
-                'renovar_vencimiento' => 'nullable|string',
-                'nueva_fecha' => 'nullable|date'
+                'renovar_vencimiento' => 'required|in:auto,manual',
+                'nueva_fecha' => 'required_if:renovar_vencimiento,manual|nullable|date|after:today'
             ]);
 
             DB::beginTransaction();
@@ -586,6 +623,7 @@ class GastoController extends Controller
             $gasto = Gasto::lockForUpdate()->find($request->id_gasto);
 
             if (!$gasto) {
+                DB::rollBack();
                 return response()->json([
                     'success' => false,
                     'mensaje' => 'Gasto no encontrado'
@@ -593,6 +631,7 @@ class GastoController extends Controller
             }
 
             if (!$request->id_caja && !$request->id_cuenta) {
+                DB::rollBack();
                 return response()->json([
                     'success' => false,
                     'mensaje' => 'Debe seleccionar caja o cuenta'
@@ -600,6 +639,7 @@ class GastoController extends Controller
             }
 
             if ($request->id_caja && $request->id_cuenta) {
+                DB::rollBack();
                 return response()->json([
                     'success' => false,
                     'mensaje' => 'Solo puede usar caja o cuenta'
@@ -609,10 +649,19 @@ class GastoController extends Controller
             $idUsuario = session('usuario.id');
 
             if (!$idUsuario) {
+                DB::rollBack();
                 return response()->json([
                     'success' => false,
                     'mensaje' => 'Usuario no autenticado'
                 ], 401);
+            }
+
+            if (!$gasto->estado_gasto) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'No se puede pagar un gasto inactivo'
+                ], 422);
             }
 
             $monto = $request->monto;
@@ -627,23 +676,28 @@ class GastoController extends Controller
                 $caja = Caja::lockForUpdate()->find($request->id_caja);
 
                 if (!$caja) {
+                    DB::rollBack();
                     return response()->json([
                         'success' => false,
                         'mensaje' => 'Caja no encontrada'
                     ], 404);
                 }
 
-                $totalIngresos = MovimientoCaja::where('id_caja', $caja->id_caja)
-                    ->where('tipo_movimiento_caja', 'INGRESO')
-                    ->sum('monto_movimiento_caja');
+                if (!$caja->estado_caja) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'mensaje' => 'No se puede pagar desde una caja cerrada'
+                    ], 422);
+                }
 
-                $totalSalidas = MovimientoCaja::where('id_caja', $caja->id_caja)
-                    ->where('tipo_movimiento_caja', 'SALIDA')
-                    ->sum('monto_movimiento_caja');
-
-                $saldoCaja = $caja->monto_inicial + $totalIngresos - $totalSalidas;
+                $totalesCaja = MovimientoCaja::where('id_caja', $caja->id_caja)
+                    ->selectRaw("SUM(CASE WHEN tipo_movimiento_caja = 'INGRESO' THEN monto_movimiento_caja ELSE 0 END) AS ingresos, SUM(CASE WHEN tipo_movimiento_caja = 'SALIDA' THEN monto_movimiento_caja ELSE 0 END) AS salidas")
+                    ->first();
+                $saldoCaja = (float) $caja->monto_inicial + (float) $totalesCaja->ingresos - (float) $totalesCaja->salidas;
 
                 if ($monto > $saldoCaja) {
+                    DB::rollBack();
                     return response()->json([
                         'success' => false,
                         'mensaje' => 'Saldo insuficiente en caja'
@@ -669,13 +723,23 @@ class GastoController extends Controller
                 $cuenta = Cuenta::lockForUpdate()->find($request->id_cuenta);
 
                 if (!$cuenta) {
+                    DB::rollBack();
                     return response()->json([
                         'success' => false,
                         'mensaje' => 'Cuenta no encontrada'
                     ], 404);
                 }
 
+                if (!$cuenta->estado) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'mensaje' => 'No se puede pagar desde una cuenta inactiva'
+                    ], 422);
+                }
+
                 if ($monto > $cuenta->saldo_actual) {
+                    DB::rollBack();
                     return response()->json([
                         'success' => false,
                         'mensaje' => 'Saldo insuficiente en cuenta'
@@ -714,21 +778,18 @@ class GastoController extends Controller
             /* ═══════════════════════════════
                 🔥 RENOVACIÓN DE VENCIMIENTO
             ═══════════════════════════════ */
-            if ($request->renovar_vencimiento) {
-
-                if ($request->renovar_vencimiento === 'auto') {
-
-                    $gasto->fecha_pago = $gasto->fecha_pago
-                        ? \Carbon\Carbon::parse($gasto->fecha_pago)->addMonth()
-                        : now()->addMonth();
-
-                } elseif ($request->renovar_vencimiento === 'manual' && $request->nueva_fecha) {
-
-                    $gasto->fecha_pago = $request->nueva_fecha;
-                }
-
-                $gasto->save();
+            $fechaBaseProximoPago = Carbon::parse($gasto->proximo_pago ?: $gasto->fecha_pago ?: $fecha->toDateString());
+            if ($request->renovar_vencimiento === 'auto' && $fechaBaseProximoPago->lessThanOrEqualTo($fecha->copy()->startOfDay())) {
+                $fechaBaseProximoPago = $fecha->copy()->startOfDay();
             }
+
+            $gasto->fecha_pago = $fecha->toDateString();
+            $gasto->ultimo_pago = $fecha->toDateString();
+            $gasto->proximo_pago = $request->renovar_vencimiento === 'manual'
+                ? $request->nueva_fecha
+                : $fechaBaseProximoPago->addMonthNoOverflow()->toDateString();
+            $gasto->estado_pago = 'PAGADO';
+            $gasto->save();
 
             DB::commit();
 
@@ -764,21 +825,23 @@ class GastoController extends Controller
             $cajas = Caja::with('usuario')
                 ->where('estado_caja', 1)
                 ->orderBy('id_caja', 'asc')
+                ->get();
+
+            $totales = MovimientoCaja::whereIn('id_caja', $cajas->pluck('id_caja'))
+                ->selectRaw("id_caja, SUM(CASE WHEN tipo_movimiento_caja = 'INGRESO' THEN monto_movimiento_caja ELSE 0 END) AS ingresos, SUM(CASE WHEN tipo_movimiento_caja = 'SALIDA' THEN monto_movimiento_caja ELSE 0 END) AS salidas")
+                ->groupBy('id_caja')
                 ->get()
-                ->map(function ($caja) {
+                ->keyBy('id_caja');
 
-                    $totalIngresos = MovimientoCaja::where('id_caja', $caja->id_caja)
-                        ->where('tipo_movimiento_caja', 'INGRESO')
-                        ->sum('monto_movimiento_caja');
-
-                    $totalSalidas = MovimientoCaja::where('id_caja', $caja->id_caja)
-                        ->where('tipo_movimiento_caja', 'SALIDA')
-                        ->sum('monto_movimiento_caja');
-
-                    $saldo = $caja->monto_inicial + $totalIngresos - $totalSalidas;
+            $cajas = $cajas->map(function ($caja) use ($totales) {
+                    $movimientos = $totales->get($caja->id_caja);
+                    $saldo = (float) $caja->monto_inicial
+                        + (float) ($movimientos->ingresos ?? 0)
+                        - (float) ($movimientos->salidas ?? 0);
 
                     return [
                         'id' => $caja->id_caja,
+                        'saldo' => round($saldo, 2),
                         'display' => "Caja #{$caja->id_caja} - {$caja->usuario->nombre_usuario} (Saldo: C$ " . number_format($saldo, 2) . ")"
                     ];
                 });
@@ -812,6 +875,7 @@ class GastoController extends Controller
                 return [
                     'id' => $cuenta->id_cuenta, // valor real que se envía al backend
                     'nombre' => $cuenta->nombre_cuenta,
+                    'saldo' => (float) $cuenta->saldo_actual,
                     'saldo_actual' => number_format($cuenta->saldo_actual, 2),
                     'display' => "{$cuenta->nombre_cuenta} (Saldo: C$ " . number_format($cuenta->saldo_actual, 2) . ")"
                 ];

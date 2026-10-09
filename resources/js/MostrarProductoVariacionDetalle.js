@@ -9,6 +9,12 @@
     const $modalCrearTalla = $('#modalCrearVariacionTalla');
     const $modalEditarTalla = $('#modalEditarVariacionTalla');
     const csrf = () => $('meta[name="csrf-token"]').attr('content');
+    const calcularPrecioBase = (valor, idVariacion, modo) => {
+        const variacion = filas.find(item => String(item.id_variacion) === String(idVariacion));
+        const impuesto = Number(variacion?.producto?.impuesto?.porcentaje_impuesto || 0);
+        const precio = Number(valor || 0);
+        return modo === 'incluido' ? precio / (1 + impuesto / 100) : precio;
+    };
     let tabla;
     let tallas = [];
     let filas = [];
@@ -68,16 +74,30 @@
 
             const imagenes = imagenesResponse.imagenes || [];
             const relaciones = relacionesResponse.variaciones_tallas || [];
+            const tallasPorId = new Map(tallas.map(talla => [String(talla.id_talla), talla.talla]));
+            const imagenesPorVariacion = new Map();
+            const relacionesPorVariacion = new Map();
+
+            imagenes.forEach(imagen => {
+                const idVariacion = String(imagen.id_variacion);
+                if (!imagenesPorVariacion.has(idVariacion)) imagenesPorVariacion.set(idVariacion, []);
+                imagenesPorVariacion.get(idVariacion).push(imagen);
+            });
+
+            relaciones.forEach(relacion => {
+                const idVariacion = String(relacion.id_variacion);
+                if (!relacionesPorVariacion.has(idVariacion)) relacionesPorVariacion.set(idVariacion, []);
+                relacionesPorVariacion.get(idVariacion).push(relacion);
+            });
 
             filas = (variacionesResponse.variaciones || []).map(variacion => ({
                 ...variacion,
                 nombre_producto: variacion.producto?.nombre_producto || `Producto ${variacion.id_producto}`,
-                imagenes: imagenes.filter(imagen => String(imagen.id_variacion) === String(variacion.id_variacion)),
-                tallas: relaciones
-                    .filter(relacion => String(relacion.id_variacion) === String(variacion.id_variacion))
+                imagenes: imagenesPorVariacion.get(String(variacion.id_variacion)) || [],
+                tallas: (relacionesPorVariacion.get(String(variacion.id_variacion)) || [])
                     .map(relacion => ({
                         ...relacion,
-                        nombre_talla: tallas.find(talla => String(talla.id_talla) === String(relacion.id_talla))?.talla || `Talla ${relacion.id_talla}`
+                        nombre_talla: tallasPorId.get(String(relacion.id_talla)) || `Talla ${relacion.id_talla}`
                     }))
             }));
 
@@ -103,14 +123,21 @@
             render: variaciones => variaciones.map(variacion => `
                 <section class="mb-1 px-2 py-1 rounded small d-flex flex-wrap align-items-center gap-3" style="background:var(--celeste-soft); border:1px solid var(--celeste-soft-border);">
                     <span><strong>Color:</strong> ${escapar(variacion.color || 'Sin especificar')}</span>
-                    ${variacion.tallas.length ? variacion.tallas.map(talla => `
-                        <span class="d-inline-flex align-items-center gap-3">
+                    ${variacion.tallas.length ? variacion.tallas.map(talla => {
+                        const porcentajeImpuesto = Number(variacion.producto?.impuesto?.porcentaje_impuesto || 0);
+                        const precioVentaBase = Number(talla.precio_venta ?? variacion.producto?.precio_venta ?? 0);
+                        return `
+                        <span class="d-inline-flex align-items-center gap-1">
                             <strong>Talla:</strong> ${escapar(talla.nombre_talla)}
                             <strong>Stock:</strong> ${escapar(talla.stock)}
+                            <strong>SKU:</strong> ${escapar(talla.sku || '—')}
+                            <strong>Compra:</strong> C$ ${Number(talla.precio_compra || 0).toFixed(2)}
+                            <strong>Venta neta:</strong> C$ ${precioVentaBase.toFixed(2)}
+                            <strong>Final:</strong> C$ ${(precioVentaBase * (1 + porcentajeImpuesto / 100)).toFixed(2)}
                             <button class="btn-editar editarVariacionTalla" data-id="${talla.id_variacion_talla}" title="Editar talla y stock"><i class="fa-solid fa-pencil-alt"></i></button>
                             <button class="btn-baja eliminarVariacionTalla" data-id="${talla.id_variacion_talla}" title="Quitar talla"><i class="fa-solid fa-xmark"></i></button>
                         </span>
-                    `).join('') : '<span>Sin tallas asignadas</span>'}
+                    `; }).join('') : '<span>Sin tallas asignadas</span>'}
                     <div class="d-flex align-items-center flex-shrink-0 ms-auto">
                             <button class="btn-transferir verImagenesVariacion" data-id="${variacion.id_variacion}" title="Ver imágenes"><i class="fa-solid fa-images"></i> ${variacion.imagenes.length} ${variacion.imagenes.length === 1 ? 'Imagenes' : 'im&aacute;genes'}</button>
                             <button class="btn-alta agregarTallaVariacion" data-id="${variacion.id_variacion}" title="Agregar medida"><i class="fa-solid fa-ruler"></i> Tallas</button>
@@ -130,7 +157,7 @@
                 tabla.clear().rows.add(filasAgrupadas).draw(false);
             }
         } catch (error) {
-            mostrarToast(error.message || 'Error al cargar imÃ¡genes y tallas', 'danger');
+            mostrarToast(error.message || 'Error al cargar imágenes y tallas', 'danger');
             console.error(error);
         }
     }
@@ -143,11 +170,11 @@
         const variacion = filas.find(fila => String(fila.id_variacion) === String($(this).data('id')));
         if (!variacion) return;
 
-        $('#galeria_variacion_titulo').text(`Imágenes · ${variacion.nombre_producto} · ${variacion.color || 'Sin color'}`);
+        $('#galeria_variacion_titulo').text(` ${variacion.nombre_producto} · ${variacion.color || 'Sin color'}`);
         $('#galeria_variacion_contenido').html(variacion.imagenes.length ? variacion.imagenes.map(imagen => `
-            <div class="col-6 col-md-4 col-lg-3">
+            <div style="flex: 0 1 200px; max-width:200px;">
                 <div class="card h-100">
-                    <img src="/${escapar(imagen.imagen)}" alt="Imagen ${escapar(variacion.color)}" class="card-img-top" style="height:180px;object-fit:contain;background:#f8f9fa;">
+                    <img src="/${escapar(imagen.imagen)}" alt="Imagen ${escapar(variacion.color)}" class="card-img-top" style="width:100%; height:100px; object-fit:contain; background:#f8f9fa;">
                     <div class="card-body text-center p-2">
                         <small class="d-block mb-2">Imagen ${escapar(imagen.orden)}</small>
                         <button class="btn-baja eliminarVariacionImagen" data-id="${imagen.id_imagen}" title="Quitar imagen"><i class="fa-solid fa-trash"></i> Quitar</button>
@@ -155,6 +182,9 @@
                 </div>
             </div>
         `).join('') : '<div class="col-12 text-center py-4">Este color todavía no tiene imágenes.</div>');
+        const cantidadImagenes = variacion.imagenes.length;
+        const anchoModal = Math.min(900, Math.max(300, cantidadImagenes * 184 + 48));
+        $modalGaleriaImagenes.find('.modal-dialog').css('width', `${anchoModal}px`);
         $('#galeria_variacion_agregar').data('id', variacion.id_variacion);
         bootstrap.Modal.getOrCreateInstance($modalGaleriaImagenes[0]).show();
     });
@@ -280,9 +310,13 @@
 
     $tabla.off('click.detalle', '.agregarTallaVariacion').on('click.detalle', '.agregarTallaVariacion', function () {
         const idVariacion = $(this).data('id');
+        const variacion = filas.find(item => String(item.id_variacion) === String(idVariacion));
         $('#formCrearVariacionTalla')[0].reset();
         $('#crear_talla_id_variacion').val(idVariacion);
         $('#crear_id_talla').val('').trigger('change');
+        $('#crear_precio_compra_variacion').val(variacion?.producto?.precio_compra ?? '');
+        $('#crear_precio_venta_variacion').val(variacion?.producto?.precio_venta ?? '');
+        $('#crear_modo_precio_variacion').val('base');
         bootstrap.Modal.getOrCreateInstance($modalCrearTalla[0]).show();
     });
 
@@ -290,14 +324,27 @@
         event.preventDefault();
         const idVariacion = $('#crear_talla_id_variacion').val();
         const idTalla = $('#crear_id_talla').val();
+        const precioVentaBase = calcularPrecioBase(
+            $('#crear_precio_venta_variacion').val(),
+            idVariacion,
+            $('#crear_modo_precio_variacion').val()
+        );
         const repetida = filas.some(fila => String(fila.id_variacion) === String(idVariacion) && fila.tallas.some(talla => String(talla.id_talla) === String(idTalla)));
-        if (!idTalla) return mostrarToast('Seleccione una talla del catÃ¡logo', 'warning');
-        if (repetida) return mostrarToast('Esa talla ya estÃ¡ asignada a este color', 'warning');
+        if (!idTalla) return mostrarToast('Seleccione una talla del catalogo', 'warning');
+        if (repetida) return mostrarToast('Esa talla ya está asignada a este color', 'warning');
 
         $.ajax({
             url: '/variacion-tallas/crear',
             type: 'POST',
-            data: { id_variacion: idVariacion, id_talla: idTalla, stock: $('#crear_stock_variacion_talla').val(), _token: csrf() },
+            data: {
+                id_variacion: idVariacion,
+                id_talla: idTalla,
+                stock: $('#crear_stock_variacion_talla').val(),
+                sku: $('#crear_sku_variacion').val(),
+                precio_compra: $('#crear_precio_compra_variacion').val(),
+                precio_venta: precioVentaBase.toFixed(2),
+                _token: csrf()
+            },
             headers: { 'X-CSRF-TOKEN': csrf() },
             success: response => {
                 if (!response.success) return mostrarToast(response.mensaje || 'No se pudo agregar la talla', 'danger');
@@ -312,11 +359,16 @@
     $tabla.off('click.detalle', '.editarVariacionTalla').on('click.detalle', '.editarVariacionTalla', function () {
         const id = $(this).data('id');
         $.get(`/variacion-tallas/editar/${id}`, response => {
-            if (!response.success || !response.variacion_talla) return mostrarToast(response.mensaje || 'No se encontrÃ³ la talla', 'danger');
+            if (!response.success || !response.variacion_talla) return mostrarToast(response.mensaje || 'No se encontró la talla', 'danger');
             $('#editar_id_variacion_talla').val(response.variacion_talla.id_variacion_talla);
             $('#editar_id_variacion_talla').data('variacion', response.variacion_talla.id_variacion);
+            const variacion = filas.find(item => String(item.id_variacion) === String(response.variacion_talla.id_variacion));
             $('#editar_id_talla').val(response.variacion_talla.id_talla).trigger('change');
             $('#editar_stock_variacion_talla').val(response.variacion_talla.stock);
+            $('#editar_sku_variacion').val(response.variacion_talla.sku);
+            $('#editar_precio_compra_variacion').val(response.variacion_talla.precio_compra ?? variacion?.producto?.precio_compra ?? '');
+            $('#editar_precio_venta_variacion').val(response.variacion_talla.precio_venta ?? variacion?.producto?.precio_venta ?? '');
+            $('#editar_modo_precio_variacion').val('base');
             bootstrap.Modal.getOrCreateInstance($modalEditarTalla[0]).show();
         }).fail(xhr => mostrarError(xhr, 'Error al obtener la talla'));
     });
@@ -325,14 +377,26 @@
         event.preventDefault();
         const id = $('#editar_id_variacion_talla').val();
         const idTalla = $('#editar_id_talla').val();
+        const precioVentaBase = calcularPrecioBase(
+            $('#editar_precio_venta_variacion').val(),
+            $('#editar_id_variacion_talla').data('variacion'),
+            $('#editar_modo_precio_variacion').val()
+        );
         const repetida = filas.some(fila => String(fila.id_variacion) === String($('#editar_id_variacion_talla').data('variacion')) && fila.tallas.some(talla => String(talla.id_talla) === String(idTalla) && String(talla.id_variacion_talla) !== String(id)));
-        if (!idTalla) return mostrarToast('Seleccione una talla del catÃ¡logo', 'warning');
-        if (repetida) return mostrarToast('Esa talla ya estÃ¡ asignada a este color', 'warning');
+        if (!idTalla) return mostrarToast('Seleccione una talla del catalogo', 'warning');
+        if (repetida) return mostrarToast('Esa talla ya está asignada a este color', 'warning');
 
         $.ajax({
             url: `/variacion-tallas/actualizar/${id}`,
             type: 'PUT',
-            data: { id_talla: idTalla, stock: $('#editar_stock_variacion_talla').val(), _token: csrf() },
+            data: {
+                id_talla: idTalla,
+                stock: $('#editar_stock_variacion_talla').val(),
+                sku: $('#editar_sku_variacion').val(),
+                precio_compra: $('#editar_precio_compra_variacion').val(),
+                precio_venta: precioVentaBase.toFixed(2),
+                _token: csrf()
+            },
             headers: { 'X-CSRF-TOKEN': csrf() },
             success: response => {
                 if (!response.success) return mostrarToast(response.mensaje || 'No se pudo actualizar la talla', 'danger');
@@ -346,7 +410,7 @@
 
     $tabla.off('click.detalle', '.eliminarVariacionTalla').on('click.detalle', '.eliminarVariacionTalla', function () {
         const id = $(this).data('id');
-        if (!window.confirm('Â¿Deseas quitar esta talla de la variaciÃ³n?')) return;
+        if (!window.confirm('Â¿Deseas quitar esta talla de la variacion?')) return;
         $.ajax({
             url: `/variacion-tallas/eliminar/${id}`,
             type: 'DELETE',

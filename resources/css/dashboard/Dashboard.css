@@ -197,6 +197,11 @@
     height: 26px;
 }
 
+[data-theme="dark"] .Tabla_1 .table thead th,
+[data-theme="dark"] .Tabla_1 .table tbody td{
+    color: var(--text-soft);
+}
+
 .Tabla_1 { padding: 0; }
 .Tabla_1 span { margin: 5px;}
 .Tabla_1 table{ margin: 0 !important; }

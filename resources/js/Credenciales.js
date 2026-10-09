@@ -1,6 +1,42 @@
 export default function initCredenciales() {
 
     document.getElementById('titulo').textContent = 'DATOS DE EMPRESA';
+    let idEmpresa = null;
+    let logoActual = null;
+    let previewLogoUrl = null;
+
+    function renderLogo(ruta) {
+        logoActual = ruta || null;
+        const $imagen = $('#logoEmpresaActual');
+
+        if (!logoActual) {
+            $imagen.addClass('d-none').removeAttr('src');
+            $('#sinLogoEmpresa').removeClass('d-none').text('No hay un logo configurado.');
+            $('#btnEliminarLogo').addClass('d-none');
+            return;
+        }
+
+        const src = /^https?:\/\//i.test(logoActual)
+            ? logoActual
+            : `/${logoActual.replace(/^\/+/, '')}`;
+
+        $imagen.off('error.logoCredenciales').one('error.logoCredenciales', function () {
+            $(this).addClass('d-none').removeAttr('src');
+            $('#sinLogoEmpresa').removeClass('d-none').text('No se pudo cargar el logo guardado.');
+            $('#btnEliminarLogo').removeClass('d-none');
+        });
+
+        $imagen.attr('src', src).removeClass('d-none');
+        $('#sinLogoEmpresa').addClass('d-none');
+        $('#btnEliminarLogo').removeClass('d-none');
+    }
+
+    function limpiarPreviewLogo() {
+        if (previewLogoUrl) URL.revokeObjectURL(previewLogoUrl);
+        previewLogoUrl = null;
+        $('#previewLogoEmpresa').removeAttr('src');
+        $('#contenedorPreviewLogo').addClass('d-none');
+    }
 
     function cargarCredenciales() {
 
@@ -14,6 +50,9 @@ export default function initCredenciales() {
                 if (res.success && res.data) {
 
                     let data = res.data;
+                    idEmpresa = data.id;
+                    $('#editar_id_empresa, #logo_id_empresa').val(idEmpresa);
+                    renderLogo(data.logo_empresa);
 
                     $('#nombre_empresa').text(data.nombre_empresa ?? '-');
                     $('#ruc_empresa').text(data.ruc_empresa ?? '-');
@@ -55,6 +94,78 @@ export default function initCredenciales() {
 
     // 🚀 Inicializar
     cargarCredenciales();
+
+    $('#btnCambiarLogo').off('click.logoCredenciales').on('click.logoCredenciales', function () {
+        if (!idEmpresa) {
+            mostrarToast('No se encontró la configuración de la empresa', 'danger');
+            return;
+        }
+        $('#logo_id_empresa').val(idEmpresa);
+        $('#formLogoEmpresa')[0].reset();
+        limpiarPreviewLogo();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalLogoEmpresa')).show();
+    });
+
+    $('#archivoLogoEmpresa').off('change.logoCredenciales').on('change.logoCredenciales', function () {
+        limpiarPreviewLogo();
+        const archivo = this.files?.[0];
+        if (!archivo) return;
+        previewLogoUrl = URL.createObjectURL(archivo);
+        $('#previewLogoEmpresa').attr('src', previewLogoUrl);
+        $('#contenedorPreviewLogo').removeClass('d-none');
+    });
+
+    $('#btnGuardarLogo').off('click.logoCredenciales').on('click.logoCredenciales', function () {
+        const archivo = $('#archivoLogoEmpresa')[0].files?.[0];
+        if (!idEmpresa || !archivo) {
+            mostrarToast('Seleccione una imagen para el logo', 'warning');
+            return;
+        }
+
+        const datos = new FormData();
+        datos.append('logo_empresa', archivo);
+        datos.append('_token', $('meta[name="csrf-token"]').attr('content'));
+
+        $.ajax({
+            url: `/credenciales/${idEmpresa}/logo`,
+            type: 'POST',
+            data: datos,
+            processData: false,
+            contentType: false,
+            success: function (res) {
+                renderLogo(res.credenciales.logo_empresa);
+                bootstrap.Modal.getInstance(document.getElementById('modalLogoEmpresa'))?.hide();
+                limpiarPreviewLogo();
+                mostrarToast(res.mensaje || 'Logo guardado correctamente', 'success');
+            },
+            error: function (xhr) {
+                const mensaje = xhr.responseJSON?.errors?.logo_empresa?.[0]
+                    || xhr.responseJSON?.mensaje
+                    || 'No se pudo guardar el logo';
+                mostrarToast(mensaje, 'danger');
+            }
+        });
+    });
+
+    $('#btnEliminarLogo').off('click.logoCredenciales').on('click.logoCredenciales', function () {
+        if (!idEmpresa || !logoActual) return;
+        if (!window.confirm('¿Desea eliminar el logo de la empresa?')) return;
+
+        $.ajax({
+            url: `/credenciales/${idEmpresa}/logo`,
+            type: 'DELETE',
+            data: { _token: $('meta[name="csrf-token"]').attr('content') },
+            success: function (res) {
+                renderLogo(null);
+                mostrarToast(res.mensaje || 'Logo eliminado correctamente', 'success');
+            },
+            error: function (xhr) {
+                mostrarToast(xhr.responseJSON?.mensaje || 'No se pudo eliminar el logo', 'danger');
+            }
+        });
+    });
+
+    $('#modalLogoEmpresa').off('hidden.bs.modal.logoCredenciales').on('hidden.bs.modal.logoCredenciales', limpiarPreviewLogo);
 
 /* ----------------------------------------------------------------------------------------------------------- */
 

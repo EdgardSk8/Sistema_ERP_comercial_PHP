@@ -17,6 +17,9 @@ class VariacionTalla extends Model
         'id_variacion',
         'id_talla',
         'stock',
+        'sku',
+        'precio_compra',
+        'precio_venta',
     ];
 
     public function variacion(): BelongsTo

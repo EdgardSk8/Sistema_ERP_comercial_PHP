@@ -56,6 +56,11 @@ class Producto extends Model
         return $this->belongsTo(Impuesto::class,'id_impuesto');
     }
 
+    public function variaciones()
+    {
+        return $this->hasMany(ProductoVariacion::class, 'id_producto', 'id_producto');
+    }
+
     public function ubicacion() 
     {
         return $this->belongsTo(Ubicacion::class,'id_ubicacion');

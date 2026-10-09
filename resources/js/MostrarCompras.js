@@ -6,6 +6,7 @@ export default function initMostrarCompras() {
 
     $('#tablaCompras').DataTable({
         ajax: { url: '/compras/mostrar', type: 'GET', dataSrc: 'compras' },
+        deferRender: true,
 
         columns: [
 
@@ -79,7 +80,7 @@ export default function initMostrarCompras() {
             compra.detalles.forEach(detalle => {
                 filas += `
                     <tr>
-                        <td>${detalle.producto?.nombre_producto ?? '—'}</td>
+                        <td>${detalle.producto?.nombre_producto ?? '—'}${detalle.descripcion_variacion ? ` · ${detalle.descripcion_variacion}` : ''}${detalle.sku_variacion ? `<small class="d-block text-muted">SKU: ${detalle.sku_variacion}</small>` : ''}</td>
                         <td class="text-center">${detalle.cantidad_compra}</td>
                         <td class="text-end">C$ ${parseFloat(detalle.precio_unitario_compra).toFixed(2)}</td>
                         <td class="text-end">C$ ${(detalle.subtotal_detalle_compra - (detalle.precio_unitario_compra * detalle.cantidad_compra)).toFixed(2)}</td>

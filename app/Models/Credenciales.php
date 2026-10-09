@@ -16,6 +16,7 @@ class Credenciales extends Model
         'direccion_empresa',
         'telefono_empresa',
         'correo_empresa',
+        'logo_empresa',
         'tipo_cambio' 
     ];
 

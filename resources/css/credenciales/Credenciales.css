@@ -1,0 +1,29 @@
+.credencial-logo-preview{
+    display:flex;
+    min-height:112px;
+    align-items:center;
+    justify-content:flex-start;
+    padding:12px;
+    border:1px dashed var(--border);
+    border-radius:10px;
+    background:var(--bg);
+}
+
+.credencial-logo-preview img{
+    display:block;
+    width:auto;
+    max-width:min(100%,260px);
+    height:auto;
+    max-height:140px;
+    object-fit:contain;
+    border-radius:8px;
+}
+
+#contenedorPreviewLogo{justify-content:center}
+#logoEmpresaActual.d-none,#previewLogoEmpresa.d-none{display:none!important}
+
+[data-theme="dark"] .credencial-logo-preview{
+    border-color:var(--border-strong);
+    background:var(--surface-muted);
+    color:var(--text-soft);
+}

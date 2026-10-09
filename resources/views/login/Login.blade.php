@@ -5,11 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Login - Sistema POS</title>
+    <title>Login - {{ $nombreEmpresa ?: 'Sistema POS' }}</title>
 
     @include('principal.links')
     @vite(['resources/css/variables.css'])
     @vite(['resources/css/login/login.css'])
+
+    <script>
+        try {
+            document.documentElement.dataset.theme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+        } catch (_) {
+            document.documentElement.dataset.theme = 'light';
+        }
+    </script>
 
     <script src="{{ Vite::asset('resources/js/Login.js') }}"></script>
     <script src="{{ Vite::asset('resources/js/FuncionesGlobales.js') }}"></script>
@@ -19,31 +27,31 @@
 
 <body>
 
-    <!-- Fondo -->
-    <div class="position-fixed top-0 start-0 w-100 h-100 overflow-hidden" style="z-index:0;">
-        <div class="bg-shape bg-1"></div>
-        <div class="bg-shape bg-2"></div>
-    </div>
-
-    <div class="container min-vh-100 d-flex justify-content-center align-items-center position-relative" style="z-index:1;">
+    <main class="login-page">
+        <div class="login-glow login-glow-one" aria-hidden="true"></div>
+        <div class="login-glow login-glow-two" aria-hidden="true"></div>
 
         <div class="card login-card">
+
+            <div class="login-accent" aria-hidden="true"></div>
 
             <div class="card-body p-4">
 
                 <!-- Logo -->
                 <div class="text-center mb-4">
 
-                    <img src="{{ asset('img/icono.png') }}"
-                         class="login-logo"
-                         alt="Logo">
+                    @if(filled($logoEmpresa))
+                        <img src="{{ $logoEmpresa }}"
+                             class="login-logo"
+                             alt="Logo de {{ $nombreEmpresa ?: 'la empresa' }}">
+                    @endif
 
-                    <h4 class="fw-bold mt-3 mb-1">
-                        Tellez S.A
+                    <h4 class="login-title fw-bold {{ filled($logoEmpresa) ? 'mt-3' : '' }} mb-1">
+                        {{ $nombreEmpresa }}
                     </h4>
 
-                    <p class="text-muted small mb-0">
-                        Sistema POS
+                    <p class="login-subtitle small mb-0">
+                        <!-- Sistema POS -->
                     </p>
 
                 </div>
@@ -53,7 +61,7 @@
                     @csrf
 
                     <div class="mb-3">
-                        <label class="form-label">
+                        <label class="form-label" for="nombre_usuario">
                             Usuario
                         </label>
 
@@ -65,6 +73,7 @@
 
                             <input
                                 type="text"
+                                id="nombre_usuario"
                                 name="nombre_usuario"
                                 class="form-control"
                                 placeholder="Ingrese su usuario"
@@ -75,7 +84,7 @@
 
                     <div class="mb-4">
 
-                        <label class="form-label">
+                        <label class="form-label" for="password">
                             Contraseña
                         </label>
 
@@ -87,6 +96,7 @@
 
                             <input
                                 type="password"
+                                id="password"
                                 name="password"
                                 class="form-control"
                                 placeholder="Ingrese su contraseña"
@@ -107,10 +117,10 @@
 
                 </form>
 
-                <div class="text-center mt-4">
+                <div class="text-center mt-4 login-footer">
 
                     <small class="text-muted">
-                        © {{ date('Y') }} Tellez S.A
+                        <!-- © {{ date('Y') }} Tellez S.A -->
                     </small>
 
                 </div>
@@ -119,7 +129,7 @@
 
         </div>
 
-    </div>
+    </main>
 
 </body>
 

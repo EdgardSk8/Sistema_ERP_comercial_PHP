@@ -105,6 +105,12 @@ body{
     opacity:1;
 }
 
+[data-theme="dark"] .select2-container--default .select2-selection__rendered,
+[data-theme="dark"] .select2-results__option,
+[data-theme="dark"] .select2-search__field{
+    color:var(--text) !important;
+}
+
 [data-theme="dark"] .form-control:focus,
 [data-theme="dark"] .form-select:focus,
 [data-theme="dark"] .select2-container--focus .select2-selection{
@@ -828,9 +834,9 @@ button i{ pointer-events:none; }
 .btn.guardar:hover, .btn.actualizar:hover { background-color: var(--verde-hover); color: var(--bg); }
 .btn.guardar:active, .btn.actualizar:active { background-color: var(--verde); color: var(--bg); transform: scale(0.90); }
 
-.cancelar { background-color: var(--rojo); transition: background-color 0.2s ease; transition: all 0.15s ease; color: var(--text-on-accent); }
-.btn.cancelar:hover { background-color: var(--rojo-hover); color: var(--text-on-accent); }
-.btn.cancelar:active { background-color: var(--rojo); color:var(--text-on-accent); transform: scale(0.90); }
+.cancelar { background-color: var(--rojo); transition: background-color 0.2s ease; transition: all 0.15s ease; color: var(--bg); }
+.btn.cancelar:hover { background-color: var(--rojo-hover); color: var(--bg); }
+.btn.cancelar:active { background-color: var(--rojo); color:var(--bg); transform: scale(0.90); }
 
 
 
@@ -900,6 +906,8 @@ button i{ pointer-events:none; }
 /* BOTON CERRAR */
 .toast-custom .btn-close { width: 12px; height: 12px; opacity: .45; margin-left: 5px; }
 .toast-custom .btn-close:hover { opacity: .9; }
+[data-theme="dark"] .toast-custom .btn-close { filter: invert(75%); opacity: .85; }
+[data-theme="dark"] .toast-custom .btn-close:hover { opacity: 1; }
 
 /* SUCCESS COLOR */
 .toast-success::before { background: var(--success); }

@@ -206,20 +206,26 @@ class DashboardController extends Controller
         // FILTRO FECHAS
         if ($inicio && $fin) { $query->whereBetween('fecha_venta', [ $inicio . ' 00:00:00', $fin . ' 23:59:59']); }
 
-        // SQL GANANCIA
-        $gananciaSQL = "SUM( ( detalle_ventas.precio_unitario_venta - IFNULL(productos.precio_compra,0) ) * detalle_ventas.cantidad_venta)";
+        // Utiliza el costo de la variante cuando el detalle la identifica;
+        // los detalles sin variante conservan el costo del producto base.
+        $costoSQL = 'COALESCE(variacion_tallas.precio_compra, productos.precio_compra, 0)';
+        $gananciaSQL = "SUM((detalle_ventas.precio_unitario_venta - $costoSQL) * detalle_ventas.cantidad_venta)";
 
         $margen = (clone $query)
             ->join('detalle_ventas', 'ventas.id_venta', '=', 'detalle_ventas.id_venta')
             ->join('productos', 'detalle_ventas.id_producto', '=', 'productos.id_producto')
-            ->selectRaw("$gananciaSQL AS ganancia, SUM(total_venta) AS ventas")->first();
+            ->leftJoin('variacion_tallas', 'detalle_ventas.id_variacion_talla', '=', 'variacion_tallas.id_variacion_talla')
+            ->selectRaw("$gananciaSQL AS ganancia, SUM(detalle_ventas.subtotal_detalle_venta + detalle_ventas.monto_impuesto) AS ventas")->first();
 
         $porcentaje = ($margen && $margen->ventas > 0) ? ($margen->ganancia / $margen->ventas) * 100 : 0;
+        $gananciaTotal = (float) ($margen->ganancia ?? 0);
+        $cantidadVentas = (clone $query)->count();
 
         // DATASET PRINCIPAL (grafica 1)
         $graficaQuery = (clone $query)
             ->join('detalle_ventas', 'ventas.id_venta', '=', 'detalle_ventas.id_venta')
-            ->join('productos', 'detalle_ventas.id_producto', '=', 'productos.id_producto');
+            ->join('productos', 'detalle_ventas.id_producto', '=', 'productos.id_producto')
+            ->leftJoin('variacion_tallas', 'detalle_ventas.id_variacion_talla', '=', 'variacion_tallas.id_variacion_talla');
 
         switch ($tipo) {
 
@@ -227,8 +233,7 @@ class DashboardController extends Controller
 
                 $ganancias = (clone $graficaQuery)
                         ->selectRaw('DAYOFWEEK(fecha_venta) as orden')
-                        ->selectRaw('COUNT(*) as cantidad')
-                        ->selectRaw('SUM(total_venta) as total')
+                        ->selectRaw('COUNT(DISTINCT ventas.id_venta) as cantidad')
                         ->selectRaw("$gananciaSQL as ganancia")
                         ->groupBy('orden')
                         ->orderBy('orden')
@@ -264,7 +269,7 @@ class DashboardController extends Controller
             case 'mes':
 
                 $ganancias = (clone $graficaQuery)
-                    ->selectRaw("MONTH(fecha_venta) as mes, COUNT(*) as cantidad, SUM(total_venta) as total, $gananciaSQL as ganancia")
+                    ->selectRaw("MONTH(fecha_venta) as mes, COUNT(DISTINCT ventas.id_venta) as cantidad, $gananciaSQL as ganancia")
                     ->groupBy('mes')
                     ->orderBy('mes')
                     ->get()
@@ -285,7 +290,7 @@ class DashboardController extends Controller
                     $grafica->push([
                         'label' => $nombre,
                         'cantidad' => (int)($venta->cantidad ?? 0),
-                        'total' => round((float)($venta->total ?? 0),2),
+                        'total' => round((float)($venta->ganancia ?? 0),2),
                     ]);
 
                 }
@@ -297,14 +302,20 @@ class DashboardController extends Controller
                 $grafica = (clone $graficaQuery)
 
                     ->selectRaw('YEAR(fecha_venta) as label')
-                    ->selectRaw('COUNT(*) as cantidad')
-                    ->selectRaw('SUM(total_venta) as total')
+                    ->selectRaw('COUNT(DISTINCT ventas.id_venta) as cantidad')
                     ->selectRaw("$gananciaSQL as ganancia")
 
                     ->groupBy(DB::raw('YEAR(fecha_venta)'))
                     ->orderBy('label')
 
-                    ->get();
+                    ->get()
+                    ->map(function ($item) {
+                        return [
+                            'label' => $item->label,
+                            'cantidad' => (int) $item->cantidad,
+                            'total' => round((float) $item->ganancia, 2),
+                        ];
+                    });
 
             break;
 
@@ -316,17 +327,20 @@ class DashboardController extends Controller
 
         $respuesta['grafica_1'] = $grafica;
 
-        $respuesta['grafica_2'] = (clone $query)
+        $gananciasPorCategoria = (clone $query)
             ->join('detalle_ventas', 'ventas.id_venta', '=', 'detalle_ventas.id_venta')
             ->join('productos', 'detalle_ventas.id_producto', '=', 'productos.id_producto')
+            ->leftJoin('variacion_tallas', 'detalle_ventas.id_variacion_talla', '=', 'variacion_tallas.id_variacion_talla')
             ->join('categoria', 'productos.id_categoria', '=', 'categoria.id_categoria')
-            ->selectRaw('
+            ->selectRaw("
                 categoria.nombre_categoria as label,
                 SUM(detalle_ventas.cantidad_venta) as cantidad,
                 SUM(detalle_ventas.subtotal_detalle_venta + detalle_ventas.monto_impuesto) as total,
-                SUM((detalle_ventas.precio_unitario_venta - productos.precio_compra) * detalle_ventas.cantidad_venta) as ganancia
-            ')
-            ->groupBy('categoria.nombre_categoria')->orderByDesc('ganancia')->limit('10')->get()
+                $gananciaSQL as ganancia
+            ")
+            ->groupBy('categoria.id_categoria', 'categoria.nombre_categoria')->orderByDesc('ganancia')->limit(10)->get();
+
+        $respuesta['grafica_2'] = $gananciasPorCategoria->take(10)
             ->map(function($item){
 
                 return [
@@ -342,10 +356,10 @@ class DashboardController extends Controller
 
             ->join('detalle_ventas','ventas.id_venta','=','detalle_ventas.id_venta')
             ->join('productos','detalle_ventas.id_producto','=','productos.id_producto')
+            ->leftJoin('variacion_tallas', 'detalle_ventas.id_variacion_talla', '=', 'variacion_tallas.id_variacion_talla')
 
             ->selectRaw('HOUR(fecha_venta) as hora')
-            ->selectRaw('COUNT(*) as cantidad')
-            ->selectRaw('SUM(total_venta) as total')
+            ->selectRaw('COUNT(DISTINCT ventas.id_venta) as cantidad')
             ->selectRaw("$gananciaSQL as ganancia")->groupBy('hora')->orderBy('hora')->get()
 
             ->map(function($item){
@@ -363,6 +377,7 @@ class DashboardController extends Controller
 
             ->join('detalle_ventas','ventas.id_venta','=','detalle_ventas.id_venta')
             ->join('productos','detalle_ventas.id_producto','=','productos.id_producto')
+            ->leftJoin('variacion_tallas', 'detalle_ventas.id_variacion_talla', '=', 'variacion_tallas.id_variacion_talla')
 
             ->selectRaw('productos.nombre_producto as label')
             ->selectRaw('SUM(detalle_ventas.cantidad_venta) as cantidad')
@@ -379,16 +394,13 @@ class DashboardController extends Controller
             });
 
         // KPIS
+        $categoriaMasRentable = $gananciasPorCategoria->first();
         $respuesta['kpis'] = [
 
             'ganancia_total' => [
                 'titulo' => 'UTILIDAD BRUTA',
                 'valor' => 'C$ ' . number_format(
-                    round((float)((clone $query)
-                        ->join('detalle_ventas','ventas.id_venta','=','detalle_ventas.id_venta')
-                        ->join('productos','detalle_ventas.id_producto','=','productos.id_producto')
-                        ->selectRaw("$gananciaSQL as ganancia")
-                        ->value('ganancia') ?? 0),2),
+                    round($gananciaTotal, 2),
                     2,
                     ',',
                     '.'
@@ -407,14 +419,7 @@ class DashboardController extends Controller
             'ganancia_promedio' => [
                 'titulo' => 'GANANCIA PROMEDIO',
                 'valor' => 'C$ ' . number_format(
-                    round( ((clone $query)->count() > 0) ?
-                        (
-                            ((clone $query)
-                            ->join('detalle_ventas','ventas.id_venta','=','detalle_ventas.id_venta')
-                            ->join('productos','detalle_ventas.id_producto','=','productos.id_producto')
-                            ->selectRaw("$gananciaSQL as ganancia")
-                            ->value('ganancia') ?? 0) / (clone $query)->count()
-                        ) : 0, 2), 2, ',', '.'),
+                    round($cantidadVentas > 0 ? $gananciaTotal / $cantidadVentas : 0, 2), 2, ',', '.'),
                 'tooltip' => 'Ganancia promedio por venta',
                 'icono' => 'fas fa-chart-line',
             ],
@@ -423,53 +428,8 @@ class DashboardController extends Controller
 
                 'titulo' => 'CATEGORÍA MÁS RENTABLE',
 
-                'valor' => (clone $query)
-                    ->join('detalle_ventas','ventas.id_venta','=','detalle_ventas.id_venta')
-                    ->join('productos','detalle_ventas.id_producto','=','productos.id_producto')
-                    ->join('categoria','productos.id_categoria','=','categoria.id_categoria')
-                    ->selectRaw("
-                        categoria.nombre_categoria,
-                        $gananciaSQL as ganancia
-                    ")
-                    ->groupBy(
-                        'categoria.id_categoria',
-                        'categoria.nombre_categoria'
-                    )
-                    ->orderByDesc('ganancia')
-                    ->first()
-                    ? 'C$ ' . number_format(
-                        (float)(clone $query)
-                            ->join('detalle_ventas','ventas.id_venta','=','detalle_ventas.id_venta')
-                            ->join('productos','detalle_ventas.id_producto','=','productos.id_producto')
-                            ->join('categoria','productos.id_categoria','=','categoria.id_categoria')
-                            ->selectRaw("
-                                $gananciaSQL as ganancia
-                            ")
-                            ->groupBy(
-                                'categoria.id_categoria',
-                                'categoria.nombre_categoria'
-                            )
-                            ->orderByDesc('ganancia')
-                            ->first()
-                            ->ganancia ?? 0,
-                        2,
-                        ',',
-                        '.'
-                    ) . ' (' .
-                        (clone $query)
-                            ->join('detalle_ventas','ventas.id_venta','=','detalle_ventas.id_venta')
-                            ->join('productos','detalle_ventas.id_producto','=','productos.id_producto')
-                            ->join('categoria','productos.id_categoria','=','categoria.id_categoria')
-                            ->select('categoria.nombre_categoria')
-                            ->selectRaw("$gananciaSQL as ganancia")
-                            ->groupBy(
-                                'categoria.id_categoria',
-                                'categoria.nombre_categoria'
-                            )
-                            ->orderByDesc('ganancia')
-                            ->first()
-                            ->nombre_categoria
-                        . ')'
+                'valor' => $categoriaMasRentable
+                    ? 'C$ ' . number_format((float) $categoriaMasRentable->ganancia, 2, ',', '.') . ' (' . $categoriaMasRentable->label . ')'
                     : 'Sin datos',
 
                 'tooltip' => 'Categoría que genera mayor utilidad',
@@ -493,10 +453,11 @@ class DashboardController extends Controller
             ],
 
             'grafica_2' => [
-                'titulo'=>'Categorias con mas Ventas',
-                'dataset'=>'Ventas',
+                'titulo'=>'Ganancia por Categoría',
+                'dataset'=>'Ganancia (C$)',
                 'labels'=>[
-                    'cantidad'=>' Ventas',
+                    'cantidad'=>' Unidades vendidas',
+                    'total'=>' Ganancia',
                 ],
             ],
 
@@ -948,7 +909,7 @@ class DashboardController extends Controller
 
                     ->join('cajas', 'ventas.id_caja', '=', 'cajas.id_caja')
 
-                    ->selectRaw('DAYOFWEEK(cajas.fecha_apertura) as orden')
+                    ->selectRaw('DAYOFWEEK(ventas.fecha_venta) as orden')
                     ->selectRaw('COUNT(DISTINCT cajas.id_caja) as cantidad')
                     ->selectRaw('SUM(ventas.total_venta) as total')
 
@@ -987,7 +948,7 @@ class DashboardController extends Controller
 
                     ->join('cajas', 'ventas.id_caja', '=', 'cajas.id_caja')
 
-                    ->selectRaw('MONTH(cajas.fecha_apertura) as mes')
+                    ->selectRaw('MONTH(ventas.fecha_venta) as mes')
                     ->selectRaw('COUNT(DISTINCT cajas.id_caja) as cantidad')
                     ->selectRaw('SUM(ventas.total_venta) as total')
 
@@ -1031,11 +992,11 @@ class DashboardController extends Controller
 
                     ->join('cajas', 'ventas.id_caja', '=', 'cajas.id_caja')
 
-                    ->selectRaw('YEAR(cajas.fecha_apertura) as label')
+                    ->selectRaw('YEAR(ventas.fecha_venta) as label')
                     ->selectRaw('COUNT(DISTINCT cajas.id_caja) as cantidad')
                     ->selectRaw('SUM(ventas.total_venta) as total')
 
-                    ->groupBy(DB::raw('YEAR(cajas.fecha_apertura)'))
+                    ->groupBy(DB::raw('YEAR(ventas.fecha_venta)'))
                     ->orderBy('label')
 
                     ->get()
@@ -1259,12 +1220,12 @@ class DashboardController extends Controller
 
             'grafica_1' => [
 
-                'titulo' => 'Aperturas de Caja',
-                'dataset' => 'Cajas abiertas',
+                'titulo' => 'Ingresos por Fecha de Venta',
+                'dataset' => 'Ingresos',
 
                 'labels' => [
 
-                    'cantidad' => 'Cajas abiertas',
+                    'cantidad' => 'Cajas utilizadas',
                     'total' => 'Ingresos',
 
                 ],
@@ -1372,12 +1333,6 @@ class DashboardController extends Controller
                 case 'dia':
 
                     $grafica = (clone $baseQuery)
-
-                        ->whereDate(
-                            'fecha_movimiento',
-                            '>=',
-                            now()->subDays(99)
-                        )
 
                         ->selectRaw(
                             "DATE_FORMAT(fecha_movimiento,'%Y-%m-%d') as label"

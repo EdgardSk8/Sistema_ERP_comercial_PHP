@@ -19,6 +19,7 @@ use App\Models\Credenciales;
 use App\Models\MetodoPagoCuenta;
 use App\Models\Cuenta;
 use App\Models\MovimientoCuenta;
+use App\Models\VariacionTalla;
 
 class FacturacionController extends Controller
 {
@@ -41,7 +42,15 @@ class FacturacionController extends Controller
                 ], 400);
             }
 
-            $query = Producto::with('impuesto')
+            $query = Producto::with([
+                    'impuesto',
+                    'variaciones' => function ($variaciones) {
+                        $variaciones->where('estado_variacion', 1)
+                            ->with(['tallas.talla' => function ($tallas) {
+                                $tallas->where('estado_talla', 1);
+                            }]);
+                    }
+                ])
                 ->where('estado_producto', 1);
 
             // 🔍 Buscador
@@ -59,13 +68,13 @@ class FacturacionController extends Controller
                 )
                 //->limit(20)
                 ->get()
-                ->map(function ($p) {
+                ->flatMap(function ($p) {
 
                     $iva = $p->impuesto->porcentaje_impuesto ?? 0;
 
                     $precioConIVA = $p->precio_venta + ($p->precio_venta * ($iva / 100));
 
-                    return [
+                    $producto = [
                         'id_producto'     => $p->id_producto,
                         'nombre_producto' => $p->nombre_producto,
                         'precio_venta'    => $p->precio_venta,
@@ -74,6 +83,25 @@ class FacturacionController extends Controller
                         'stock_actual'    => $p->stock_actual,
                         'imagen_producto' => $p->imagen_producto
                     ];
+
+                    $variantes = $p->variaciones->flatMap(function ($variacion) use ($p, $iva, $precioConIVA) {
+                        return $variacion->tallas->map(function ($variacionTalla) use ($p, $variacion, $iva, $precioConIVA) {
+                            return [
+                                'id_producto' => $p->id_producto,
+                                'id_variacion_talla' => $variacionTalla->id_variacion_talla,
+                                'nombre_producto' => $p->nombre_producto . ' · ' . $variacion->color . ' · ' . ($variacionTalla->talla->talla ?? 'Sin talla'),
+                                'precio_venta' => $variacionTalla->precio_venta ?? $p->precio_venta,
+                                'precio_con_iva' => round(($variacionTalla->precio_venta ?? $p->precio_venta) * (1 + ($iva / 100)), 2),
+                                'iva' => $iva,
+                                'stock_actual' => $variacionTalla->stock,
+                                'imagen_producto' => $p->imagen_producto,
+                                'es_variacion' => true,
+                                'sku' => $variacionTalla->sku,
+                            ];
+                        })->all();
+                    });
+
+                    return $variantes->isNotEmpty() ? $variantes->values()->all() : [$producto];
                 });
 
             return response()->json([
@@ -191,11 +219,35 @@ class FacturacionController extends Controller
                     throw new \Exception('Producto no encontrado');
                 }
 
-                $cantidad = $item['cantidad'];
-                $porcentaje = $producto->impuesto->porcentaje_impuesto;
+                $cantidad = (int) $item['cantidad'];
+                if ($cantidad < 1) {
+                    throw new \Exception('La cantidad debe ser al menos 1');
+                }
+                $variacionTalla = null;
+                if (!empty($item['id_variacion_talla'])) {
+                    $variacionTalla = VariacionTalla::with(['variacion', 'talla'])
+                        ->where('id_variacion_talla', $item['id_variacion_talla'])
+                        ->whereHas('variacion', function ($query) use ($producto) {
+                            $query->where('id_producto', $producto->id_producto)
+                                ->where('estado_variacion', 1);
+                        })
+                        ->whereHas('talla', function ($query) {
+                            $query->where('estado_talla', 1);
+                        })
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$variacionTalla) {
+                        throw new \Exception('La variante seleccionada ya no está disponible');
+                    }
+                }
+
+                $porcentaje = $producto->impuesto->porcentaje_impuesto ?? 0;
 
                 // 🔥 PRECIO REAL desde BD (SIN IVA)
-                $precioSinImpuesto = $producto->precio_venta;
+                $precioSinImpuesto = $variacionTalla
+                    ? ($variacionTalla->precio_venta ?? $producto->precio_venta)
+                    : $producto->precio_venta;
 
                 // 🔥 cálculo correcto
                 $impuestoUnitario = $precioSinImpuesto * ($porcentaje / 100);
@@ -209,6 +261,11 @@ class FacturacionController extends Controller
                 DetalleVenta::create([
                     'id_venta' => $venta->id_venta,
                     'id_producto' => $producto->id_producto,
+                    'id_variacion_talla' => $variacionTalla?->id_variacion_talla,
+                    'descripcion_variacion' => $variacionTalla
+                        ? trim(($variacionTalla->variacion->color ?? '') . ' · ' . ($variacionTalla->talla->talla ?? ''))
+                        : null,
+                    'sku_variacion' => $variacionTalla?->sku,
                     'cantidad_venta' => $cantidad,
                     'precio_unitario_venta' => $precioSinImpuesto, // 🔥 SIN IVA
                     'subtotal_detalle_venta' => $subtotal,
@@ -217,22 +274,24 @@ class FacturacionController extends Controller
                 ]);
 
                 // 📦 stock
-                $stockAntes = $producto->stock_actual;
+                $stockAntes = $variacionTalla ? $variacionTalla->stock : $producto->stock_actual;
                 $stockDespues = $stockAntes - $cantidad;
 
                 // if ($stockDespues < 0) {
                 //     throw new \Exception("Stock insuficiente para {$producto->nombre_producto}");
                 // }
 
-                if ($producto->stock_actual < $cantidad) {
+                if ($stockAntes < $cantidad) {
                     throw new \Exception("El producto '{$producto->nombre_producto}' ya no tiene existencias disponibles");
                 }
 
-                //$producto->decrement('stock_actual', $cantidad);
-
-                $actualizado = Producto::where('id_producto', $item['id'])
-                ->where('stock_actual', '>=', $cantidad)
-                ->decrement('stock_actual', $cantidad);
+                $actualizado = $variacionTalla
+                    ? VariacionTalla::where('id_variacion_talla', $variacionTalla->id_variacion_talla)
+                        ->where('stock', '>=', $cantidad)
+                        ->decrement('stock', $cantidad)
+                    : Producto::where('id_producto', $producto->id_producto)
+                        ->where('stock_actual', '>=', $cantidad)
+                        ->decrement('stock_actual', $cantidad);
 
                 if (!$actualizado) {
                     throw new \Exception("El producto '{$producto->nombre_producto}' ya no tiene existencias disponibles");
@@ -243,7 +302,9 @@ class FacturacionController extends Controller
                     'tipo_movimiento' => 'SALIDA',
                     'cantidad_movimiento' => $cantidad,
                     'stock_resultante' => $stockDespues,
-                    'motivo_movimiento' => 'Venta despacho realizada',
+                    'motivo_movimiento' => $variacionTalla
+                        ? 'Venta despacho - ' . trim(($variacionTalla->variacion->color ?? '') . ' ' . ($variacionTalla->talla->talla ?? ''))
+                        : 'Venta despacho realizada',
                     'id_referencia' => $venta->id_venta,
                     'tipo_referencia' => 'VENTA',
                     'precio_unitario' => $precioSinImpuesto,
@@ -307,7 +368,9 @@ class FacturacionController extends Controller
                     'total' => $totalGeneral,
                     'productos' => $venta->detalles->map(function ($d) {
                         return [
-                            'nombre' => $d->producto->nombre_producto,
+                            'nombre' => $d->producto->nombre_producto
+                                . ($d->descripcion_variacion ? ' · ' . $d->descripcion_variacion : '')
+                                . ($d->sku_variacion ? ' · SKU: ' . $d->sku_variacion : ''),
                             'cantidad' => $d->cantidad_venta,
                             'precio' => $d->precio_unitario_venta,
                             'impuesto' => $d->monto_impuesto,
@@ -431,12 +494,27 @@ class FacturacionController extends Controller
                 ]);
             }
 
-            if ($producto->stock_actual < $item['cantidad']) {
+            $variacionTalla = !empty($item['id_variacion_talla'])
+                ? VariacionTalla::with(['variacion', 'talla'])
+                    ->where('id_variacion_talla', $item['id_variacion_talla'])
+                    ->whereHas('variacion', function ($query) use ($producto) {
+                        $query->where('id_producto', $producto->id_producto)
+                            ->where('estado_variacion', 1);
+                    })->first()
+                : null;
+
+            if (!empty($item['id_variacion_talla']) && !$variacionTalla) {
+                return response()->json(['ok' => false, 'mensaje' => 'La variante seleccionada ya no está disponible']);
+            }
+
+            $stock = $variacionTalla ? $variacionTalla->stock : $producto->stock_actual;
+            if ($stock < $item['cantidad']) {
                 return response()->json([
                     'ok' => false,
-                    'mensaje' => "El producto '{$producto->nombre_producto}' ya no tiene existencias, por favor reinicie la pagina para ver el stock actualizado",
-                    'stock' => $producto->stock_actual,
-                    'id' => $producto->id_producto
+                    'mensaje' => "El producto '{$producto->nombre_producto}'" . ($variacionTalla ? ' (' . $variacionTalla->variacion->color . ' · ' . $variacionTalla->talla->talla . ')' : '') . ' ya no tiene existencias, por favor actualice el stock mostrado',
+                    'stock' => $stock,
+                    'id' => $producto->id_producto,
+                    'id_variacion_talla' => $variacionTalla?->id_variacion_talla,
                 ]);
             }
         }

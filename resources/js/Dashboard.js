@@ -6,7 +6,7 @@ export default function initDashboard() {
 
         radio.addEventListener('change', async () => {
             moduloActual = radio.value;
-            try { await ObtenerDatos(); } catch (error) { console.error(error); mostrarToast('No se pudieron cargar los datos.', 'danger'); }
+            await CargarDatosDashboard();
         });
 
     });
@@ -25,6 +25,8 @@ export default function initDashboard() {
 
     let moduloActual = 'ventas';
     let filtroBackend = null;
+    let solicitudActual = 0;
+    let controladorSolicitud = null;
 
     const rutasDashboard = {
         ventas: '/dashboard/ventas',
@@ -47,69 +49,102 @@ export default function initDashboard() {
     const ctx_Grafica_2 = document.getElementById('Chart_2').getContext('2d');
     const ctx_Grafica_3 = document.getElementById('Chart_3').getContext('2d');
 
+    function ObtenerColorTextoGrafica() {
+        return getComputedStyle(document.documentElement).getPropertyValue('--text-soft').trim() || '#AEB4BB';
+    }
+
+    function SincronizarTemaGraficas() {
+        const colorTexto = ObtenerColorTextoGrafica();
+
+        if (Chart_Grafica_1) {
+            Chart_Grafica_1.options.scales.x.ticks.color = colorTexto;
+            Chart_Grafica_1.options.scales.y.ticks.color = colorTexto;
+            Chart_Grafica_1.options.plugins.title.color = colorTexto;
+            Chart_Grafica_1.update('none');
+        }
+
+        if (Chart_Grafica_2) {
+            Chart_Grafica_2.options.plugins.legend.labels.color = colorTexto;
+            Chart_Grafica_2.options.plugins.title.color = colorTexto;
+            Chart_Grafica_2.update('none');
+        }
+
+        if (Chart_Grafica_3) {
+            Chart_Grafica_3.options.scales.x.ticks.color = colorTexto;
+            Chart_Grafica_3.options.scales.y.ticks.color = colorTexto;
+            Chart_Grafica_3.options.plugins.title.color = colorTexto;
+            Chart_Grafica_3.update('none');
+        }
+    }
+
+    window.__dashboardThemeObserver?.disconnect();
+    window.__dashboardThemeObserver = new MutationObserver(SincronizarTemaGraficas);
+    window.__dashboardThemeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+    });
+
     /* ══════════════════ [FUNCIONES] ══════════════════ */
 
-    // function Obtener_Filtros() { return document.querySelector('input[name="Radio_Filtro"]:checked').value; }
     function Obtener_Filtros() { 
-    return filtroBackend ?? document.querySelector('input[name="Radio_Filtro"]:checked').value;
-}
+        return filtroBackend ?? document.querySelector('input[name="Radio_Filtro"]:checked').value;
+    }
+
+    function FormatearFechaLocal(fecha) {
+        const año = fecha.getFullYear();
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        return `${año}-${mes}-${dia}`;
+    }
 
     //SIRVE PARA PONER LA FECHA DE FIN EN EL DIA DE HOY Y FIN HACE 3 MESES
     function InicializarFechasGraficas() {
         const hoy = new Date();
-        const fechaFin = hoy.toISOString().split('T')[0];
+        const fechaFin = FormatearFechaLocal(hoy);
         const fechaInicio = new Date();
         fechaInicio.setMonth(fechaInicio.getMonth() - 1);
-        const fechaInicioFormato = fechaInicio.toISOString().split('T')[0];
+        const fechaInicioFormato = FormatearFechaLocal(fechaInicio);
         Fecha_Ini.value = fechaInicioFormato;
         Fecha_Fin.value = fechaFin;
     }
 
     function AplicarFiltroSemana() {
-        const hoy = new Date(); const fechaFin = hoy.toISOString().split('T')[0]; const fechaInicio = new Date();
+        const hoy = new Date(); const fechaFin = FormatearFechaLocal(hoy); const fechaInicio = new Date();
         fechaInicio.setDate(hoy.getDate() - 6);
-        const inicio = fechaInicio.toISOString().split('T')[0];
-        if (Fecha_Ini._flatpickr) { Fecha_Ini._flatpickr.setDate(inicio); } else { Fecha_Ini.value = inicio; }
-        if (Fecha_Fin._flatpickr) { Fecha_Fin._flatpickr.setDate(fechaFin); } else { Fecha_Fin.value = fechaFin; }
+        const inicio = FormatearFechaLocal(fechaInicio);
+        if (Fecha_Ini._flatpickr) { Fecha_Ini._flatpickr.setDate(inicio, false); } else { Fecha_Ini.value = inicio; }
+        if (Fecha_Fin._flatpickr) { Fecha_Fin._flatpickr.setDate(fechaFin, false); } else { Fecha_Fin.value = fechaFin; }
     }
-
-    // PARA APLICAR EL FILTRO DEBEN DE TENER DATOS LOS INPUT DE FECHA
-    function ValidarFechas() { if (!Fecha_Ini.value || !Fecha_Fin.value) { return; } ObtenerDatos(); }
 
     // FUNCION PARA OBTENER DATOS
     async function ObtenerDatos() {
-        
-        let tipo = document.querySelector('input[name="Radio_Filtro"]:checked').value;
-        if (tipo === 'semana') { tipo = 'dia'; }
+        const solicitud = ++solicitudActual;
+        controladorSolicitud?.abort();
+        controladorSolicitud = new AbortController();
 
         const params = new URLSearchParams({ tipo: Obtener_Filtros(), inicio: Fecha_Ini.value, fin: Fecha_Fin.value });
-        const response = await fetch(`${rutasDashboard[moduloActual]}?${params}`);
+        const response = await fetch(`${rutasDashboard[moduloActual]}?${params}`, { signal: controladorSolicitud.signal });
+        if (!response.ok) throw new Error(`Error al cargar el dashboard (${response.status})`);
         const data = await response.json();
-        let datos = [];
-        switch (Obtener_Filtros()) { default: datos = data.grafica; break; }
+        if (solicitud !== solicitudActual) return;
+        if (!data.ui) throw new Error('La respuesta del dashboard no contiene la configuración de gráficas.');
 
         Render_Kpis(data.kpis);
-        Render_Grafica_1( data.grafica_1, data.ui.grafica_1 );
-        Render_Grafica_2( data.grafica_2, data.ui.grafica_2 );
-        Render_Grafica_3( data.grafica_3, data.ui.grafica_3 );
-        Render_Tabla_1( data.tabla_1, data.ui.tabla_1 );
+        Render_Grafica_1(data.grafica_1 ?? [], data.ui.grafica_1 ?? {});
+        Render_Grafica_2(data.grafica_2 ?? [], data.ui.grafica_2 ?? {});
+        Render_Grafica_3(data.grafica_3 ?? [], data.ui.grafica_3 ?? {});
+        Render_Tabla_1(data.tabla_1 ?? [], data.ui.tabla_1 ?? {});
 
     }
 
-    async function ObtenerDatossinkpis() {
-
-        const params = new URLSearchParams({ tipo: Obtener_Filtros(), inicio: Fecha_Ini.value, fin: Fecha_Fin.value });
-        const response = await fetch(`${rutasDashboard[moduloActual]}?${params}`);
-        const data = await response.json();
-        let datos = [];
-        switch (Obtener_Filtros()) { default: datos = data.grafica; break; }
-
-        // Render_Kpis(data.kpis);
-        Render_Grafica_1( data.grafica_1, data.ui.grafica_1 );
-        Render_Grafica_2( data.grafica_2, data.ui.grafica_2 );
-        Render_Grafica_3( data.grafica_3, data.ui.grafica_3 );
-        Render_Tabla_1( data.tabla_1, data.ui.tabla_1 );
-
+    async function CargarDatosDashboard() {
+        try {
+            await ObtenerDatos();
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error(error);
+            mostrarToast('No se pudieron cargar los datos.', 'danger');
+        }
     }
 
     // ANIMACION DE TEXTO PARA KPIS
@@ -231,14 +266,17 @@ export default function initDashboard() {
 
             options: {
 
-                scales: { x: { ticks: { callback: function(value) { const label = this.getLabelForValue(value); return EjeXDashboard(label); } } } },
+                scales: {
+                    x: { ticks: { color: ObtenerColorTextoGrafica(), callback: function(value) { const label = this.getLabelForValue(value); return EjeXDashboard(label); } } },
+                    y: { ticks: { color: ObtenerColorTextoGrafica() } }
+                },
                 responsive: true,
                 maintainAspectRatio: false,
 
                 plugins: {
 
                     legend: { display: false },
-                    title: { display: true, text: ui.titulo ?? '', font: { size: 12, weight: 'bold' }, padding: { top: 0, bottom: 5 } },
+                    title: { display: true, text: ui.titulo ?? '', color: ObtenerColorTextoGrafica(), font: { size: 12, weight: 'bold' }, padding: { top: 0, bottom: 5 } },
                     
                     tooltip: {
 
@@ -316,7 +354,8 @@ export default function initDashboard() {
                             padding: 10,
                             font: {
                                 size: 12
-                            }
+                            },
+                            color: ObtenerColorTextoGrafica()
                         }
                     },
 
@@ -326,6 +365,7 @@ export default function initDashboard() {
                         display: true,
 
                         text: ui.titulo ?? '',
+                        color: ObtenerColorTextoGrafica(),
 
                         font: {
                             size: 12,
@@ -421,7 +461,7 @@ export default function initDashboard() {
 
                 plugins: {
 
-                    title: { display: true, text: ui.titulo ?? '', font: { size: 12, weight: 'bold' },padding: { top: 0, bottom: 5 } },
+                    title: { display: true, text: ui.titulo ?? '', color: ObtenerColorTextoGrafica(), font: { size: 12, weight: 'bold' },padding: { top: 0, bottom: 5 } },
                     legend: { display: false },
 
                     tooltip: {
@@ -442,7 +482,10 @@ export default function initDashboard() {
 
                 },
 
-                scales: { y: { beginAtZero: true } }
+                scales: {
+                    x: { ticks: { color: ObtenerColorTextoGrafica() } },
+                    y: { beginAtZero: true, ticks: { color: ObtenerColorTextoGrafica() } }
+                }
             }
 
         });
@@ -518,8 +561,6 @@ export default function initDashboard() {
 
     /* ═══════════════════════ [EVENTOS] ═══════════════════════ */
 
-    // document.querySelectorAll('input[name="Radio_Filtro"]').forEach(radio => { radio.addEventListener('change', ObtenerDatossinkpis); });
-
 document.querySelectorAll('input[name="Radio_Filtro"]').forEach(radio => {
 
     radio.addEventListener('change', () => {
@@ -535,27 +576,31 @@ document.querySelectorAll('input[name="Radio_Filtro"]').forEach(radio => {
 
         }
 
-        ObtenerDatossinkpis();
+        CargarDatosDashboard();
 
     });
 
 });
 
-    Fecha_Ini.addEventListener('change', ValidarFechas);
-    Fecha_Fin.addEventListener('change', ValidarFechas);
+    Fecha_Ini.addEventListener('change', () => {
+        if (Fecha_Ini.value && Fecha_Fin.value) CargarDatosDashboard();
+    });
+    Fecha_Fin.addEventListener('change', () => {
+        if (Fecha_Ini.value && Fecha_Fin.value) CargarDatosDashboard();
+    });
 
     Btn_Limpiar_Filtros.addEventListener('click', () => {
         document.getElementById('Mes').checked = true;
         ResetearInputs(Fecha_Ini, Fecha_Fin); 
         Fecha_Ini._flatpickr?.clear();
         Fecha_Fin._flatpickr?.clear();
-        ObtenerDatos();
+        CargarDatosDashboard();
     });
 
     /* ═══════════════════════ [INICIO] ═══════════════════════ */
 
     InicializarFechasGraficas();
-    ObtenerDatos();
+    CargarDatosDashboard();
     FlatPickr(Fecha_Ini);
     FlatPickr(Fecha_Fin);
 

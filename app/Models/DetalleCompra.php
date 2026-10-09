@@ -13,6 +13,9 @@ class DetalleCompra extends Model
     protected $fillable = [
         'id_compra',
         'id_producto',
+        'id_variacion_talla',
+        'descripcion_variacion',
+        'sku_variacion',
         'cantidad_compra',
         'precio_unitario_compra',
         'subtotal_detalle_compra'
@@ -21,6 +24,11 @@ class DetalleCompra extends Model
     public function producto()
     {
         return $this->belongsTo(Producto::class, 'id_producto', 'id_producto');
+    }
+
+    public function variacionTalla()
+    {
+        return $this->belongsTo(VariacionTalla::class, 'id_variacion_talla', 'id_variacion_talla');
     }
 
 }

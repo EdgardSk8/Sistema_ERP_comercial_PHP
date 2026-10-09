@@ -232,7 +232,7 @@ class ProductoVariacionController extends Controller
     {
         try {
 
-            $variaciones = ProductoVariacion::with('producto')->get();
+            $variaciones = ProductoVariacion::with('producto.impuesto')->get();
 
             return response()->json([
                 'success' => true,

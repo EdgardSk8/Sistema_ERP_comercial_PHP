@@ -43,6 +43,7 @@ export default function initFacturacion() {
 
             const producto = {
                 id: $(this).data('id'),
+                id_variacion_talla: $(this).data('variacion-talla') || null,
                 nombre: $(this).data('nombre'),
                 precio: parseFloat($(this).data('precio')),
                 stock: parseInt($(this).data('stock')),
@@ -55,7 +56,7 @@ export default function initFacturacion() {
     /* --- AGREGAR PRODUCTOS AL CARRITO --- */
     function agregarProductoCarrito(producto) {
 
-        let existente = carrito.find(p => p.id === producto.id);
+        let existente = carrito.find(p => p.id === producto.id && p.id_variacion_talla === producto.id_variacion_talla);
         if (existente) {
             if (existente.cantidad >= existente.stock) { mostrarToast(`No hay más stock de ${existente.nombre}`, 'danger'); return; }
             existente.cantidad++;
@@ -130,7 +131,7 @@ export default function initFacturacion() {
         let data = await res.json();
 
         if (!data.ok) { mostrarToast(data.mensaje, 'danger');
-            let p = carrito.find(x => x.id == data.id);
+            let p = carrito.find(x => x.id == data.id && (x.id_variacion_talla || null) == (data.id_variacion_talla || null));
             if (p) p.stock = data.stock; return false;
         }
         return true;
@@ -146,10 +147,15 @@ export default function initFacturacion() {
         return $('#tablaProductos').DataTable({
 
             ajax: { url: '/productos/pos', type: 'GET', dataSrc: 'data' },
+            deferRender: true,
 
             columns: [
 
-                { data: 'nombre_producto' },
+                { data: 'nombre_producto', render: function (data, type, row) {
+                    if (type === 'filter' && row.sku) return `${data} ${row.sku}`;
+                    if (type !== 'display' || !row.sku) return data;
+                    return `${data}<small class="d-block text-muted">SKU: ${row.sku}</small>`;
+                } },
                 { data: 'precio_con_iva', render: function (data) { return moneda(data, 1); } },
                 { data: 'stock_actual' },
                 { data: 'id_producto',
@@ -161,6 +167,7 @@ export default function initFacturacion() {
                         return `
                             <button class="${clase} agregarProducto"
                                 data-id="${row.id_producto}"
+                                data-variacion-talla="${row.id_variacion_talla ?? ''}"
                                 data-nombre="${row.nombre_producto}"
                                 data-precio="${row.precio_con_iva}"
                                 data-stock="${row.stock_actual}"
@@ -174,6 +181,32 @@ export default function initFacturacion() {
             ],
         });
     }
+
+    const buscadorProductos = $('#tablaProductos_filter input');
+    buscadorProductos.attr('placeholder', 'Buscar producto o SKU…')
+        .off('keydown.facturacion')
+        .on('keydown.facturacion', function (event) {
+            if (event.key !== 'Enter') return;
+            const sku = String($(this).val() || '').trim().toUpperCase();
+            if (!sku) return;
+
+            const coincidencias = tablaProductos.rows().data().toArray()
+                .filter(producto => String(producto.sku || '').toUpperCase() === sku);
+            if (coincidencias.length !== 1) return;
+
+            event.preventDefault();
+            const producto = coincidencias[0];
+            agregarProductoCarrito({
+                id: producto.id_producto,
+                id_variacion_talla: producto.id_variacion_talla || null,
+                nombre: producto.nombre_producto,
+                precio: Number(producto.precio_con_iva),
+                stock: Number(producto.stock_actual),
+                porcentaje_impuesto: Number(producto.iva || 0),
+            });
+            $(this).val('');
+            tablaProductos.search('').draw();
+        });
 
 /*-------------------------------------------------------------------------------------------------------------------*/
 

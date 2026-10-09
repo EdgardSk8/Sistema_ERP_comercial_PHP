@@ -5,6 +5,7 @@ export default function initMostrarVentas() {
     const table = $('#tablaVentas').DataTable({
 
         ajax: { url: '/ventas/mostrar', type: 'GET', dataSrc: 'ventas' },
+        deferRender: true,
 
         columns: [
             { data: 'id_venta' },
@@ -312,7 +313,7 @@ export default function initMostrarVentas() {
             venta.detalles.forEach(detalle => {
                 filas += `
                     <tr>
-                        <td>${detalle.producto?.nombre_producto ?? '—'}</td>
+                        <td>${detalle.producto?.nombre_producto ?? '—'}${detalle.descripcion_variacion ? ` · ${detalle.descripcion_variacion}` : ''}${detalle.sku_variacion ? `<small class="d-block text-muted">SKU: ${detalle.sku_variacion}</small>` : ''}</td>
                         <td class="text-center">${detalle.cantidad_venta}</td>
                         <td class="text-end">C$ ${parseFloat(detalle.precio_unitario_venta).toFixed(2)}</td>
                         <td class="text-end">C$ ${parseFloat(detalle.monto_impuesto).toFixed(2)}</td>

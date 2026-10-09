@@ -23,10 +23,13 @@ export default function initCompras() {
         ajax: {
             url: '/productos-compra/mostrar',
             dataType: 'json',
+            data: params => ({ q: params.term }),
             processResults: function (res) {
                 return {
                     results: res.data.map(p => ({
                         id: p.id,
+                        id_variacion_talla: p.id_variacion_talla || null,
+                        sku: p.sku || null,
                         text: p.text,
                         impuesto: parseFloat(p.impuesto) || 0,
                         precio: parseFloat(p.precio) || 0
@@ -237,7 +240,7 @@ export default function initCompras() {
         if (cantidad <= 0) return mostrarToast('Cantidad inválida', 'danger');
         //if (precio <= 0) return mostrarToast('Precio inválido', 'danger');
 
-        let existente = carrito.find(p => p.id === data.id);
+        let existente = carrito.find(p => p.id === data.id && (p.id_variacion_talla || null) === (data.id_variacion_talla || null));
 
         if (existente) {
 
@@ -249,6 +252,8 @@ export default function initCompras() {
 
             carrito.push({
                 id: data.id,
+                id_variacion_talla: data.id_variacion_talla || null,
+                sku: data.sku || null,
                 nombre: data.text,
                 cantidad,
                 precio,
@@ -264,6 +269,11 @@ export default function initCompras() {
         $('#producto_select').val(null).trigger('change');
         $('#cantidad').val(1);
         $('#precio_usuario').val('');
+    });
+
+    $('#producto_select').on('select2:select', function (event) {
+        const producto = event.params.data;
+        $('#precio_usuario').val(Number(producto.precio || 0).toFixed(2));
     });
 
     $('#cantidad').val(1);

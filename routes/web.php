@@ -49,7 +49,7 @@ use App\Http\Controllers\VariacionTallaController;
 /*  ╔════════════ LOGIN ═════════════╗ 
     ╚════════════════════════════════╝ */
 
-Route::view('/login', 'login.Login')->name('login'); 
+Route::get('/login', [LoginController::class, 'mostrarLogin'])->name('login');
 
 Route::post('/login', [LoginController::class, 'login'])->name('login');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -92,6 +92,7 @@ Route::view('/respaldo', 'respaldo.Respaldo')->middleware('permiso:vista_respald
 Route::view('/reportes', 'reportes.Reportes')->middleware('permiso:vista_reportes')->name('reportes');
 Route::view('/tipos-medidas', 'tipos_medidas.TiposMedidas')->middleware('permiso:vista_tipos_medidas')->name('tipos.medidas');
 Route::view('/medidas', 'medidas.Medidas')->middleware('permiso:vista_medidas')->name('medidas');
+Route::view('/tallas', 'tallas.Tallas')->middleware('permiso:vista_tallas')->name('tallas');
 
 Route::view('/producto-variaciones', 'productosvariacion.ProductoVariaciones')->middleware('permiso:vista_producto_variaciones')->name('producto-variaciones');
 Route::view('/producto-variaciones-detalles', 'productosvariaciondetalles.ProductoVariacionDetalle')->middleware('permiso:vista_producto_variaciones_detalle')->name('producto-variaciones-detalles');
@@ -116,6 +117,9 @@ Route::get('/dashboard/cajas', [DashboardController::class, 'Cajas'])->middlewar
 Route::get('/credenciales/mostrar', [CredencialesController::class, 'MostrarCredenciales'])->middleware('permiso:mostrar_credenciales');
 Route::get('/credenciales/{id}/editar', [CredencialesController::class, 'EditarCredencial'])->middleware('permiso:editar_credenciales');
 Route::put('/credenciales/{id}/actualizar', [CredencialesController::class, 'ActualizarCredenciales'])->middleware('permiso:actualizar_credenciales');
+Route::post('/credenciales/{id}/logo', [CredencialesController::class, 'GuardarLogo'])->middleware('permiso:actualizar_credenciales');
+Route::put('/credenciales/{id}/logo', [CredencialesController::class, 'ActualizarLogo'])->middleware('permiso:actualizar_credenciales');
+Route::delete('/credenciales/{id}/logo', [CredencialesController::class, 'EliminarLogo'])->middleware('permiso:actualizar_credenciales');
 
 /*  ╔════════════ Endpoint Usuario ══════════════╗ 
     ╚════════════════════════════════════════════╝ */
@@ -365,12 +369,18 @@ Route::get('/medidas/tipos-medidas/mostrar',[MedidasController::class, 'MostrarT
 /* ╔════════════ Endpoint de Talla ════════════╗
    ╚═══════════════════════════════════════════╝ */
 
-Route::get('/tallas/mostrar', [TallaController::class, 'MostrarTalla'])->middleware('permiso:mostrar_tallas');
-Route::post('/tallas/crear', [TallaController::class, 'CrearTalla'])->middleware('permiso:crear_tallas');
-Route::get('/tallas/editar/{id}', [TallaController::class, 'EditarTalla'])->middleware('permiso:editar_tallas');
-Route::put('/tallas/actualizar/{id}', [TallaController::class, 'ActualizarTalla'])->middleware('permiso:actualizar_tallas');
-Route::put('/tallas/cambiar-estado/{id}', [TallaController::class, 'CambiarEstadoTalla'])->middleware('permiso:cambiar_estado_tallas');
-Route::delete('/tallas/eliminar/{id}', [TallaController::class, 'EliminarTalla'])->middleware('permiso:eliminar_tallas');
+Route::get('/tallas/mostrar', [TallaController::class, 'MostrarTalla'])
+    ->middleware('permiso:mostrar_tallas')->name('tallas.mostrar');
+Route::post('/tallas/crear', [TallaController::class, 'CrearTalla'])
+    ->middleware('permiso:crear_tallas')->name('tallas.crear');
+Route::get('/tallas/editar/{id}', [TallaController::class, 'EditarTalla'])
+    ->middleware('permiso:editar_tallas')->name('tallas.editar');
+Route::put('/tallas/actualizar/{id}', [TallaController::class, 'ActualizarTalla'])
+    ->middleware('permiso:actualizar_tallas')->name('tallas.actualizar');
+Route::put('/tallas/cambiar-estado/{id}', [TallaController::class, 'CambiarEstadoTalla'])
+    ->middleware('permiso:cambiar_estado_tallas')->name('tallas.cambiar-estado');
+Route::delete('/tallas/eliminar/{id}', [TallaController::class, 'EliminarTalla'])
+    ->middleware('permiso:eliminar_tallas')->name('tallas.eliminar');
 
 /* ╔════════ Endpoint de Producto Variación ════════╗
    ╚════════════════════════════════════════════════╝ */
@@ -401,10 +411,6 @@ Route::post('/variacion-tallas/crear', [VariacionTallaController::class, 'CrearV
 Route::get('/variacion-tallas/editar/{id}', [VariacionTallaController::class, 'EditarVariacionTalla'])->middleware('permiso:editar_variacion_tallas');
 Route::put('/variacion-tallas/actualizar/{id}', [VariacionTallaController::class, 'ActualizarVariacionTalla'])->middleware('permiso:actualizar_variacion_tallas');
 Route::delete('/variacion-tallas/eliminar/{id}', [VariacionTallaController::class, 'EliminarVariacionTalla'])->middleware('permiso:eliminar_variacion_tallas');
-
-
-
-
 
 
 

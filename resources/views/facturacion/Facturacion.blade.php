@@ -48,7 +48,7 @@
                 <table id="tablaProductos" class="table  table-bordered">
                     <thead>
                         <tr>
-                            <th>Producto</th>
+                            <th>Producto / SKU</th>
                             <th>Precio</th>
                             <th>Stock</th>
                             <th>Accion</th>

@@ -262,7 +262,10 @@ class VariacionImagenController extends Controller
     {
         try {
 
-            $imagenes = VariacionImagen::orderBy('orden')->get();
+            $imagenes = VariacionImagen::query()
+                ->select('id_imagen', 'id_variacion', 'imagen', 'orden')
+                ->orderBy('orden')
+                ->get();
 
             return response()->json([
                 'success' => true,

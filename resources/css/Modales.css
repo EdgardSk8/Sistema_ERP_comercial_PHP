@@ -10,7 +10,13 @@
 .modal-header{ height: 30px;}
 .modal-footer{ padding: 0;  }
 .modal-title{ text-align: center; width: 100%;} 
-.btn-close{ transition: .20s; }
+.modal .btn-close{
+    filter: invert(45%);
+    opacity: .8;
+    transition: .20s;
+}
+.modal .btn-close:hover{ opacity: 1; }
+[data-theme="dark"] .modal .btn-close{ filter: invert(45%); }
 .btns-right{ top: 10; position: absolute; right: 16px; }
 
 .card-responsive{

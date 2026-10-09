@@ -17,6 +17,7 @@ use App\Models\Proveedor;
 use App\Models\TipoFactura;
 use App\Models\MetodoPago;
 use App\Models\Medida;
+use App\Models\VariacionTalla;
 
 
 
@@ -41,6 +42,7 @@ class CompraController extends Controller
                 'cuenta' => 'nullable|exists:cuentas,id_cuenta',
                 'carrito' => 'required|array|min:1',
                 'carrito.*.id' => 'required|exists:productos,id_producto',
+                'carrito.*.id_variacion_talla' => 'nullable|exists:variacion_tallas,id_variacion_talla',
                 'carrito.*.cantidad' => 'required|numeric|min:1',
                 'carrito.*.precio' => 'required|numeric|min:0',
             ]);
@@ -112,25 +114,49 @@ class CompraController extends Controller
                 $producto = Producto::find($item['id']);
                 $cantidad = $item['cantidad'];
                 $precio = $item['precio'];
+                $variacionTalla = null;
+                if (!empty($item['id_variacion_talla'])) {
+                    $variacionTalla = VariacionTalla::with(['variacion', 'talla'])
+                        ->where('id_variacion_talla', $item['id_variacion_talla'])
+                        ->whereHas('variacion', function ($query) use ($producto) {
+                            $query->where('id_producto', $producto->id_producto)
+                                ->where('estado_variacion', 1);
+                        })->lockForUpdate()->first();
+                    if (!$variacionTalla) throw new \Exception('La variante seleccionada ya no está disponible');
+                }
 
                 DetalleCompra::create([
                     'id_compra' => $compra->id_compra,
                     'id_producto' => $producto->id_producto,
+                    'id_variacion_talla' => $variacionTalla?->id_variacion_talla,
+                    'descripcion_variacion' => $variacionTalla
+                        ? trim(($variacionTalla->variacion->color ?? '') . ' · ' . ($variacionTalla->talla->talla ?? ''))
+                        : null,
+                    'sku_variacion' => $variacionTalla?->sku,
                     'cantidad_compra' => $cantidad,
                     'precio_unitario_compra' => $precio,
                     'subtotal_detalle_compra' => $precio * $cantidad
                 ]);
 
-                // Actualizar STOCK
-                $producto->increment('stock_actual', $cantidad);
+                if ($variacionTalla) {
+                    $variacionTalla->increment('stock', $cantidad);
+                    $variacionTalla->precio_compra = $precio;
+                    $variacionTalla->save();
+                    $stockResultante = $variacionTalla->fresh()->stock;
+                } else {
+                    $producto->increment('stock_actual', $cantidad);
+                    $stockResultante = $producto->fresh()->stock_actual;
+                }
 
                 // Registrar KARDEX
                 MovimientoInventario::create([
                     'id_producto' => $producto->id_producto,
                     'tipo_movimiento' => 'ENTRADA',
                     'cantidad_movimiento' => $cantidad,
-                    'stock_resultante' => $producto->stock_actual,
-                    'motivo_movimiento' => 'Reabastecimiento de productos',
+                    'stock_resultante' => $stockResultante,
+                    'motivo_movimiento' => $variacionTalla
+                        ? 'Reabastecimiento - ' . trim(($variacionTalla->variacion->color ?? '') . ' ' . ($variacionTalla->talla->talla ?? ''))
+                        : 'Reabastecimiento de productos',
                     'id_referencia' => $compra->id_compra,
                     'tipo_referencia' => 'COMPRA',
                     'precio_unitario' => $precio,
@@ -490,7 +516,11 @@ class CompraController extends Controller
             }
 
             // 🔎 CONSULTA BASE
-            $query = Producto::query();
+            $query = Producto::with(['impuestoProducto', 'variaciones' => function ($variaciones) {
+                $variaciones->where('estado_variacion', 1)->with(['tallas.talla' => function ($tallas) {
+                    $tallas->where('estado_talla', 1);
+                }]);
+            }]);
 
             // FILTRO POR ESTADO
 
@@ -507,7 +537,16 @@ class CompraController extends Controller
 
                 $query->where(function ($q) use ($busqueda) {
                     $q->where('nombre_producto', 'like', "%{$busqueda}%")
-                    ->orWhere('descripcion_producto', 'like', "%{$busqueda}%");
+                    ->orWhere('descripcion_producto', 'like', "%{$busqueda}%")
+                    ->orWhereHas('variaciones.tallas', function ($variantes) use ($busqueda) {
+                        $variantes->where('sku', 'like', "%{$busqueda}%")
+                            ->orWhereHas('variacion', function ($variacion) use ($busqueda) {
+                                $variacion->where('color', 'like', "%{$busqueda}%");
+                            })
+                            ->orWhereHas('talla', function ($talla) use ($busqueda) {
+                                $talla->where('talla', 'like', "%{$busqueda}%");
+                            });
+                    });
                 });
             }
 
@@ -517,13 +556,28 @@ class CompraController extends Controller
                 ->get();
 
             // FORMATO SELECT2
-            $data = $productos->map(function ($p) {
-            return [
+            $data = $productos->flatMap(function ($p) {
+                $impuesto = $p->impuestoProducto->porcentaje_impuesto ?? 0;
+                $variantes = $p->variaciones->flatMap(function ($variacion) use ($p, $impuesto) {
+                    return $variacion->tallas->map(function ($talla) use ($p, $variacion, $impuesto) {
+                        return [
+                            'id' => $p->id_producto,
+                            'id_variacion_talla' => $talla->id_variacion_talla,
+                            'sku' => $talla->sku,
+                            'text' => $p->nombre_producto . ' · ' . $variacion->color . ' · ' . ($talla->talla->talla ?? '') . ' [' . $talla->sku . ']',
+                            'precio' => $talla->precio_compra ?? $p->precio_compra ?? 0,
+                            'impuesto' => $impuesto,
+                        ];
+                    })->all();
+                });
+
+                return $variantes->isNotEmpty() ? $variantes->values()->all() : [[
                     'id' => $p->id_producto,
+                    'id_variacion_talla' => null,
                     'text' => $p->nombre_producto,
                     'precio' => $p->precio_compra ?? 0,
-                    'impuesto' => $p->impuestoProducto->porcentaje_impuesto ?? 0
-                ];
+                    'impuesto' => $impuesto,
+                ]];
             });
 
             return response()->json([
@@ -576,19 +630,32 @@ class CompraController extends Controller
                     throw new \Exception('Producto no encontrado: ' . $detalle->id_producto);
                 }
 
-                // ✔ revertir stock (SALIDA)
-                if ($producto->stock_actual < $detalle->cantidad_compra) {
-                    throw new \Exception('Stock insuficiente para revertir compra');
+                $esDetalleDeVariacion = !empty($detalle->descripcion_variacion);
+                $variacionTalla = $detalle->id_variacion_talla
+                    ? VariacionTalla::with(['variacion', 'talla'])->find($detalle->id_variacion_talla)
+                    : null;
+                if ($esDetalleDeVariacion && !$variacionTalla) {
+                    throw new \Exception('No se puede revertir la compra: la variante ingresada ya fue eliminada');
                 }
 
-                $producto->decrement('stock_actual', $detalle->cantidad_compra);
+                if ($variacionTalla) {
+                    if ($variacionTalla->stock < $detalle->cantidad_compra) throw new \Exception('Stock insuficiente para revertir compra');
+                    $variacionTalla->decrement('stock', $detalle->cantidad_compra);
+                    $stockResultante = $variacionTalla->fresh()->stock;
+                    $motivo = 'Anulación de compra - ' . trim(($variacionTalla->variacion->color ?? '') . ' ' . ($variacionTalla->talla->talla ?? ''));
+                } else {
+                    if ($producto->stock_actual < $detalle->cantidad_compra) throw new \Exception('Stock insuficiente para revertir compra');
+                    $producto->decrement('stock_actual', $detalle->cantidad_compra);
+                    $stockResultante = $producto->fresh()->stock_actual;
+                    $motivo = 'Anulación de compra';
+                }
 
                 MovimientoInventario::create([
                     'id_producto' => $producto->id_producto,
                     'tipo_movimiento' => 'SALIDA',
                     'cantidad_movimiento' => $detalle->cantidad_compra,
-                    'stock_resultante' => $producto->stock_actual,
-                    'motivo_movimiento' => 'Anulación de compra',
+                    'stock_resultante' => $stockResultante,
+                    'motivo_movimiento' => $motivo,
                     'id_referencia' => $compra->id_compra,
                     'tipo_referencia' => 'DEVOLUCION',
                     'precio_unitario' => $detalle->precio_unitario_compra,
@@ -661,10 +728,9 @@ class CompraController extends Controller
         try {
 
             $compras = Compra::with([
-                'proveedor',
-                'usuario',
-                'metodoPago',
-                'detalles'
+                'proveedor:id_proveedor,nombre_proveedor',
+                'usuario:id_usuario,nombre_usuario',
+                'metodoPago:id_metodo_pago,nombre_metodo_pago'
             ])->get();
 
             return response()->json([

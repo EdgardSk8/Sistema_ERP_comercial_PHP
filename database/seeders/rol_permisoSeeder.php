@@ -102,6 +102,12 @@ class rol_permisoSeeder extends Seeder
             'actualizar_variacion_tallas',
             'eliminar_variacion_tallas',
             'mostrar_tallas',
+            'vista_tallas',
+            'crear_tallas',
+            'editar_tallas',
+            'actualizar_tallas',
+            'cambiar_estado_tallas',
+            'eliminar_tallas',
 
             /* MOVIMIENTO INVENTARIO */
             'vista_movimientos_inventario',

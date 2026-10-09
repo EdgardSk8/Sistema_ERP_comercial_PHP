@@ -97,6 +97,7 @@ class permisosSeeder extends Seeder
             ['nombre_permiso'=>'actualizar_variacion_tallas','descripcion_permiso'=>'Actualizar tallas y stock de variaciones','modulo_permiso'=>'producto_variaciones'],
             ['nombre_permiso'=>'eliminar_variacion_tallas','descripcion_permiso'=>'Quitar tallas de variaciones','modulo_permiso'=>'producto_variaciones'],
             ['nombre_permiso'=>'mostrar_tallas','descripcion_permiso'=>'Listar tallas para variaciones','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'vista_tallas','descripcion_permiso'=>'Ver catálogo de tallas','modulo_permiso'=>'producto_variaciones'],
             ['nombre_permiso'=>'crear_tallas','descripcion_permiso'=>'Crear tallas','modulo_permiso'=>'producto_variaciones'],
             ['nombre_permiso'=>'editar_tallas','descripcion_permiso'=>'Consultar tallas para editar','modulo_permiso'=>'producto_variaciones'],
             ['nombre_permiso'=>'actualizar_tallas','descripcion_permiso'=>'Actualizar tallas','modulo_permiso'=>'producto_variaciones'],
