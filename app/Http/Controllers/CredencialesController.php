@@ -88,19 +88,19 @@ class CredencialesController extends Controller
                     'tipo_cambio' => $request->tipo_cambio,
                 ],
                 [
-                    'nombre_empresa' => ['required', 'max:100'],
-                    'ruc_empresa' => ['required', 'max:20'],
-                    'direccion_empresa' => ['required', 'max:255'],
-                    'telefono_empresa' => ['required', 'max:20'],
-                    'correo_empresa' => ['required', 'email', 'max:100'],
-                    'tipo_cambio' => ['nullable', 'numeric']
+                    'nombre_empresa' => ['nullable', 'max:100'],
+                    'ruc_empresa' => ['nullable', 'max:20'],
+                    'direccion_empresa' => ['nullable', 'max:255'],
+                    'telefono_empresa' => ['nullable', 'max:20'],
+                    'correo_empresa' => ['nullable', 'email', 'max:100'],
+                    'tipo_cambio' => ['required', 'numeric']
                 ],
                 [
-                    'nombre_empresa.required' => 'El nombre de la empresa es obligatorio.',
-                    'ruc_empresa.required' => 'El RUC es obligatorio.',
-                    'direccion_empresa.required' => 'La dirección es obligatoria.',
-                    'telefono_empresa.required' => 'El teléfono es obligatorio.',
-                    'correo_empresa.required' => 'El correo es obligatorio.',
+                    'nombre_empresa.' => 'El nombre de la empresa es obligatorio.',
+                    'ruc_empresa' => 'El RUC es obligatorio.',
+                    'direccion_empresa' => 'La dirección es obligatoria.',
+                    'telefono_empresa' => 'El teléfono es obligatorio.',
+                    'correo_empresa' => 'El correo es obligatorio.',
                     'correo_empresa.email' => 'El correo no es válido.'
                 ]
             );
@@ -149,7 +149,7 @@ class CredencialesController extends Controller
     private function persistirLogo(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'logo_empresa' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'logo_empresa' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ], [
             'logo_empresa.required' => 'Seleccione una imagen para el logo.',
             'logo_empresa.image' => 'El archivo debe ser una imagen.',

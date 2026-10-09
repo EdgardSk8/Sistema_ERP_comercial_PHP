@@ -28,13 +28,7 @@ class TiposFacturaSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-            [
-                'nombre_tipo_factura' => 'EXENTO',
-                'descripcion_tipo_factura' => 'Factura exenta de impuestos',
-                'estado' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+
         ]);
     }
 }

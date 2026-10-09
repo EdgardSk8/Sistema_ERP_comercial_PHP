@@ -284,7 +284,7 @@ function cargarInicial(primero) {
     if (!url) {console.warn("No hay ruta para:", primero); return; }
 
     // document.getElementById('contenido-dinamico').setAttribute('src', url);
-    document.getElementById('contenido-dinamico').setAttribute('src', '/gastos');
+    document.getElementById('contenido-dinamico').setAttribute('src', '/facturacion');
 }
 
 fetch('/cargar-permisos').then(r => r.json())

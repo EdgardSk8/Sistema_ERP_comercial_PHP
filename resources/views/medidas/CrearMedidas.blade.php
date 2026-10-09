@@ -50,8 +50,8 @@
                                 id="crear_orden_medida"
                                 type="number"
                                 class="form-control form-control-sm"
-                                min="0"
-                                value="0">
+                                min="1"
+                                value="1">
                         </div>
 
                     </form>

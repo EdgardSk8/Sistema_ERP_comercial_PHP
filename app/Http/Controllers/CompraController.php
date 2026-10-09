@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Caja;
 use App\Models\Compra;
 use App\Models\Producto;
@@ -223,7 +224,7 @@ class CompraController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            \Log::error('Error al registrar compra: ' . $e->getMessage(), [
+            Log::error('Error al registrar compra: ' . $e->getMessage(), [
                 'request' => $request->all(),
                 'trace' => $e->getTraceAsString()
             ]);

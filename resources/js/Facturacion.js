@@ -60,7 +60,7 @@ export default function initFacturacion() {
         if (existente) {
             if (existente.cantidad >= existente.stock) { mostrarToast(`No hay más stock de ${existente.nombre}`, 'danger'); return; }
             existente.cantidad++;
-        } else { carrito.push({ ...producto, cantidad: 1 }); }
+        } else { carrito.push({ ...producto, precioCatalogo: producto.precio, cantidad: 1 }); }
         RenderizarCarrito();
 
     }
@@ -110,14 +110,149 @@ export default function initFacturacion() {
     }
 
     /* --- VALIDAR FACTURACION --- */
-    function validarFactura(cliente, total, recibido, metodo) {
+    function validarFactura(cliente) {
 
         if (carrito.length === 0) { mostrarToast('Agregue productos al carrito', 'danger'); return false; }
         if (!cliente) { mostrarToast('Seleccione cliente', 'danger'); return false; }
-        if ( !imprimirProformaActivo && metodo == 1 && recibido < total) { mostrarToast('Pago insuficiente', 'danger'); return false; }
         for (let p of carrito) { if (p.cantidad > p.stock) { mostrarToast(`Stock insuficiente para ${p.nombre}`, 'danger'); return false; } }
         return true;
 
+    }
+
+    function calcularTotalCarrito() {
+        return carrito.reduce((total, producto) => total + Number(producto.precio) * Number(producto.cantidad), 0);
+    }
+
+    function abrirModalPrecioLiquidacion(cliente, metodo, cuenta) {
+        const $filas = $('#liquidacionProductos').empty();
+
+        carrito.forEach((producto, indice) => {
+            const precioCatalogo = Number(producto.precioCatalogo ?? producto.precio);
+            const $fila = $('<tr>');
+            const $precio = $('<input>', {
+                type: 'number',
+                min: '0.01',
+                max: precioCatalogo.toFixed(2),
+                step: '0.01',
+                class: 'form-control form-control-sm precio-liquidacion',
+                'data-index': indice,
+                'aria-label': `Precio de venta de ${producto.nombre}`
+            }).val(Number(producto.precio).toFixed(2));
+
+            $fila.append($('<td>').text(producto.nombre));
+            $fila.append($('<td class="text-end">').text(producto.cantidad));
+            $fila.append($('<td class="text-end">').text(moneda(precioCatalogo)));
+            $fila.append($('<td>').append($precio));
+            $filas.append($fila);
+        });
+
+        const actualizarTotalModal = () => {
+            let total = 0;
+            let preciosValidos = true;
+
+            $('#liquidacionProductos .precio-liquidacion').each(function () {
+                const indice = Number($(this).data('index'));
+                const precio = Number($(this).val());
+                const maximo = Number(carrito[indice].precioCatalogo ?? carrito[indice].precio);
+
+                if (!Number.isFinite(precio) || precio <= 0 || precio > maximo) {
+                    preciosValidos = false;
+                    return;
+                }
+
+                total += precio * Number(carrito[indice].cantidad);
+            });
+
+            total = Math.round(total * 100) / 100;
+            $('#liquidacionTotal').text(moneda(total));
+
+            $('#liquidacionAviso').text(preciosValidos
+                ? `Este total se registrará en caja: ${moneda(total)}.`
+                : 'Cada precio debe ser mayor que cero y no superar el precio normal.');
+            $('#liquidacionAviso')
+                .toggleClass('text-success', preciosValidos)
+                .toggleClass('text-danger', !preciosValidos);
+            $('#btnAplicarLiquidacion').prop('disabled', !preciosValidos);
+            return { total, preciosValidos };
+        };
+
+        $('#liquidacionProductos').off('input.facturacion', '.precio-liquidacion')
+            .on('input.facturacion', '.precio-liquidacion', actualizarTotalModal);
+
+        $('#btnAplicarLiquidacion').off('click.facturacion').on('click.facturacion', async function () {
+            const validacion = actualizarTotalModal();
+            if (!validacion.preciosValidos) {
+                mostrarToast('Revisa los precios ingresados.', 'danger');
+                return;
+            }
+
+            $('#liquidacionProductos .precio-liquidacion').each(function () {
+                const producto = carrito[Number($(this).data('index'))];
+                producto.precio = Number($(this).val());
+                producto.precioLiquidacion = producto.precio < Number(producto.precioCatalogo ?? producto.precio);
+            });
+
+            RenderizarCarrito();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPrecioLiquidacion')).hide();
+            await facturarVenta(cliente, metodo, cuenta, validacion.total, true);
+        });
+
+        $('#modalPrecioLiquidacion').off('hidden.bs.modal.facturacion').on('hidden.bs.modal.facturacion', function () {
+            $('#btnFacturar').prop('disabled', false);
+        });
+
+        actualizarTotalModal();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPrecioLiquidacion')).show();
+    }
+
+    async function facturarVenta(cliente, metodo, cuenta, recibido, liquidacion = false) {
+        const total = calcularTotalCarrito();
+        const stockOk = await validarStockBD();
+
+        if (!stockOk) {
+            $('#btnFacturar').prop('disabled', false);
+            return;
+        }
+
+        const data = {
+            cliente,
+            carrito: carrito.map(producto => ({
+                id: producto.id,
+                id_variacion_talla: producto.id_variacion_talla,
+                cantidad: producto.cantidad,
+                ...(liquidacion || producto.precioLiquidacion ? { precio_venta_final: producto.precio } : {})
+            })),
+            total,
+            recibido: liquidacion && metodo === 1 ? total : recibido,
+            liquidacion,
+            id_metodo_pago: metodo,
+            id_cuenta: cuenta
+        };
+
+        $.ajax({
+            url: '/facturar/pos', method: 'POST', contentType: 'application/json', data: JSON.stringify(data),
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (res) {
+                if (res.success) {
+                    mostrarToast('Factura realizada', 'success');
+                    if (imprimirFacturaActivo) imprimirFactura(res);
+
+                    carrito = [];
+                    RenderizarCarrito();
+                    $('#pagoCordobas, #pagoDolares, #vueltoCordobas, #vueltoDolares').val('');
+                    $('#metodo_pago').val('1').trigger('change');
+                    $('#clientes').val('1').trigger('change');
+                    tablaProductos.ajax.reload(null, false);
+                } else {
+                    mostrarToast(res.error || 'No fue posible completar la factura', 'danger');
+                }
+                $('#btnFacturar').prop('disabled', false);
+            },
+            error: function (xhr) {
+                mostrarToast(xhr.responseJSON?.error || 'Error al facturar', 'danger');
+                $('#btnFacturar').prop('disabled', false);
+            }
+        });
     }
 
     /* --- VALIDACION DE STOCK --- */
@@ -320,7 +455,7 @@ export default function initFacturacion() {
         $('#btnFacturar').prop('disabled', true);
 
         let cliente = $('#clientes').val();
-        let total = parseFloat($('#total').text().replace(/[^\d.-]/g, '')) || 0;
+        let total = calcularTotalCarrito();
         let metodo = parseInt($('#metodo_pago').val());
 
         let cuenta = $('#id_cuenta_metodo_pago').val();
@@ -330,7 +465,7 @@ export default function initFacturacion() {
 
         let recibido = (metodo === 1) ? parseFloat($('#pagoCordobas').val()) || 0 : total;
 
-        if (!validarFactura(cliente, total, recibido, metodo)) { $('#btnFacturar').prop('disabled', false); return; }
+        if (!validarFactura(cliente)) { $('#btnFacturar').prop('disabled', false); return; }
 
         if (imprimirProformaActivo) {
 
@@ -344,41 +479,12 @@ export default function initFacturacion() {
             return;
         }
 
-        let stockOk = await validarStockBD();
+        if (metodo === 1 && recibido < total) {
+            abrirModalPrecioLiquidacion(cliente, metodo, cuenta);
+            return;
+        }
 
-        if (!stockOk) { $('#btnFacturar').prop('disabled', false); return; }
-
-        let data = { cliente: cliente, carrito: carrito, total: total, recibido: recibido, id_metodo_pago: metodo, id_cuenta: cuenta };
-        console.log('Datos a facturar:', data);
-
-        $.ajax({
-
-            url: '/facturar/pos', method: 'POST', contentType: 'application/json', data: JSON.stringify(data),
-            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-
-            success: function (res) {
-
-                if (res.success) {
-                    mostrarToast('Factura realizada', 'success');
-                    if (imprimirFacturaActivo) { imprimirFactura(res); }
-
-                    carrito = [];
-                    RenderizarCarrito();
-
-                    $('#pagoCordobas').val('');
-                    $('#pagoDolares').val('');
-                    $('#vueltoCordobas').val('');
-                    $('#vueltoDolares').val('');
-
-                    $('#metodo_pago').val('1').trigger('change');
-                    $('#clientes').val('1').trigger('change');
-                    tablaProductos.ajax.reload(null, false);
-                }
-                $('#btnFacturar').prop('disabled', false);
-
-            }, error: function () { mostrarToast('Error al facturar', 'danger'); $('#btnFacturar').prop('disabled', false); }
-
-        });
+        await facturarVenta(cliente, metodo, cuenta, recibido);
 
     });
 

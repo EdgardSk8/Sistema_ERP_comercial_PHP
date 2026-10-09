@@ -96,10 +96,7 @@ export default function initCredenciales() {
     cargarCredenciales();
 
     $('#btnCambiarLogo').off('click.logoCredenciales').on('click.logoCredenciales', function () {
-        if (!idEmpresa) {
-            mostrarToast('No se encontró la configuración de la empresa', 'danger');
-            return;
-        }
+        if (!idEmpresa) { mostrarToast('No hay un logotipo registrado. Agregue uno para continuar.', 'warning'); }
         $('#logo_id_empresa').val(idEmpresa);
         $('#formLogoEmpresa')[0].reset();
         limpiarPreviewLogo();
@@ -293,13 +290,15 @@ export default function initCredenciales() {
             // ABRIR MODAL
             // ==========================
             const modalElement = document.getElementById("modalEditarEmpresa");
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
 
-            if(modalElement){
-                const modal = new bootstrap.Modal(modalElement);
-                modal.show();
-            } else {
-                console.error('No se encontró el modal #modalEditarEmpresa');
-            }
+            // if(modalElement){
+            //     const modal = new bootstrap.Modal(modalElement);
+            //     modal.show();
+            // } else {
+            //     console.error('No se encontró el modal #modalEditarEmpresa');
+            // }
 
         }).fail(function(err){
             console.error(err);

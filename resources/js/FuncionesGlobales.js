@@ -270,17 +270,19 @@ window.validarTelefono = function (telefono, obligatorio = false) {
         return true;
     }
 
+    const telefonoSinSeparadores = telefono.replace(/[\s-]+/g, '');
+
     /* SOLO CARACTERES VALIDOS */
 
-    if (!/^[0-9+()]+$/.test(telefono)) {
+    if (!/^[0-9+()]+$/.test(telefonoSinSeparadores)) {
 
-        mostrarToast('El teléfono solo puede contener números y los símbolos + ( )', 'danger');
+        mostrarToast('El teléfono solo puede contener números, espacios, guiones y los símbolos + ( )', 'danger');
         return false;
     }
 
     /* SOLO UN + */
 
-    if ((telefono.match(/\+/g) || []).length > 1) {
+    if ((telefonoSinSeparadores.match(/\+/g) || []).length > 1) {
 
         mostrarToast('El signo + solo puede aparecer una vez', 'danger');
         return false;
@@ -288,7 +290,7 @@ window.validarTelefono = function (telefono, obligatorio = false) {
 
     /* + SOLO AL INICIO */
 
-    if (telefono.includes('+') && !telefono.startsWith('+')) {
+    if (telefonoSinSeparadores.includes('+') && !telefonoSinSeparadores.startsWith('+')) {
 
         mostrarToast('El signo + solo puede ir al inicio', 'danger');
         return false;
@@ -296,7 +298,7 @@ window.validarTelefono = function (telefono, obligatorio = false) {
 
     /* SOLO UN ( */
 
-    if ((telefono.match(/\(/g) || []).length > 1) {
+    if ((telefonoSinSeparadores.match(/\(/g) || []).length > 1) {
 
         mostrarToast('Solo se permite un paréntesis de apertura', 'danger');
         return false;
@@ -304,14 +306,14 @@ window.validarTelefono = function (telefono, obligatorio = false) {
 
     /* SOLO UN ) */
 
-    if ((telefono.match(/\)/g) || []).length > 1) {
+    if ((telefonoSinSeparadores.match(/\)/g) || []).length > 1) {
 
         mostrarToast('Solo se permite un paréntesis de cierre', 'danger');
         return false;
     }
 
-    const tieneApertura = telefono.includes('(');
-    const tieneCierre = telefono.includes(')');
+    const tieneApertura = telefonoSinSeparadores.includes('(');
+    const tieneCierre = telefonoSinSeparadores.includes(')');
 
     /* PARENTESIS INCOMPLETOS */
 
@@ -323,7 +325,7 @@ window.validarTelefono = function (telefono, obligatorio = false) {
 
     /* ORDEN INCORRECTO */
 
-    if (tieneCierre && telefono.indexOf(')') < telefono.indexOf('(')) {
+    if (tieneCierre && telefonoSinSeparadores.indexOf(')') < telefonoSinSeparadores.indexOf('(')) {
 
         mostrarToast('Los paréntesis están en orden incorrecto', 'danger');
         return false;

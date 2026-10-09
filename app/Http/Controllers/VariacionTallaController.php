@@ -64,8 +64,19 @@ class VariacionTallaController extends Controller
                 ], 422);
             }
 
-            $variacion = \App\Models\ProductoVariacion::with('producto')->findOrFail($request->id_variacion);
+            $variacion = \App\Models\ProductoVariacion::with('producto', 'tallas')->findOrFail($request->id_variacion);
             $talla = Talla::findOrFail($request->id_talla);
+            $stockNuevo = (int) $request->stock;
+            $stockRealProducto = (int) ($variacion->producto->stock_actual ?? 0);
+            $stockActualEnVariacion = (int) $variacion->tallas->sum('stock');
+
+            if ($stockRealProducto > 0 && ($stockActualEnVariacion + $stockNuevo) > $stockRealProducto) {
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'El stock total de las tallas no puede exceder el stock real del producto.'
+                ], 422);
+            }
+
             $sku = $request->filled('sku')
                 ? strtoupper(trim($request->sku))
                 : $this->generarSku($variacion->producto->nombre_producto, $variacion->color, $talla->talla);
@@ -73,7 +84,7 @@ class VariacionTallaController extends Controller
             $variacionTalla = VariacionTalla::create([
                 'id_variacion' => $request->id_variacion,
                 'id_talla' => $request->id_talla,
-                'stock' => $request->stock,
+                'stock' => $stockNuevo,
                 'sku' => $sku,
                 'precio_compra' => $request->filled('precio_compra') ? $request->precio_compra : $variacion->producto->precio_compra,
                 'precio_venta' => $request->filled('precio_venta') ? $request->precio_venta : $variacion->producto->precio_venta,
@@ -180,8 +191,22 @@ class VariacionTallaController extends Controller
                 ], 422);
             }
 
+            $variacion_talla->load('variacion.producto', 'variacion.tallas');
+            $stockNuevo = (int) $request->stock;
+            $stockRealProducto = (int) ($variacion_talla->variacion->producto->stock_actual ?? 0);
+            $stockEnOtrasTallas = (int) $variacion_talla->variacion->tallas
+                ->where('id_variacion_talla', '!=', $variacion_talla->id_variacion_talla)
+                ->sum('stock');
+
+            if ($stockRealProducto > 0 && ($stockEnOtrasTallas + $stockNuevo) > $stockRealProducto) {
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'El stock total de las tallas no puede exceder el stock real del producto.'
+                ], 422);
+            }
+
             $variacion_talla->id_talla = $request->id_talla;
-            $variacion_talla->stock = $request->stock;
+            $variacion_talla->stock = $stockNuevo;
             if ($request->has('sku')) {
                 $variacion_talla->sku = $request->filled('sku')
                     ? strtoupper(trim($request->sku))

@@ -201,7 +201,7 @@ export default function initMostrarProveedores() {
             const direccion = $('#crear_direccion_proveedor').val().trim();
 
             if(nombre === '') { mostrarToast('El nombre del proveedor es obligatorio', 'danger'); return; }
-            if(tipo === "" || tipo === null){ mostrarToast('Seleccione el tipo de proveedor', 'danger'); return; }
+            // if(tipo === "" || tipo === null){ mostrarToast('Seleccione el tipo de proveedor', 'danger'); return; }
             if (!validarTelefono(telefono)) { return; }
 
             if(ruc !== ''){

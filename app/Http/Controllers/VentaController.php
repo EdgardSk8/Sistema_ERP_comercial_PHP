@@ -92,7 +92,8 @@ class VentaController extends Controller
                 // Devolver el inventario al nivel donde se descontó en la venta.
                 if ($variacionTalla) {
                     $variacionTalla->increment('stock', $detalle->cantidad_venta);
-                    $stockResultante = $variacionTalla->fresh()->stock;
+                    $producto->increment('stock_actual', $detalle->cantidad_venta);
+                    $stockResultante = $producto->fresh()->stock_actual;
                     $motivo = 'Anulación de venta - ' . trim(($variacionTalla->variacion->color ?? '') . ' ' . ($variacionTalla->talla->talla ?? ''));
                 } else {
                     $producto->increment('stock_actual', $detalle->cantidad_venta);

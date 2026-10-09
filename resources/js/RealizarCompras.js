@@ -286,6 +286,16 @@ export default function initCompras() {
 /* 🔥 RENDER CARRITO */
 /* ------------------------------------------------------------------------------------------------------------------- */
 
+    function obtenerPorcentajeImpuesto(producto) {
+        const valor = Number(producto?.impuesto ?? 0);
+        const nombre = `${producto?.nombre || ''} ${producto?.text || ''}`.toLowerCase();
+
+        if (!Number.isFinite(valor) || valor <= 0) return 0;
+        if (nombre.includes('exento')) return 0;
+
+        return valor;
+    }
+
     function renderCarrito() {
 
         tabla.clear();
@@ -294,7 +304,8 @@ export default function initCompras() {
             
 
             let subtotal = (Number(p.precio) || 0) * (Number(p.cantidad) || 0);
-            let impuestoValor = subtotal * ((p.impuesto || 0) / 100);
+            let impuestoPorcentaje = obtenerPorcentajeImpuesto(p);
+            let impuestoValor = subtotal * (impuestoPorcentaje / 100);
             let totalItem = subtotal + impuestoValor;
 
             tabla.row.add([
@@ -363,7 +374,8 @@ export default function initCompras() {
         carrito.forEach(p => {
 
             let subtotal = (p.precio || 0) * (p.cantidad || 0);
-            let impuesto = subtotal * ((p.impuesto || 0) / 100);
+            let impuestoPorcentaje = obtenerPorcentajeImpuesto(p);
+            let impuesto = subtotal * (impuestoPorcentaje / 100);
 
             subtotalGeneral += subtotal;
             impuestoGeneral += impuesto;

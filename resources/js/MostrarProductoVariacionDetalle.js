@@ -27,6 +27,62 @@
         return $('<div>').text(valor ?? '').html();
     }
 
+    function calcularStockMaximoPorVariacion(idVariacion, idTallaActual = null) {
+        const variacion = filas.find(item => String(item.id_variacion) === String(idVariacion));
+        const stockReal = Number(variacion?.producto?.stock_actual ?? 0);
+
+        if (!Number.isFinite(stockReal) || stockReal <= 0) return null;
+
+        const totalEnOtrasTallas = (variacion?.tallas || []).reduce((total, talla) => {
+            const mismoId = String(talla.id_variacion_talla) === String(idTallaActual);
+            return total + (mismoId ? 0 : Number(talla.stock || 0));
+        }, 0);
+
+        return Math.max(stockReal - totalEnOtrasTallas, 0);
+    }
+
+    function validarStockPorVariacion(idVariacion, stock, idTallaActual = null) {
+        const stockNumerico = Number(stock || 0);
+        const maximo = calcularStockMaximoPorVariacion(idVariacion, idTallaActual);
+
+        if (maximo === null) {
+            return { ok: true, maximo: null };
+        }
+
+        if (!Number.isFinite(stockNumerico) || stockNumerico < 0) {
+            return { ok: false, maximo, mensaje: 'El stock no puede ser negativo.' };
+        }
+
+        if (stockNumerico > maximo) {
+            return {
+                ok: false,
+                maximo,
+                mensaje: `El stock máximo permitido para esta talla es ${maximo} según el stock real del producto.`
+            };
+        }
+
+        return { ok: true, maximo };
+    }
+
+    function configurarLimiteStockInput(selector, idVariacion, idTallaActual = null) {
+        const $input = $(selector);
+        const maximo = calcularStockMaximoPorVariacion(idVariacion, idTallaActual);
+
+        if (maximo === null) {
+            $input.removeAttr('max');
+            return;
+        }
+
+        $input.attr('max', String(maximo));
+        $input.off('input.stockLimit').on('input.stockLimit', function () {
+            const valor = Number(this.value || 0);
+            if (Number.isFinite(valor) && valor > maximo) {
+                this.value = maximo;
+                mostrarToast(`El stock no puede superar ${maximo} unidades para este producto.`, 'warning');
+            }
+        });
+    }
+
     function mostrarError(xhr, fallback) {
         const errores = xhr.responseJSON?.errors || xhr.responseJSON?.errores;
         const primerError = errores ? Object.values(errores).flat()[0] : null;
@@ -317,6 +373,7 @@
         $('#crear_precio_compra_variacion').val(variacion?.producto?.precio_compra ?? '');
         $('#crear_precio_venta_variacion').val(variacion?.producto?.precio_venta ?? '');
         $('#crear_modo_precio_variacion').val('base');
+        configurarLimiteStockInput('#crear_stock_variacion_talla', idVariacion);
         bootstrap.Modal.getOrCreateInstance($modalCrearTalla[0]).show();
     });
 
@@ -324,6 +381,7 @@
         event.preventDefault();
         const idVariacion = $('#crear_talla_id_variacion').val();
         const idTalla = $('#crear_id_talla').val();
+        const stock = Number($('#crear_stock_variacion_talla').val() || 0);
         const precioVentaBase = calcularPrecioBase(
             $('#crear_precio_venta_variacion').val(),
             idVariacion,
@@ -332,6 +390,13 @@
         const repetida = filas.some(fila => String(fila.id_variacion) === String(idVariacion) && fila.tallas.some(talla => String(talla.id_talla) === String(idTalla)));
         if (!idTalla) return mostrarToast('Seleccione una talla del catalogo', 'warning');
         if (repetida) return mostrarToast('Esa talla ya está asignada a este color', 'warning');
+
+        const validacion = validarStockPorVariacion(idVariacion, stock);
+        if (!validacion.ok) {
+            mostrarToast(validacion.mensaje, 'warning');
+            $('#crear_stock_variacion_talla').val(validacion.maximo ?? 0).trigger('input');
+            return;
+        }
 
         $.ajax({
             url: '/variacion-tallas/crear',
@@ -369,6 +434,7 @@
             $('#editar_precio_compra_variacion').val(response.variacion_talla.precio_compra ?? variacion?.producto?.precio_compra ?? '');
             $('#editar_precio_venta_variacion').val(response.variacion_talla.precio_venta ?? variacion?.producto?.precio_venta ?? '');
             $('#editar_modo_precio_variacion').val('base');
+            configurarLimiteStockInput('#editar_stock_variacion_talla', response.variacion_talla.id_variacion, response.variacion_talla.id_variacion_talla);
             bootstrap.Modal.getOrCreateInstance($modalEditarTalla[0]).show();
         }).fail(xhr => mostrarError(xhr, 'Error al obtener la talla'));
     });
@@ -377,6 +443,7 @@
         event.preventDefault();
         const id = $('#editar_id_variacion_talla').val();
         const idTalla = $('#editar_id_talla').val();
+        const stock = Number($('#editar_stock_variacion_talla').val() || 0);
         const precioVentaBase = calcularPrecioBase(
             $('#editar_precio_venta_variacion').val(),
             $('#editar_id_variacion_talla').data('variacion'),
@@ -385,6 +452,13 @@
         const repetida = filas.some(fila => String(fila.id_variacion) === String($('#editar_id_variacion_talla').data('variacion')) && fila.tallas.some(talla => String(talla.id_talla) === String(idTalla) && String(talla.id_variacion_talla) !== String(id)));
         if (!idTalla) return mostrarToast('Seleccione una talla del catalogo', 'warning');
         if (repetida) return mostrarToast('Esa talla ya está asignada a este color', 'warning');
+
+        const validacion = validarStockPorVariacion($('#editar_id_variacion_talla').data('variacion'), stock, id);
+        if (!validacion.ok) {
+            mostrarToast(validacion.mensaje, 'warning');
+            $('#editar_stock_variacion_talla').val(validacion.maximo ?? 0).trigger('input');
+            return;
+        }
 
         $.ajax({
             url: `/variacion-tallas/actualizar/${id}`,

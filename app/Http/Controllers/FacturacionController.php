@@ -186,6 +186,7 @@ class FacturacionController extends Controller
 
             $subtotalGeneral = 0;
             $impuestoGeneral = 0;
+            $esLiquidacion = $request->boolean('liquidacion');
 
             if (
                 $request->id_metodo_pago != 1 &&
@@ -244,16 +245,41 @@ class FacturacionController extends Controller
 
                 $porcentaje = $producto->impuesto->porcentaje_impuesto ?? 0;
 
-                // 🔥 PRECIO REAL desde BD (SIN IVA)
-                $precioSinImpuesto = $variacionTalla
+                if ($esLiquidacion && !isset($item['precio_venta_final'])) {
+                    throw new \Exception('Debe indicar el precio de liquidación de cada producto');
+                }
+
+                // Precio de catálogo almacenado en BD antes del impuesto.
+                $precioCatalogoSinImpuesto = $variacionTalla
                     ? ($variacionTalla->precio_venta ?? $producto->precio_venta)
                     : $producto->precio_venta;
 
-                // 🔥 cálculo correcto
-                $impuestoUnitario = $precioSinImpuesto * ($porcentaje / 100);
+                $precioSinImpuesto = $precioCatalogoSinImpuesto;
+                $precioFinalAplicado = null;
+                if (isset($item['precio_venta_final'])) {
+                    $precioFinalSolicitado = filter_var($item['precio_venta_final'], FILTER_VALIDATE_FLOAT);
+                    $factorImpuesto = 1 + ($porcentaje / 100);
+                    $precioCatalogoFinal = round($precioCatalogoSinImpuesto * $factorImpuesto, 2);
 
-                $subtotal = $precioSinImpuesto * $cantidad;
-                $impuesto = $impuestoUnitario * $cantidad;
+                    if ($precioFinalSolicitado === false || $precioFinalSolicitado <= 0 || $factorImpuesto <= 0) {
+                        throw new \Exception('El precio de liquidación no es válido');
+                    }
+
+                    if ($precioFinalSolicitado > $precioCatalogoFinal + 0.001) {
+                        throw new \Exception('El precio de liquidación no puede superar el precio normal');
+                    }
+
+                    $precioFinalAplicado = round($precioFinalSolicitado, 2);
+                    $precioSinImpuesto = round($precioFinalAplicado / $factorImpuesto, 2);
+                }
+
+                // 🔥 cálculo correcto
+                $impuestoUnitario = $precioFinalAplicado !== null
+                    ? round($precioFinalAplicado - $precioSinImpuesto, 2)
+                    : $precioSinImpuesto * ($porcentaje / 100);
+
+                $subtotal = round($precioSinImpuesto * $cantidad, 2);
+                $impuesto = round($impuestoUnitario * $cantidad, 2);
 
                 $subtotalGeneral += $subtotal;
                 $impuestoGeneral += $impuesto;
@@ -285,23 +311,35 @@ class FacturacionController extends Controller
                     throw new \Exception("El producto '{$producto->nombre_producto}' ya no tiene existencias disponibles");
                 }
 
-                $actualizado = $variacionTalla
-                    ? VariacionTalla::where('id_variacion_talla', $variacionTalla->id_variacion_talla)
+                if ($variacionTalla) {
+                    $actualizado = VariacionTalla::where('id_variacion_talla', $variacionTalla->id_variacion_talla)
                         ->where('stock', '>=', $cantidad)
-                        ->decrement('stock', $cantidad)
-                    : Producto::where('id_producto', $producto->id_producto)
+                        ->decrement('stock', $cantidad);
+
+                    if (!$actualizado) {
+                        $nombreTalla = $variacionTalla->talla->talla ?? 'seleccionada';
+                        throw new \Exception("La talla '{$nombreTalla}' ya no tiene existencias disponibles");
+                    }
+
+                    $producto->decrement('stock_actual', $cantidad);
+                    $stockResultante = $producto->fresh()->stock_actual;
+                } else {
+                    $actualizado = Producto::where('id_producto', $producto->id_producto)
                         ->where('stock_actual', '>=', $cantidad)
                         ->decrement('stock_actual', $cantidad);
 
-                if (!$actualizado) {
-                    throw new \Exception("El producto '{$producto->nombre_producto}' ya no tiene existencias disponibles");
+                    if (!$actualizado) {
+                        throw new \Exception("El producto '{$producto->nombre_producto}' ya no tiene existencias disponibles");
+                    }
+
+                    $stockResultante = $producto->fresh()->stock_actual;
                 }
 
                 MovimientoInventario::create([
                     'id_producto' => $producto->id_producto,
                     'tipo_movimiento' => 'SALIDA',
                     'cantidad_movimiento' => $cantidad,
-                    'stock_resultante' => $stockDespues,
+                    'stock_resultante' => $stockResultante,
                     'motivo_movimiento' => $variacionTalla
                         ? 'Venta despacho - ' . trim(($variacionTalla->variacion->color ?? '') . ' ' . ($variacionTalla->talla->talla ?? ''))
                         : 'Venta despacho realizada',
@@ -315,11 +353,20 @@ class FacturacionController extends Controller
             // 🔥 TOTAL REAL calculado en backend
             $totalGeneral = $subtotalGeneral + $impuestoGeneral;
 
+            if (!$esLiquidacion && (int) $request->id_metodo_pago === 1 && (float) $request->recibido + 0.001 < $totalGeneral) {
+                throw new \Exception('El pago recibido es menor que el total de la venta');
+            }
+
+            $montoRecibido = $esLiquidacion && (int) $request->id_metodo_pago === 1
+                ? $totalGeneral
+                : (float) $request->recibido;
+
             $venta->update([
                 'subtotal_venta' => $subtotalGeneral,
                 'impuesto_venta' => $impuestoGeneral,
                 'total_venta' => $totalGeneral,
-                'vuelto' => $request->recibido - $totalGeneral
+                'monto_recibido' => $montoRecibido,
+                'vuelto' => $montoRecibido - $totalGeneral
             ]);
 
             // 💰 movimiento caja
