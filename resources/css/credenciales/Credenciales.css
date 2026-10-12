@@ -19,6 +19,60 @@
     border-radius:8px;
 }
 
+.credenciales-header-actions{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.credenciales-version{
+    padding:5px 8px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    background:var(--surface-muted);
+    color:var(--text-soft);
+    font-size:12px;
+    line-height:1.2;
+    white-space:nowrap;
+}
+
+.credencial-btn{
+    border:1px solid transparent;
+    color:var(--text-on-accent);
+    font-weight:500;
+    transition:background-color .15s ease,border-color .15s ease,transform .15s ease;
+}
+
+.credencial-btn:hover{
+    color:var(--text-on-accent);
+    transform:translateY(-1px);
+}
+
+.credencial-btn:focus-visible{
+    outline:2px solid var(--focus-ring-success);
+    outline-offset:2px;
+}
+
+.credencial-btn-logo{
+    border-color:var(--verde);
+    background:var(--verde);
+}
+
+.credencial-btn-logo:hover{
+    border-color:var(--verde-hover);
+    background:var(--verde-hover);
+}
+
+.credencial-btn-eliminar{
+    border-color:var(--rojo);
+    background:var(--rojo);
+}
+
+.credencial-btn-eliminar:hover{
+    border-color:var(--rojo-hover);
+    background:var(--rojo-hover);
+}
+
 #contenedorPreviewLogo{justify-content:center}
 #logoEmpresaActual.d-none,#previewLogoEmpresa.d-none{display:none!important}
 
@@ -26,4 +80,9 @@
     border-color:var(--border-strong);
     background:var(--surface-muted);
     color:var(--text-soft);
+}
+
+@media(max-width:480px){
+    .credenciales-header-actions{gap:8px}
+    .credenciales-version{font-size:11px;padding:5px 6px}
 }

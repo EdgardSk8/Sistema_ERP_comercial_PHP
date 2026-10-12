@@ -8,9 +8,12 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="mb-0">Configuración de la Empresa</h6>
 
-            <button class="btn guardar btn-sm-modal" id="btnEditar">
-                Editar
-            </button>
+            <div class="credenciales-header-actions">
+                <span class="credenciales-version" aria-label="Versión de la aplicación">Versión 1.0.0</span>
+                <button class="btn guardar btn-sm-modal" id="btnEditar">
+                    Editar
+                </button>
+            </div>
         </div>
 
         <div class="card-body">
@@ -56,10 +59,10 @@
                             <span id="sinLogoEmpresa" class="text-secondary">No hay un logo configurado.</span>
                         </div>
                         <div class="d-flex flex-wrap gap-2 mt-2">
-                            <button type="button" class="btn btn-sm btn-outline-success" id="btnCambiarLogo">
+                            <button type="button" class="btn btn-sm credencial-btn credencial-btn-logo" id="btnCambiarLogo">
                                 <i class="bi bi-image me-1"></i>Seleccionar logo
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger d-none" id="btnEliminarLogo">
+                            <button type="button" class="btn btn-sm credencial-btn credencial-btn-eliminar d-none" id="btnEliminarLogo">
                                 <i class="bi bi-trash me-1"></i>Eliminar logo
                             </button>
                         </div>
