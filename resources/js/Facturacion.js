@@ -123,6 +123,22 @@ export default function initFacturacion() {
         return carrito.reduce((total, producto) => total + Number(producto.precio) * Number(producto.cantidad), 0);
     }
 
+    function calcularTotalConDescuento() {
+        return calcularTotalCarrito();
+    }
+
+    function actualizarResumenVenta() {
+        const total = calcularTotalConDescuento();
+        $('#total').text(moneda(total));
+        if ($('#modalidadVenta').val() === 'plazos') {
+            const abono = Number($('#abonoInicialCredito').val() || 0);
+            $('#totalPlanPagoVenta').text(moneda(Math.max(0, total - abono)));
+        }
+        if (typeof validarCuotasPlan === 'function') {
+            validarCuotasPlan();
+        }
+    }
+
     function abrirModalPrecioLiquidacion(cliente, metodo, cuenta) {
         const $filas = $('#liquidacionProductos').empty();
 
@@ -205,7 +221,7 @@ export default function initFacturacion() {
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPrecioLiquidacion')).show();
     }
 
-    async function facturarVenta(cliente, metodo, cuenta, recibido, liquidacion = false) {
+    async function facturarVenta(cliente, metodo, cuenta, recibido, liquidacion = false, credito = null) {
         const total = calcularTotalCarrito();
         const stockOk = await validarStockBD();
 
@@ -225,8 +241,12 @@ export default function initFacturacion() {
             total,
             recibido: liquidacion && metodo === 1 ? total : recibido,
             liquidacion,
-            id_metodo_pago: metodo,
-            id_cuenta: cuenta
+            pago_plazos: Boolean(credito),
+            abono_inicial: credito?.abono_inicial ?? 0,
+            descuento_venta: credito?.descuento_venta ?? 0,
+            cuotas: credito?.cuotas ?? [],
+            id_metodo_pago: credito && Number(credito.abono_inicial) === 0 ? null : metodo,
+            id_cuenta: credito && Number(credito.abono_inicial) === 0 ? null : cuenta
         };
 
         $.ajax({
@@ -234,14 +254,18 @@ export default function initFacturacion() {
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function (res) {
                 if (res.success) {
-                    mostrarToast('Factura realizada', 'success');
+                    mostrarToast(res.pago_plazos
+                        ? `Venta a plazos creada. Saldo pendiente: ${moneda(res.saldo_pendiente)}.`
+                        : 'Factura realizada', 'success');
                     if (imprimirFacturaActivo) imprimirFactura(res);
 
                     carrito = [];
                     RenderizarCarrito();
                     $('#pagoCordobas, #pagoDolares, #vueltoCordobas, #vueltoDolares').val('');
+                    $('#abonoInicialCredito').val('');
                     $('#metodo_pago').val('1').trigger('change');
                     $('#clientes').val('1').trigger('change');
+                    $('#modalidadVenta').val('contado').trigger('change');
                     tablaProductos.ajax.reload(null, false);
                 } else {
                     mostrarToast(res.error || 'No fue posible completar la factura', 'danger');
@@ -288,16 +312,30 @@ export default function initFacturacion() {
 
                 { data: 'nombre_producto', render: function (data, type, row) {
                     if (type === 'filter' && row.sku) return `${data} ${row.sku}`;
-                    if (type !== 'display' || !row.sku) return data;
-                    return `${data}<small class="d-block text-muted">SKU: ${row.sku}</small>`;
+                    if (type === 'sort' || type === 'type') {
+                        const grupoStock = Number(row.stock_actual) > 0 ? '0' : '1';
+                        const nombreOrden = String(data ?? '')
+                            .normalize('NFD')
+                            .replace(/[\u0300-\u036f]/g, '')
+                            .toLocaleLowerCase('es');
+                        return `${grupoStock}|${nombreOrden}`;
+                    }
+                    return data;
                 } },
                 { data: 'precio_con_iva', render: function (data) { return moneda(data, 1); } },
-                { data: 'stock_actual' },
+                { data: 'stock_actual', render: function (data, type) {
+                    const stock = Number(data ?? 0);
+                    if (type === 'sort' || type === 'type') return stock;
+                    return stock === 0
+                        ? '<span class="text-danger fw-bold">0</span>'
+                        : stock;
+                } },
                 { data: 'id_producto',
                     render: function (data, type, row) {
 
-                        let deshabilitado = row.stock_actual <= 0 ? 'disabled' : '';
-                        let clase = row.stock_actual <= 0 ? 'btn-danger' : 'btn-dark';
+                        const stock = Number(row.stock_actual ?? 0);
+                        const deshabilitado = stock <= 0 ? 'disabled' : '';
+                        const clase = stock <= 0 ? 'btn-danger' : 'btn-dark';
 
                         return `
                             <button class="${clase} agregarProducto"
@@ -314,6 +352,7 @@ export default function initFacturacion() {
                     }
                 },
             ],
+            order: [[0, 'asc']],
         });
     }
 
@@ -420,6 +459,166 @@ export default function initFacturacion() {
 
     $('#metodo_pago').val(null).trigger('change');
 
+    function actualizarModalidadVenta() {
+        const esCredito = $('#modalidadVenta').val() === 'plazos';
+        $('#descuentoPlazosContenedor').toggleClass('d-none', !esCredito);
+        $('#abonoInicialCreditoContenedor').toggleClass('d-none', !esCredito);
+        $('#pagoContadoCampos, #vueltoContadoCampos').toggleClass('d-none', esCredito);
+        $('#etiquetaMetodoCobro').text(esCredito ? 'Método del abono inicial:' : 'Seleccionar método de pago:');
+
+        const mostrarMetodo = !esCredito || Number($('#abonoInicialCredito').val() || 0) > 0;
+        $('#grupoMetodoCobro').toggleClass('d-none', !mostrarMetodo);
+    }
+
+    function nuevaFilaCuota(numero, fecha = '', monto = '') {
+        const fila = document.createElement('tr');
+       fila.innerHTML = `
+    <td class="numero-cuota-plan text-center align-middle">${numero}</td>
+    <td class="px-1 align-middle">
+        <input type="date" class="form-control form-control-sm fecha-cuota-plan mx-auto text-center w-100" style="max-width: 10rem;" aria-label="Fecha de vencimiento cuota ${numero}">
+    </td>
+    <td class="px-1 align-middle">
+        <input type="number" class="form-control form-control-sm monto-cuota-plan mx-auto text-center w-100" style="max-width: 5rem;" min="0.01" step="0.01" value="${monto}" aria-label="Importe cuota ${numero}">
+    </td>
+    <td class="text-center align-middle">
+        <button type="button" class="btn btn-sm btn-outline-danger quitar-cuota-plan" title="Quitar cuota" aria-label="Quitar cuota ${numero}"><i class="fa-solid fa-trash fa-xs"></i></button>
+    </td>
+`;
+        const campoFecha = fila.querySelector('.fecha-cuota-plan');
+        campoFecha.value = fecha;
+        FlatPickr(campoFecha);
+        return fila;
+    }
+
+    function validarCuotasPlan() {
+        const filas = [...document.querySelectorAll('#filasPlanPagoVenta tr')];
+        const cuotas = filas.map(fila => ({
+            fecha_vencimiento: fila.querySelector('.fecha-cuota-plan').value,
+            monto_cuota: Number(fila.querySelector('.monto-cuota-plan').value)
+        }));
+        const abonoInicial = Number($('#abonoInicialCredito').val() || 0);
+        const total = Math.round((calcularTotalConDescuento() - obtenerDescuentoPlanPago() - abonoInicial) * 100);
+        const suma = Math.round(cuotas.reduce((acumulado, cuota) => acumulado + (Number.isFinite(cuota.monto_cuota) ? cuota.monto_cuota : 0), 0) * 100);
+        const fechasValidas = cuotas.length > 0 && cuotas.every(cuota => cuota.fecha_vencimiento && cuota.monto_cuota > 0);
+        const coincide = suma === total;
+
+        $('#sumaPlanPagoVenta').text(moneda(suma / 100));
+        $('#avisoPlanPagoVenta')
+            .text(!fechasValidas ? 'Completa una fecha y un importe válido para cada cuota.' : (!coincide ? 'La suma debe coincidir con el saldo a financiar.' : ''))
+            .toggleClass('text-danger', !fechasValidas || !coincide)
+            .toggleClass('text-success', fechasValidas && coincide);
+        $('#confirmarPlanPagoVenta').prop('disabled', !fechasValidas || !coincide);
+        return { cuotas, valido: fechasValidas && coincide };
+    }
+
+    function obtenerDescuentoPlanPago() {
+        const descuento = Math.max(0, Number($('#descuentoPlanPagoVenta').val() || 0));
+        return Math.min(descuento, calcularTotalCarrito());
+    }
+
+    function abrirPlanPago(cliente) {
+        $('#descuentoPlanPagoVenta').val('');
+        const total = calcularTotalConDescuento();
+        const abono = Number($('#abonoInicialCredito').val() || 0);
+        const metodo = Number($('#metodo_pago').val());
+        const cuenta = $('#id_cuenta_metodo_pago').val();
+
+        if (!Number.isFinite(abono) || abono < 0 || abono >= total) {
+            mostrarToast('El abono debe ser menor que el total para que quede un saldo a financiar.', 'danger');
+            $('#btnFacturar').prop('disabled', false);
+            return;
+        }
+        if (abono > 0 && (!metodo || (metodo !== 1 && !cuenta))) {
+            mostrarToast('Selecciona el método y la cuenta del abono inicial.', 'danger');
+            $('#btnFacturar').prop('disabled', false);
+            return;
+        }
+
+        const saldoFinanciado = Math.round((total - abono) * 100) / 100;
+        $('#totalPlanPagoVenta').text(moneda(saldoFinanciado));
+        const fechaInicial = new Date();
+        fechaInicial.setDate(fechaInicial.getDate() + 30);
+        const fechaSegunda = new Date(fechaInicial);
+        fechaSegunda.setDate(fechaSegunda.getDate() + 30);
+        const formatoFecha = fecha => `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
+        const saldoCentavos = Math.round(saldoFinanciado * 100);
+        const formatoMontoCuota = centavos => centavos % 100 === 0 ? String(centavos / 100) : (centavos / 100).toFixed(2);
+        const filasCuotas = [nuevaFilaCuota(1, formatoFecha(fechaInicial)), nuevaFilaCuota(2, formatoFecha(fechaSegunda))];
+        $('#filasPlanPagoVenta').empty().append(filasCuotas);
+
+        function redistribuirCuotas() {
+            const filas = [...document.querySelectorAll('#filasPlanPagoVenta tr')];
+            if (!filas.length) return;
+            const descuento = obtenerDescuentoPlanPago();
+            const saldoCentavosActual = Math.max(0, Math.round((calcularTotalCarrito() - descuento - abono) * 100));
+            const montoBase = Math.floor(saldoCentavosActual / filas.length);
+            const centavosRestantes = saldoCentavosActual % filas.length;
+            $('#totalPlanPagoVenta').text(moneda(saldoCentavosActual / 100));
+            filas.forEach((fila, indice) => {
+                const montoCentavos = montoBase + (indice < centavosRestantes ? 1 : 0);
+                fila.querySelector('.monto-cuota-plan').value = formatoMontoCuota(montoCentavos);
+            });
+            validarCuotasPlan();
+        }
+
+        const descuentoMaxCentavos = Math.max(0, Math.round((total - abono) * 100) - 1);
+        $('#descuentoPlanPagoVenta')
+            .attr('max', formatoMontoCuota(descuentoMaxCentavos))
+            .off('input.facturacion')
+            .on('input.facturacion', function () {
+                const valor = Math.max(0, Number($(this).val() || 0));
+                const descuento = Math.min(valor, descuentoMaxCentavos / 100);
+                if (descuento !== valor) $(this).val(formatoMontoCuota(Math.round(descuento * 100)));
+                redistribuirCuotas();
+            });
+
+        redistribuirCuotas();
+        validarCuotasPlan();
+
+        $('#agregarCuotaPlanPago').off('click.facturacion').on('click.facturacion', function () {
+            const numero = $('#filasPlanPagoVenta tr').length + 1;
+            const ultimaFecha = $('#filasPlanPagoVenta tr:last .fecha-cuota-plan').val();
+            const fechaCuota = ultimaFecha ? new Date(`${ultimaFecha}T12:00:00`) : new Date();
+            fechaCuota.setDate(fechaCuota.getDate() + 30);
+            const valorFecha = `${fechaCuota.getFullYear()}-${String(fechaCuota.getMonth() + 1).padStart(2, '0')}-${String(fechaCuota.getDate()).padStart(2, '0')}`;
+            $('#filasPlanPagoVenta').append(nuevaFilaCuota(numero, valorFecha, '0'));
+            redistribuirCuotas();
+        });
+
+        $('#filasPlanPagoVenta').off('input.facturacion change.facturacion click.facturacion')
+            .on('input.facturacion change.facturacion', '.fecha-cuota-plan, .monto-cuota-plan', validarCuotasPlan)
+            .on('click.facturacion', '.quitar-cuota-plan', function () {
+                $(this).closest('tr').remove();
+                $('#filasPlanPagoVenta tr').each((indice, fila) => $(fila).find('.numero-cuota-plan').text(indice + 1));
+                redistribuirCuotas();
+            });
+
+        $('#confirmarPlanPagoVenta').off('click.facturacion').on('click.facturacion', async function () {
+            const validacion = validarCuotasPlan();
+            if (!validacion.valido) return;
+            $(this).prop('disabled', true);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPlanPagoVenta')).hide();
+            const descuento = obtenerDescuentoPlanPago();
+            await facturarVenta(cliente, metodo, cuenta, abono, false, { abono_inicial: abono, descuento_venta: descuento, cuotas: validacion.cuotas });
+        });
+
+        $('#modalPlanPagoVenta').off('hidden.bs.modal.facturacion').on('hidden.bs.modal.facturacion', function () {
+            $('#btnFacturar').prop('disabled', false);
+        });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPlanPagoVenta')).show();
+    }
+
+    $('#modalidadVenta').off('change.facturacion').on('change.facturacion', function () {
+        actualizarModalidadVenta();
+        actualizarResumenVenta();
+    });
+    $('#abonoInicialCredito').off('input.facturacion').on('input.facturacion', function () {
+        actualizarModalidadVenta();
+        actualizarResumenVenta();
+    });
+    actualizarModalidadVenta();
+    actualizarResumenVenta();
+
     $('#carrito').on('click', '.eliminar', function () { carrito.splice($(this).data('index'), 1); RenderizarCarrito(); });
 
     $('#carrito').on('keydown', '.cantidad', function (e) { if (e.key === 'Enter') $(this).blur(); });
@@ -455,7 +654,7 @@ export default function initFacturacion() {
         $('#btnFacturar').prop('disabled', true);
 
         let cliente = $('#clientes').val();
-        let total = calcularTotalCarrito();
+        let total = calcularTotalConDescuento();
         let metodo = parseInt($('#metodo_pago').val());
 
         let cuenta = $('#id_cuenta_metodo_pago').val();
@@ -476,6 +675,11 @@ export default function initFacturacion() {
             });
 
             $('#btnFacturar').prop('disabled', false);
+            return;
+        }
+
+        if ($('#modalidadVenta').val() === 'plazos') {
+            abrirPlanPago(cliente);
             return;
         }
 

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\File;
 use App\Models\Producto;
 use Intervention\Image\Facades\Image;
 use App\Models\MovimientoInventario;
+use App\Models\VariacionTalla;
 use Illuminate\Support\Facades\DB;
 
 
@@ -124,14 +125,13 @@ class ProductoController extends Controller
     public function EditarProducto($id)
     {
         try {
-            $producto = Producto::find($id);
-
-        $producto = Producto::with([
-            'categoria',
-            'ubicacion',
-            'impuesto',
-            'medida'
-        ])->find($id);
+            $producto = Producto::with([
+                'categoria',
+                'ubicacion',
+                'impuesto',
+                'medida',
+                'variaciones.tallas.talla'
+            ])->find($id);
 
             if (!$producto) {
                 return response()->json([
@@ -163,7 +163,7 @@ class ProductoController extends Controller
 
         try {
 
-            $producto = Producto::find($id);
+            $producto = Producto::with('variaciones.tallas')->lockForUpdate()->find($id);
 
             if (!$producto) {
                 return response()->json([
@@ -173,7 +173,7 @@ class ProductoController extends Controller
             }
 
             // STOCK ANTERIOR
-            $stockAnterior = $producto->stock_actual;
+            $stockAnterior = (int) $producto->stock_actual;
 
             $validator = Validator::make(
                 [
@@ -209,6 +209,84 @@ class ProductoController extends Controller
                     'success' => false,
                     'errors' => $validator->errors()
                 ], 422);
+            }
+
+            $stockSolicitado = (int) ($request->stock_actual ?? $stockAnterior);
+            $diferenciaSolicitada = $stockSolicitado - $stockAnterior;
+            $ajustesVariacion = [];
+            $variantesAjuste = collect();
+
+            if (
+                $diferenciaSolicitada < 0 &&
+                $producto->variaciones()->whereHas('tallas')->exists()
+            ) {
+                $ajustesVariacion = json_decode((string) $request->input('variacion_ajustes'), true);
+                $validatorAjustes = Validator::make(
+                    ['variacion_ajustes' => $ajustesVariacion],
+                    [
+                        'variacion_ajustes' => ['required', 'array', 'min:1'],
+                        'variacion_ajustes.*.id_variacion_talla' => ['required', 'integer', 'distinct'],
+                        'variacion_ajustes.*.cantidad' => ['required', 'integer', 'min:1']
+                    ],
+                    [
+                        'variacion_ajustes.required' => 'Selecciona las tallas de las unidades retiradas.',
+                        'variacion_ajustes.*.id_variacion_talla.required' => 'Cada talla seleccionada debe ser válida.',
+                        'variacion_ajustes.*.cantidad.required' => 'Indica cuántas unidades se retiraron de cada talla.',
+                        'variacion_ajustes.*.cantidad.min' => 'La cantidad retirada por talla debe ser al menos 1.'
+                    ]
+                );
+
+                if ($validatorAjustes->fails()) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $validatorAjustes->errors()
+                    ], 422);
+                }
+
+                $ajustesVariacion = $validatorAjustes->validated()['variacion_ajustes'];
+                $cantidadRetirada = collect($ajustesVariacion)->sum('cantidad');
+
+                if ($cantidadRetirada !== abs($diferenciaSolicitada)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'mensaje' => 'La cantidad asignada a las tallas debe coincidir con el ajuste total del producto.'
+                    ], 422);
+                }
+
+                $idsVariacionTalla = collect($ajustesVariacion)
+                    ->pluck('id_variacion_talla')
+                    ->map(fn ($idVariacionTalla) => (int) $idVariacionTalla)
+                    ->all();
+
+                $variantesAjuste = VariacionTalla::with('variacion')
+                    ->whereIn('id_variacion_talla', $idsVariacionTalla)
+                    ->whereHas('variacion', function ($query) use ($producto) {
+                        $query->where('id_producto', $producto->id_producto);
+                    })
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id_variacion_talla');
+
+                if ($variantesAjuste->count() !== count($idsVariacionTalla)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'mensaje' => 'Una de las tallas seleccionadas no pertenece a este producto.'
+                    ], 422);
+                }
+
+                foreach ($ajustesVariacion as $ajuste) {
+                    $variacionTalla = $variantesAjuste->get((int) $ajuste['id_variacion_talla']);
+                    if ((int) $variacionTalla->stock < (int) $ajuste['cantidad']) {
+                        DB::rollBack();
+                        return response()->json([
+                            'success' => false,
+                            'mensaje' => 'La cantidad retirada supera el stock disponible de una talla.'
+                        ], 422);
+                    }
+                }
             }
 
 
@@ -286,19 +364,46 @@ class ProductoController extends Controller
 
             // Solo registrar movimiento si realmente cambió el stock
             if ($diferencia != 0) {
+                if ($diferencia < 0 && $ajustesVariacion) {
+                    $stockResultante = $stockAnterior;
 
-                MovimientoInventario::create([
-                    'id_producto' => $producto->id_producto,
-                    'tipo_movimiento' => 'AJUSTE',
-                    'cantidad_movimiento' => abs($diferencia),
-                    'stock_resultante' => $stockNuevo,
-                    'motivo_movimiento' => $request->motivo_movimiento,
-                    'id_referencia' => null,
-                    'tipo_referencia' => 'AJUSTE',
-                    'precio_unitario' => $producto->precio_compra,
-                    'fecha_movimiento' => now(),
-                    'id_usuario' => session('usuario.id'),
-                ]);
+                    foreach ($ajustesVariacion as $ajuste) {
+                        $idVariacionTalla = (int) $ajuste['id_variacion_talla'];
+                        $cantidad = (int) $ajuste['cantidad'];
+                        $variacionTalla = $variantesAjuste->get($idVariacionTalla);
+                        $variacionTalla->stock -= $cantidad;
+                        $variacionTalla->save();
+                        $stockResultante -= $cantidad;
+
+                        MovimientoInventario::create([
+                            'id_producto' => $producto->id_producto,
+                            'id_variacion_talla' => $idVariacionTalla,
+                            'tipo_movimiento' => 'AJUSTE',
+                            'cantidad_movimiento' => $cantidad,
+                            'stock_resultante' => $stockResultante,
+                            'motivo_movimiento' => $request->motivo_movimiento,
+                            'id_referencia' => null,
+                            'tipo_referencia' => 'AJUSTE',
+                            'precio_unitario' => $producto->precio_compra,
+                            'fecha_movimiento' => now(),
+                            'id_usuario' => session('usuario.id'),
+                        ]);
+                    }
+                } else {
+                    MovimientoInventario::create([
+                        'id_producto' => $producto->id_producto,
+                        'id_variacion_talla' => null,
+                        'tipo_movimiento' => 'AJUSTE',
+                        'cantidad_movimiento' => abs($diferencia),
+                        'stock_resultante' => $stockNuevo,
+                        'motivo_movimiento' => $request->motivo_movimiento,
+                        'id_referencia' => null,
+                        'tipo_referencia' => 'AJUSTE',
+                        'precio_unitario' => $producto->precio_compra,
+                        'fecha_movimiento' => now(),
+                        'id_usuario' => session('usuario.id'),
+                    ]);
+                }
             }
 
 

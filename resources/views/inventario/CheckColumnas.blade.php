@@ -32,37 +32,42 @@
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="4" id="colMovimiento" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="4" id="colVariacion" checked>
+                    <label class="form-check-label" for="colVariacion">Variación</label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="5" id="colMovimiento" checked>
                     <label class="form-check-label" for="colMovimiento">Movimiento</label>
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="5" id="colTipo" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="6" id="colTipo" checked>
                     <label class="form-check-label" for="colTipo">Tipo</label>
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="6" id="colMotivo" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="7" id="colMotivo" checked>
                     <label class="form-check-label" for="colMotivo">Motivo Movimiento</label>
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="7" id="colCantidad" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="8" id="colCantidad" checked>
                     <label class="form-check-label" for="colCantidad">Cant</label>
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="8" id="colStockActual" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="9" id="colStockActual" checked>
                     <label class="form-check-label" for="colStockActual">Stock Actual</label>
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="9" id="colPrecio" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="10" id="colPrecio" checked>
                     <label class="form-check-label" for="colPrecio">Precio</label>
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="10" id="colTotalVendido" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="11" id="colTotalVendido" checked>
                     <label class="form-check-label" for="colTotalVendido">Total Vendido C$</label>
                 </div>
 

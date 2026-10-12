@@ -1,7 +1,32 @@
+*{
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--verde) var(--verde-soft) !important;
+}
+
+*::-webkit-scrollbar{
+    width: 8px !important;
+    height: 8px !important;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner{
+    background: var(--verde-soft) !important;
+}
+
+*::-webkit-scrollbar-thumb{
+    background: var(--verde) !important;
+    border: 2px solid var(--verde-soft) !important;
+    border-radius: 8px !important;
+}
+
+*::-webkit-scrollbar-thumb:hover{
+    background: var(--verde-hover) !important;
+}
+
 .modal-body{
     background-color: var(--surface-muted) !important;
     scrollbar-width: thin;
-    scrollbar-color:var(--text-soft) transparent;
+    scrollbar-color:var(--verde) var(--verde-soft);
 }
 
 /* .list-group{ padding: 8px; } */

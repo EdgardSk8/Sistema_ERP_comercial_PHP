@@ -232,3 +232,41 @@
     </div>
 
 </div>
+
+<div class="modal fade" id="modalDistribuirAjusteVariacion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Distribuir la baja por talla</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">
+                    Se retirarán <strong id="cantidadTotalAjusteVariacion">0</strong> unidades.
+                    Indica de qué tallas salen.
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Color</th>
+                                <th>Talla</th>
+                                <th>SKU</th>
+                                <th>Disponible</th>
+                                <th>Retirar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="filasAjusteStockVariacion"></tbody>
+                    </table>
+                </div>
+                <div id="resumenAjusteStockVariacion" class="small text-muted" aria-live="polite"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn actualizar btn-sm-modal" id="btnConfirmarAjusteVariacion" disabled>
+                    Confirmar baja
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

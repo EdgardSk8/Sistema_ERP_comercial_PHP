@@ -82,6 +82,15 @@
                 </a>
             @endif
 
+            @if(in_array('vista_cuentas_por_cobrar', session('permisos', [])))
+                <a href="{{ route('cuentas-por-cobrar') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-calendar-check text-warning"></i>
+                    Cuentas por cobrar
+                </a>
+            @endif
+
             @if(in_array('vista_clientes', session('permisos', [])))
                 <a href="{{ route('clientes') }}"
                 class="sidebar-link"
@@ -242,6 +251,15 @@
                 data-turbo-frame="contenido-dinamico">
                     <i class="ph ph-package text-primary"></i>
                     Productos
+                </a>
+            @endif
+
+            @if(in_array('vista_ubicaciones', session('permisos', [])))
+                <a href="{{ route('ubicaciones') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-map-pin text-success"></i>
+                    Ubicaciones
                 </a>
             @endif
 

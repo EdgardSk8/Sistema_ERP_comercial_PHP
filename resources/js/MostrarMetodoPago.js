@@ -1,17 +1,18 @@
+const filtroMetodosPago = function(settings, data) {
+    if (settings.nTable.id !== 'tablaMetodosPago') return true;
+    if (!$('#toggleInactivosMetodosPago').is(':checked')) return true;
+    return data[2].includes('Activo');
+};
+
 export default function initMostrarMetodosPagos() {
 
     document.getElementById('titulo').textContent = 'METODOS DE PAGO';
 
-    $.fn.dataTable.ext.search.push( // Check de métodos de pago inactivos
-        function(settings, data, dataIndex) {
-            const ocultar = $('#toggleInactivosMetodosPago').is(':checked');
-            if (!ocultar) return true;
-            const estado = data[2]; // columna estado_metodo_pago
-            return estado.includes('Activo');
-        }
-    );
+    if (!$.fn.dataTable.ext.search.includes(filtroMetodosPago)) {
+        $.fn.dataTable.ext.search.push(filtroMetodosPago);
+    }
 
-    $('#toggleInactivosMetodosPago').on('change', function() { tabla.draw(); });
+    $('#toggleInactivosMetodosPago').off('change.metodosPago').on('change.metodosPago', function() { tabla.draw(); });
 
     // Inicializar DataTable
     const tabla = $('#tablaMetodosPago').DataTable({
@@ -66,7 +67,7 @@ export default function initMostrarMetodosPagos() {
     configurarToggleColumnas('tablaMetodosPago');
 
     // Click en botón Editar
-    $('#tablaMetodosPago').on('click', '.editarMetodoPago', function(){
+    $('#tablaMetodosPago').off('click.metodosPago', '.editarMetodoPago').on('click.metodosPago', '.editarMetodoPago', function(){
         const id = $(this).data('id');
         abrirModalEditar(id);
     });
@@ -88,7 +89,7 @@ export default function initMostrarMetodosPagos() {
     }
 
     // Actualizar método de pago
-    $('#btnActualizarMetodoPago').click(function() {
+    $('#btnActualizarMetodoPago').off('click.metodosPago').on('click.metodosPago', function() {
 
         const nombre = $('#editar_nombre_metodo_pago').val().trim();
         const descripcion = $('#editar_descripcion_metodo_pago').val().trim();
@@ -155,7 +156,7 @@ export default function initMostrarMetodosPagos() {
     function crearmetododepago() {
 
         // Click en botón Crear Método de Pago
-        $('#btnGuardarMetodoPago').click(function() {
+        $('#btnGuardarMetodoPago').off('click.metodosPago').on('click.metodosPago', function() {
 
             const nombre = $('#crear_nombre_metodo_pago').val().trim();
             const descripcion = $('#crear_descripcion_metodo_pago').val().trim();
@@ -222,17 +223,15 @@ export default function initMostrarMetodosPagos() {
         });
 
         // Limpiar formulario al cerrar modal
-        $('#modalCrearMetodoPago').on('hidden.bs.modal', function () { $('#formCrearMetodoPago')[0].reset(); });
+        $('#modalCrearMetodoPago').off('hidden.bs.modal.metodosPago').on('hidden.bs.modal.metodosPago', function () { $('#formCrearMetodoPago')[0].reset(); });
 
     }; crearmetododepago();
 
 /* ------------------------------------------------------------------------------------------------------ */
 
-    document.addEventListener("click", async function(e) {
+    $(document).off('click.metodosPagoBaja').on('click.metodosPagoBaja', '#tablaMetodosPago .bajaMetodoPago', async function(e) {
 
-        if (e.target.classList.contains("bajaMetodoPago")) {
-
-            const id = e.target.dataset.id;
+            const id = this.dataset.id;
             let modalElement = document.getElementById("modalConfirmarEstadoMetodoPago");
 
             // Crear modal si no existe
@@ -267,7 +266,7 @@ export default function initMostrarMetodosPagos() {
                 modalElement = document.getElementById("modalConfirmarEstadoMetodoPago");
             }
 
-            const modal = new bootstrap.Modal(modalElement);
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
             modal.show();
 
             const botonConfirmar = modalElement.querySelector("#confirmarCambioEstadoMetodoPago");
@@ -307,7 +306,6 @@ export default function initMostrarMetodosPagos() {
 
                 modal.hide();
             };
-        }
     });
 
 /* ------------------------------------------------------------------------------------------------------ */

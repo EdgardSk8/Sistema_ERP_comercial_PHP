@@ -19,14 +19,15 @@
     </div>
 
     <div class="modal fade" id="modalGaleriaVariacionImagenes" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="width: min(90vw, 900px); max-width: 90vw;">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="width: min(94vw, 900px); max-width: 94vw;">
             <div class="modal-content">
                 <div class="modal-header">
                     <p class="modal-title" id="galeria_variacion_titulo">Imágenes de la variación</p>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="galeria_variacion_contenido" class="d-flex flex-wrap justify-content-center gap-2"></div>
+                    <div id="galeria_variacion_contenido" class="d-flex flex-nowrap justify-content-start gap-3 overflow-auto p-1" style="min-height: 180px;"></div>
+                    <input type="file" id="reemplazar_imagen_variacion" class="d-none" accept="image/jpeg,image/png,image/gif,image/webp">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn actualizar btn-sm-modal" id="galeria_variacion_agregar">

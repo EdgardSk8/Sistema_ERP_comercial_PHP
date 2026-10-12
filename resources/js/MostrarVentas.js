@@ -20,7 +20,9 @@ export default function initMostrarVentas() {
             { data: 'subtotal_venta', render: data => moneda(data) },
             { data: 'impuesto_venta', render: data => moneda(data) },
             { data: 'total_venta', render: data => moneda(data) },
-            { data: 'metodo_pago.nombre_metodo_pago' },
+            { data: null, render: function (_data, _type, venta) {
+                return venta.plan_pago ? 'A plazos' : (venta.metodo_pago?.nombre_metodo_pago ?? '—');
+            } },
             { data: 'estado_venta',
                 render: function(data){
                     return data == 1

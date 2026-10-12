@@ -64,16 +64,18 @@ class VariacionTallaController extends Controller
                 ], 422);
             }
 
-            $variacion = \App\Models\ProductoVariacion::with('producto', 'tallas')->findOrFail($request->id_variacion);
+            $variacion = \App\Models\ProductoVariacion::with('producto')->findOrFail($request->id_variacion);
             $talla = Talla::findOrFail($request->id_talla);
             $stockNuevo = (int) $request->stock;
             $stockRealProducto = (int) ($variacion->producto->stock_actual ?? 0);
-            $stockActualEnVariacion = (int) $variacion->tallas->sum('stock');
+            $stockAsignadoProducto = (int) VariacionTalla::whereHas('variacion', function ($query) use ($variacion) {
+                $query->where('id_producto', $variacion->id_producto);
+            })->sum('stock');
 
-            if ($stockRealProducto > 0 && ($stockActualEnVariacion + $stockNuevo) > $stockRealProducto) {
+            if (($stockAsignadoProducto + $stockNuevo) > $stockRealProducto) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'El stock total de las tallas no puede exceder el stock real del producto.'
+                    'mensaje' => 'El stock de todas las tallas y colores no puede exceder el stock real del producto.'
                 ], 422);
             }
 
@@ -191,30 +193,53 @@ class VariacionTallaController extends Controller
                 ], 422);
             }
 
-            $variacion_talla->load('variacion.producto', 'variacion.tallas');
+            $variacion_talla->load('variacion.producto', 'talla');
+            $tallaAnterior = $variacion_talla->talla;
+            $tallaNueva = Talla::findOrFail($request->id_talla);
+            $producto = $variacion_talla->variacion->producto;
             $stockNuevo = (int) $request->stock;
-            $stockRealProducto = (int) ($variacion_talla->variacion->producto->stock_actual ?? 0);
-            $stockEnOtrasTallas = (int) $variacion_talla->variacion->tallas
+            $stockRealProducto = (int) ($producto->stock_actual ?? 0);
+            $stockEnOtrasTallas = (int) VariacionTalla::whereHas('variacion', function ($query) use ($producto) {
+                $query->where('id_producto', $producto->id_producto);
+            })
                 ->where('id_variacion_talla', '!=', $variacion_talla->id_variacion_talla)
                 ->sum('stock');
 
-            if ($stockRealProducto > 0 && ($stockEnOtrasTallas + $stockNuevo) > $stockRealProducto) {
+            if (($stockEnOtrasTallas + $stockNuevo) > $stockRealProducto) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'El stock total de las tallas no puede exceder el stock real del producto.'
+                    'mensaje' => 'El stock de todas las tallas y colores no puede exceder el stock real del producto.'
                 ], 422);
             }
 
+            $tallaCambio = (int) $variacion_talla->id_talla !== (int) $tallaNueva->id_talla;
+            $skuActual = (string) ($variacion_talla->sku ?? '');
+            $skuEnviado = $request->input('sku');
+            $skuAutogenerado = $this->skuCoincideConGenerado(
+                $skuActual,
+                $producto->nombre_producto,
+                $variacion_talla->variacion->color,
+                $tallaAnterior->talla ?? ''
+            );
+
             $variacion_talla->id_talla = $request->id_talla;
             $variacion_talla->stock = $stockNuevo;
-            if ($request->has('sku')) {
-                $variacion_talla->sku = $request->filled('sku')
-                    ? strtoupper(trim($request->sku))
-                    : ($variacion_talla->sku ?: $this->generarSku(
-                        $variacion_talla->variacion->producto->nombre_producto,
-                        $variacion_talla->variacion->color,
-                        $variacion_talla->talla->talla
-                    ));
+            if ($request->has('sku') && !$request->filled('sku')) {
+                $variacion_talla->sku = $this->generarSku(
+                    $producto->nombre_producto,
+                    $variacion_talla->variacion->color,
+                    $tallaNueva->talla,
+                    $variacion_talla->id_variacion_talla
+                );
+            } elseif ($request->filled('sku') && strtoupper(trim($skuEnviado)) !== strtoupper(trim($skuActual))) {
+                $variacion_talla->sku = strtoupper(trim($skuEnviado));
+            } elseif ($tallaCambio && $skuAutogenerado) {
+                $variacion_talla->sku = $this->generarSku(
+                    $producto->nombre_producto,
+                    $variacion_talla->variacion->color,
+                    $tallaNueva->talla,
+                    $variacion_talla->id_variacion_talla
+                );
             }
             if ($request->has('precio_compra')) $variacion_talla->precio_compra = $request->precio_compra;
             if ($request->has('precio_venta')) $variacion_talla->precio_venta = $request->precio_venta;
@@ -295,14 +320,31 @@ class VariacionTallaController extends Controller
         }
     }
 
-    private function generarSku(string $producto, string $color, string $talla): string
+    private function skuBase(string $producto, string $color, string $talla): string
     {
         $base = Str::upper(Str::slug($producto . '-' . $color . '-' . $talla));
-        $base = substr($base ?: 'VARIANTE', 0, 85);
+        return substr($base ?: 'VARIANTE', 0, 85);
+    }
+
+    private function skuCoincideConGenerado(string $sku, string $producto, string $color, string $talla): bool
+    {
+        if ($sku === '') return false;
+
+        $base = preg_quote($this->skuBase($producto, $color, $talla), '/');
+        return preg_match('/^' . $base . '(?:-\d+)?$/i', trim($sku)) === 1;
+    }
+
+    private function generarSku(string $producto, string $color, string $talla, ?int $idExcluir = null): string
+    {
+        $base = $this->skuBase($producto, $color, $talla);
         $sku = $base;
         $sufijo = 1;
 
-        while (VariacionTalla::where('sku', $sku)->exists()) {
+        while (VariacionTalla::where('sku', $sku)
+            ->when($idExcluir !== null, function ($query) use ($idExcluir) {
+                $query->where('id_variacion_talla', '!=', $idExcluir);
+            })
+            ->exists()) {
             $sku = $base . '-' . $sufijo++;
         }
 

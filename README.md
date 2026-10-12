@@ -1,107 +1,62 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ERP de Gestión Comercial y Punto de Venta
 
-<div align="center">
+Aplicación web para centralizar la operación diaria de comercios minoristas: ventas, inventario, compras, caja y administración financiera. Incluye un punto de venta con impresión de facturas y proformas, además de herramientas para consultar y gestionar la actividad del negocio.
 
-# Sistema ERP de Gestión Comercial
+## Funcionalidades
 
-Sistema ERP orientado a la administración integral de negocios, diseñado para centralizar procesos comerciales, financieros y operativos en una única plataforma.
+- **Ventas y POS:** registro de ventas, diferentes métodos de pago, proformas, impresión, anulaciones y ventas a plazos.
+- **Productos e inventario:** catálogo, categorías, impuestos, medidas, ubicaciones, variantes de producto y movimientos de inventario (Kardex).
+- **Compras y proveedores:** registro de compras, actualización de existencias e historial.
+- **Caja y finanzas:** apertura y cierre de caja, gastos, cuentas, movimientos y transferencias.
+- **Clientes y administración:** clientes, usuarios, roles y permisos.
+- **Consultas y respaldos:** paneles e informes, exportación de datos y herramientas de respaldo y recuperación.
 
-## 📋 Módulos del Sistema
+El sistema está orientado a la venta minorista de productos. Las obligaciones fiscales y los procesos específicos de cada país o sector deben verificarse antes de su puesta en marcha.
 
-![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white)
-![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white)
-![MariaDB](https://img.shields.io/badge/MariaDB-003545?logo=mariadb&logoColor=white)
-![Bootstrap](https://img.shields.io/badge/Bootstrap-5-7952B3?logo=bootstrap&logoColor=white)
-![jQuery](https://img.shields.io/badge/jQuery-0769AD?logo=jquery&logoColor=white)
-![DataTables](https://img.shields.io/badge/DataTables-003B57?logo=datatables&logoColor=white)
-![Chart.js](https://img.shields.io/badge/Chart.js-FF6384?logo=chartdotjs&logoColor=white)
-</div>
+## Tecnologías
 
-Video Demostración: [![YouTube](https://img.shields.io/badge/YouTube-Video-red?logo=youtube)](https://youtu.be/hpCVmuRQi2Y)
+- **Backend:** PHP 8.2 y Laravel 12.
+- **Interfaz:** Blade, Bootstrap 5, JavaScript, jQuery, DataTables y Chart.js.
+- **Herramientas frontend:** Vite y npm.
+- **Persistencia:** MariaDB/MySQL.
+- **Documentos y exportaciones:** DomPDF y Laravel Excel.
 
-### 📊 Dashboard Analítico
-- Gráficas e indicadores en tiempo real.
-- Estadísticas de ventas, compras y movimientos financieros.
+## Requisitos
 
-### 🧾 Facturación y Ventas
-- Emisión de facturas.
-- Generación de proformas.
-- Impresión de documentos.
-- Historial de ventas.
-- Consulta detallada de transacciones.
-- Anulación de ventas.
+- PHP 8.2 o superior y Composer.
+- Node.js y npm.
+- MariaDB o MySQL.
 
-### 👥 Gestión de Clientes
-- Registro y administración de clientes.
-- Consulta y edición de información.
+## Desarrollo local
 
-### 🛒 Compras y Proveedores
-- Registro de compras.
-- Ingreso de productos con imágenes.
-- Historial de compras.
-- Administración de proveedores.
+1. Instala las dependencias de PHP y JavaScript:
 
-### 📦 Inventario
-- Gestión de productos.
-- Administración de categorías.
-- Configuración de precios.
-- Configuración de IVA.
-- Control de movimientos de inventario (Kardex).
+	```bash
+	composer install
+	npm install
+	```
 
-### 💰 Gestión de Caja
-- Apertura y cierre de caja.
-- Historial de sesiones de caja.
-- Registro de entradas y salidas de efectivo.
-- Control de movimientos contables.
+2. Crea el archivo `.env` a partir de `.env.example`, configura la conexión a la base de datos y genera la clave de la aplicación:
 
-### 🏦 Gestión Financiera
-- Administración de cuentas.
-- Transferencias entre cuentas.
-- Depósitos y retiros.
-- Transferencia de efectivo desde caja hacia cuentas.
-- Historial de movimientos financieros.
+	```bash
+	php artisan key:generate
+	```
 
-### 💸 Gestión de Gastos
-- Registro de gastos.
-- Clasificación mediante tipos de gastos.
-- Pagos desde caja o cuentas.
-- Historial de pagos.
-- Edición de registros.
+3. Ejecuta las migraciones y compila los recursos:
 
-### 🔐 Administración y Seguridad
-- Gestión de usuarios.
-- Gestión de roles.
-- Configuración de permisos por rol.
-- Administración de credenciales empresariales.
-- Configuración de métodos de pago.
-- Configuración de impuestos.
+	```bash
+	php artisan migrate
+	npm run build
+	```
 
-### 📈 Reportes
-- Reportes parametrizados.
-- Exportación a PDF.
-- Exportación a Excel.
-- Exportación a CSV.
+4. Inicia el servidor local:
 
-### 💾 Respaldo y Recuperación
-- Respaldo de base de datos.
-- Restauración de respaldos.
-- Herramientas de recuperación de información.
+	```bash
+	php artisan serve
+	```
 
----
+Para trabajar con Vite en desarrollo, ejecuta `npm run dev`. Para ejecutar las pruebas disponibles, usa `php artisan test`.
 
-## 🚀 Características Generales
+## Configuración y seguridad
 
-- Más de 27 módulos integrados.
-- Arquitectura modular y escalable.
-- Gestión centralizada de operaciones comerciales y financieras.
-- Control de inventario en tiempo real.
-- Sistema de roles y permisos.
-- Generación de reportes avanzados.
-- Soporte para múltiples métodos de pago.
-- Gestión completa de clientes y proveedores.
-- Control de caja y movimientos financieros.
-- Respaldo y restauración de base de datos.
-
-## 🎯 Objetivo
-
-Brindar una solución integral para la gestión empresarial, permitiendo administrar ventas, compras, inventario, finanzas, clientes y operaciones administrativas desde una única plataforma.
+Mantén las credenciales, claves, respaldos y datos reales fuera del repositorio. Configura los valores locales en `.env` y verifica permisos, impuestos y formatos de impresión antes de usar el sistema en un negocio.

@@ -250,8 +250,8 @@ export default function initMostrarCategorias() {
 
     function crearcategorias() {
 
-        // Click en botón Crear Categoria
-        $('#btnGuardarCategoria').click(function() {
+        $('#formCrearCategoria').off('submit.categorias').on('submit.categorias', function(event) {
+            event.preventDefault();
 
             const nombre = $('#crear_nombre_categoria').val().trim();
             const descripcion = $('#crear_descripcion_categoria').val().trim();

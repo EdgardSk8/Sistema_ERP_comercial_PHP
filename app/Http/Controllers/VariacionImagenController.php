@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Models\VariacionImagen;
 
@@ -252,6 +253,48 @@ class VariacionImagenController extends Controller
                 'detalle' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function OrdenarVariacionImagenes(Request $request, int|string $idVariacion)
+    {
+        $validator = Validator::make($request->all(), [
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'integer', 'distinct']
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $ids = collect($validator->validated()['ids'])->map(fn ($id) => (int) $id)->values();
+        $idsActuales = VariacionImagen::where('id_variacion', $idVariacion)
+            ->orderBy('id_imagen')
+            ->pluck('id_imagen')
+            ->map(fn ($id) => (int) $id)
+            ->values();
+
+        if ($ids->count() !== $idsActuales->count() || $ids->sort()->values()->all() !== $idsActuales->sort()->values()->all()) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'La lista no coincide con las imágenes de esta variación.'
+            ], 422);
+        }
+
+        DB::transaction(function () use ($ids, $idVariacion) {
+            foreach ($ids as $indice => $idImagen) {
+                VariacionImagen::where('id_variacion', $idVariacion)
+                    ->where('id_imagen', $idImagen)
+                    ->update(['orden' => $indice + 1]);
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'mensaje' => 'Orden de imágenes actualizado correctamente.'
+        ]);
     }
 
 

@@ -729,6 +729,7 @@ export default function initCompras() {
             const medida = $('#crear_medida_producto').val();
             const ubicacion = $('#crear_id_ubicacion').val();
             const impuesto = $('#crear_id_impuesto').val();
+            const porcentajeImpuesto = Number($('#crear_id_impuesto option:selected').data('iva')) || 0;
             const precioCompra = $('#crear_precio_compra').val();
             const precioVenta = $('#crear_precio_venta').val();
             const stock = $('#crear_stock_actual').val();
@@ -777,7 +778,8 @@ export default function initCompras() {
                     cantidad: cantidad,
                     precio: precio,
                     precio_compra: precio,
-                    impuesto: impuesto,
+                    impuesto: porcentajeImpuesto,
+                    id_impuesto: impuesto,
                     id_medida: medida
                 });
 

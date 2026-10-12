@@ -12,6 +12,7 @@ class MovimientoInventario extends Model
 
     protected $fillable = [
         'id_producto',
+        'id_variacion_talla',
         'tipo_movimiento',        // ENTRADA, SALIDA, AJUSTE
         'cantidad_movimiento',    // siempre positivo
         'stock_resultante',       // stock después del movimiento

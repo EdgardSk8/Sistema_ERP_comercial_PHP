@@ -1,0 +1,28 @@
+.cartera-page{display:flex;flex-direction:column;min-height:calc(100vh - 120px);padding:16px;color:var(--text)}
+.cartera-tabla-wrap{border:1px solid var(--border);border-radius:6px;background:var(--surface)}
+.cartera-page .table{color:var(--text);--bs-table-bg:transparent;--bs-table-color:var(--text);--bs-table-hover-color:var(--text);--bs-table-hover-bg:var(--surface-hover)}
+.cartera-page thead th{background:var(--surface-muted);border-bottom-color:var(--border-strong);white-space:nowrap}
+.cartera-page td{border-color:var(--border)}
+.cartera-estado{display:inline-block;border:1px solid currentColor;border-radius:4px;padding:2px 7px;font-size:12px;line-height:1.35}
+.cartera-estado.atrasada{color:var(--danger-text)}
+.cartera-estado.pendiente{color:var(--azul);background:var(--azul-soft)}
+.cartera-estado.parcial{color:var(--warning-strong)}
+.cartera-estado.pagada{color:var(--success-text)}
+.cartera-resumen-detalle{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px;padding:14px;border:1px solid var(--border);border-radius:6px;background:var(--surface-muted)}
+.cartera-resumen-detalle>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cartera-resumen-detalle span{font-size:12px;color:var(--text-soft)}
+.cartera-resumen-detalle strong{overflow-wrap:anywhere;color:var(--text)}
+.cartera-resumen-abono{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:11px;border:1px solid var(--border);border-radius:6px;background:var(--surface-muted)}
+.cartera-resumen-abono>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cartera-resumen-abono .cartera-resumen-abono-intro{grid-column:1/-1;gap:4px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.cartera-resumen-abono-intro p{color:var(--text-soft)}
+.cartera-resumen-abono span,.cartera-proximo-vencimiento{font-size:12px;color:var(--text-soft)}
+.cartera-resumen-abono strong{overflow-wrap:anywhere;color:var(--text);font-size:15px}
+.cartera-resumen-abono .cartera-proximo-vencimiento{grid-column:1/-1;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.cartera-resumen-abono .cartera-proximo-vencimiento strong{font-size:12px}
+#modalAbonoCartera .modal-header,#modalAbonoCartera .modal-footer{padding-top:.6rem;padding-bottom:.6rem}
+#modalAbonoCartera .modal-body{padding:.85rem}
+#montoAbonoCartera{-moz-appearance:textfield;appearance:textfield}
+#montoAbonoCartera::-webkit-inner-spin-button,#montoAbonoCartera::-webkit-outer-spin-button{margin:0;-webkit-appearance:none}
+.cartera-acciones{white-space:nowrap}
+@media(max-width:700px){.cartera-page{padding:10px}.cartera-page>div:first-child{align-items:stretch!important}.cartera-page .table{font-size:12px}.cartera-resumen-detalle{gap:10px;padding:12px}.cartera-resumen-abono{gap:8px;padding:10px}}

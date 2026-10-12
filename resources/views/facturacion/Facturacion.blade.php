@@ -12,9 +12,7 @@
     <div class="Contenedor-General">
 
         <div class="MC Izquierda">
-
-            <div class="d-flex justify-content-between align-items-center">
-
+            <div class="facturacion-productos-layout">
                 <div class="contenedor-botones">
                     
                     <button id="btnAbrirCaja" class="btn btn-sm btn-success">Abrir Caja</button> 
@@ -40,10 +38,8 @@
                     </label>
 
                 </div>
-                
-            </div>
 
-        <div class="mini-contenedor-pos">
+                <div class="mini-contenedor-pos">
 
                 <table id="tablaProductos" class="table  table-bordered">
                     <thead>
@@ -56,6 +52,7 @@
                     </thead>
                 </table>
 
+                </div>
             </div>
 
 
@@ -72,20 +69,30 @@
                         <h6 id="tasaImpuesto"></h6> 
                         <h6 id="NumeroCaja"></h6> 
                     </div>
-                    
-                    <select class="form-select form-select-sm" name="id_cliente" id="clientes"></select>
+
+                    <div class="row g-2 mb-2">
+
+                        <div class="col-6"> 
+                            <select class="form-select form-select-sm" name="id_cliente" id="clientes"></select>
+                        </div>
+
+                        <div class="col-6"> 
+                            <select class="form-select form-select-sm" id="modalidadVenta">
+                                <option value="contado">Contado</option>
+                                <option value="plazos">Pago por plazos</option>
+                            </select>
+                        </div>
+
+                    </div>
 
                 </div>
 
-                <div class="d-flex">
-                   
-                </div>
             </div>
 
-            <div class="row mb-2">
+            <div class="row mb-2" id="grupoMetodoCobro">
 
                 <div class="col-6">
-                    <h6> Seleccionar Metodo de Pago:</h6>
+                    <h6 id="etiquetaMetodoCobro">Seleccionar método de pago:</h6>
                     <select class="form-select form-select-sm" name="id_metodo_pago" id="metodo_pago"></select>
                 </div>
 
@@ -103,8 +110,17 @@
                             <span id="total">C$ 0.00</span>
                         </div>
 
+                        <div id="abonoInicialCreditoContenedor" class="d-none mb-2">
+                            <!-- <label for="abonoInicialCredito" class="form-label small fw-bold">Abono inicial (opcional)</label> -->
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">C$</span>
+                                <input type="number" min="0" step="0.01" id="abonoInicialCredito"
+                                    class="form-control" placeholder="0.00">
+                            </div>
+                        </div>
+
                         <!-- 💵 PAGOS -->
-                        <div class="row g-1 mb-2">
+                        <div class="row g-1 mb-2" id="pagoContadoCampos">
 
                             <!-- CÓRDOBAS -->
                             <div class="col-6 position-relative">
@@ -140,7 +156,7 @@
                         </div>
 
                         <!-- 🔄 VUELTOS -->
-                        <div class="row g-1 mb-2">
+                        <div class="row g-1 mb-2" id="vueltoContadoCampos">
 
                             <!-- VUELTO C$ -->
                             <div class="col-6">
@@ -189,6 +205,49 @@
 
     </div>
 
+    <div class="modal fade" id="modalPlanPagoVenta" tabindex="-1" aria-labelledby="tituloPlanPagoVenta" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="tituloPlanPagoVenta">Programar pagos</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group input-group-sm mb-3">
+                        <span class="input-group-text">Descuento C$</span>
+                        <input type="number" min="0" step="0.01" id="descuentoPlanPagoVenta" class="form-control" placeholder="Opcional" aria-label="Descuento de la venta a plazos">
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Saldo a financiar</span><strong id="totalPlanPagoVenta">C$ 0.00</strong>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-2" style="table-layout: fixed;">
+                            <colgroup>
+                                <col style="width: 10%;">
+                                <col style="width: 42%;">
+                                <col style="width: 32%;">
+                                <col style="width: 16%;">
+                            </colgroup>
+                            <thead><tr><th>Cuota</th><th>Fecha de vencimiento</th><th>Importe (C$)</th><th></th></tr></thead>
+                            <tbody id="filasPlanPagoVenta"></tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-success" id="agregarCuotaPlanPago">
+                        <i class="fa-solid fa-plus me-1"></i>Agregar cuota
+                    </button>
+                    <div class="d-flex justify-content-between mt-3" role="status">
+                        <span>Suma de cuotas</span><strong id="sumaPlanPagoVenta">C$ 0.00</strong>
+                    </div>
+                    <div id="avisoPlanPagoVenta" class="small mt-1" aria-live="polite"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-sm btn-success" id="confirmarPlanPagoVenta" disabled>Confirmar venta a plazos</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalPrecioLiquidacion" tabindex="-1" aria-labelledby="tituloPrecioLiquidacion" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
@@ -215,7 +274,7 @@
                     <div id="liquidacionAviso" class="small text-danger mt-2" role="status"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-sm btn-success" id="btnAplicarLiquidacion" disabled>Aplicar y facturar</button>
                 </div>
             </div>

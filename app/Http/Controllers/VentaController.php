@@ -28,6 +28,7 @@ class VentaController extends Controller
                 'cliente:id_cliente,nombre_cliente',
                 'usuario:id_usuario,nombre_usuario',
                 'metodoPago:id_metodo_pago,nombre_metodo_pago',
+                'planPago:id_plan_pago,id_venta',
                 // 'caja'
             ])->get();
 
@@ -66,6 +67,14 @@ class VentaController extends Controller
                 return response()->json([
                     'success' => false,
                     'mensaje' => 'La venta ya está anulada'
+                ], 422);
+            }
+
+            if ($venta->pagos()->exists()) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'No se puede anular una venta que ya recibió abonos. Registra una devolución antes de anularla.'
                 ], 422);
             }
 

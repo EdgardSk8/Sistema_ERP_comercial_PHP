@@ -22,6 +22,7 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\CredencialesController;
 use App\Http\Controllers\FacturacionController;
+use App\Http\Controllers\CuentaPorCobrarController;
 use App\Http\Controllers\MovimientoInventarioController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\CompraController;
@@ -45,6 +46,7 @@ use App\Http\Controllers\TallaController;
 use App\Http\Controllers\ProductoVariacionController;
 use App\Http\Controllers\VariacionImagenController;
 use App\Http\Controllers\VariacionTallaController;
+use App\Http\Controllers\UbicacionController;
 
 /*  ╔════════════ LOGIN ═════════════╗ 
     ╚════════════════════════════════╝ */
@@ -67,6 +69,7 @@ Route::view('/dashboard', 'dashboard.Dashboard') ->middleware('permiso:vista_das
 Route::view('/usuarios', 'usuarios.Usuario')->middleware('permiso:vista_usuarios')->name('usuarios');
 Route::view('/proveedores', 'proveedores.Proveedores')->middleware('permiso:vista_proveedores')->name('proveedores');
 Route::view('/productos', 'productos.Productos')->middleware('permiso:vista_productos')->name('productos');
+Route::view('/ubicaciones', 'ubicaciones.Ubicaciones')->middleware('permiso:vista_ubicaciones')->name('ubicaciones');
 Route::view('/roles', 'roles.Roles')->middleware('permiso:vista_roles')->name('roles');
 Route::view('/permisos', 'permisos.Permisos')->middleware('permiso:vista_permisos')->name('permisos');
 Route::view('/categorias', 'categorias.Categorias')->middleware('permiso:vista_categorias')->name('categorias');
@@ -297,6 +300,9 @@ Route::get('/movimientos-caja-cuenta/detalle/{id}', [TransferenciaCajaCuentaCont
 
 Route::get('/productos/pos', [FacturacionController::class, 'MostrarProductosPOS'])->middleware('permiso:usar_facturacion');
 Route::post('/facturar/pos', [FacturacionController::class, 'FacturarProductosPOS'])->middleware('permiso:usar_facturacion');
+Route::get('/cuentas-por-cobrar/mostrar', [CuentaPorCobrarController::class, 'Mostrar'])->middleware('permiso:mostrar_cuentas_por_cobrar');
+Route::post('/cuentas-por-cobrar/{idVenta}/pagos', [CuentaPorCobrarController::class, 'RegistrarPago'])->middleware('permiso:registrar_pagos_venta');
+Route::view('/cuentas-por-cobrar', 'cuentasporcobrar.CuentasPorCobrar')->middleware('permiso:vista_cuentas_por_cobrar')->name('cuentas-por-cobrar');
 
 Route::post('/caja/abrir', [CajaController::class, 'AbrirCaja'])->middleware('permiso:abrir_caja');
 Route::post('/caja/cerrar', [CajaController::class, 'CerrarCaja'])->middleware('permiso:cerrar_caja');
@@ -366,6 +372,15 @@ Route::put('/medidas/actualizar/{id}', [MedidasController::class, 'ActualizarMed
 Route::put('/medidas/cambiar-estado/{id}', [MedidasController::class, 'CambiarEstadoMedida'])->middleware('permiso:cambiar_estado_medidas');
 Route::get('/medidas/tipos-medidas/mostrar',[MedidasController::class, 'MostrarTiposMedidas']);
 
+/*  ╔════════════ Endpoint de Ubicaciones ════════╗
+    ╚══════════════════════════════════════════════╝ */
+
+Route::get('/ubicaciones/mostrar', [UbicacionController::class, 'MostrarUbicaciones'])->middleware('permiso:mostrar_ubicaciones');
+Route::post('/ubicaciones/crear', [UbicacionController::class, 'CrearUbicacion'])->middleware('permiso:crear_ubicaciones');
+Route::get('/ubicaciones/editar/{id}', [UbicacionController::class, 'EditarUbicacion'])->middleware('permiso:editar_ubicaciones');
+Route::put('/ubicaciones/actualizar/{id}', [UbicacionController::class, 'ActualizarUbicacion'])->middleware('permiso:actualizar_ubicaciones');
+Route::post('/ubicaciones/cambiar-estado/{id}', [UbicacionController::class, 'CambiarEstadoUbicacion'])->middleware('permiso:cambiar_estado_ubicaciones');
+
 /* ╔════════════ Endpoint de Talla ════════════╗
    ╚═══════════════════════════════════════════╝ */
 
@@ -401,6 +416,7 @@ Route::post('/variacion-imagenes/crear', [VariacionImagenController::class, 'Cre
 Route::get('/variacion-imagenes/editar/{id}', [VariacionImagenController::class, 'EditarVariacionImagen'])->middleware('permiso:editar_variacion_imagenes');
 Route::put('/variacion-imagenes/actualizar/{id}', [VariacionImagenController::class, 'ActualizarVariacionImagen'])->middleware('permiso:actualizar_variacion_imagenes');
 Route::put('/variacion-imagenes/cambiar-orden/{id}', [VariacionImagenController::class, 'CambiarOrdenVariacionImagen'])->middleware('permiso:cambiar_orden_variacion_imagenes');
+Route::put('/variacion-imagenes/ordenar/{idVariacion}', [VariacionImagenController::class, 'OrdenarVariacionImagenes'])->middleware('permiso:cambiar_orden_variacion_imagenes');
 Route::delete('/variacion-imagenes/eliminar/{id}', [VariacionImagenController::class, 'EliminarVariacionImagen'])->middleware('permiso:eliminar_variacion_imagenes');
 
 /* ╔════════ Endpoint de Variación Talla ═════════╗

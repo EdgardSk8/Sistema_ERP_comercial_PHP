@@ -36,7 +36,7 @@
                         <div class="col-12">
 
                             <label for="crear_imagen" class="form-label">
-                                Imagen
+                                Imágenes
                             </label>
 
                             <input type="file"
@@ -44,11 +44,9 @@
                                 id="crear_imagen"
                                 name="imagen"
                                 accept="image/jpeg,image/png,image/gif,image/webp"
+                                multiple
                                 required>
-                            <img id="crear_preview_imagen"
-                                class="img-thumbnail mt-2 d-none d-block mx-auto"
-                                alt="Vista previa de la imagen seleccionada"
-                                style="max-height: 120px;">
+                            <div id="crear_preview_imagenes" class="d-flex flex-wrap justify-content-center gap-2 mt-2" aria-live="polite"></div>
 
                         </div>
 

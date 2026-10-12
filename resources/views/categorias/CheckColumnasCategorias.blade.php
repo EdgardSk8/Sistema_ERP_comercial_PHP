@@ -40,16 +40,16 @@
 
         </div>
 
-        <!-- Toggle inactivos (CORRECTO SEGÚN TU ESTÁNDAR) -->
-        <input type="checkbox" id="toggleInactivosCategorias" class="togglecheck" hidden checked>
-        <label for="toggleInactivosCategorias" class="toggle-btn">
-            Ocultar inactivos
-        </label>
-
         <!-- Botón agregar -->
         <button type="button" class="btn-agregar" data-bs-toggle="modal" data-bs-target="#modalCrearCategoria">
             + Agregar Categoría
         </button>
+
+        <!-- Toggle inactivos -->
+        <input type="checkbox" id="toggleInactivosCategorias" class="togglecheck" hidden checked>
+        <label for="toggleInactivosCategorias" class="toggle-btn">
+            Ocultar inactivos
+        </label>
 
     </div>
 

@@ -18,7 +18,8 @@
     let tabla;
     let tallas = [];
     let filas = [];
-    let previewImagenCrearUrl = null;
+    let previewImagenCrearUrls = [];
+    let arrastreImagenGaleria = null;
 
     if (!$tabla.length) return;
     if ($.fn.DataTable.isDataTable($tabla[0])) $tabla.DataTable().destroy();
@@ -31,11 +32,13 @@
         const variacion = filas.find(item => String(item.id_variacion) === String(idVariacion));
         const stockReal = Number(variacion?.producto?.stock_actual ?? 0);
 
-        if (!Number.isFinite(stockReal) || stockReal <= 0) return null;
+        if (!Number.isFinite(stockReal)) return null;
 
-        const totalEnOtrasTallas = (variacion?.tallas || []).reduce((total, talla) => {
-            const mismoId = String(talla.id_variacion_talla) === String(idTallaActual);
-            return total + (mismoId ? 0 : Number(talla.stock || 0));
+        const tallasDelProducto = filas
+            .filter(item => String(item.id_producto) === String(variacion?.id_producto))
+            .flatMap(item => item.tallas || []);
+        const totalEnOtrasTallas = tallasDelProducto.reduce((total, talla) => {
+            return total + (String(talla.id_variacion_talla) === String(idTallaActual) ? 0 : Number(talla.stock || 0));
         }, 0);
 
         return Math.max(stockReal - totalEnOtrasTallas, 0);
@@ -57,7 +60,7 @@
             return {
                 ok: false,
                 maximo,
-                mensaje: `El stock máximo permitido para esta talla es ${maximo} según el stock real del producto.`
+                mensaje: `El stock disponible para todas las tallas y colores de este producto es ${maximo}.`
             };
         }
 
@@ -177,29 +180,57 @@
             data: 'variaciones',
             orderable: false,
             render: variaciones => variaciones.map(variacion => `
-                <section class="mb-1 px-2 py-1 rounded small d-flex flex-wrap align-items-center gap-3" style="background:var(--celeste-soft); border:1px solid var(--celeste-soft-border);">
-                    <span><strong>Color:</strong> ${escapar(variacion.color || 'Sin especificar')}</span>
-                    ${variacion.tallas.length ? variacion.tallas.map(talla => {
-                        const porcentajeImpuesto = Number(variacion.producto?.impuesto?.porcentaje_impuesto || 0);
-                        const precioVentaBase = Number(talla.precio_venta ?? variacion.producto?.precio_venta ?? 0);
-                        return `
-                        <span class="d-inline-flex align-items-center gap-1">
-                            <strong>Talla:</strong> ${escapar(talla.nombre_talla)}
-                            <strong>Stock:</strong> ${escapar(talla.stock)}
-                            <strong>SKU:</strong> ${escapar(talla.sku || '—')}
-                            <strong>Compra:</strong> C$ ${Number(talla.precio_compra || 0).toFixed(2)}
-                            <strong>Venta neta:</strong> C$ ${precioVentaBase.toFixed(2)}
-                            <strong>Final:</strong> C$ ${(precioVentaBase * (1 + porcentajeImpuesto / 100)).toFixed(2)}
-                            <button class="btn-editar editarVariacionTalla" data-id="${talla.id_variacion_talla}" title="Editar talla y stock"><i class="fa-solid fa-pencil-alt"></i></button>
-                            <button class="btn-baja eliminarVariacionTalla" data-id="${talla.id_variacion_talla}" title="Quitar talla"><i class="fa-solid fa-xmark"></i></button>
-                        </span>
-                    `; }).join('') : '<span>Sin tallas asignadas</span>'}
-                    <div class="d-flex align-items-center flex-shrink-0 ms-auto">
-                            <button class="btn-transferir verImagenesVariacion" data-id="${variacion.id_variacion}" title="Ver imágenes"><i class="fa-solid fa-images"></i> ${variacion.imagenes.length} ${variacion.imagenes.length === 1 ? 'Imagenes' : 'im&aacute;genes'}</button>
-                            <button class="btn-alta agregarTallaVariacion" data-id="${variacion.id_variacion}" title="Agregar medida"><i class="fa-solid fa-ruler"></i> Tallas</button>
+    <section class="p-2 ml-2 rounded small"
+        style="background:var(--celeste-soft); border:1px solid var(--celeste-soft-border);">
+
+        <div class="mb-2">
+            <strong>Color:</strong> ${escapar(variacion.color || 'Sin especificar')}
+        </div>
+
+        <div class="d-flex flex-column gap-2">
+            ${variacion.tallas.length ? variacion.tallas.map(talla => {
+                const porcentajeImpuesto = Number(variacion.producto?.impuesto?.porcentaje_impuesto || 0);
+                const precioVentaBase = Number(talla.precio_venta ?? variacion.producto?.precio_venta ?? 0);
+
+                return `
+                    <div class="d-flex flex-wrap align-items-center gap-3 p-2 rounded"
+                        style="background:var(--bs-body-bg); border:1px solid var(--celeste-soft-border);">
+
+                        <span><strong>Talla:</strong> ${escapar(talla.nombre_talla)}</span>
+                        <span><strong>Stock:</strong> ${escapar(talla.stock)}</span>
+                        <span><strong>SKU:</strong> ${escapar(talla.sku || '—')}</span>
+                        <span><strong>Compra:</strong> C$ ${Number(talla.precio_compra || 0).toFixed(2)}</span>
+                        <span><strong>Venta neta:</strong> C$ ${precioVentaBase.toFixed(2)}</span>
+                        <span><strong>Final:</strong> C$ ${(precioVentaBase * (1 + porcentajeImpuesto / 100)).toFixed(2)}</span>
+
+                        <div class="d-flex align-items-center gap-1 ms-auto">
+                            <button class="btn-editar editarVariacionTalla"
+                                data-id="${talla.id_variacion_talla}" title="Editar talla y stock">
+                                <i class="fa-solid fa-pencil-alt"></i>
+                            </button>
+                            <button class="btn-baja eliminarVariacionTalla"
+                                data-id="${talla.id_variacion_talla}" title="Quitar talla">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
                     </div>
-                </section>
-            `).join('')
+                `;
+            }).join('') : '<span>Sin tallas asignadas</span>'}
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center justify-content-center gap-4 mt-2">
+            <button class="btn-transferir verImagenesVariacion"
+                data-id="${variacion.id_variacion}" title="Ver imágenes">
+                <i class="fa-solid fa-images"></i> ${variacion.imagenes.length}
+                ${variacion.imagenes.length === 1 ? 'Imagen' : 'Imágenes'}
+            </button>
+            <button class="btn-alta agregarTallaVariacion"
+                data-id="${variacion.id_variacion}" title="Agregar talla">
+                <i class="fa-solid fa-ruler"></i> Tallas
+            </button>
+        </div>
+    </section>
+`).join('')
         }
     ],
 
@@ -228,16 +259,30 @@
 
         $('#galeria_variacion_titulo').text(` ${variacion.nombre_producto} · ${variacion.color || 'Sin color'}`);
         $('#galeria_variacion_contenido').html(variacion.imagenes.length ? variacion.imagenes.map(imagen => `
-            <div style="flex: 0 1 200px; max-width:200px;">
-                <div class="card h-100">
-                    <img src="/${escapar(imagen.imagen)}" alt="Imagen ${escapar(variacion.color)}" class="card-img-top" style="width:100%; height:100px; object-fit:contain; background:#f8f9fa;">
-                    <div class="card-body text-center p-2">
-                        <small class="d-block mb-2">Imagen ${escapar(imagen.orden)}</small>
-                        <button class="btn-baja eliminarVariacionImagen" data-id="${imagen.id_imagen}" title="Quitar imagen"><i class="fa-solid fa-trash"></i> Quitar</button>
+            <div class="variacion-imagen-item border rounded p-2 flex-shrink-0" data-id="${imagen.id_imagen}" style="width:140px;">
+                <div class="position-relative">
+                    <img src="/${escapar(imagen.imagen)}" alt="Imagen ${escapar(variacion.color)}" class="d-block w-100 rounded" style="aspect-ratio:1/1; object-fit:cover;">
+                    <button type="button" class="btn btn-sm btn-light border position-absolute top-0 start-0 m-1 p-1 reordenarVariacionImagen"
+                        title="Arrastrar para cambiar el orden" aria-label="Arrastrar imagen ${escapar(imagen.orden)} para cambiar el orden"
+                        style="touch-action:none; cursor:grab;">
+                        <i class="fa-solid fa-grip-lines"></i>
+                    </button>
+                </div>
+                <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
+                    <small class="text-muted">Imagen ${escapar(imagen.orden)}</small>
+                    <div class="d-flex align-items-center gap-1">
+                        <button type="button" class="btn btn-sm border-0 p-1 text-primary reemplazarVariacionImagen"
+                            data-id="${imagen.id_imagen}" data-variacion="${variacion.id_variacion}" title="Reemplazar imagen" aria-label="Reemplazar imagen ${escapar(imagen.orden)}">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm border-0 p-1 text-danger eliminarVariacionImagen"
+                            data-id="${imagen.id_imagen}" title="Eliminar imagen" aria-label="Eliminar imagen ${escapar(imagen.orden)}">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
                     </div>
                 </div>
             </div>
-        `).join('') : '<div class="col-12 text-center py-4">Este color todavía no tiene imágenes.</div>');
+        `).join('') : '<div class="text-center py-4 w-100">Este color todavía no tiene imágenes.</div>');
         const cantidadImagenes = variacion.imagenes.length;
         const anchoModal = Math.min(900, Math.max(300, cantidadImagenes * 184 + 48));
         $modalGaleriaImagenes.find('.modal-dialog').css('width', `${anchoModal}px`);
@@ -245,10 +290,176 @@
         bootstrap.Modal.getOrCreateInstance($modalGaleriaImagenes[0]).show();
     });
 
+    function guardarOrdenGaleria(arrastre) {
+        const ids = Array.from(arrastre.contenedor.querySelectorAll('.variacion-imagen-item'))
+            .map(elemento => Number(elemento.dataset.id));
+        const cambioOrden = ids.some((id, indice) => id !== arrastre.idsOriginales[indice]);
+
+        arrastre.elemento.classList.remove('imagen-en-arrastre');
+        arrastre.destino?.classList.remove('imagen-destino-arrastre');
+        if (!cambioOrden) return;
+
+        arrastre.contenedor.classList.add('guardando-orden-imagenes');
+        $.ajax({
+            url: `/variacion-imagenes/ordenar/${arrastre.idVariacion}`,
+            type: 'PUT',
+            data: { ids, _token: csrf() },
+            headers: { 'X-CSRF-TOKEN': csrf() },
+            success: response => {
+                if (!response.success) {
+                    mostrarToast(response.mensaje || 'No se pudo guardar el orden de las imágenes.', 'danger');
+                } else {
+                    mostrarToast('Orden de imágenes actualizado.', 'success');
+                }
+            },
+            error: xhr => mostrarError(xhr, 'Error al guardar el orden de las imágenes.'),
+            complete: () => {
+                arrastre.contenedor.classList.remove('guardando-orden-imagenes');
+                recargarDatos().then(() => {
+                    $tabla.find(`.verImagenesVariacion[data-id="${arrastre.idVariacion}"]`).trigger('click');
+                });
+            }
+        });
+    }
+
+    function cancelarArrastreGaleria(arrastre) {
+        arrastre.elemento.classList.remove('imagen-en-arrastre');
+        arrastre.destino?.classList.remove('imagen-destino-arrastre');
+        recargarDatos().then(() => {
+            $tabla.find(`.verImagenesVariacion[data-id="${arrastre.idVariacion}"]`).trigger('click');
+        });
+    }
+
+    $modalGaleriaImagenes.off('pointerdown.detalle', '.reordenarVariacionImagen')
+        .on('pointerdown.detalle', '.reordenarVariacionImagen', function (event) {
+            const pointer = event.originalEvent;
+            if (pointer.pointerType === 'mouse' && pointer.button !== 0) return;
+
+            const elemento = this.closest('.variacion-imagen-item');
+            if (!elemento) return;
+
+            const contenedor = elemento.parentElement;
+            arrastreImagenGaleria = {
+                elemento,
+                contenedor,
+                idVariacion: Number($('#galeria_variacion_agregar').data('id')),
+                pointerId: pointer.pointerId,
+                destino: null,
+                idsOriginales: Array.from(contenedor.querySelectorAll('.variacion-imagen-item'))
+                    .map(item => Number(item.dataset.id))
+            };
+            elemento.classList.add('imagen-en-arrastre');
+            this.setPointerCapture(pointer.pointerId);
+            event.preventDefault();
+        });
+
+    $modalGaleriaImagenes.off('pointermove.detalle', '.reordenarVariacionImagen')
+        .on('pointermove.detalle', '.reordenarVariacionImagen', function (event) {
+            if (!arrastreImagenGaleria || event.originalEvent.pointerId !== arrastreImagenGaleria.pointerId) return;
+
+            const objetivo = document.elementFromPoint(event.originalEvent.clientX, event.originalEvent.clientY)
+                ?.closest('.variacion-imagen-item');
+            if (!objetivo || objetivo === arrastreImagenGaleria.elemento || objetivo.parentElement !== arrastreImagenGaleria.contenedor) return;
+            if (objetivo === arrastreImagenGaleria.destino) return;
+
+            const rectangulo = objetivo.getBoundingClientRect();
+            const despues = event.originalEvent.clientX > rectangulo.left + rectangulo.width / 2;
+            const arrastre = arrastreImagenGaleria;
+            if ((despues && objetivo.nextElementSibling === arrastre.elemento) || (!despues && objetivo.previousElementSibling === arrastre.elemento)) return;
+
+            const elementos = Array.from(arrastre.contenedor.querySelectorAll('.variacion-imagen-item'));
+            const posiciones = new Map(elementos.map(elemento => [elemento, elemento.getBoundingClientRect()]));
+            arrastre.destino?.classList.remove('imagen-destino-arrastre');
+            arrastre.contenedor.insertBefore(arrastre.elemento, despues ? objetivo.nextSibling : objetivo);
+            objetivo.classList.add('imagen-destino-arrastre');
+            arrastre.destino = objetivo;
+
+            elementos.forEach(elemento => {
+                if (elemento === arrastre.elemento) return;
+                const posicionAnterior = posiciones.get(elemento);
+                const desplazamiento = posicionAnterior.left - elemento.getBoundingClientRect().left;
+                if (Math.abs(desplazamiento) < 1) return;
+
+                elemento.animate([
+                    { transform: `translateX(${desplazamiento}px)` },
+                    { transform: 'translateX(0)' }
+                ], {
+                    duration: 180,
+                    easing: 'cubic-bezier(.2,.75,.25,1)'
+                });
+            });
+            event.preventDefault();
+        });
+
+    $modalGaleriaImagenes.off('pointerup.detalle', '.reordenarVariacionImagen')
+        .on('pointerup.detalle', '.reordenarVariacionImagen', function (event) {
+            if (!arrastreImagenGaleria || event.originalEvent.pointerId !== arrastreImagenGaleria.pointerId) return;
+            const arrastre = arrastreImagenGaleria;
+            arrastreImagenGaleria = null;
+            guardarOrdenGaleria(arrastre);
+        });
+
+    $modalGaleriaImagenes.off('pointercancel.detalle', '.reordenarVariacionImagen')
+        .on('pointercancel.detalle', '.reordenarVariacionImagen', function (event) {
+            if (!arrastreImagenGaleria || event.originalEvent.pointerId !== arrastreImagenGaleria.pointerId) return;
+            const arrastre = arrastreImagenGaleria;
+            arrastreImagenGaleria = null;
+            cancelarArrastreGaleria(arrastre);
+        });
+
     $('#galeria_variacion_agregar').off('click.detalle').on('click.detalle', function () {
         const idVariacion = $(this).data('id');
         bootstrap.Modal.getOrCreateInstance($modalGaleriaImagenes[0]).hide();
         $modalGaleriaImagenes.one('hidden.bs.modal', () => abrirModalAgregarImagen(idVariacion));
+    });
+
+    $modalGaleriaImagenes.off('click.detalle', '.reemplazarVariacionImagen').on('click.detalle', '.reemplazarVariacionImagen', function () {
+        const input = document.getElementById('reemplazar_imagen_variacion');
+        input.dataset.idImagen = $(this).data('id');
+        input.dataset.idVariacion = $(this).data('variacion');
+        input.value = '';
+        input.click();
+    });
+
+    $('#reemplazar_imagen_variacion').off('change.detalle').on('change.detalle', function () {
+        const input = this;
+        const archivo = input.files?.[0];
+        if (!archivo) return;
+
+        if (!archivo.type.startsWith('image/') || archivo.size > 5 * 1024 * 1024) {
+            input.value = '';
+            return mostrarToast('Selecciona una imagen válida de máximo 5 MB.', 'danger');
+        }
+
+        const idImagen = input.dataset.idImagen;
+        const idVariacion = input.dataset.idVariacion;
+        const variacion = filas.find(item => String(item.id_variacion) === String(idVariacion));
+        const imagen = variacion?.imagenes.find(item => String(item.id_imagen) === String(idImagen));
+        if (!imagen) return mostrarToast('No se encontró la imagen que deseas reemplazar.', 'danger');
+
+        const formData = new FormData();
+        formData.append('_method', 'PUT');
+        formData.append('_token', csrf());
+        formData.append('imagen', archivo);
+        formData.append('orden', imagen.orden);
+
+        $.ajax({
+            url: `/variacion-imagenes/actualizar/${idImagen}`,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: { 'X-CSRF-TOKEN': csrf() },
+            success: response => {
+                if (!response.success) return mostrarToast(response.mensaje || 'No se pudo reemplazar la imagen.', 'danger');
+                mostrarToast('Imagen reemplazada correctamente.', 'success');
+                input.value = '';
+                recargarDatos().then(() => {
+                    $tabla.find(`.verImagenesVariacion[data-id="${idVariacion}"]`).trigger('click');
+                });
+            },
+            error: xhr => mostrarError(xhr, 'Error al reemplazar la imagen.')
+        });
     });
 
     function abrirModalAgregarImagen(idVariacion) {
@@ -258,22 +469,38 @@
         const imagenes = filas.find(fila => String(fila.id_variacion) === String(idVariacion))?.imagenes || [];
         const ordenes = imagenes.map(imagen => Number(imagen.orden)).filter(Number.isFinite);
         $('#crear_orden').val(ordenes.length ? Math.max(...ordenes) + 1 : 1);
+        $('#crear_imagen').val('');
         bootstrap.Modal.getOrCreateInstance($modalCrearImagen[0]).show();
     }
 
     function limpiarPreviewImagenCrear() {
-        if (previewImagenCrearUrl) URL.revokeObjectURL(previewImagenCrearUrl);
-        previewImagenCrearUrl = null;
-        $('#crear_preview_imagen').attr('src', '').addClass('d-none');
+        previewImagenCrearUrls.forEach(url => URL.revokeObjectURL(url));
+        previewImagenCrearUrls = [];
+        $('#crear_preview_imagenes').empty();
     }
 
     $('#crear_imagen').off('change.detalle').on('change.detalle', function () {
         limpiarPreviewImagenCrear();
-        const archivo = this.files?.[0];
-        if (!archivo || !archivo.type.startsWith('image/')) return;
+        Array.from(this.files || []).forEach(archivo => {
+            if (!archivo.type.startsWith('image/')) return;
 
-        previewImagenCrearUrl = URL.createObjectURL(archivo);
-        $('#crear_preview_imagen').attr('src', previewImagenCrearUrl).removeClass('d-none');
+            const url = URL.createObjectURL(archivo);
+            previewImagenCrearUrls.push(url);
+
+            const $vistaPrevia = $('<div>', { class: 'text-center' });
+            $vistaPrevia.append($('<img>', {
+                src: url,
+                alt: `Vista previa de ${archivo.name}`,
+                class: 'img-thumbnail',
+                css: { width: '96px', height: '96px', objectFit: 'cover' }
+            }));
+            $vistaPrevia.append($('<small>', {
+                class: 'd-block text-muted text-truncate',
+                text: archivo.name,
+                css: { maxWidth: '96px' }
+            }));
+            $('#crear_preview_imagenes').append($vistaPrevia);
+        });
     });
 
     $modalCrearImagen.off('hidden.bs.modal.preview').on('hidden.bs.modal.preview', limpiarPreviewImagenCrear);
@@ -282,27 +509,68 @@
         abrirModalAgregarImagen($(this).data('id'));
     });
 
-    $('#formCrearVariacionImagen').off('submit.detalle').on('submit.detalle', function (event) {
+    $('#formCrearVariacionImagen').off('submit.detalle').on('submit.detalle', async function (event) {
         event.preventDefault();
-        const formData = new FormData(this);
-        formData.set('_token', csrf());
-        $.ajax({
-            url: '/variacion-imagenes/crear',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: { 'X-CSRF-TOKEN': csrf() },
-            success: response => {
-                if (!response.success) return mostrarToast(response.mensaje || 'No se pudo guardar la imagen', 'danger');
-                mostrarToast(response.mensaje || 'Imagen agregada correctamente', 'success');
+        const archivos = Array.from($('#crear_imagen')[0].files || []);
+        const idVariacion = $('#crear_id_variacion').val();
+        const ordenInicial = Number($('#crear_orden').val()) || 0;
+        const maximoBytes = 5 * 1024 * 1024;
+
+        if (!archivos.length) return mostrarToast('Selecciona al menos una imagen.', 'warning');
+
+        const archivoInvalido = archivos.find(archivo => !archivo.type.startsWith('image/') || archivo.size > maximoBytes);
+        if (archivoInvalido) {
+            return mostrarToast(`${archivoInvalido.name} no es una imagen válida o supera 5 MB.`, 'danger');
+        }
+
+        const $botonGuardar = $(this).find('button[type="submit"]');
+        const textoOriginal = $botonGuardar.text();
+        let subidas = 0;
+        $botonGuardar.prop('disabled', true);
+
+        try {
+            for (const [indice, archivo] of archivos.entries()) {
+                $botonGuardar.text(`Subiendo ${indice + 1} de ${archivos.length}...`);
+
+                const formData = new FormData();
+                formData.append('id_variacion', idVariacion);
+                formData.append('imagen', archivo);
+                formData.append('orden', String(ordenInicial + indice));
+                formData.append('_token', csrf());
+
+                const response = await $.ajax({
+                    url: '/variacion-imagenes/crear',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: { 'X-CSRF-TOKEN': csrf() }
+                });
+
+                if (!response.success) throw new Error(response.mensaje || 'No se pudo guardar la imagen.');
+                subidas++;
+            }
+
+            mostrarToast(`${subidas} ${subidas === 1 ? 'imagen agregada' : 'imágenes agregadas'} correctamente.`, 'success');
+            bootstrap.Modal.getOrCreateInstance($modalCrearImagen[0]).hide();
+            $('#formCrearVariacionImagen')[0].reset();
+            limpiarPreviewImagenCrear();
+            recargarDatos();
+        } catch (error) {
+            if (subidas > 0) {
+                mostrarToast(`Se agregaron ${subidas} de ${archivos.length} imágenes. ${error.responseJSON?.mensaje || error.message || 'Ocurrió un error al subir la siguiente imagen.'}`, 'warning');
                 bootstrap.Modal.getOrCreateInstance($modalCrearImagen[0]).hide();
                 $('#formCrearVariacionImagen')[0].reset();
                 limpiarPreviewImagenCrear();
                 recargarDatos();
-            },
-            error: xhr => mostrarError(xhr, 'Error al agregar la imagen')
-        });
+            } else if (error.responseJSON) {
+                mostrarError(error, 'Error al agregar imágenes.');
+            } else {
+                mostrarToast(error.message || 'Error al agregar imágenes.', 'danger');
+            }
+        } finally {
+            $botonGuardar.prop('disabled', false).text(textoOriginal);
+        }
     });
 
     $(document).off('click.detalle', '.editarVariacionImagen').on('click.detalle', '.editarVariacionImagen', function () {

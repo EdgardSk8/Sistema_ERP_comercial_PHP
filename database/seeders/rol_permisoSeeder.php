@@ -30,6 +30,9 @@ class rol_permisoSeeder extends Seeder
             'mostrar_ventas',
             'mostrar_detalle_ventas',
             'anular_ventas',
+            'vista_cuentas_por_cobrar',
+            'mostrar_cuentas_por_cobrar',
+            'registrar_pagos_venta',
 
             /* MOVIMIENTO CAJAS*/ 
             'vista_movimiento_cajas',
@@ -72,6 +75,14 @@ class rol_permisoSeeder extends Seeder
 
         /* ═════════════ BODEGUERO (ROL 3) ═════════════ */
         $permisosBodeguero = [
+
+            /* UBICACIONES */
+            'vista_ubicaciones',
+            'mostrar_ubicaciones',
+            'crear_ubicaciones',
+            'editar_ubicaciones',
+            'actualizar_ubicaciones',
+            'cambiar_estado_ubicaciones',
 
             /* PRODUCTOS */
             'vista_productos',
@@ -147,6 +158,8 @@ class rol_permisoSeeder extends Seeder
             'vista_ventas',
             'mostrar_ventas',
             'mostrar_detalle_ventas',
+            'vista_cuentas_por_cobrar',
+            'mostrar_cuentas_por_cobrar',
 
             'vista_cajas',
             'mostrar_cajas',

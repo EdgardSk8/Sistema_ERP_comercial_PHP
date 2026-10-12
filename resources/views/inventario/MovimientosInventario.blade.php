@@ -11,6 +11,7 @@
                     <th>Usuario</th>
                     <th>Fecha</th>
                     <th>Producto</th>
+                    <th>Variación</th>
                     <th>Movimiento</th>
                     <th>Tipo</th>
                     <th>Motivo Movimiento</th>
@@ -23,6 +24,7 @@
             <tbody></tbody>
             <tfoot>
                 <tr>
+                    <th></th>
                     <th></th>
                     <th></th>
                     <th></th>

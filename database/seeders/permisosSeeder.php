@@ -49,6 +49,14 @@ class permisosSeeder extends Seeder
             ['nombre_permiso'=>'actualizar_categorias','descripcion_permiso'=>'Actualizar categorias','modulo_permiso'=>'categorias'],
             ['nombre_permiso'=>'cambiar_estado_categorias','descripcion_permiso'=>'Cambiar estado categorias','modulo_permiso'=>'categorias'],
 
+            /* ═════════════ UBICACIONES ═════════════ */
+            ['nombre_permiso'=>'vista_ubicaciones','descripcion_permiso'=>'Ver ubicaciones','modulo_permiso'=>'ubicaciones'],
+            ['nombre_permiso'=>'mostrar_ubicaciones','descripcion_permiso'=>'Listar ubicaciones','modulo_permiso'=>'ubicaciones'],
+            ['nombre_permiso'=>'crear_ubicaciones','descripcion_permiso'=>'Crear ubicaciones','modulo_permiso'=>'ubicaciones'],
+            ['nombre_permiso'=>'editar_ubicaciones','descripcion_permiso'=>'Editar ubicaciones','modulo_permiso'=>'ubicaciones'],
+            ['nombre_permiso'=>'actualizar_ubicaciones','descripcion_permiso'=>'Actualizar ubicaciones','modulo_permiso'=>'ubicaciones'],
+            ['nombre_permiso'=>'cambiar_estado_ubicaciones','descripcion_permiso'=>'Dar de alta o baja ubicaciones','modulo_permiso'=>'ubicaciones'],
+
             /* ═════════════ CLIENTES ═════════════ */
             ['nombre_permiso'=>'vista_clientes','descripcion_permiso'=>'Ver vista clientes','modulo_permiso'=>'clientes'],
             ['nombre_permiso'=>'mostrar_clientes','descripcion_permiso'=>'Listar clientes','modulo_permiso'=>'clientes'],
@@ -109,6 +117,9 @@ class permisosSeeder extends Seeder
             ['nombre_permiso'=>'mostrar_ventas','descripcion_permiso'=>'Listar ventas','modulo_permiso'=>'ventas'],
             ['nombre_permiso'=>'anular_ventas','descripcion_permiso'=>'Anular ventas','modulo_permiso'=>'ventas'],
             ['nombre_permiso'=>'mostrar_detalle_ventas','descripcion_permiso'=>'Ver detalle ventas','modulo_permiso'=>'ventas'],
+            ['nombre_permiso'=>'vista_cuentas_por_cobrar','descripcion_permiso'=>'Ver cuentas por cobrar','modulo_permiso'=>'ventas'],
+            ['nombre_permiso'=>'mostrar_cuentas_por_cobrar','descripcion_permiso'=>'Listar cuentas por cobrar','modulo_permiso'=>'ventas'],
+            ['nombre_permiso'=>'registrar_pagos_venta','descripcion_permiso'=>'Registrar abonos de ventas a crédito','modulo_permiso'=>'ventas'],
 
             /* ═════════════ COMPRAS ═════════════ */
             ['nombre_permiso'=>'vista_compras','descripcion_permiso'=>'Ver vista compras','modulo_permiso'=>'compras'],

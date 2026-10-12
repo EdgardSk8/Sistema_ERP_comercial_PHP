@@ -20,6 +20,9 @@ use App\Models\MetodoPagoCuenta;
 use App\Models\Cuenta;
 use App\Models\MovimientoCuenta;
 use App\Models\VariacionTalla;
+use App\Models\PlanPago;
+use App\Models\CuotaVenta;
+use App\Services\RegistrarPagoVenta;
 
 class FacturacionController extends Controller
 {
@@ -175,11 +178,48 @@ class FacturacionController extends Controller
 
         try {
 
-            // 🔥 obtener caja abierta
-            $caja = Caja::where('estado_caja', 1)->first();
+            $esPagoPlazos = $request->boolean('pago_plazos');
+            $abonoInicial = round((float) $request->input('abono_inicial', 0), 2);
+            $descuentoCliente = round((float) $request->input('descuento_venta', 0), 2);
+            $idUsuario = (int) session('usuario.id');
+            $caja = null;
 
-            if (!$caja) {
-                throw new \Exception('No hay caja abierta');
+            if ($abonoInicial < 0) {
+                throw new \Exception('El abono inicial no puede ser negativo.');
+            }
+
+            if ($descuentoCliente < 0) {
+                throw new \Exception('El descuento del cliente no puede ser negativo.');
+            }
+
+            if (!$esPagoPlazos || $abonoInicial > 0) {
+                $caja = Caja::where('estado_caja', 1)
+                    ->where('id_usuario', $idUsuario)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$caja) {
+                    throw new \Exception('Abre tu caja para registrar una venta o recibir un abono.');
+                }
+            }
+
+            if ($esPagoPlazos) {
+                $validator = Validator::make($request->all(), [
+                    'cliente' => 'required|integer|exists:clientes,id_cliente',
+                    'cuotas' => 'required|array|min:1|max:60',
+                    'cuotas.*.fecha_vencimiento' => 'required|date|after_or_equal:today',
+                    'cuotas.*.monto_cuota' => 'required|numeric|gt:0',
+                    'abono_inicial' => 'nullable|numeric|min:0',
+                    'descuento_venta' => 'nullable|numeric|min:0'
+                ]);
+
+                if ($validator->fails()) {
+                    throw new \Exception($validator->errors()->first());
+                }
+
+                if (!Cliente::where('id_cliente', $request->cliente)->where('estado_cliente', 1)->exists()) {
+                    throw new \Exception('Selecciona un cliente activo para crear el plan de pagos.');
+                }
             }
 
            $numero = 'VTA-' . now()->format('Ymd') . '-' . str_pad((Venta::max('id_venta') + 1), 5, '0', STR_PAD_LEFT);
@@ -188,10 +228,10 @@ class FacturacionController extends Controller
             $impuestoGeneral = 0;
             $esLiquidacion = $request->boolean('liquidacion');
 
-            if (
+            if (!$esPagoPlazos && (
                 $request->id_metodo_pago != 1 &&
                 empty($request->id_cuenta)
-            ) {
+            )) {
                 throw new \Exception(
                     'Debe seleccionar una cuenta'
                 );
@@ -201,14 +241,15 @@ class FacturacionController extends Controller
             $venta = Venta::create([
                 'numero_factura' => $numero,
                 'id_cliente' => $request->cliente,
-                'id_usuario' => session('usuario.id'),
-                'id_caja' => $caja->id_caja,
-                'id_metodo_pago' => $request->id_metodo_pago,
-                'id_cuenta' => $request->id_cuenta,
+                'id_usuario' => $idUsuario,
+                'id_caja' => $esPagoPlazos ? null : $caja->id_caja,
+                'id_metodo_pago' => $esPagoPlazos ? null : $request->id_metodo_pago,
+                'id_cuenta' => $esPagoPlazos ? null : $request->id_cuenta,
                 'subtotal_venta' => 0,
                 'impuesto_venta' => 0,
+                'descuento_venta' => $descuentoCliente,
                 'total_venta' => 0, // se actualiza después
-                'monto_recibido' => $request->recibido,
+                'monto_recibido' => $esPagoPlazos ? 0 : $request->recibido,
                 'vuelto' => 0
             ]);
 
@@ -351,8 +392,61 @@ class FacturacionController extends Controller
             }
 
             // 🔥 TOTAL REAL calculado en backend
-            $totalGeneral = $subtotalGeneral + $impuestoGeneral;
+            $totalGeneral = max($subtotalGeneral + $impuestoGeneral - $descuentoCliente, 0);
+            if ($descuentoCliente > ($subtotalGeneral + $impuestoGeneral) + 0.001) {
+                throw new \Exception('El descuento no puede ser mayor que el total de la venta.');
+            }
 
+            if ($esPagoPlazos) {
+                $centavosCuotas = array_sum(array_map(
+                    fn ($cuota) => (int) round(((float) $cuota['monto_cuota']) * 100),
+                    $request->cuotas
+                ));
+                $totalCentavos = (int) round($totalGeneral * 100);
+                $abonoInicialCentavos = (int) round($abonoInicial * 100);
+
+                if ($abonoInicialCentavos >= $totalCentavos) {
+                    throw new \Exception('El abono inicial debe ser menor que el total para crear un plan de pagos.');
+                }
+
+                if ($centavosCuotas !== $totalCentavos - $abonoInicialCentavos) {
+                    throw new \Exception('La suma de las cuotas debe ser igual al saldo después del abono inicial.');
+                }
+
+                $venta->update([
+                    'subtotal_venta' => $subtotalGeneral,
+                    'impuesto_venta' => $impuestoGeneral,
+                    'descuento_venta' => $descuentoCliente,
+                    'total_venta' => $totalGeneral,
+                    'monto_recibido' => $abonoInicial,
+                    'vuelto' => 0
+                ]);
+
+                $plan = PlanPago::create([
+                    'id_venta' => $venta->id_venta,
+                    'id_usuario' => $idUsuario
+                ]);
+
+                foreach ($request->cuotas as $indice => $cuota) {
+                    CuotaVenta::create([
+                        'id_plan_pago' => $plan->id_plan_pago,
+                        'numero_cuota' => $indice + 1,
+                        'fecha_vencimiento' => $cuota['fecha_vencimiento'],
+                        'monto_cuota' => round((float) $cuota['monto_cuota'], 2)
+                    ]);
+                }
+
+                if ($abonoInicial > 0) {
+                    app(RegistrarPagoVenta::class)->registrar(
+                        $venta->id_venta,
+                        $abonoInicial,
+                        (int) $request->input('id_metodo_pago'),
+                        $request->filled('id_cuenta') ? (int) $request->id_cuenta : null,
+                        $idUsuario,
+                        $request->input('referencia_pago')
+                    );
+                }
+            } else {
             if (!$esLiquidacion && (int) $request->id_metodo_pago === 1 && (float) $request->recibido + 0.001 < $totalGeneral) {
                 throw new \Exception('El pago recibido es menor que el total de la venta');
             }
@@ -364,6 +458,7 @@ class FacturacionController extends Controller
             $venta->update([
                 'subtotal_venta' => $subtotalGeneral,
                 'impuesto_venta' => $impuestoGeneral,
+                'descuento_venta' => $descuentoCliente,
                 'total_venta' => $totalGeneral,
                 'monto_recibido' => $montoRecibido,
                 'vuelto' => $montoRecibido - $totalGeneral
@@ -403,6 +498,7 @@ class FacturacionController extends Controller
                     'id_usuario' => session('usuario.id')
                 ]);
             }
+            }
 
             DB::commit();
 
@@ -413,6 +509,8 @@ class FacturacionController extends Controller
                     'monto_recibido' => $venta->monto_recibido,
                     'vuelto' => $venta->vuelto,
                     'total' => $totalGeneral,
+                    'pago_plazos' => $esPagoPlazos,
+                    'saldo_pendiente' => $esPagoPlazos ? round($totalGeneral - $abonoInicial, 2) : 0,
                     'productos' => $venta->detalles->map(function ($d) {
                         return [
                             'nombre' => $d->producto->nombre_producto

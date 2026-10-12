@@ -212,6 +212,45 @@ export default function initMostrarProductos() {
 
 /* ════════════════ ACCIÓN: BTN DE ACTUALIZAR PRODUCTO EDITADO ════════════════ */
 
+    function enviarActualizacionProducto(formData, conAjusteVariacion = false) {
+        const $botonConfirmar = $('#btnConfirmarAjusteVariacion');
+        if (conAjusteVariacion) $botonConfirmar.prop('disabled', true).text('Aplicando...');
+
+        $.ajax({
+            url: `/productos/${$('#editar_id_producto').val()}/actualizar`,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res){
+                mostrarToast(res.mensaje || 'Producto actualizado correctamente', 'success');
+                $('#TablaMostrarProductos').DataTable().ajax.reload();
+
+                if (conAjusteVariacion) {
+                    formDataAjusteVariacionPendiente = null;
+                    bootstrap.Modal.getInstance(document.getElementById('modalDistribuirAjusteVariacion'))?.hide();
+                }
+
+                bootstrap.Modal.getInstance(document.getElementById('modalEditarProducto'))?.hide();
+            },
+            error: function(err){
+                console.error(err);
+                if (err.status === 422) {
+                    const errores = err.responseJSON?.errors;
+                    const mensaje = errores ? Object.values(errores).flat()[0] : err.responseJSON?.mensaje;
+                    mostrarToast(mensaje || 'No se pudo aplicar el ajuste', 'danger');
+                } else if (err.responseJSON?.mensaje) {
+                    mostrarToast(err.responseJSON.mensaje, 'danger');
+                } else {
+                    mostrarToast('Error inesperado del servidor', 'danger');
+                }
+            },
+            complete: function(){
+                if (conAjusteVariacion) $botonConfirmar.prop('disabled', false).text('Confirmar baja');
+            }
+        });
+    }
+
     $('#btnActualizarProducto').click(function() {
         const id = $('#editar_id_producto').val();
         const nombre = $('#editar_nombre_producto').val().trim();
@@ -247,42 +286,13 @@ export default function initMostrarProductos() {
         formData.append('_method', 'PUT');
         formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
 
-        $.ajax({
-            url: `/productos/${id}/actualizar`,
-            type: 'POST', // POST con _method=PUT
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(res){
-                mostrarToast('Producto actualizado correctamente', 'success');
-                $('#TablaMostrarProductos').DataTable().ajax.reload();
+        const diferenciaStock = Number(stock) - StockOriginal;
+        if (diferenciaStock < 0 && variantesStockProducto.length) {
+            abrirModalDistribuirAjuste(formData, Math.abs(diferenciaStock));
+            return;
+        }
 
-                // Cerrar modal
-                const modalElement = document.getElementById("modalEditarProducto");
-                const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                modalInstance.hide();
-
-                const stockResultante = $('#editar_stock_actual').val();const motivo = $('#editar_stock_motivo').val();
-                console.log('Stock resultante:', stockResultante);console.log('Motivo seleccionado:', motivo);
-
-            },
-            error: function(err){
-                console.error(err);
-                if(err.status === 422){
-                    const errores = err.responseJSON.errors;
-                    let mensaje = '';
-                    for(let campo in errores){
-                        mensaje = errores[campo][0];
-                        break;
-                    }
-                    mostrarToast(mensaje, 'danger');
-                } else if(err.responseJSON && err.responseJSON.mensaje){
-                    mostrarToast(err.responseJSON.mensaje, 'danger');
-                } else {
-                    mostrarToast('Error inesperado del servidor', 'danger');
-                }
-            }
-        });
+        enviarActualizacionProducto(formData);
     });
 
 /* ════════════════ ACCIÓN: PREVIEW DE LA NUEVA IMAGEN ════════════════ */
@@ -336,6 +346,94 @@ export default function initMostrarProductos() {
 
 /* ════════════════ ABRIR MODAL Y CARGAR DATOS ════════════════ */
     let StockOriginal = 0;
+    let variantesStockProducto = [];
+    let formDataAjusteVariacionPendiente = null;
+    let cantidadAjusteVariacionPendiente = 0;
+
+    function actualizarResumenAjusteVariacion() {
+        const cantidadSeleccionada = $('#filasAjusteStockVariacion .cantidad-ajuste-variacion')
+            .toArray()
+            .reduce((total, input) => total + (Number(input.value) || 0), 0);
+        const diferencia = cantidadAjusteVariacionPendiente - cantidadSeleccionada;
+        const coincide = diferencia === 0;
+
+        $('#resumenAjusteStockVariacion')
+            .text(coincide
+                ? `Distribución completa: ${cantidadSeleccionada} unidades.`
+                : diferencia > 0
+                    ? `Faltan ${diferencia} unidades por asignar.`
+                    : `La distribución excede el ajuste por ${Math.abs(diferencia)} unidades.`)
+            .toggleClass('text-danger', cantidadSeleccionada > cantidadAjusteVariacionPendiente)
+            .toggleClass('text-success', coincide);
+        $('#btnConfirmarAjusteVariacion').prop('disabled', !coincide);
+    }
+
+    function abrirModalDistribuirAjuste(formData, cantidadTotal) {
+        const tallasDisponibles = variantesStockProducto.filter(variacion => variacion.stock > 0);
+        const stockDisponible = tallasDisponibles.reduce((total, variacion) => total + variacion.stock, 0);
+
+        if (stockDisponible < cantidadTotal) {
+            mostrarToast('El stock de las tallas no alcanza para aplicar esta baja.', 'danger');
+            return;
+        }
+
+        formDataAjusteVariacionPendiente = formData;
+        cantidadAjusteVariacionPendiente = cantidadTotal;
+        $('#cantidadTotalAjusteVariacion').text(cantidadTotal);
+        const $filas = $('#filasAjusteStockVariacion').empty();
+
+        tallasDisponibles.forEach(variacion => {
+            const $fila = $('<tr>');
+            $fila.append($('<td>').text(variacion.color));
+            $fila.append($('<td>').text(variacion.talla));
+            $fila.append($('<td>').text(variacion.sku || '—'));
+            $fila.append($('<td>').text(variacion.stock));
+            $fila.append($('<td>').append($('<input>', {
+                type: 'number',
+                class: 'form-control form-control-sm cantidad-ajuste-variacion',
+                min: 0,
+                max: variacion.stock,
+                value: 0,
+                'data-id-variacion-talla': variacion.id,
+                'aria-label': `Unidades a retirar de ${variacion.color}, talla ${variacion.talla}`
+            })));
+            $filas.append($fila);
+        });
+
+        actualizarResumenAjusteVariacion();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarProducto')).hide();
+        $('#modalEditarProducto').one('hidden.bs.modal.ajusteVariacion', function () {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDistribuirAjusteVariacion')).show();
+        });
+    }
+
+    $('#filasAjusteStockVariacion').off('input.ajusteVariacion').on('input.ajusteVariacion', '.cantidad-ajuste-variacion', function () {
+        const cantidad = Number(this.value) || 0;
+        if (cantidad < 0) this.value = 0;
+        if (cantidad > Number(this.max)) this.value = this.max;
+        actualizarResumenAjusteVariacion();
+    });
+
+    $('#modalDistribuirAjusteVariacion').off('hidden.bs.modal.ajusteVariacion').on('hidden.bs.modal.ajusteVariacion', function () {
+        if (!formDataAjusteVariacionPendiente) return;
+        formDataAjusteVariacionPendiente = null;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarProducto')).show();
+    });
+
+    $('#btnConfirmarAjusteVariacion').off('click.ajusteVariacion').on('click.ajusteVariacion', function () {
+        if (!formDataAjusteVariacionPendiente) return;
+
+        const ajustes = $('#filasAjusteStockVariacion .cantidad-ajuste-variacion')
+            .toArray()
+            .map(input => ({
+                id_variacion_talla: Number(input.dataset.idVariacionTalla),
+                cantidad: Number(input.value) || 0
+            }))
+            .filter(ajuste => ajuste.cantidad > 0);
+
+        formDataAjusteVariacionPendiente.set('variacion_ajustes', JSON.stringify(ajustes));
+        enviarActualizacionProducto(formDataAjusteVariacionPendiente, true);
+    });
 
     function abrirModalEditar(id) {
 
@@ -417,6 +515,13 @@ export default function initMostrarProductos() {
                 const producto = resProducto.producto;
 
                 StockOriginal = Number(producto.stock_actual);
+                variantesStockProducto = (producto.variaciones || []).flatMap(variacion => (variacion.tallas || []).map(talla => ({
+                    id: Number(talla.id_variacion_talla),
+                    color: variacion.color || 'Sin color',
+                    talla: talla.talla?.talla || 'Sin talla',
+                    sku: talla.sku || '',
+                    stock: Number(talla.stock) || 0
+                })));
 
                 $('#editar_stock_actual').val(StockOriginal);
                 $('#ajustar_stock_actual').val('0').css('color', '#198754');

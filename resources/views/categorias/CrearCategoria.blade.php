@@ -19,7 +19,7 @@
 
                 <div class="card-responsive">
 
-                    <form id="formCrearCategoria" class="row g-3">
+                    <form id="formCrearCategoria" class="row g-3" novalidate>
 
                         <div class="col-12">
 
@@ -71,7 +71,8 @@
 
                 <button
                     id="btnGuardarCategoria"
-                    type="button"
+                    type="submit"
+                    form="formCrearCategoria"
                     class="btn guardar btn-sm-modal">
                     Guardar
                 </button>

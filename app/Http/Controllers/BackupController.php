@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\BackupExcelExport;
 
@@ -52,7 +53,8 @@ class BackupController extends Controller
 
     private function exportarSQL($tipo)
     {
-        $nombre = $this->generarNombreArchivo('sql');
+        $db = DB::connection()->getDatabaseName();
+        $nombre = $this->generarNombreArchivo('sql', $db);
         $ruta = storage_path("app/backups/{$nombre}");
 
         if (!File::exists(storage_path('app/backups'))) {
@@ -63,7 +65,6 @@ class BackupController extends Controller
 
         $host = env('DB_HOST');
         $port = env('DB_PORT');
-        $db   = env('DB_DATABASE');
         $user = env('DB_USERNAME');
         $pass = env('DB_PASSWORD');
 
@@ -190,9 +191,13 @@ class BackupController extends Controller
        ║        GENERAR NOMBRE ARCHIVO        ║
        ╚══════════════════════════════════════╝ */
 
-    private function generarNombreArchivo($ext)
+    private function generarNombreArchivo($ext, ?string $nombreBase = null)
     {
-        return "Licoreria_" . now()->format('Ymd_His') . ".{$ext}";
+        $prefijo = $nombreBase
+            ? Str::slug($nombreBase, '_')
+            : 'Licoreria';
+
+        return ($prefijo ?: 'respaldo') . '_' . now()->format('Ymd_His') . ".{$ext}";
     }
 
 

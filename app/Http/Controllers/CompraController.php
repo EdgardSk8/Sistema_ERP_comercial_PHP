@@ -422,7 +422,7 @@ class CompraController extends Controller
 /*  ╔════════════ Proceso de cajas ═══════════╗ 
     ╚═════════════════════════════════════════╝ */
 
-    public function procesarPagoCaja($totalCompra, $idCompra = null)
+    public function procesarPagoCaja(float|int $totalCompra, int|string|null $idCompra = null)
     {
         $idUsuario = session('usuario.id');
         if (!$idUsuario) throw new \Exception('Sesión no válida');
@@ -597,7 +597,7 @@ class CompraController extends Controller
         }
     }
 
-    public function AnularCompra($id)
+    public function AnularCompra(int|string $id)
     {
         DB::beginTransaction();
 
@@ -750,7 +750,7 @@ class CompraController extends Controller
         }
     }
 
-    public function MostrarDetalleCompra($id)
+    public function MostrarDetalleCompra(int|string $id)
     {
         $compra = Compra::with([
             'proveedor',

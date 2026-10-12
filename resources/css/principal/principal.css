@@ -88,6 +88,8 @@ body{
 [data-theme="dark"] .form-control,
 [data-theme="dark"] .form-select,
 [data-theme="dark"] .form-check-input,
+[data-theme="dark"] .input-group-text,
+[data-theme="dark"] input[type="number"],
 [data-theme="dark"] .dataTables_filter .form-control,
 [data-theme="dark"] .dataTables_length .form-select,
 [data-theme="dark"] .select2-container--default .select2-selection--single,
@@ -97,6 +99,27 @@ body{
     border-color:var(--border-strong);
     background-color:var(--surface-muted);
     color:var(--text);
+}
+
+[data-theme="dark"] input[type="number"]{
+    color-scheme:dark;
+}
+
+[data-theme="dark"] input[type="file"]{
+    color-scheme:dark;
+}
+
+[data-theme="dark"] input[type="file"]::file-selector-button,
+[data-theme="dark"] input[type="file"]::-webkit-file-upload-button{
+    border-color:var(--border-strong);
+    background-color:var(--surface-hover);
+    color:var(--text);
+}
+
+[data-theme="dark"] input[type="file"]:hover::file-selector-button,
+[data-theme="dark"] input[type="file"]:hover::-webkit-file-upload-button{
+    background-color:var(--surface)!important;
+    color:var(--text)!important;
 }
 
 [data-theme="dark"] .form-control::placeholder,
@@ -111,6 +134,13 @@ body{
     color:var(--text) !important;
 }
 
+[data-theme="dark"] .select2-container--default .select2-results__option--selected,
+[data-theme="dark"] .select2-container--default .select2-results__option--highlighted[aria-selected] {
+    color: var(--verde) !important;
+    font-weight: 600 !important;
+    background-color: var(--gris-soft) !important;
+}
+
 [data-theme="dark"] .form-control:focus,
 [data-theme="dark"] .form-select:focus,
 [data-theme="dark"] .select2-container--focus .select2-selection{
@@ -118,10 +148,16 @@ body{
     box-shadow:0 0 0 .2rem var(--focus-ring-success);
 }
 
+
 [data-theme="dark"] .select2-results__option--highlighted,
-[data-theme="dark"] .select2-container--default .select2-results__option--highlighted[aria-selected]{
+[data-theme="dark"] .select2-container--default .select2-results__option--highlighted[aria-selected="false"]{
     background:var(--verde) !important;
     color:var(--text-on-accent) !important;
+}
+
+[data-theme="dark"] .select2-dropdown .select2-results__option[aria-selected="true"]{
+    background-color:var(--verde) !important;
+    color:var(--bg) !important;
 }
 
 [data-theme="dark"] .modal-content,
@@ -144,6 +180,43 @@ body{
 [data-theme="dark"] .text-dark{color:var(--text)!important}
 [data-theme="dark"] .text-secondary,[data-theme="dark"] .text-muted{color:var(--text-soft)!important}
 [data-theme="dark"] .btn-close-white{filter:none;opacity:.82}
+
+#modalGaleriaVariacionImagenes .variacion-imagen-item{
+    position:relative;
+    transition:transform .16s ease, box-shadow .16s ease, opacity .16s ease, border-color .16s ease;
+}
+
+#modalGaleriaVariacionImagenes .variacion-imagen-item.imagen-en-arrastre{
+    z-index:2;
+    transform:scale(1.045) rotate(-1deg);
+    opacity:.9;
+    border-color:var(--verde)!important;
+    box-shadow:0 10px 24px rgba(0,0,0,.2);
+}
+
+#modalGaleriaVariacionImagenes .variacion-imagen-item.imagen-destino-arrastre{
+    transform:translateY(-3px) scale(1.02);
+    border-color:var(--verde)!important;
+    background:var(--verde-soft);
+    box-shadow:0 0 0 2px color-mix(in srgb, var(--verde) 30%, transparent);
+}
+
+#modalGaleriaVariacionImagenes .reordenarVariacionImagen{
+    transition:transform .16s ease, background-color .16s ease, color .16s ease;
+}
+
+#modalGaleriaVariacionImagenes .reordenarVariacionImagen:hover{
+    transform:scale(1.12);
+    color:var(--verde-hover)!important;
+}
+
+#modalGaleriaVariacionImagenes .reordenarVariacionImagen:active{cursor:grabbing!important}
+#modalGaleriaVariacionImagenes #galeria_variacion_contenido.guardando-orden-imagenes{opacity:.72;pointer-events:none}
+
+@media (prefers-reduced-motion: reduce){
+    #modalGaleriaVariacionImagenes .variacion-imagen-item,
+    #modalGaleriaVariacionImagenes .reordenarVariacionImagen{transition:none}
+}
 
 /* ------------------------------------------------------ */
 
@@ -199,14 +272,14 @@ body{
     overflow-y:auto;
     background:var(--surface);
     border-right:1px solid var(--border);
-    scrollbar-width:none;
-    scrollbar-color:transparent transparent;
+    scrollbar-width:none !important;
+    scrollbar-color:transparent transparent !important;
     -ms-overflow-style:none;
 }
 
-.sidebar::-webkit-scrollbar{ width:0; height:0; }
+.sidebar::-webkit-scrollbar{ display:none !important; width:0 !important; height:0 !important; }
 
-.sidebar::-webkit-scrollbar-thumb, .sidebar::-webkit-scrollbar-track{ background:transparent;}
+.sidebar::-webkit-scrollbar-thumb, .sidebar::-webkit-scrollbar-track{ background:transparent !important;}
 
 .sidebar-menu{
     flex:1;
@@ -384,6 +457,46 @@ hr{height:0;margin:0}
     overflow-y: auto !important;
     scrollbar-color:var(--neutral-300) transparent;
     scrollbar-width: thin;
+}
+
+#tablaProductoVariacionDetalle_wrapper .dataTables_scrollBody{
+    scrollbar-color: var(--verde) var(--verde-soft);
+}
+
+#tablaProductoVariacionDetalle_wrapper .dataTables_scrollBody::-webkit-scrollbar{
+    width: 9px;
+}
+
+#tablaProductoVariacionDetalle_wrapper .dataTables_scrollBody::-webkit-scrollbar-track{
+    background: var(--verde-soft);
+    border-radius: 8px;
+}
+
+#tablaProductoVariacionDetalle_wrapper .dataTables_scrollBody::-webkit-scrollbar-thumb{
+    background: var(--verde);
+    border: 2px solid var(--verde-soft);
+    border-radius: 8px;
+}
+
+#tablaProductoVariacionDetalle_wrapper .dataTables_scrollBody::-webkit-scrollbar-thumb:hover{
+    background: var(--verde-hover);
+}
+
+[data-theme="dark"] #tablaProductoVariacionDetalle_wrapper .dataTables_scrollBody{
+    scrollbar-color: var(--verde-light) var(--verde-soft);
+}
+
+[data-theme="dark"] #tablaProductoVariacionDetalle_wrapper .dataTables_scrollBody::-webkit-scrollbar-track{
+    background: var(--verde-soft);
+}
+
+[data-theme="dark"] #tablaProductoVariacionDetalle_wrapper .dataTables_scrollBody::-webkit-scrollbar-thumb{
+    background: var(--verde-light);
+    border-color: var(--verde-soft);
+}
+
+[data-theme="dark"] #tablaProductoVariacionDetalle_wrapper .dataTables_scrollBody::-webkit-scrollbar-thumb:hover{
+    background: var(--verde);
 }
 
 .dataTables_scrollFoot{

@@ -21,6 +21,7 @@ class Venta extends Model
 
         'subtotal_venta',
         'impuesto_venta',
+        'descuento_venta',
         'total_venta',
 
         'estado_venta',
@@ -62,6 +63,16 @@ class Venta extends Model
     public function detalles()
     {
         return $this->hasMany(DetalleVenta::class, 'id_venta', 'id_venta');
+    }
+
+    public function planPago()
+    {
+        return $this->hasOne(PlanPago::class, 'id_venta', 'id_venta');
+    }
+
+    public function pagos()
+    {
+        return $this->hasMany(PagoVenta::class, 'id_venta', 'id_venta');
     }
 
     /* ═════════════ OPCIONAL (RECOMENDADO) ═════════════ */
