@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('transferencias_caja_cuenta', function (Blueprint $table) {
+        Schema::create('transferencias_caja_cuenta', function (Blueprint $table) {
             $table->increments('id_transferencia');
 
             $table->unsignedInteger('id_caja_origen')->nullable();
@@ -32,11 +32,13 @@ return new class extends Migration
 
             $table->foreign('id_cuenta_destino')
                 ->references('id_cuenta')
-                ->on('cuentas');
+                ->on('cuentas')
+                ->onDelete('cascade');
 
             $table->foreign('id_usuario')
                 ->references('id_usuario')
-                ->on('usuarios');
+                ->on('usuarios')
+                ->onDelete('cascade');
         });
     }
 

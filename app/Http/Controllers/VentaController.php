@@ -2,24 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Venta;
-use App\Models\MovimientoInventario;
-use App\Models\Producto;
+use App\Models\Caja;
 use App\Models\Cuenta;
 use App\Models\MovimientoCaja;
-use App\Models\Caja;
 use App\Models\MovimientoCuenta;
+use App\Models\MovimientoInventario;
+use App\Models\Producto;
 use App\Models\VariacionTalla;
+use App\Models\Venta;
+use App\Services\CosteoInventarioService;
 use Illuminate\Support\Facades\DB;
 
 class VentaController extends Controller
 {
+    /*  ╔════════════ Mostrar Venta ═══════════╗
+        ╚══════════════════════════════════════╝ */
 
-
-/*  ╔════════════ Mostrar Venta ═══════════╗ 
-    ╚══════════════════════════════════════╝ */
-    
     public function MostrarVentas()
     {
         try {
@@ -34,7 +32,7 @@ class VentaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'ventas' => $ventas
+                'ventas' => $ventas,
             ], 200);
 
         } catch (\Exception $e) {
@@ -42,7 +40,7 @@ class VentaController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener ventas',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
 
         }
@@ -56,25 +54,26 @@ class VentaController extends Controller
 
             $venta = Venta::with('detalles')->find($id);
 
-            if (!$venta) {
+            if (! $venta) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Venta no encontrada'
+                    'mensaje' => 'Venta no encontrada',
                 ], 404);
             }
 
             if ($venta->estado_venta == 0) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'La venta ya está anulada'
+                    'mensaje' => 'La venta ya está anulada',
                 ], 422);
             }
 
             if ($venta->pagos()->exists()) {
                 DB::rollBack();
+
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'No se puede anular una venta que ya recibió abonos. Registra una devolución antes de anularla.'
+                    'mensaje' => 'No se puede anular una venta que ya recibió abonos. Registra una devolución antes de anularla.',
                 ], 422);
             }
 
@@ -85,16 +84,16 @@ class VentaController extends Controller
 
                 $producto = Producto::find($detalle->id_producto);
 
-                if (!$producto) {
+                if (! $producto) {
                     throw new \Exception('Producto no encontrado');
                 }
 
-                $esDetalleDeVariacion = !empty($detalle->descripcion_variacion);
+                $esDetalleDeVariacion = ! empty($detalle->descripcion_variacion);
                 $variacionTalla = $detalle->id_variacion_talla
                     ? VariacionTalla::with(['variacion', 'talla'])->find($detalle->id_variacion_talla)
                     : null;
 
-                if ($esDetalleDeVariacion && !$variacionTalla) {
+                if ($esDetalleDeVariacion && ! $variacionTalla) {
                     throw new \Exception('No se puede devolver el stock: la variante vendida ya fue eliminada');
                 }
 
@@ -103,12 +102,15 @@ class VentaController extends Controller
                     $variacionTalla->increment('stock', $detalle->cantidad_venta);
                     $producto->increment('stock_actual', $detalle->cantidad_venta);
                     $stockResultante = $producto->fresh()->stock_actual;
-                    $motivo = 'Anulación de venta - ' . trim(($variacionTalla->variacion->color ?? '') . ' ' . ($variacionTalla->talla->talla ?? ''));
+                    $motivo = 'Anulación de venta - '.trim(($variacionTalla->variacion->color ?? '').' '.($variacionTalla->talla->talla ?? ''));
                 } else {
                     $producto->increment('stock_actual', $detalle->cantidad_venta);
                     $stockResultante = $producto->fresh()->stock_actual;
                     $motivo = 'Anulación de venta';
                 }
+
+                // 🧾 Devolver las unidades a sus lotes FIFO originales.
+                app(CosteoInventarioService::class)->restaurar($detalle->consumos_lotes ?? []);
 
                 // KARDEX
                 MovimientoInventario::create([
@@ -121,7 +123,7 @@ class VentaController extends Controller
                     'tipo_referencia' => 'DEVOLUCION',
                     'precio_unitario' => $detalle->precio_unitario_venta,
                     'fecha_movimiento' => now(),
-                    'id_usuario' => session('usuario.id')
+                    'id_usuario' => session('usuario.id'),
                 ]);
             }
 
@@ -139,7 +141,7 @@ class VentaController extends Controller
                     'concepto_movimiento_caja' => 'Anulación de venta',
                     'monto_movimiento_caja' => $total,
                     'id_usuario' => session('usuario.id'),
-                    'id_referencia' => $venta->id_venta
+                    'id_referencia' => $venta->id_venta,
                 ]);
             }
 
@@ -148,7 +150,7 @@ class VentaController extends Controller
 
                 $cuenta = Cuenta::find($venta->id_cuenta);
 
-                if (!$cuenta) {
+                if (! $cuenta) {
                     throw new \Exception('Cuenta no encontrada');
                 }
 
@@ -162,7 +164,7 @@ class VentaController extends Controller
                     'tipo_movimiento' => 'SALIDA',
                     'monto' => $total,
                     'descripcion' => 'Anulación de venta',
-                    'id_usuario' => session('usuario.id')
+                    'id_usuario' => session('usuario.id'),
                 ]);
 
                 $cuenta->decrement('saldo_actual', $total);
@@ -178,7 +180,7 @@ class VentaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Venta anulada correctamente'
+                'mensaje' => 'Venta anulada correctamente',
             ]);
 
         } catch (\Exception $e) {
@@ -187,26 +189,24 @@ class VentaController extends Controller
 
             return response()->json([
                 'success' => false,
-                'mensaje' => $e->getMessage()
+                'mensaje' => $e->getMessage(),
             ], 500);
         }
     }
 
     public function MostrarDetalleVenta($id)
-        {
-            $venta = Venta::with([
-                'cliente',
-                'usuario',
-                'metodoPago',
-                'detalles.producto',
-                'detalles.variacionTalla.variacion',
-                'detalles.variacionTalla.talla'
-            ])->findOrFail($id);
+    {
+        $venta = Venta::with([
+            'cliente',
+            'usuario',
+            'metodoPago',
+            'detalles.producto',
+            'detalles.variacionTalla.variacion',
+            'detalles.variacionTalla.talla',
+        ])->findOrFail($id);
 
-            return response()->json([
-                'venta' => $venta
-            ]);
+        return response()->json([
+            'venta' => $venta,
+        ]);
     }
-
-
 }

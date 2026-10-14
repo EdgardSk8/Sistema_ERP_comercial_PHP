@@ -31,20 +31,24 @@ return new class extends Migration
 
             // 🔗 Relaciones
             $table->foreign('id_gasto')
-                  ->references('id_gasto')
-                  ->on('gastos');
+                ->references('id_gasto')
+                ->on('gastos')
+                ->onDelete('cascade');
 
             $table->foreign('id_usuario')
-                  ->references('id_usuario')
-                  ->on('usuarios');
+                ->references('id_usuario')
+                ->on('usuarios')
+                ->onDelete('cascade');
 
             $table->foreign('id_caja')
-                  ->references('id_caja')
-                  ->on('cajas');
+                ->references('id_caja')
+                ->on('cajas')
+                ->onDelete('cascade');
 
             $table->foreign('id_cuenta')
-                  ->references('id_cuenta')
-                  ->on('cuentas');
+                ->references('id_cuenta')
+                ->on('cuentas')
+                ->onDelete('cascade');
         });
     }
 

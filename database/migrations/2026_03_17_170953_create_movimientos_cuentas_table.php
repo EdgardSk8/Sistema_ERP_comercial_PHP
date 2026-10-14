@@ -31,17 +31,19 @@ return new class extends Migration
 
             // relaciones
             $table->foreign('id_cuenta')
-                  ->references('id_cuenta')
-                  ->on('cuentas');
+                ->references('id_cuenta')
+                ->on('cuentas')
+                ->onDelete('cascade');
 
             $table->foreign('id_usuario')
-                  ->references('id_usuario')
-                  ->on('usuarios');
+                ->references('id_usuario')
+                ->on('usuarios')
+                ->onDelete('cascade');
 
             $table->foreign('id_transferencia')
                 ->references('id_transferencia')
-                ->on('transferencias_caja_cuenta');
-
+                ->on('transferencias_caja_cuenta')
+                ->onDelete('cascade');
 
         });
     }

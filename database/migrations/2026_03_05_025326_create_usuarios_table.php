@@ -15,10 +15,10 @@ class CreateUsuariosTable extends Migration
     {
         Schema::create('usuarios', function (Blueprint $table) {
             $table->increments('id_usuario');
-            $table->string('nombre_completo_usuario',150);
-            $table->string('cedula_identidad_usuario',16)->unique();
-            $table->string('nombre_usuario',50)->unique();
-            $table->string('password_hash_usuario',255);
+            $table->string('nombre_completo_usuario', 150);
+            $table->string('cedula_identidad_usuario', 16)->unique();
+            $table->string('nombre_usuario', 50)->unique();
+            $table->string('password_hash_usuario', 255);
 
             $table->unsignedInteger('id_rol_usuario');
 
@@ -26,8 +26,9 @@ class CreateUsuariosTable extends Migration
             $table->dateTime('fecha_creacion_usuario')->useCurrent();
 
             $table->foreign('id_rol_usuario')
-                  ->references('id_rol')
-                  ->on('roles');
+                ->references('id_rol')
+                ->on('roles')
+                ->onDelete('cascade');
         });
     }
 

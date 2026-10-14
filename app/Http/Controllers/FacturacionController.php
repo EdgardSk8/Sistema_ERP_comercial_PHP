@@ -2,74 +2,72 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Caja;
+use App\Models\Cliente;
+use App\Models\Credenciales;
+use App\Models\Cuenta;
+use App\Models\CuotaVenta;
+use App\Models\DetalleVenta;
 use App\Models\Impuesto;
 use App\Models\MetodoPago;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
-
-use App\Models\Producto;
-use App\Models\Cliente;
-use App\Models\Venta;
-use App\Models\DetalleVenta;
 use App\Models\MovimientoCaja;
-use App\Models\MovimientoInventario;
-use App\Models\Caja;
-use App\Models\Credenciales;
-use App\Models\MetodoPagoCuenta;
-use App\Models\Cuenta;
 use App\Models\MovimientoCuenta;
-use App\Models\VariacionTalla;
+use App\Models\MovimientoInventario;
 use App\Models\PlanPago;
-use App\Models\CuotaVenta;
+use App\Models\Producto;
+use App\Models\VariacionTalla;
+use App\Models\Venta;
+use App\Services\CosteoInventarioService;
 use App\Services\RegistrarPagoVenta;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class FacturacionController extends Controller
 {
+    /*  ╔════════ Mostrar Productos POS ══════════╗
+        ╚═════════════════════════════════════════╝ */
 
-/*  ╔════════ Mostrar Productos POS ══════════╗ 
-    ╚═════════════════════════════════════════╝ */
-    
     public function MostrarProductosPOS(Request $request)
     {
         try {
 
             $validator = Validator::make($request->all(), [
-                'buscar' => 'nullable|string|max:150'
+                'buscar' => 'nullable|string|max:150',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'error' => true,
-                    'mensajes' => $validator->errors()
+                    'mensajes' => $validator->errors(),
                 ], 400);
             }
 
             $query = Producto::with([
-                    'impuesto',
-                    'variaciones' => function ($variaciones) {
-                        $variaciones->where('estado_variacion', 1)
-                            ->with(['tallas.talla' => function ($tallas) {
-                                $tallas->where('estado_talla', 1);
-                            }]);
-                    }
-                ])
+                'impuesto',
+                'variaciones' => function ($variaciones) {
+                    $variaciones->where('estado_variacion', 1)
+                        ->with(['tallas.talla' => function ($tallas) {
+                            $tallas->where('estado_talla', 1);
+                        }]);
+                },
+            ])
                 ->where('estado_producto', 1);
 
             // 🔍 Buscador
             if ($request->filled('buscar')) {
-                $query->where('nombre_producto', 'like', '%' . $request->buscar . '%');
+                $query->where('nombre_producto', 'like', '%'.$request->buscar.'%');
             }
 
             $productos = $query->select(
-                    'id_producto',
-                    'nombre_producto',
-                    'precio_venta',
-                    'stock_actual',
-                    'imagen_producto',
-                    'id_impuesto' 
-                )
-                //->limit(20)
+                'id_producto',
+                'nombre_producto',
+                'precio_venta',
+                'stock_actual',
+                'imagen_producto',
+                'id_impuesto'
+            )
+                // ->limit(20)
                 ->get()
                 ->flatMap(function ($p) {
 
@@ -78,21 +76,21 @@ class FacturacionController extends Controller
                     $precioConIVA = $p->precio_venta + ($p->precio_venta * ($iva / 100));
 
                     $producto = [
-                        'id_producto'     => $p->id_producto,
+                        'id_producto' => $p->id_producto,
                         'nombre_producto' => $p->nombre_producto,
-                        'precio_venta'    => $p->precio_venta,
-                        'precio_con_iva'  => round($precioConIVA, 2),
-                        'iva'             => $iva,
-                        'stock_actual'    => $p->stock_actual,
-                        'imagen_producto' => $p->imagen_producto
+                        'precio_venta' => $p->precio_venta,
+                        'precio_con_iva' => round($precioConIVA, 2),
+                        'iva' => $iva,
+                        'stock_actual' => $p->stock_actual,
+                        'imagen_producto' => $p->imagen_producto,
                     ];
 
-                    $variantes = $p->variaciones->flatMap(function ($variacion) use ($p, $iva, $precioConIVA) {
-                        return $variacion->tallas->map(function ($variacionTalla) use ($p, $variacion, $iva, $precioConIVA) {
+                    $variantes = $p->variaciones->flatMap(function ($variacion) use ($p, $iva) {
+                        return $variacion->tallas->map(function ($variacionTalla) use ($p, $variacion, $iva) {
                             return [
                                 'id_producto' => $p->id_producto,
                                 'id_variacion_talla' => $variacionTalla->id_variacion_talla,
-                                'nombre_producto' => $p->nombre_producto . ' · ' . $variacion->color . ' · ' . ($variacionTalla->talla->talla ?? 'Sin talla'),
+                                'nombre_producto' => $p->nombre_producto.' · '.$variacion->color.' · '.($variacionTalla->talla->talla ?? 'Sin talla'),
                                 'precio_venta' => $variacionTalla->precio_venta ?? $p->precio_venta,
                                 'precio_con_iva' => round(($variacionTalla->precio_venta ?? $p->precio_venta) * (1 + ($iva / 100)), 2),
                                 'iva' => $iva,
@@ -109,7 +107,7 @@ class FacturacionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $productos
+                'data' => $productos,
             ], 200);
 
         } catch (\Exception $e) {
@@ -117,13 +115,13 @@ class FacturacionController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener productos',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-/*  ╔════════ Mostrar Clientes POS ═══════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔════════ Mostrar Clientes POS ═══════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function MostrarClientesPOS(Request $request)
     {
@@ -131,13 +129,13 @@ class FacturacionController extends Controller
 
             // Validar parámetros opcionales
             $validator = Validator::make($request->all(), [
-                'estado' => 'nullable|boolean'
+                'estado' => 'nullable|boolean',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'error' => true,
-                    'mensajes' => $validator->errors()
+                    'mensajes' => $validator->errors(),
                 ], 400);
             }
 
@@ -157,20 +155,20 @@ class FacturacionController extends Controller
             return response()->json([
                 'success' => true,
                 'total' => $clientes->count(),
-                'data' => $clientes
+                'data' => $clientes,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener los clientes',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-/*  ╔════════ Facturar Clientes POS ══════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔════════ Facturar Clientes POS ══════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function FacturarProductosPOS(Request $request)
     {
@@ -192,13 +190,13 @@ class FacturacionController extends Controller
                 throw new \Exception('El descuento del cliente no puede ser negativo.');
             }
 
-            if (!$esPagoPlazos || $abonoInicial > 0) {
+            if (! $esPagoPlazos || $abonoInicial > 0) {
                 $caja = Caja::where('estado_caja', 1)
                     ->where('id_usuario', $idUsuario)
                     ->lockForUpdate()
                     ->first();
 
-                if (!$caja) {
+                if (! $caja) {
                     throw new \Exception('Abre tu caja para registrar una venta o recibir un abono.');
                 }
             }
@@ -210,25 +208,25 @@ class FacturacionController extends Controller
                     'cuotas.*.fecha_vencimiento' => 'required|date|after_or_equal:today',
                     'cuotas.*.monto_cuota' => 'required|numeric|gt:0',
                     'abono_inicial' => 'nullable|numeric|min:0',
-                    'descuento_venta' => 'nullable|numeric|min:0'
+                    'descuento_venta' => 'nullable|numeric|min:0',
                 ]);
 
                 if ($validator->fails()) {
                     throw new \Exception($validator->errors()->first());
                 }
 
-                if (!Cliente::where('id_cliente', $request->cliente)->where('estado_cliente', 1)->exists()) {
+                if (! Cliente::where('id_cliente', $request->cliente)->where('estado_cliente', 1)->exists()) {
                     throw new \Exception('Selecciona un cliente activo para crear el plan de pagos.');
                 }
             }
 
-           $numero = 'VTA-' . now()->format('Ymd') . '-' . str_pad((Venta::max('id_venta') + 1), 5, '0', STR_PAD_LEFT);
+            $numero = 'VTA-'.now()->format('Ymd').'-'.str_pad((Venta::max('id_venta') + 1), 5, '0', STR_PAD_LEFT);
 
             $subtotalGeneral = 0;
             $impuestoGeneral = 0;
             $esLiquidacion = $request->boolean('liquidacion');
 
-            if (!$esPagoPlazos && (
+            if (! $esPagoPlazos && (
                 $request->id_metodo_pago != 1 &&
                 empty($request->id_cuenta)
             )) {
@@ -250,14 +248,14 @@ class FacturacionController extends Controller
                 'descuento_venta' => $descuentoCliente,
                 'total_venta' => 0, // se actualiza después
                 'monto_recibido' => $esPagoPlazos ? 0 : $request->recibido,
-                'vuelto' => 0
+                'vuelto' => 0,
             ]);
 
             foreach ($request->carrito as $item) {
 
                 $producto = Producto::with('impuesto')->find($item['id']);
 
-                if (!$producto) {
+                if (! $producto) {
                     throw new \Exception('Producto no encontrado');
                 }
 
@@ -266,7 +264,7 @@ class FacturacionController extends Controller
                     throw new \Exception('La cantidad debe ser al menos 1');
                 }
                 $variacionTalla = null;
-                if (!empty($item['id_variacion_talla'])) {
+                if (! empty($item['id_variacion_talla'])) {
                     $variacionTalla = VariacionTalla::with(['variacion', 'talla'])
                         ->where('id_variacion_talla', $item['id_variacion_talla'])
                         ->whereHas('variacion', function ($query) use ($producto) {
@@ -279,14 +277,14 @@ class FacturacionController extends Controller
                         ->lockForUpdate()
                         ->first();
 
-                    if (!$variacionTalla) {
+                    if (! $variacionTalla) {
                         throw new \Exception('La variante seleccionada ya no está disponible');
                     }
                 }
 
                 $porcentaje = $producto->impuesto->porcentaje_impuesto ?? 0;
 
-                if ($esLiquidacion && !isset($item['precio_venta_final'])) {
+                if ($esLiquidacion && ! isset($item['precio_venta_final'])) {
                     throw new \Exception('Debe indicar el precio de liquidación de cada producto');
                 }
 
@@ -325,19 +323,38 @@ class FacturacionController extends Controller
                 $subtotalGeneral += $subtotal;
                 $impuestoGeneral += $impuesto;
 
+                // 📸 COSTO HISTÓRICO (FIFO/PEPS): consume primero los lotes más
+                // antiguos y congela el costo REAL de las unidades vendidas.
+                $costoRespaldo = (float) ($variacionTalla
+                    ? ($variacionTalla->precio_compra ?? $producto->precio_compra ?? 0)
+                    : ($producto->precio_compra ?? 0));
+
+                $costeoFifo = app(CosteoInventarioService::class)->consumir(
+                    $producto->id_producto,
+                    $variacionTalla?->id_variacion_talla,
+                    $cantidad,
+                    $costoRespaldo
+                );
+
+                $costoUnitario = $cantidad > 0
+                    ? round($costeoFifo['costo_total'] / $cantidad, 2)
+                    : 0.0;
+
                 DetalleVenta::create([
                     'id_venta' => $venta->id_venta,
                     'id_producto' => $producto->id_producto,
                     'id_variacion_talla' => $variacionTalla?->id_variacion_talla,
                     'descripcion_variacion' => $variacionTalla
-                        ? trim(($variacionTalla->variacion->color ?? '') . ' · ' . ($variacionTalla->talla->talla ?? ''))
+                        ? trim(($variacionTalla->variacion->color ?? '').' · '.($variacionTalla->talla->talla ?? ''))
                         : null,
                     'sku_variacion' => $variacionTalla?->sku,
                     'cantidad_venta' => $cantidad,
                     'precio_unitario_venta' => $precioSinImpuesto, // 🔥 SIN IVA
+                    'costo_unitario_venta' => $costoUnitario, // 📸 Costo histórico FIFO
+                    'consumos_lotes' => $costeoFifo['consumos'],
                     'subtotal_detalle_venta' => $subtotal,
                     'porcentaje_impuesto' => $porcentaje,
-                    'monto_impuesto' => $impuesto
+                    'monto_impuesto' => $impuesto,
                 ]);
 
                 // 📦 stock
@@ -357,7 +374,7 @@ class FacturacionController extends Controller
                         ->where('stock', '>=', $cantidad)
                         ->decrement('stock', $cantidad);
 
-                    if (!$actualizado) {
+                    if (! $actualizado) {
                         $nombreTalla = $variacionTalla->talla->talla ?? 'seleccionada';
                         throw new \Exception("La talla '{$nombreTalla}' ya no tiene existencias disponibles");
                     }
@@ -369,7 +386,7 @@ class FacturacionController extends Controller
                         ->where('stock_actual', '>=', $cantidad)
                         ->decrement('stock_actual', $cantidad);
 
-                    if (!$actualizado) {
+                    if (! $actualizado) {
                         throw new \Exception("El producto '{$producto->nombre_producto}' ya no tiene existencias disponibles");
                     }
 
@@ -382,12 +399,12 @@ class FacturacionController extends Controller
                     'cantidad_movimiento' => $cantidad,
                     'stock_resultante' => $stockResultante,
                     'motivo_movimiento' => $variacionTalla
-                        ? 'Venta despacho - ' . trim(($variacionTalla->variacion->color ?? '') . ' ' . ($variacionTalla->talla->talla ?? ''))
+                        ? 'Venta despacho - '.trim(($variacionTalla->variacion->color ?? '').' '.($variacionTalla->talla->talla ?? ''))
                         : 'Venta despacho realizada',
                     'id_referencia' => $venta->id_venta,
                     'tipo_referencia' => 'VENTA',
                     'precio_unitario' => $precioSinImpuesto,
-                    'id_usuario' => session('usuario.id')
+                    'id_usuario' => session('usuario.id'),
                 ]);
             }
 
@@ -419,12 +436,12 @@ class FacturacionController extends Controller
                     'descuento_venta' => $descuentoCliente,
                     'total_venta' => $totalGeneral,
                     'monto_recibido' => $abonoInicial,
-                    'vuelto' => 0
+                    'vuelto' => 0,
                 ]);
 
                 $plan = PlanPago::create([
                     'id_venta' => $venta->id_venta,
-                    'id_usuario' => $idUsuario
+                    'id_usuario' => $idUsuario,
                 ]);
 
                 foreach ($request->cuotas as $indice => $cuota) {
@@ -432,7 +449,7 @@ class FacturacionController extends Controller
                         'id_plan_pago' => $plan->id_plan_pago,
                         'numero_cuota' => $indice + 1,
                         'fecha_vencimiento' => $cuota['fecha_vencimiento'],
-                        'monto_cuota' => round((float) $cuota['monto_cuota'], 2)
+                        'monto_cuota' => round((float) $cuota['monto_cuota'], 2),
                     ]);
                 }
 
@@ -447,83 +464,83 @@ class FacturacionController extends Controller
                     );
                 }
             } else {
-            if (!$esLiquidacion && (int) $request->id_metodo_pago === 1 && (float) $request->recibido + 0.001 < $totalGeneral) {
-                throw new \Exception('El pago recibido es menor que el total de la venta');
-            }
-
-            $montoRecibido = $esLiquidacion && (int) $request->id_metodo_pago === 1
-                ? $totalGeneral
-                : (float) $request->recibido;
-
-            $venta->update([
-                'subtotal_venta' => $subtotalGeneral,
-                'impuesto_venta' => $impuestoGeneral,
-                'descuento_venta' => $descuentoCliente,
-                'total_venta' => $totalGeneral,
-                'monto_recibido' => $montoRecibido,
-                'vuelto' => $montoRecibido - $totalGeneral
-            ]);
-
-            // 💰 movimiento caja
-            if ($request->id_metodo_pago == 1) {
-
-                MovimientoCaja::create([
-                    'id_caja' => $caja->id_caja,
-                    'tipo_movimiento_caja' => 'INGRESO',
-                    'concepto_movimiento_caja' => 'Ingreso por ventas',
-                    'monto_movimiento_caja' => $totalGeneral,
-                    'id_usuario' => session('usuario.id'),
-                    'id_referencia' => $venta->id_venta
-                ]);
-
-            } else {
-
-               $cuenta = Cuenta::find($request->id_cuenta);
-
-                if (!$cuenta) {
-                    throw new \Exception('La cuenta seleccionada no existe');
+                if (! $esLiquidacion && (int) $request->id_metodo_pago === 1 && (float) $request->recibido + 0.001 < $totalGeneral) {
+                    throw new \Exception('El pago recibido es menor que el total de la venta');
                 }
 
-                $cuenta->increment(
-                    'saldo_actual',
-                    $totalGeneral
-                );
+                $montoRecibido = $esLiquidacion && (int) $request->id_metodo_pago === 1
+                    ? $totalGeneral
+                    : (float) $request->recibido;
 
-                MovimientoCuenta::create([
-                    'id_cuenta' => $cuenta->id_cuenta,
-                    'tipo_movimiento' => 'INGRESO',
-                    'monto' => $totalGeneral,
-                    'descripcion' => 'Ingreso por venta #' . $venta->numero_factura,
-                    'fecha' => now(),
-                    'id_usuario' => session('usuario.id')
+                $venta->update([
+                    'subtotal_venta' => $subtotalGeneral,
+                    'impuesto_venta' => $impuestoGeneral,
+                    'descuento_venta' => $descuentoCliente,
+                    'total_venta' => $totalGeneral,
+                    'monto_recibido' => $montoRecibido,
+                    'vuelto' => $montoRecibido - $totalGeneral,
                 ]);
-            }
+
+                // 💰 movimiento caja
+                if ($request->id_metodo_pago == 1) {
+
+                    MovimientoCaja::create([
+                        'id_caja' => $caja->id_caja,
+                        'tipo_movimiento_caja' => 'INGRESO',
+                        'concepto_movimiento_caja' => 'Ingreso por ventas',
+                        'monto_movimiento_caja' => $totalGeneral,
+                        'id_usuario' => session('usuario.id'),
+                        'id_referencia' => $venta->id_venta,
+                    ]);
+
+                } else {
+
+                    $cuenta = Cuenta::find($request->id_cuenta);
+
+                    if (! $cuenta) {
+                        throw new \Exception('La cuenta seleccionada no existe');
+                    }
+
+                    $cuenta->increment(
+                        'saldo_actual',
+                        $totalGeneral
+                    );
+
+                    MovimientoCuenta::create([
+                        'id_cuenta' => $cuenta->id_cuenta,
+                        'tipo_movimiento' => 'INGRESO',
+                        'monto' => $totalGeneral,
+                        'descripcion' => 'Ingreso por venta #'.$venta->numero_factura,
+                        'fecha' => now(),
+                        'id_usuario' => session('usuario.id'),
+                    ]);
+                }
             }
 
             DB::commit();
 
-                return response()->json([
-                    'success' => true,
-                    'numero_factura' => $venta->numero_factura,
-                    'cliente' => $venta->cliente,
-                    'monto_recibido' => $venta->monto_recibido,
-                    'vuelto' => $venta->vuelto,
-                    'total' => $totalGeneral,
-                    'pago_plazos' => $esPagoPlazos,
-                    'saldo_pendiente' => $esPagoPlazos ? round($totalGeneral - $abonoInicial, 2) : 0,
-                    'productos' => $venta->detalles->map(function ($d) {
-                        return [
-                            'nombre' => $d->producto->nombre_producto
-                                . ($d->descripcion_variacion ? ' · ' . $d->descripcion_variacion : '')
-                                . ($d->sku_variacion ? ' · SKU: ' . $d->sku_variacion : ''),
-                            'cantidad' => $d->cantidad_venta,
-                            'precio' => $d->precio_unitario_venta,
-                            'impuesto' => $d->monto_impuesto,
-                            'subtotal' => $d->subtotal_detalle_venta,
-                            'total' => $d->subtotal_detalle_venta + $d->monto_impuesto,
-                        ];
-                    }),
-                ]);
+            return response()->json([
+                'success' => true,
+                'numero_factura' => $venta->numero_factura,
+                'cliente' => $venta->cliente,
+                'monto_recibido' => $venta->monto_recibido,
+                'vuelto' => $venta->vuelto,
+                'total' => $totalGeneral,
+                'pago_plazos' => $esPagoPlazos,
+                'saldo_pendiente' => $esPagoPlazos ? round($totalGeneral - $abonoInicial, 2) : 0,
+                'productos' => $venta->detalles->map(function ($d) {
+                    return [
+                        'nombre' => $d->producto->nombre_producto
+                            .($d->descripcion_variacion ? ' · '.$d->descripcion_variacion : '')
+                            .($d->sku_variacion ? ' · SKU: '.$d->sku_variacion : ''),
+                        'cantidad' => $d->cantidad_venta,
+                        'precio' => $d->precio_unitario_venta,
+                        'impuesto' => $d->monto_impuesto,
+                        'subtotal' => $d->subtotal_detalle_venta,
+                        'total' => $d->subtotal_detalle_venta + $d->monto_impuesto,
+                    ];
+                }),
+            ]);
 
         } catch (\Exception $e) {
 
@@ -532,36 +549,35 @@ class FacturacionController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
-                'linea' => $e->getLine()
+                'linea' => $e->getLine(),
             ]);
         }
     }
 
-
-/*  ╔════════ Mostrar Metodo Pago POS ════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔════════ Mostrar Metodo Pago POS ════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function MostrarMetodoPagoPOS(Request $request)
     {
         try {
 
             $validator = Validator::make($request->all(), [
-                'estado' => 'nullable|boolean'
+                'estado' => 'nullable|boolean',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'error' => true,
-                    'mensajes' => $validator->errors()
+                    'mensajes' => $validator->errors(),
                 ], 400);
             }
 
             $query = MetodoPago::leftJoin(
-                    'metodo_pago_cuenta',
-                    'metodos_pago.id_metodo_pago',
-                    '=',
-                    'metodo_pago_cuenta.id_metodo_pago'
-                )
+                'metodo_pago_cuenta',
+                'metodos_pago.id_metodo_pago',
+                '=',
+                'metodo_pago_cuenta.id_metodo_pago'
+            )
                 ->leftJoin(
                     'cuentas',
                     'metodo_pago_cuenta.id_cuenta',
@@ -587,18 +603,18 @@ class FacturacionController extends Controller
                 $q->where('metodos_pago.id_metodo_pago', 1)
 
                 // O métodos con cuentas activas
-                ->orWhere(function ($sub) {
-                    $sub->where('metodo_pago_cuenta.estado', 1);
-                });
+                    ->orWhere(function ($sub) {
+                        $sub->where('metodo_pago_cuenta.estado', 1);
+                    });
             });
 
             $metodosPago = $query->select(
-                    'metodos_pago.id_metodo_pago',
-                    'metodos_pago.nombre_metodo_pago',
-                    'metodo_pago_cuenta.id_metodo_pago_cuenta',
-                    'cuentas.id_cuenta',
-                    'cuentas.nombre_cuenta'
-                )
+                'metodos_pago.id_metodo_pago',
+                'metodos_pago.nombre_metodo_pago',
+                'metodo_pago_cuenta.id_metodo_pago_cuenta',
+                'cuentas.id_cuenta',
+                'cuentas.nombre_cuenta'
+            )
                 ->orderBy('metodos_pago.nombre_metodo_pago')
                 ->orderBy('cuentas.nombre_cuenta')
                 ->get();
@@ -606,7 +622,7 @@ class FacturacionController extends Controller
             return response()->json([
                 'success' => true,
                 'total' => $metodosPago->count(),
-                'data' => $metodosPago
+                'data' => $metodosPago,
             ], 200);
 
         } catch (\Exception $e) {
@@ -614,13 +630,13 @@ class FacturacionController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener los métodos de pago',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-/*  ╔═══════ Validar Stock Carrito POS ═══════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔═══════ Validar Stock Carrito POS ═══════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function ValidarStockCarrito(Request $request)
     {
@@ -632,14 +648,14 @@ class FacturacionController extends Controller
 
             $producto = $productos[$item['id']] ?? null;
 
-            if (!$producto) {
+            if (! $producto) {
                 return response()->json([
                     'ok' => false,
-                    'mensaje' => "Producto no encontrado"
+                    'mensaje' => 'Producto no encontrado',
                 ]);
             }
 
-            $variacionTalla = !empty($item['id_variacion_talla'])
+            $variacionTalla = ! empty($item['id_variacion_talla'])
                 ? VariacionTalla::with(['variacion', 'talla'])
                     ->where('id_variacion_talla', $item['id_variacion_talla'])
                     ->whereHas('variacion', function ($query) use ($producto) {
@@ -648,7 +664,7 @@ class FacturacionController extends Controller
                     })->first()
                 : null;
 
-            if (!empty($item['id_variacion_talla']) && !$variacionTalla) {
+            if (! empty($item['id_variacion_talla']) && ! $variacionTalla) {
                 return response()->json(['ok' => false, 'mensaje' => 'La variante seleccionada ya no está disponible']);
             }
 
@@ -656,7 +672,7 @@ class FacturacionController extends Controller
             if ($stock < $item['cantidad']) {
                 return response()->json([
                     'ok' => false,
-                    'mensaje' => "El producto '{$producto->nombre_producto}'" . ($variacionTalla ? ' (' . $variacionTalla->variacion->color . ' · ' . $variacionTalla->talla->talla . ')' : '') . ' ya no tiene existencias, por favor actualice el stock mostrado',
+                    'mensaje' => "El producto '{$producto->nombre_producto}'".($variacionTalla ? ' ('.$variacionTalla->variacion->color.' · '.$variacionTalla->talla->talla.')' : '').' ya no tiene existencias, por favor actualice el stock mostrado',
                     'stock' => $stock,
                     'id' => $producto->id_producto,
                     'id_variacion_talla' => $variacionTalla?->id_variacion_talla,
@@ -667,8 +683,8 @@ class FacturacionController extends Controller
         return response()->json(['ok' => true]);
     }
 
-/*  ╔═══════════ Mostrar Tipo de cambio ════════════╗ 
-    ╚═══════════════════════════════════════════════╝ */
+    /*  ╔═══════════ Mostrar Tipo de cambio ════════════╗
+        ╚═══════════════════════════════════════════════╝ */
 
     public function MostrarTipoCambio()
     {
@@ -677,14 +693,14 @@ class FacturacionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'tasa' => $config ? (float) $config->tipo_cambio : 0
+                'tasa' => $config ? (float) $config->tipo_cambio : 0,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Error al obtener tipo de cambio',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -696,16 +712,15 @@ class FacturacionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $config
+                'data' => $config,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener configuración',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
-
 }

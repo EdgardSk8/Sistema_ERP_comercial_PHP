@@ -32,7 +32,8 @@ class CreateGastosTable extends Migration
             // 🔹 RELACIÓN
             $table->foreign('id_tipo_gasto')
                 ->references('id_tipo_gasto')
-                ->on('tipo_gasto');
+                ->on('tipo_gasto')
+                ->onDelete('cascade');
         });
     }
 

@@ -14,16 +14,16 @@ class CreateMovimientosCajaTable extends Migration
     public function up()
     {
         Schema::create('movimientos_caja', function (Blueprint $table) {
-            
+
             $table->increments('id_movimiento_caja');
 
             $table->unsignedInteger('id_caja');
 
-            $table->enum('tipo_movimiento_caja',['INGRESO','SALIDA']);
+            $table->enum('tipo_movimiento_caja', ['INGRESO', 'SALIDA']);
 
-            $table->string('concepto_movimiento_caja',150);
+            $table->string('concepto_movimiento_caja', 150);
 
-            $table->decimal('monto_movimiento_caja',10,2);
+            $table->decimal('monto_movimiento_caja', 10, 2);
 
             $table->dateTime('fecha_movimiento_caja')->useCurrent();
 
@@ -39,20 +39,24 @@ class CreateMovimientosCajaTable extends Migration
 
             // relaciones
             $table->foreign('id_caja')
-                  ->references('id_caja')
-                  ->on('cajas');
+                ->references('id_caja')
+                ->on('cajas')
+                ->onDelete('cascade');
 
             $table->foreign('id_usuario')
-                  ->references('id_usuario')
-                  ->on('usuarios');
+                ->references('id_usuario')
+                ->on('usuarios')
+                ->onDelete('cascade');
 
             $table->foreign('id_cuenta_destino')
-                  ->references('id_cuenta')
-                  ->on('cuentas');
+                ->references('id_cuenta')
+                ->on('cuentas')
+                ->onDelete('cascade');
 
             $table->foreign('id_transferencia')
                 ->references('id_transferencia')
-                ->on('transferencias_caja_cuenta');
+                ->on('transferencias_caja_cuenta')
+                ->onDelete('cascade');
 
         });
     }

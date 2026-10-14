@@ -21,10 +21,10 @@ class CreateRolPermisoTable extends Migration
 
             $table->dateTime('fecha_asignacion_rol_permiso')->useCurrent();
 
-            $table->foreign('id_rol')->references('id_rol')->on('roles');
-            $table->foreign('id_permiso')->references('id_permiso')->on('permisos');
+            $table->foreign('id_rol')->references('id_rol')->on('roles')->onDelete('cascade');
+            $table->foreign('id_permiso')->references('id_permiso')->on('permisos')->onDelete('cascade');
 
-            $table->unique(['id_rol','id_permiso']);
+            $table->unique(['id_rol', 'id_permiso']);
         });
     }
 

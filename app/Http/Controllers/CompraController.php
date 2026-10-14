@@ -2,31 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Models\Caja;
 use App\Models\Compra;
-use App\Models\Producto;
+use App\Models\Cuenta;
 use App\Models\DetalleCompra;
-use App\Models\MovimientoInventario;
+use App\Models\LoteInventario;
+use App\Models\Medida;
+use App\Models\MetodoPago;
 use App\Models\MovimientoCaja;
 use App\Models\MovimientoCuenta;
-use App\Models\Cuenta;
+use App\Models\MovimientoInventario;
+use App\Models\Producto;
 use App\Models\Proveedor;
 use App\Models\TipoFactura;
-use App\Models\MetodoPago;
-use App\Models\Medida;
 use App\Models\VariacionTalla;
-
-
+use App\Services\CosteoInventarioService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class CompraController extends Controller
 {
-
-/*  ╔═══════════ Registrar Compra ════════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔═══════════ Registrar Compra ════════════╗
+        ╚═════════════════════════════════════════╝ */
     public function RegistrarCompra(Request $request)
     {
         DB::beginTransaction();
@@ -51,9 +50,10 @@ class CompraController extends Controller
             if ($validator->fails()) {
                 // Para toast, devolvemos solo el primer error o un mensaje general
                 $mensaje = $validator->errors()->first() ?? 'Datos inválidos';
+
                 return response()->json([
                     'success' => false,
-                    'mensaje' => $mensaje
+                    'mensaje' => $mensaje,
                 ], 422);
             }
 
@@ -63,7 +63,7 @@ class CompraController extends Controller
             $usaCaja = $request->filled('caja');
             $usaCuenta = $request->filled('cuenta');
 
-            if (!$usaCaja && !$usaCuenta) {
+            if (! $usaCaja && ! $usaCuenta) {
                 return response()->json(['success' => false, 'mensaje' => 'Debe seleccionar caja o cuenta'], 422);
             }
 
@@ -77,8 +77,8 @@ class CompraController extends Controller
             $subtotalGeneral = 0;
             foreach ($request->carrito as $item) {
                 $producto = Producto::find($item['id']);
-                if (!$producto) {
-                    return response()->json(['success' => false, 'mensaje' => 'Producto no encontrado: ' . $item['id']], 422);
+                if (! $producto) {
+                    return response()->json(['success' => false, 'mensaje' => 'Producto no encontrado: '.$item['id']], 422);
                 }
                 $subtotalGeneral += $item['precio'] * $item['cantidad'];
             }
@@ -105,49 +105,62 @@ class CompraController extends Controller
                 'subtotal_compra' => $subtotalGeneral,
                 'descuento_compra' => $descuento,
                 'impuesto_compra' => $impuesto,
-                'total_compra' => $totalCalculado
+                'total_compra' => $totalCalculado,
             ]);
 
             // =====================
             // 5️⃣ DETALLES, STOCK Y KARDEX
             // =====================
             foreach ($request->carrito as $item) {
-                $producto = Producto::find($item['id']);
+                $producto = Producto::where('id_producto', $item['id'])->lockForUpdate()->first();
                 $cantidad = $item['cantidad'];
                 $precio = $item['precio'];
                 $variacionTalla = null;
-                if (!empty($item['id_variacion_talla'])) {
+                if (! empty($item['id_variacion_talla'])) {
                     $variacionTalla = VariacionTalla::with(['variacion', 'talla'])
                         ->where('id_variacion_talla', $item['id_variacion_talla'])
                         ->whereHas('variacion', function ($query) use ($producto) {
                             $query->where('id_producto', $producto->id_producto)
                                 ->where('estado_variacion', 1);
                         })->lockForUpdate()->first();
-                    if (!$variacionTalla) throw new \Exception('La variante seleccionada ya no está disponible');
+                    if (! $variacionTalla) {
+                        throw new \Exception('La variante seleccionada ya no está disponible');
+                    }
                 }
 
-                DetalleCompra::create([
+                $detalleCompra = DetalleCompra::create([
                     'id_compra' => $compra->id_compra,
                     'id_producto' => $producto->id_producto,
                     'id_variacion_talla' => $variacionTalla?->id_variacion_talla,
                     'descripcion_variacion' => $variacionTalla
-                        ? trim(($variacionTalla->variacion->color ?? '') . ' · ' . ($variacionTalla->talla->talla ?? ''))
+                        ? trim(($variacionTalla->variacion->color ?? '').' · '.($variacionTalla->talla->talla ?? ''))
                         : null,
                     'sku_variacion' => $variacionTalla?->sku,
                     'cantidad_compra' => $cantidad,
                     'precio_unitario_compra' => $precio,
-                    'subtotal_detalle_compra' => $precio * $cantidad
+                    'subtotal_detalle_compra' => $precio * $cantidad,
                 ]);
 
+                // 📦 Stock: solo se mueve la existencia. El precio de compra del
+                // catálogo NO se modifica (queda como referencia del usuario).
                 if ($variacionTalla) {
                     $variacionTalla->increment('stock', $cantidad);
-                    $variacionTalla->precio_compra = $precio;
-                    $variacionTalla->save();
                     $stockResultante = $variacionTalla->fresh()->stock;
                 } else {
                     $producto->increment('stock_actual', $cantidad);
                     $stockResultante = $producto->fresh()->stock_actual;
                 }
+
+                // 🧾 LOTE FIFO: la compra entra como un lote con su costo real, para
+                // que al vender la ganancia use el costo verdadero de cada unidad.
+                app(CosteoInventarioService::class)->registrarLote(
+                    $producto->id_producto,
+                    $variacionTalla?->id_variacion_talla,
+                    (int) $cantidad,
+                    (float) $precio,
+                    $detalleCompra->id_detalle_compra,
+                    session('usuario.id')
+                );
 
                 // Registrar KARDEX
                 MovimientoInventario::create([
@@ -156,12 +169,12 @@ class CompraController extends Controller
                     'cantidad_movimiento' => $cantidad,
                     'stock_resultante' => $stockResultante,
                     'motivo_movimiento' => $variacionTalla
-                        ? 'Reabastecimiento - ' . trim(($variacionTalla->variacion->color ?? '') . ' ' . ($variacionTalla->talla->talla ?? ''))
+                        ? 'Reabastecimiento - '.trim(($variacionTalla->variacion->color ?? '').' '.($variacionTalla->talla->talla ?? ''))
                         : 'Reabastecimiento de productos',
                     'id_referencia' => $compra->id_compra,
                     'tipo_referencia' => 'COMPRA',
                     'precio_unitario' => $precio,
-                    'id_usuario' => session('usuario.id')
+                    'id_usuario' => session('usuario.id'),
                 ]);
             }
 
@@ -170,10 +183,12 @@ class CompraController extends Controller
 
                 $caja = Caja::find($request->caja);
 
-                if (!$caja) { return response()->json(['success' => false, 'mensaje' => 'Caja no encontrada'], 422); }
+                if (! $caja) {
+                    return response()->json(['success' => false, 'mensaje' => 'Caja no encontrada'], 422);
+                }
 
                 if ($caja->saldo_actual < $totalCalculado) {
-                    return response()->json([ 'success' => false, 'mensaje' => 'Saldo insuficiente en caja' ], 422);
+                    return response()->json(['success' => false, 'mensaje' => 'Saldo insuficiente en caja'], 422);
                 }
 
                 MovimientoCaja::create([
@@ -192,7 +207,9 @@ class CompraController extends Controller
 
                 $cuenta = Cuenta::find($request->cuenta);
 
-                if (!$cuenta) { return response()->json(['success' => false, 'mensaje' => 'Cuenta no encontrada'], 422); }
+                if (! $cuenta) {
+                    return response()->json(['success' => false, 'mensaje' => 'Cuenta no encontrada'], 422);
+                }
 
                 if ($cuenta->saldo_actual < $totalCalculado) {
                     return response()->json(['success' => false, 'mensaje' => 'Saldo insuficiente en cuenta'], 422);
@@ -203,7 +220,7 @@ class CompraController extends Controller
                     'tipo_movimiento' => 'SALIDA',
                     'monto' => $totalCalculado,
                     'descripcion' => 'Compra de productos',
-                    'id_usuario' => session('usuario.id')
+                    'id_usuario' => session('usuario.id'),
                 ]);
 
                 $cuenta->decrement('saldo_actual', $totalCalculado);
@@ -218,26 +235,26 @@ class CompraController extends Controller
             // =====================
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Compra registrada correctamente'
+                'mensaje' => 'Compra registrada correctamente',
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
 
-            Log::error('Error al registrar compra: ' . $e->getMessage(), [
+            Log::error('Error al registrar compra: '.$e->getMessage(), [
                 'request' => $request->all(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Ocurrió un error al registrar la compra: ' . $e->getMessage()
+                'mensaje' => 'Ocurrió un error al registrar la compra: '.$e->getMessage(),
             ], 500);
         }
     }
 
-/*  ╔══════════ Mostrar Proveedores ══════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔══════════ Mostrar Proveedores ══════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function MostrarProveedoresCompras(Request $request)
     {
@@ -246,13 +263,13 @@ class CompraController extends Controller
             // 🔍 VALIDACIÓN
             $validator = Validator::make($request->all(), [
                 'q' => 'nullable|string|max:100',
-                'estado' => 'nullable|boolean'
+                'estado' => 'nullable|boolean',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'error' => true,
-                    'mensajes' => $validator->errors()
+                    'mensajes' => $validator->errors(),
                 ], 400);
             }
 
@@ -273,7 +290,7 @@ class CompraController extends Controller
 
                 $query->where(function ($q) use ($busqueda) {
                     $q->where('nombre_proveedor', 'like', "%{$busqueda}%")
-                    ->orWhere('ruc_proveedor', 'like', "%{$busqueda}%");
+                        ->orWhere('ruc_proveedor', 'like', "%{$busqueda}%");
                 });
             }
 
@@ -286,14 +303,14 @@ class CompraController extends Controller
             $data = $proveedores->map(function ($p) {
                 return [
                     'id' => $p->id_proveedor,
-                    'text' => $p->nombre_proveedor
+                    'text' => $p->nombre_proveedor,
                 ];
             });
 
             return response()->json([
                 'success' => true,
                 'total' => $data->count(),
-                'data' => $data
+                'data' => $data,
             ], 200);
 
         } catch (\Exception $e) {
@@ -301,13 +318,13 @@ class CompraController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener proveedores',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-/*  ╔════════ Mostrar Tipo de Factura ════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔════════ Mostrar Tipo de Factura ════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function MostrarTiposFacturaCompras()
     {
@@ -319,7 +336,7 @@ class CompraController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $tipos
+                'data' => $tipos,
             ], 200);
 
         } catch (\Exception $e) {
@@ -327,13 +344,13 @@ class CompraController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener tipos de factura',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-/*  ╔═════════ Mostrar Tipo de Pago ══════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔═════════ Mostrar Tipo de Pago ══════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function MostrarMetodosPagoCompras()
     {
@@ -345,7 +362,7 @@ class CompraController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $metodos
+                'data' => $metodos,
             ], 200);
 
         } catch (\Exception $e) {
@@ -353,13 +370,13 @@ class CompraController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener métodos de pago',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-/*  ╔════════════ Mostrar Cuentas ════════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔════════════ Mostrar Cuentas ════════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function MostrarCuentasCompras()
     {
@@ -375,25 +392,25 @@ class CompraController extends Controller
                     'id' => $cuenta->id_cuenta, // valor real que se envía al backend
                     'nombre' => $cuenta->nombre_cuenta,
                     'saldo_actual' => number_format($cuenta->saldo_actual, 2),
-                    'display' => "{$cuenta->nombre_cuenta} (Saldo: C$ " . number_format($cuenta->saldo_actual, 2) . ")"
+                    'display' => "{$cuenta->nombre_cuenta} (Saldo: C$ ".number_format($cuenta->saldo_actual, 2).')',
                 ];
             });
 
             return response()->json([
                 'success' => true,
-                'cuentas' => $data
+                'cuentas' => $data,
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Error al obtener cuentas'
+                'mensaje' => 'Error al obtener cuentas',
             ], 500);
         }
     }
 
-/*  ╔════════════ Mostrar Medidas ════════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔════════════ Mostrar Medidas ════════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function MostrarMedidasCompras()
     {
@@ -406,7 +423,7 @@ class CompraController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $medidas
+                'data' => $medidas,
             ], 200);
 
         } catch (\Exception $e) {
@@ -414,25 +431,29 @@ class CompraController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener medidas',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-/*  ╔════════════ Proceso de cajas ═══════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔════════════ Proceso de cajas ═══════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function procesarPagoCaja(float|int $totalCompra, int|string|null $idCompra = null)
     {
         $idUsuario = session('usuario.id');
-        if (!$idUsuario) throw new \Exception('Sesión no válida');
+        if (! $idUsuario) {
+            throw new \Exception('Sesión no válida');
+        }
 
         $caja = Caja::where('estado_caja', 1)
             ->where('id_usuario', $idUsuario)
             ->orderBy('fecha_apertura', 'desc')
             ->first();
 
-        if (!$caja) throw new \Exception('No tienes una caja abierta');
+        if (! $caja) {
+            throw new \Exception('No tienes una caja abierta');
+        }
 
         $ingresos = MovimientoCaja::where('id_caja', $caja->id_caja)
             ->where('tipo_movimiento_caja', 'ENTRADA')
@@ -454,14 +475,14 @@ class CompraController extends Controller
             'concepto_movimiento_caja' => 'Compra de productos',
             'monto_movimiento_caja' => $totalCompra,
             'id_usuario' => $idUsuario,
-            'id_referencia' => $idCompra ?? null
+            'id_referencia' => $idCompra ?? null,
         ]);
 
         return $caja;
     }
 
-/*  ╔════════ Mostrar Cajas Abiertas ═════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔════════ Mostrar Cajas Abiertas ═════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function MostrarCajasAbiertas(Request $request)
     {
@@ -469,36 +490,36 @@ class CompraController extends Controller
         $totalCompra = $request->total ?? 0; // opcional para validar si hay suficiente saldo
 
         $cajas = Caja::where('estado_caja', 1)
-                    ->get(); // podemos filtrar por usuario si quieres
+            ->get(); // podemos filtrar por usuario si quieres
 
-        $data = $cajas->map(function ($caja) use ($totalCompra) {
+        $data = $cajas->map(function ($caja) {
 
             // calcular saldo en tiempo real
             $ingresos = MovimientoCaja::where('id_caja', $caja->id_caja)
-                        ->where('tipo_movimiento_caja', 'INGRESO')
-                        ->sum('monto_movimiento_caja');
+                ->where('tipo_movimiento_caja', 'INGRESO')
+                ->sum('monto_movimiento_caja');
 
             $salidas = MovimientoCaja::where('id_caja', $caja->id_caja)
-                        ->where('tipo_movimiento_caja', 'SALIDA')
-                        ->sum('monto_movimiento_caja');
+                ->where('tipo_movimiento_caja', 'SALIDA')
+                ->sum('monto_movimiento_caja');
 
             $saldoActual = $caja->monto_inicial + $ingresos - $salidas;
 
             return [
                 'id' => $caja->id_caja,
-                'text' => "{$caja->usuario->nombre_completo_usuario} (Saldo: C$ ".number_format($saldoActual, 2).")",
-                'saldo_actual' => $saldoActual
+                'text' => "{$caja->usuario->nombre_completo_usuario} (Saldo: C$ ".number_format($saldoActual, 2).')',
+                'saldo_actual' => $saldoActual,
             ];
         });
 
         return response()->json([
             'success' => true,
-            'data' => $data
+            'data' => $data,
         ]);
     }
 
-/*  ╔═══════════ Mostrar Productos ═══════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔═══════════ Mostrar Productos ═══════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function MostrarProductosCompras(Request $request)
     {
@@ -506,13 +527,13 @@ class CompraController extends Controller
             // 🔍 VALIDACIÓN
             $validator = Validator::make($request->all(), [
                 'q' => 'nullable|string|max:150',
-                'estado' => 'nullable|boolean'
+                'estado' => 'nullable|boolean',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'error' => true,
-                    'mensajes' => $validator->errors()
+                    'mensajes' => $validator->errors(),
                 ], 400);
             }
 
@@ -538,22 +559,22 @@ class CompraController extends Controller
 
                 $query->where(function ($q) use ($busqueda) {
                     $q->where('nombre_producto', 'like', "%{$busqueda}%")
-                    ->orWhere('descripcion_producto', 'like', "%{$busqueda}%")
-                    ->orWhereHas('variaciones.tallas', function ($variantes) use ($busqueda) {
-                        $variantes->where('sku', 'like', "%{$busqueda}%")
-                            ->orWhereHas('variacion', function ($variacion) use ($busqueda) {
-                                $variacion->where('color', 'like', "%{$busqueda}%");
-                            })
-                            ->orWhereHas('talla', function ($talla) use ($busqueda) {
-                                $talla->where('talla', 'like', "%{$busqueda}%");
-                            });
-                    });
+                        ->orWhere('descripcion_producto', 'like', "%{$busqueda}%")
+                        ->orWhereHas('variaciones.tallas', function ($variantes) use ($busqueda) {
+                            $variantes->where('sku', 'like', "%{$busqueda}%")
+                                ->orWhereHas('variacion', function ($variacion) use ($busqueda) {
+                                    $variacion->where('color', 'like', "%{$busqueda}%");
+                                })
+                                ->orWhereHas('talla', function ($talla) use ($busqueda) {
+                                    $talla->where('talla', 'like', "%{$busqueda}%");
+                                });
+                        });
                 });
             }
 
             $productos = $query
                 ->orderBy('nombre_producto', 'asc')
-                //->limit(20) limite datos cargadis en select2
+                // ->limit(20) limite datos cargadis en select2
                 ->get();
 
             // FORMATO SELECT2
@@ -565,7 +586,7 @@ class CompraController extends Controller
                             'id' => $p->id_producto,
                             'id_variacion_talla' => $talla->id_variacion_talla,
                             'sku' => $talla->sku,
-                            'text' => $p->nombre_producto . ' · ' . $variacion->color . ' · ' . ($talla->talla->talla ?? '') . ' [' . $talla->sku . ']',
+                            'text' => $p->nombre_producto.' · '.$variacion->color.' · '.($talla->talla->talla ?? '').' ['.$talla->sku.']',
                             'precio' => $talla->precio_compra ?? $p->precio_compra ?? 0,
                             'impuesto' => $impuesto,
                         ];
@@ -584,7 +605,7 @@ class CompraController extends Controller
             return response()->json([
                 'success' => true,
                 'total' => $data->count(),
-                'data' => $data
+                'data' => $data,
             ], 200);
 
         } catch (\Exception $e) {
@@ -592,7 +613,7 @@ class CompraController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener productos',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -605,10 +626,10 @@ class CompraController extends Controller
 
             $compra = Compra::with('detalles')->find($id);
 
-            if (!$compra) {
+            if (! $compra) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Compra no encontrada'
+                    'mensaje' => 'Compra no encontrada',
                 ], 404);
             }
 
@@ -616,7 +637,7 @@ class CompraController extends Controller
             if ($compra->estado_compra == 0) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'La compra ya está anulada'
+                    'mensaje' => 'La compra ya está anulada',
                 ], 422);
             }
 
@@ -627,25 +648,45 @@ class CompraController extends Controller
 
                 $producto = Producto::find($detalle->id_producto);
 
-                if (!$producto) {
-                    throw new \Exception('Producto no encontrado: ' . $detalle->id_producto);
+                if (! $producto) {
+                    throw new \Exception('Producto no encontrado: '.$detalle->id_producto);
                 }
 
-                $esDetalleDeVariacion = !empty($detalle->descripcion_variacion);
+                $esDetalleDeVariacion = ! empty($detalle->descripcion_variacion);
                 $variacionTalla = $detalle->id_variacion_talla
                     ? VariacionTalla::with(['variacion', 'talla'])->find($detalle->id_variacion_talla)
                     : null;
-                if ($esDetalleDeVariacion && !$variacionTalla) {
+                if ($esDetalleDeVariacion && ! $variacionTalla) {
                     throw new \Exception('No se puede revertir la compra: la variante ingresada ya fue eliminada');
                 }
 
+                // 🧾 Revertir el lote FIFO de esta compra. Solo se permite si aún no
+                // se vendió nada del lote; si ya se vendió, no se puede anular.
+                $lotes = LoteInventario::where('id_detalle_compra', $detalle->id_detalle_compra)
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($lotes as $lote) {
+                    if ((int) $lote->cantidad_disponible < (int) $lote->cantidad_inicial) {
+                        throw new \Exception('No se puede anular la compra: ya se vendieron unidades de este producto');
+                    }
+                }
+
+                foreach ($lotes as $lote) {
+                    $lote->delete();
+                }
+
                 if ($variacionTalla) {
-                    if ($variacionTalla->stock < $detalle->cantidad_compra) throw new \Exception('Stock insuficiente para revertir compra');
+                    if ($variacionTalla->stock < $detalle->cantidad_compra) {
+                        throw new \Exception('Stock insuficiente para revertir compra');
+                    }
                     $variacionTalla->decrement('stock', $detalle->cantidad_compra);
                     $stockResultante = $variacionTalla->fresh()->stock;
-                    $motivo = 'Anulación de compra - ' . trim(($variacionTalla->variacion->color ?? '') . ' ' . ($variacionTalla->talla->talla ?? ''));
+                    $motivo = 'Anulación de compra - '.trim(($variacionTalla->variacion->color ?? '').' '.($variacionTalla->talla->talla ?? ''));
                 } else {
-                    if ($producto->stock_actual < $detalle->cantidad_compra) throw new \Exception('Stock insuficiente para revertir compra');
+                    if ($producto->stock_actual < $detalle->cantidad_compra) {
+                        throw new \Exception('Stock insuficiente para revertir compra');
+                    }
                     $producto->decrement('stock_actual', $detalle->cantidad_compra);
                     $stockResultante = $producto->fresh()->stock_actual;
                     $motivo = 'Anulación de compra';
@@ -660,7 +701,7 @@ class CompraController extends Controller
                     'id_referencia' => $compra->id_compra,
                     'tipo_referencia' => 'DEVOLUCION',
                     'precio_unitario' => $detalle->precio_unitario_compra,
-                    'id_usuario' => session('usuario.id')
+                    'id_usuario' => session('usuario.id'),
                 ]);
             }
 
@@ -677,7 +718,7 @@ class CompraController extends Controller
                     'concepto_movimiento_caja' => 'Anulación de compra',
                     'monto_movimiento_caja' => $total,
                     'id_usuario' => session('usuario.id'),
-                    'id_referencia' => $compra->id_compra
+                    'id_referencia' => $compra->id_compra,
                 ]);
             }
 
@@ -685,7 +726,7 @@ class CompraController extends Controller
 
                 $cuenta = Cuenta::find($compra->id_cuenta);
 
-                if (!$cuenta) {
+                if (! $cuenta) {
                     throw new \Exception('Cuenta no encontrada');
                 }
 
@@ -694,7 +735,7 @@ class CompraController extends Controller
                     'tipo_movimiento' => 'INGRESO',
                     'monto' => $total,
                     'descripcion' => 'Anulación de compra',
-                    'id_usuario' => session('usuario.id')
+                    'id_usuario' => session('usuario.id'),
                 ]);
 
                 $cuenta->increment('saldo_actual', $total);
@@ -710,7 +751,7 @@ class CompraController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Compra anulada correctamente'
+                'mensaje' => 'Compra anulada correctamente',
             ]);
 
         } catch (\Exception $e) {
@@ -719,7 +760,7 @@ class CompraController extends Controller
 
             return response()->json([
                 'success' => false,
-                'mensaje' => $e->getMessage()
+                'mensaje' => $e->getMessage(),
             ], 500);
         }
     }
@@ -731,12 +772,12 @@ class CompraController extends Controller
             $compras = Compra::with([
                 'proveedor:id_proveedor,nombre_proveedor',
                 'usuario:id_usuario,nombre_usuario',
-                'metodoPago:id_metodo_pago,nombre_metodo_pago'
+                'metodoPago:id_metodo_pago,nombre_metodo_pago',
             ])->get();
 
             return response()->json([
                 'success' => true,
-                'compras' => $compras
+                'compras' => $compras,
             ], 200);
 
         } catch (\Exception $e) {
@@ -744,7 +785,7 @@ class CompraController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener compras',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
 
         }
@@ -756,12 +797,11 @@ class CompraController extends Controller
             'proveedor',
             'usuario',
             'metodoPago',
-            'detalles.producto'
+            'detalles.producto',
         ])->findOrFail($id);
 
         return response()->json([
-            'compra' => $compra
+            'compra' => $compra,
         ]);
     }
-
 } // Fin de controlador

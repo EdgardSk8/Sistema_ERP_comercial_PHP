@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder
             //tipo_gastoSeeder::class,
 
             // 👥 Terceros
-            proveedoresSeeder::class,
+            // proveedoresSeeder::class,
             //clientesSeeder::class,
 
             // 💰 Estructura financiera (ANTES de usarse)

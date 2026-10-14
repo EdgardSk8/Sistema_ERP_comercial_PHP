@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class DetalleVenta extends Model
 {
     protected $table = 'detalle_ventas';
+
     protected $primaryKey = 'id_detalle_venta';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -18,9 +20,15 @@ class DetalleVenta extends Model
         'sku_variacion',
         'cantidad_venta',
         'precio_unitario_venta',
+        'costo_unitario_venta',
+        'consumos_lotes',
         'subtotal_detalle_venta',
         'porcentaje_impuesto',
         'monto_impuesto',
+    ];
+
+    protected $casts = [
+        'consumos_lotes' => 'array',
     ];
 
     public function producto()
@@ -37,7 +45,6 @@ class DetalleVenta extends Model
     {
         return $this->belongsTo(VariacionTalla::class, 'id_variacion_talla', 'id_variacion_talla');
     }
-
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

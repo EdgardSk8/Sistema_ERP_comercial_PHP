@@ -2,27 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Compra;
+use App\Models\MovimientoInventario;
+use App\Models\Producto;
+use App\Models\Venta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Venta;
-use App\Models\MovimientoInventario;
-use App\Models\Compra;
-use Carbon\Carbon;
-use App\Models\Producto;
-use App\Models\DetalleVenta;
 
 class DashboardController extends Controller
 {
-
     //  GRAFICA DE VENTAS
     public function Ventas(Request $request)
     {
         $tipo = $request->get('tipo', 'dia');
-        $inicio = $request->inicio; $fin = $request->fin;
+        $inicio = $request->inicio;
+        $fin = $request->fin;
         $query = Venta::query()->where('estado_venta', 1);
 
         // FILTRO FECHAS
-        if ($inicio && $fin) { $query->whereBetween('fecha_venta', [ $inicio . ' 00:00:00', $fin . ' 23:59:59']); }
+        if ($inicio && $fin) {
+            $query->whereBetween('fecha_venta', [$inicio.' 00:00:00', $fin.' 23:59:59']);
+        }
 
         // DATASET PRINCIPAL (grafica 1 y grafica 2)
         switch ($tipo) {
@@ -35,15 +35,15 @@ class DashboardController extends Controller
                     ->selectRaw('SUM(total_venta) as total')
                     ->groupBy('orden')->orderBy('orden')->get();
 
-                $dias = [ 2 => 'Lunes', 3 => 'Martes', 4 => 'Miércoles', 5 => 'Jueves', 6 => 'Viernes', 7 => 'Sábado', 1 => 'Domingo', ];
+                $dias = [2 => 'Lunes', 3 => 'Martes', 4 => 'Miércoles', 5 => 'Jueves', 6 => 'Viernes', 7 => 'Sábado', 1 => 'Domingo'];
                 $grafica = collect();
 
                 foreach ($dias as $orden => $nombre) {
                     $venta = $ventas->firstWhere('orden', $orden);
-                    $grafica->push(['label' => $nombre, 'cantidad' => (int)($venta->cantidad ?? 0), 'total' => round((float)($venta->total ?? 0), 2) ]);
+                    $grafica->push(['label' => $nombre, 'cantidad' => (int) ($venta->cantidad ?? 0), 'total' => round((float) ($venta->total ?? 0), 2)]);
                 }
 
-            break;
+                break;
 
             case 'mes':
 
@@ -58,18 +58,17 @@ class DashboardController extends Controller
                     7 => 'Julio', 8 => 'Agosto', 9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
                 ];
 
-
                 $grafica = collect();
 
                 foreach ($meses as $numero => $nombre) {
                     $venta = $ventas->get($numero);
-                    $grafica->push(['label' => $nombre, 'cantidad' => (int)($venta->cantidad ?? 0), 'total' => round((float)($venta->total ?? 0), 2), ]);
+                    $grafica->push(['label' => $nombre, 'cantidad' => (int) ($venta->cantidad ?? 0), 'total' => round((float) ($venta->total ?? 0), 2)]);
                 }
 
-            break;
+                break;
 
-           case 'anio':
-                
+            case 'anio':
+
                 $grafica = (clone $query)
                     ->selectRaw('YEAR(fecha_venta) as label')
                     ->selectRaw('COUNT(*) as cantidad')
@@ -77,17 +76,18 @@ class DashboardController extends Controller
                     ->groupBy(DB::raw('YEAR(fecha_venta)'))
                     ->orderBy('label')
                     ->get()
-                    ->map(function($item){
+                    ->map(function ($item) {
                         return [
                             'label' => $item->label,
-                            'cantidad' => (int)$item->cantidad,
-                            'total' => round((float)$item->total,2),
+                            'cantidad' => (int) $item->cantidad,
+                            'total' => round((float) $item->total, 2),
                         ];
                     });
 
-            break;
+                break;
 
-            default: $grafica = collect(); break;
+            default: $grafica = collect();
+                break;
 
         }
 
@@ -104,13 +104,13 @@ class DashboardController extends Controller
             ->selectRaw('SUM(total_venta) as total')
             ->groupBy('hora')->orderBy('hora')->get()
             ->map(function ($item) {
-                return ['label' => sprintf('%02d:00', $item->hora), 'cantidad' => (int)$item->cantidad, 'total' => round((float)$item->total, 2), ];
+                return ['label' => sprintf('%02d:00', $item->hora), 'cantidad' => (int) $item->cantidad, 'total' => round((float) $item->total, 2)];
             });
 
         // TABLA PRODUCTOS MAS VENDIDOS
         $respuesta['tabla_1'] = (clone $query)
-            ->join('detalle_ventas', 'ventas.id_venta', '=', 'detalle_ventas.id_venta' )
-            ->join('productos', 'detalle_ventas.id_producto', '=', 'productos.id_producto' )
+            ->join('detalle_ventas', 'ventas.id_venta', '=', 'detalle_ventas.id_venta')
+            ->join('productos', 'detalle_ventas.id_producto', '=', 'productos.id_producto')
             ->selectRaw('productos.nombre_producto as label')
             ->selectRaw('SUM(detalle_ventas.cantidad_venta) as cantidad')
             ->selectRaw('SUM(detalle_ventas.subtotal_detalle_venta + detalle_ventas.monto_impuesto) as total ')
@@ -121,14 +121,14 @@ class DashboardController extends Controller
 
             'ingresos' => [
                 'titulo' => 'INGRESO BRUTO',
-                'valor' => 'C$ ' . number_format(round((float)((clone $query)->sum('total_venta') ?? 0),2), 2, ',', '.'),
+                'valor' => 'C$ '.number_format(round((float) ((clone $query)->sum('total_venta') ?? 0), 2), 2, ',', '.'),
                 'tooltip' => 'Ingresos brutos totales generados',
                 'icono' => 'fas fa-dollar-sign',
             ],
 
             'total_ventas' => [
                 'titulo' => 'VENTAS TOTALES',
-                'valor' => number_format((clone $query)->count(),0,',','.'),
+                'valor' => number_format((clone $query)->count(), 0, ',', '.'),
                 'tooltip' => 'Total de Ventas Registradas',
                 'icono' => 'fas fa-cash-register',
             ],
@@ -144,7 +144,7 @@ class DashboardController extends Controller
 
             'promedio_venta' => [
                 'titulo' => 'TICKET PROMEDIO',
-                'valor' => 'C$ ' . number_format(round((float)((clone $query)->avg('total_venta') ?? 0),2), 2, ',', '.'),
+                'valor' => 'C$ '.number_format(round((float) ((clone $query)->avg('total_venta') ?? 0), 2), 2, ',', '.'),
                 'tooltip' => 'Promedio por cada venta',
                 'icono' => 'fas fa-shopping-cart',
             ],
@@ -196,19 +196,23 @@ class DashboardController extends Controller
 
     }
 
-    //GRAFICA DE GANANCIAS
-    public function Ganancias(Request $request) {
+    // GRAFICA DE GANANCIAS
+    public function Ganancias(Request $request)
+    {
 
         $tipo = $request->get('tipo', 'dia');
-        $inicio = $request->inicio; $fin = $request->fin;
+        $inicio = $request->inicio;
+        $fin = $request->fin;
 
         $query = Venta::query()->where('estado_venta', 1);
         // FILTRO FECHAS
-        if ($inicio && $fin) { $query->whereBetween('fecha_venta', [ $inicio . ' 00:00:00', $fin . ' 23:59:59']); }
+        if ($inicio && $fin) {
+            $query->whereBetween('fecha_venta', [$inicio.' 00:00:00', $fin.' 23:59:59']);
+        }
 
-        // Utiliza el costo de la variante cuando el detalle la identifica;
-        // los detalles sin variante conservan el costo del producto base.
-        $costoSQL = 'COALESCE(variacion_tallas.precio_compra, productos.precio_compra, 0)';
+        // 📸 Costo histórico: usa el snapshot congelado al momento de la venta;
+        // las ventas antiguas sin snapshot caen al costo vigente de la variante o del producto.
+        $costoSQL = 'COALESCE(detalle_ventas.costo_unitario_venta, variacion_tallas.precio_compra, productos.precio_compra, 0)';
         $gananciaSQL = "SUM((detalle_ventas.precio_unitario_venta - $costoSQL) * detalle_ventas.cantidad_venta)";
 
         $margen = (clone $query)
@@ -232,13 +236,12 @@ class DashboardController extends Controller
             case 'dia':
 
                 $ganancias = (clone $graficaQuery)
-                        ->selectRaw('DAYOFWEEK(fecha_venta) as orden')
-                        ->selectRaw('COUNT(DISTINCT ventas.id_venta) as cantidad')
-                        ->selectRaw("$gananciaSQL as ganancia")
-                        ->groupBy('orden')
-                        ->orderBy('orden')
-                        ->get();
-
+                    ->selectRaw('DAYOFWEEK(fecha_venta) as orden')
+                    ->selectRaw('COUNT(DISTINCT ventas.id_venta) as cantidad')
+                    ->selectRaw("$gananciaSQL as ganancia")
+                    ->groupBy('orden')
+                    ->orderBy('orden')
+                    ->get();
 
                 $dias = [
                     2 => 'Lunes',
@@ -258,13 +261,13 @@ class DashboardController extends Controller
 
                     $grafica->push([
                         'label' => $nombre,
-                        'cantidad' => (int)($venta->cantidad ?? 0),
-                        'total' => round((float)($venta->ganancia ?? 0),2),
+                        'cantidad' => (int) ($venta->cantidad ?? 0),
+                        'total' => round((float) ($venta->ganancia ?? 0), 2),
                     ]);
 
                 }
 
-            break;
+                break;
 
             case 'mes':
 
@@ -289,13 +292,13 @@ class DashboardController extends Controller
 
                     $grafica->push([
                         'label' => $nombre,
-                        'cantidad' => (int)($venta->cantidad ?? 0),
-                        'total' => round((float)($venta->ganancia ?? 0),2),
+                        'cantidad' => (int) ($venta->cantidad ?? 0),
+                        'total' => round((float) ($venta->ganancia ?? 0), 2),
                     ]);
 
                 }
 
-            break;
+                break;
 
             case 'anio':
 
@@ -317,9 +320,10 @@ class DashboardController extends Controller
                         ];
                     });
 
-            break;
+                break;
 
-            default: $grafica = collect(); break;
+            default: $grafica = collect();
+                break;
 
         }
 
@@ -341,12 +345,12 @@ class DashboardController extends Controller
             ->groupBy('categoria.id_categoria', 'categoria.nombre_categoria')->orderByDesc('ganancia')->limit(10)->get();
 
         $respuesta['grafica_2'] = $gananciasPorCategoria->take(10)
-            ->map(function($item){
+            ->map(function ($item) {
 
                 return [
                     'label' => $item->label,
-                    'cantidad' => (int)$item->cantidad,
-                    'total' => round((float)$item->ganancia, 2),
+                    'cantidad' => (int) $item->cantidad,
+                    'total' => round((float) $item->ganancia, 2),
                 ];
 
             });
@@ -354,20 +358,20 @@ class DashboardController extends Controller
         // GRAFICA 3 GANANCIA POR HORA
         $respuesta['grafica_3'] = (clone $query)
 
-            ->join('detalle_ventas','ventas.id_venta','=','detalle_ventas.id_venta')
-            ->join('productos','detalle_ventas.id_producto','=','productos.id_producto')
+            ->join('detalle_ventas', 'ventas.id_venta', '=', 'detalle_ventas.id_venta')
+            ->join('productos', 'detalle_ventas.id_producto', '=', 'productos.id_producto')
             ->leftJoin('variacion_tallas', 'detalle_ventas.id_variacion_talla', '=', 'variacion_tallas.id_variacion_talla')
 
             ->selectRaw('HOUR(fecha_venta) as hora')
             ->selectRaw('COUNT(DISTINCT ventas.id_venta) as cantidad')
             ->selectRaw("$gananciaSQL as ganancia")->groupBy('hora')->orderBy('hora')->get()
 
-            ->map(function($item){
+            ->map(function ($item) {
 
                 return [
-                    'label'=>sprintf('%02d:00',$item->hora),
-                    'cantidad'=>(int)$item->cantidad,
-                    'total'=>round((float)$item->ganancia,2),
+                    'label' => sprintf('%02d:00', $item->hora),
+                    'cantidad' => (int) $item->cantidad,
+                    'total' => round((float) $item->ganancia, 2),
                 ];
 
             });
@@ -375,8 +379,8 @@ class DashboardController extends Controller
         // TABLA PRODUCTOS MAYOR GANANCIA
         $respuesta['tabla_1'] = (clone $query)
 
-            ->join('detalle_ventas','ventas.id_venta','=','detalle_ventas.id_venta')
-            ->join('productos','detalle_ventas.id_producto','=','productos.id_producto')
+            ->join('detalle_ventas', 'ventas.id_venta', '=', 'detalle_ventas.id_venta')
+            ->join('productos', 'detalle_ventas.id_producto', '=', 'productos.id_producto')
             ->leftJoin('variacion_tallas', 'detalle_ventas.id_variacion_talla', '=', 'variacion_tallas.id_variacion_talla')
 
             ->selectRaw('productos.nombre_producto as label')
@@ -399,7 +403,7 @@ class DashboardController extends Controller
 
             'ganancia_total' => [
                 'titulo' => 'UTILIDAD BRUTA',
-                'valor' => 'C$ ' . number_format(
+                'valor' => 'C$ '.number_format(
                     round($gananciaTotal, 2),
                     2,
                     ',',
@@ -411,14 +415,14 @@ class DashboardController extends Controller
 
             'margen_ganancia' => [
                 'titulo' => 'PORCENTAJE DE GANANCIA',
-                'valor' => number_format($porcentaje, 2, ',', '.') . ' %',
+                'valor' => number_format($porcentaje, 2, ',', '.').' %',
                 'tooltip' => 'Porcentaje de utilidad sobre las ventas',
                 'icono' => 'fas fa-percent',
             ],
 
             'ganancia_promedio' => [
                 'titulo' => 'GANANCIA PROMEDIO',
-                'valor' => 'C$ ' . number_format(
+                'valor' => 'C$ '.number_format(
                     round($cantidadVentas > 0 ? $gananciaTotal / $cantidadVentas : 0, 2), 2, ',', '.'),
                 'tooltip' => 'Ganancia promedio por venta',
                 'icono' => 'fas fa-chart-line',
@@ -429,7 +433,7 @@ class DashboardController extends Controller
                 'titulo' => 'CATEGORÍA MÁS RENTABLE',
 
                 'valor' => $categoriaMasRentable
-                    ? 'C$ ' . number_format((float) $categoriaMasRentable->ganancia, 2, ',', '.') . ' (' . $categoriaMasRentable->label . ')'
+                    ? 'C$ '.number_format((float) $categoriaMasRentable->ganancia, 2, ',', '.').' ('.$categoriaMasRentable->label.')'
                     : 'Sin datos',
 
                 'tooltip' => 'Categoría que genera mayor utilidad',
@@ -444,29 +448,29 @@ class DashboardController extends Controller
         $respuesta['ui'] = [
 
             'grafica_1' => [
-                'titulo'=>'Ganancias por Ventas',
-                'dataset'=>'Ganancia (C$)',
-                'labels'=>[
-                    'cantidad'=>' Ventas',
-                    'total'=>' Ganancias',
+                'titulo' => 'Ganancias por Ventas',
+                'dataset' => 'Ganancia (C$)',
+                'labels' => [
+                    'cantidad' => ' Ventas',
+                    'total' => ' Ganancias',
                 ],
             ],
 
             'grafica_2' => [
-                'titulo'=>'Ganancia por Categoría',
-                'dataset'=>'Ganancia (C$)',
-                'labels'=>[
-                    'cantidad'=>' Unidades vendidas',
-                    'total'=>' Ganancia',
+                'titulo' => 'Ganancia por Categoría',
+                'dataset' => 'Ganancia (C$)',
+                'labels' => [
+                    'cantidad' => ' Unidades vendidas',
+                    'total' => ' Ganancia',
                 ],
             ],
 
             'grafica_3' => [
-                'titulo'=>'Ganancias por Hora',
-                'dataset'=>'Ganancia',
-                'labels'=>[
-                    'cantidad'=>' Ventas',
-                    'total'=>'Ganancias',
+                'titulo' => 'Ganancias por Hora',
+                'dataset' => 'Ganancia',
+                'labels' => [
+                    'cantidad' => ' Ventas',
+                    'total' => 'Ganancias',
                 ],
             ],
 
@@ -497,11 +501,10 @@ class DashboardController extends Controller
         // FILTRO FECHAS
         if ($inicio && $fin) {
             $query->whereBetween('fecha_compra', [
-                $inicio . ' 00:00:00',
-                $fin . ' 23:59:59'
+                $inicio.' 00:00:00',
+                $fin.' 23:59:59',
             ]);
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -521,7 +524,6 @@ class DashboardController extends Controller
                     ->orderBy('orden')
                     ->get();
 
-
                 $dias = [
                     2 => 'Lunes',
                     3 => 'Martes',
@@ -532,24 +534,22 @@ class DashboardController extends Controller
                     1 => 'Domingo',
                 ];
 
-
                 $resultado = collect();
 
                 foreach ($dias as $orden => $nombre) {
 
-                    $item = $grafica->firstWhere('orden',$orden);
+                    $item = $grafica->firstWhere('orden', $orden);
 
                     $resultado->push([
-                        'label'=>$nombre,
-                        'cantidad'=>(int)($item->cantidad ?? 0),
-                        'total'=>round((float)($item->total ?? 0),2),
+                        'label' => $nombre,
+                        'cantidad' => (int) ($item->cantidad ?? 0),
+                        'total' => round((float) ($item->total ?? 0), 2),
                     ]);
                 }
 
                 $grafica = $resultado;
 
-            break;
-
+                break;
 
             case 'mes':
 
@@ -561,15 +561,12 @@ class DashboardController extends Controller
                     ->get()
                     ->keyBy('mes');
 
-
                 $meses = [
                     1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril', 5 => 'Mayo', 6 => 'Junio',
                     7 => 'Julio', 8 => 'Agosto', 9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
                 ];
 
-
                 $grafica = collect();
-
 
                 foreach ($meses as $numero => $nombre) {
 
@@ -577,14 +574,13 @@ class DashboardController extends Controller
 
                     $grafica->push([
                         'label' => $nombre,
-                        'cantidad' => (int)($compra->cantidad ?? 0),
-                        'total' => round((float)($compra->total ?? 0), 2),
+                        'cantidad' => (int) ($compra->cantidad ?? 0),
+                        'total' => round((float) ($compra->total ?? 0), 2),
                     ]);
 
                 }
 
-            break;
-
+                break;
 
             case 'anio':
 
@@ -596,24 +592,18 @@ class DashboardController extends Controller
                     ->orderBy('label')
                     ->get();
 
-            break;
-
+                break;
 
             default:
 
                 $grafica = collect();
 
-            break;
+                break;
         }
-
-
 
         $respuesta = [];
 
-
         $respuesta['grafica_1'] = $grafica;
-
-
 
         /*
         |--------------------------------------------------------------------------
@@ -655,8 +645,6 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-
-
         /*
         |--------------------------------------------------------------------------
         | GRAFICA 3 - PRODUCTOS COMPRADOS POR CANTIDAD
@@ -693,8 +681,6 @@ class DashboardController extends Controller
             ->orderByDesc('cantidad')
             ->limit(10)
             ->get();
-
-
 
         /*
         |--------------------------------------------------------------------------
@@ -734,17 +720,15 @@ class DashboardController extends Controller
 
             ->get()
 
-            ->map(function($item){
+            ->map(function ($item) {
 
                 return [
-                    'label'=>$item->label,
-                    'cantidad'=>(int)$item->cantidad,
-                    'total'=>round((float)$item->total,2)
+                    'label' => $item->label,
+                    'cantidad' => (int) $item->cantidad,
+                    'total' => round((float) $item->total, 2),
                 ];
 
             });
-
-
 
         /*
         |--------------------------------------------------------------------------
@@ -755,16 +739,12 @@ class DashboardController extends Controller
         $totalCompras = (clone $query)
             ->sum('total_compra');
 
-
         $cantidadCompras = (clone $query)
             ->count();
-
 
         $promedioCompra = $cantidadCompras > 0
             ? $totalCompras / $cantidadCompras
             : 0;
-
-
 
         $proveedor = (clone $query)
 
@@ -786,47 +766,40 @@ class DashboardController extends Controller
 
             ->first();
 
-
-
         $respuesta['kpis'] = [
 
-            'total_comprado'=>[
-                'titulo'=>'TOTAL COMPRADO',
-                'valor'=>'C$ '.number_format($totalCompras,2,',','.'),
-                'tooltip'=>'Monto total invertido en compras',
-                'icono'=>'fas fa-shopping-cart'
+            'total_comprado' => [
+                'titulo' => 'TOTAL COMPRADO',
+                'valor' => 'C$ '.number_format($totalCompras, 2, ',', '.'),
+                'tooltip' => 'Monto total invertido en compras',
+                'icono' => 'fas fa-shopping-cart',
             ],
 
-
-            'cantidad_compras'=>[
-                'titulo'=>'CANTIDAD DE COMPRAS',
-                'valor'=>$cantidadCompras,
-                'tooltip'=>'Número de compras realizadas',
-                'icono'=>'fas fa-file-invoice'
+            'cantidad_compras' => [
+                'titulo' => 'CANTIDAD DE COMPRAS',
+                'valor' => $cantidadCompras,
+                'tooltip' => 'Número de compras realizadas',
+                'icono' => 'fas fa-file-invoice',
             ],
 
-
-            'compra_promedio'=>[
-                'titulo'=>'COMPRA PROMEDIO',
-                'valor'=>'C$ '.number_format($promedioCompra,2,',','.'),
-                'tooltip'=>'Promedio gastado por compra',
-                'icono'=>'fas fa-chart-line'
+            'compra_promedio' => [
+                'titulo' => 'COMPRA PROMEDIO',
+                'valor' => 'C$ '.number_format($promedioCompra, 2, ',', '.'),
+                'tooltip' => 'Promedio gastado por compra',
+                'icono' => 'fas fa-chart-line',
             ],
 
-
-            'proveedor_principal'=>[
-                'titulo'=>'PROVEEDOR PRINCIPAL',
-                'valor'=>$proveedor
-                    ? 'C$ '.number_format($proveedor->total,2,',','.')
+            'proveedor_principal' => [
+                'titulo' => 'PROVEEDOR PRINCIPAL',
+                'valor' => $proveedor
+                    ? 'C$ '.number_format($proveedor->total, 2, ',', '.')
                     .' ('.$proveedor->nombre_proveedor.')'
                     : 'Sin datos',
-                'tooltip'=>'Proveedor con mayor inversión',
-                'icono'=>'fas fa-truck'
-            ]
+                'tooltip' => 'Proveedor con mayor inversión',
+                'icono' => 'fas fa-truck',
+            ],
 
         ];
-
-
 
         /*
         |--------------------------------------------------------------------------
@@ -836,47 +809,44 @@ class DashboardController extends Controller
 
         $respuesta['ui'] = [
 
-            'grafica_1'=>[
-                'titulo'=>'Compras por periodo',
-                'dataset'=>'Compras (C$)',
-                'labels'=>[
-                    'cantidad'=>' Compras',
-                    'total'=>' Inversion'
-                ]
+            'grafica_1' => [
+                'titulo' => 'Compras por periodo',
+                'dataset' => 'Compras (C$)',
+                'labels' => [
+                    'cantidad' => ' Compras',
+                    'total' => ' Inversion',
+                ],
             ],
 
-            'grafica_2'=>[
-                'titulo'=>'Categorías con mayor inversión',
-                'dataset'=>'Compras',
-                'labels'=>[
-                    'cantidad'=>' Cantidad',
-                    'total'=>' Total'
-                ]
+            'grafica_2' => [
+                'titulo' => 'Categorías con mayor inversión',
+                'dataset' => 'Compras',
+                'labels' => [
+                    'cantidad' => ' Cantidad',
+                    'total' => ' Total',
+                ],
             ],
 
-
-            'grafica_3'=>[
-                'titulo'=>'Productos más comprados',
-                'dataset'=>'Cantidad',
-                'labels'=>[
-                    'cantidad'=>' Unidades',
-                    'total'=>' Inversión'
-                ]
+            'grafica_3' => [
+                'titulo' => 'Productos más comprados',
+                'dataset' => 'Cantidad',
+                'labels' => [
+                    'cantidad' => ' Unidades',
+                    'total' => ' Inversión',
+                ],
             ],
 
-
-            'tabla_1'=>[
-                'titulo'=>'Productos más comprados',
-                'vacio'=>'Sin compras registradas',
-                'columnas'=>[
-                    'label'=>'Producto',
-                    'cantidad'=>'Cantidad',
-                    'total'=>'Total'
-                ]
-            ]
+            'tabla_1' => [
+                'titulo' => 'Productos más comprados',
+                'vacio' => 'Sin compras registradas',
+                'columnas' => [
+                    'label' => 'Producto',
+                    'cantidad' => 'Cantidad',
+                    'total' => 'Total',
+                ],
+            ],
 
         ];
-
 
         return response()->json($respuesta);
     }
@@ -892,8 +862,8 @@ class DashboardController extends Controller
         // FILTRO FECHAS
         if ($inicio && $fin) {
             $query->whereBetween('fecha_venta', [
-                $inicio . ' 00:00:00',
-                $fin . ' 23:59:59'
+                $inicio.' 00:00:00',
+                $fin.' 23:59:59',
             ]);
         }
 
@@ -934,9 +904,9 @@ class DashboardController extends Controller
                     $dato = $aperturas->get($orden);
 
                     $grafica->push([
-                        'label'     => $nombre,
-                        'cantidad'  => (int) ($dato->cantidad ?? 0),
-                        'total'     => round((float) ($dato->total ?? 0), 2),
+                        'label' => $nombre,
+                        'cantidad' => (int) ($dato->cantidad ?? 0),
+                        'total' => round((float) ($dato->total ?? 0), 2),
                     ]);
                 }
 
@@ -978,9 +948,9 @@ class DashboardController extends Controller
                     $dato = $aperturas->get($mes);
 
                     $grafica->push([
-                        'label'     => $nombre,
-                        'cantidad'  => (int) ($dato->cantidad ?? 0),
-                        'total'     => round((float) ($dato->total ?? 0), 2),
+                        'label' => $nombre,
+                        'cantidad' => (int) ($dato->cantidad ?? 0),
+                        'total' => round((float) ($dato->total ?? 0), 2),
                     ]);
                 }
 
@@ -1004,9 +974,9 @@ class DashboardController extends Controller
                     ->map(function ($item) {
 
                         return [
-                            'label'     => $item->label,
-                            'cantidad'  => (int) $item->cantidad,
-                            'total'     => round((float) $item->total, 2),
+                            'label' => $item->label,
+                            'cantidad' => (int) $item->cantidad,
+                            'total' => round((float) $item->total, 2),
                         ];
 
                     });
@@ -1044,8 +1014,8 @@ class DashboardController extends Controller
                 return [
 
                     'label' => $item->label,
-                    'cantidad' => (int)$item->cantidad,
-                    'total' => round((float)$item->total,2),
+                    'cantidad' => (int) $item->cantidad,
+                    'total' => round((float) $item->total, 2),
 
                 ];
 
@@ -1077,8 +1047,8 @@ class DashboardController extends Controller
                 return [
 
                     'label' => $item->label,
-                    'cantidad' => (int)$item->cantidad,
-                    'total' => round((float)$item->total,2),
+                    'cantidad' => (int) $item->cantidad,
+                    'total' => round((float) $item->total, 2),
 
                 ];
 
@@ -1110,8 +1080,8 @@ class DashboardController extends Controller
                 return [
 
                     'label' => $item->label,
-                    'cantidad' => (int)$item->cantidad,
-                    'total' => round((float)$item->total,2),
+                    'cantidad' => (int) $item->cantidad,
+                    'total' => round((float) $item->total, 2),
 
                 ];
 
@@ -1127,8 +1097,8 @@ class DashboardController extends Controller
 
                 'titulo' => 'INGRESOS EN CAJA',
 
-                'valor' => 'C$ ' . number_format(
-                    round((float)((clone $query)->sum('total_venta') ?? 0),2),
+                'valor' => 'C$ '.number_format(
+                    round((float) ((clone $query)->sum('total_venta') ?? 0), 2),
                     2,
                     ',',
                     '.'
@@ -1193,13 +1163,13 @@ class DashboardController extends Controller
 
                         ->first();
 
-                    if (!$caja) {
+                    if (! $caja) {
                         return 'Sin datos';
                     }
 
-                    return 'Caja #' . $caja->id_caja .
-                        ' (C$ ' .
-                        number_format($caja->total,2,',','.') .
+                    return 'Caja #'.$caja->id_caja.
+                        ' (C$ '.
+                        number_format($caja->total, 2, ',', '.').
                         ')';
 
                 })(),
@@ -1281,44 +1251,29 @@ class DashboardController extends Controller
 
     }
 
-
-
-
-
-
-
-
-
-
-
     public function Movimientoinventario(Request $request)
     {
-        $tipo  = $request->get('tipo', 'dia');
+        $tipo = $request->get('tipo', 'dia');
         $vista = $request->get('vista', 'todo');
 
         $inicio = $request->inicio;
-        $fin    = $request->fin;
+        $fin = $request->fin;
         /* ═══════════════
         QUERY BASE
         ═══════════════ */
 
         $baseQuery = MovimientoInventario::query();
 
-
         if ($inicio && $fin) {
 
-             $baseQuery->whereBetween('fecha_movimiento', [
-                $inicio . ' 00:00:00',
-                $fin . ' 23:59:59'
+            $baseQuery->whereBetween('fecha_movimiento', [
+                $inicio.' 00:00:00',
+                $fin.' 23:59:59',
             ]);
 
         }
 
-
-
         $respuesta = [];
-
-
 
         /* ═══════════════
         GRÁFICA PRINCIPAL
@@ -1326,9 +1281,7 @@ class DashboardController extends Controller
 
         if ($vista == 'grafica' || $vista == 'todo') {
 
-
             switch ($tipo) {
-
 
                 case 'dia':
 
@@ -1367,9 +1320,7 @@ class DashboardController extends Controller
                         ->orderBy('label')
                         ->get();
 
-                break;
-
-
+                    break;
 
                 case 'mes':
 
@@ -1399,16 +1350,14 @@ class DashboardController extends Controller
                         ->orderBy('label')
                         ->get();
 
-                break;
-
-
+                    break;
 
                 case 'anio':
 
                     $grafica = (clone $baseQuery)
 
                         ->selectRaw(
-                            "YEAR(fecha_movimiento) as label"
+                            'YEAR(fecha_movimiento) as label'
                         )
 
                         ->selectRaw("
@@ -1431,26 +1380,19 @@ class DashboardController extends Controller
                         ->orderBy('label')
                         ->get();
 
-                break;
-
-
+                    break;
 
                 default:
 
                     $grafica = collect();
 
-                break;
+                    break;
 
             }
-
 
             $respuesta['grafica'] = $grafica;
 
         }
-
-
-
-
 
         /* ═══════════════
         KPIS
@@ -1458,10 +1400,8 @@ class DashboardController extends Controller
 
         if ($vista == 'kpis' || $vista == 'todo') {
 
-
             $totalMovimientos = (clone $baseQuery)
                 ->count();
-
 
             $entradas = (clone $baseQuery)
 
@@ -1472,8 +1412,6 @@ class DashboardController extends Controller
 
                 ->sum('cantidad_movimiento');
 
-
-
             $salidas = (clone $baseQuery)
 
                 ->where(
@@ -1482,8 +1420,6 @@ class DashboardController extends Controller
                 )
 
                 ->sum('cantidad_movimiento');
-
-
 
             $ajustes = (clone $baseQuery)
 
@@ -1494,81 +1430,66 @@ class DashboardController extends Controller
 
                 ->sum('cantidad_movimiento');
 
-
-
             $balance = ($entradas + $ajustes) - $salidas;
-
-
 
             $promedioMovimiento = $totalMovimientos > 0
 
                 ? round(
-                    ($entradas + $salidas + $ajustes) 
+                    ($entradas + $salidas + $ajustes)
                     / $totalMovimientos,
                     2
                 )
 
                 : 0;
 
-
-
             $respuesta['kpis'] = [
 
-
-                'total_movimientos'=>[
-                    'titulo'=>'Movimientos',
-                    'valor'=>number_format($totalMovimientos,0,',','.'),
-                    'tooltip'=>'Total de movimientos registrados',
-                    'icono'=>'fas fa-exchange-alt'
+                'total_movimientos' => [
+                    'titulo' => 'Movimientos',
+                    'valor' => number_format($totalMovimientos, 0, ',', '.'),
+                    'tooltip' => 'Total de movimientos registrados',
+                    'icono' => 'fas fa-exchange-alt',
                 ],
 
-
-                'entradas'=>[
-                    'titulo'=>'Entradas',
-                    'valor'=>number_format($entradas,0,',','.'),
-                    'tooltip'=>'Productos ingresados',
-                    'icono'=>'fas fa-arrow-down'
+                'entradas' => [
+                    'titulo' => 'Entradas',
+                    'valor' => number_format($entradas, 0, ',', '.'),
+                    'tooltip' => 'Productos ingresados',
+                    'icono' => 'fas fa-arrow-down',
                 ],
 
-
-                'salidas'=>[
-                    'titulo'=>'Salidas',
-                    'valor'=>number_format($salidas,0,',','.'),
-                    'tooltip'=>'Productos retirados',
-                    'icono'=>'fas fa-arrow-up'
+                'salidas' => [
+                    'titulo' => 'Salidas',
+                    'valor' => number_format($salidas, 0, ',', '.'),
+                    'tooltip' => 'Productos retirados',
+                    'icono' => 'fas fa-arrow-up',
                 ],
 
-
-                'ajustes'=>[
-                    'titulo'=>'Ajustes',
-                    'valor'=>number_format($ajustes,0,',','.'),
-                    'tooltip'=>'Ajustes de inventario',
-                    'icono'=>'fas fa-sliders-h'
+                'ajustes' => [
+                    'titulo' => 'Ajustes',
+                    'valor' => number_format($ajustes, 0, ',', '.'),
+                    'tooltip' => 'Ajustes de inventario',
+                    'icono' => 'fas fa-sliders-h',
                 ],
 
-
-                'balance'=>[
-                    'titulo'=>'Balance',
-                    'valor'=>number_format($balance,0,',','.'),
-                    'tooltip'=>'Balance neto de inventario',
-                    'icono'=>'fas fa-boxes'
+                'balance' => [
+                    'titulo' => 'Balance',
+                    'valor' => number_format($balance, 0, ',', '.'),
+                    'tooltip' => 'Balance neto de inventario',
+                    'icono' => 'fas fa-boxes',
                 ],
 
-
-                'promedio'=>[
-                    'titulo'=>'Promedio',
-                    'valor'=>number_format($promedioMovimiento,2,',','.'),
-                    'tooltip'=>'Promedio por movimiento',
-                    'icono'=>'fas fa-chart-line'
-                ]
+                'promedio' => [
+                    'titulo' => 'Promedio',
+                    'valor' => number_format($promedioMovimiento,2,',','.'),
+                    'tooltip' => 'Promedio por movimiento',
+                    'icono' => 'fas fa-chart-line',
+                ],
 
             ];
 
         }
 
-
-
         return response()->json($respuesta);
     }
-
 }

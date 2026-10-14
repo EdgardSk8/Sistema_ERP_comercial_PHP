@@ -126,10 +126,10 @@ function crearModalAnularCompra() {
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-danger" data-bs-dismiss="modal">
+                    <button class="btn btn-danger btn-sm" data-bs-dismiss="modal">
                         Cancelar
                     </button>
-                    <button class="btn btn-success" id="btnConfirmarAnulacionCompra">
+                    <button class="btn btn-success btn-sm" id="btnConfirmarAnulacionCompra">
                         Anular
                     </button>
                 </div>

@@ -19,8 +19,8 @@ return new class extends Migration
             $table->unsignedInteger('id_usuario');
             $table->dateTime('fecha_creacion')->useCurrent();
 
-            $table->foreign('id_venta')->references('id_venta')->on('ventas');
-            $table->foreign('id_usuario')->references('id_usuario')->on('usuarios');
+            $table->foreign('id_venta')->references('id_venta')->on('ventas')->onDelete('cascade');
+            $table->foreign('id_usuario')->references('id_usuario')->on('usuarios')->onDelete('cascade');
         });
 
         Schema::create('cuotas_venta', function (Blueprint $table) {
@@ -31,7 +31,7 @@ return new class extends Migration
             $table->decimal('monto_cuota', 10, 2);
 
             $table->unique(['id_plan_pago', 'numero_cuota']);
-            $table->foreign('id_plan_pago')->references('id_plan_pago')->on('planes_pago');
+            $table->foreign('id_plan_pago')->references('id_plan_pago')->on('planes_pago')->onDelete('cascade');
         });
 
         Schema::create('pagos_venta', function (Blueprint $table) {
@@ -46,11 +46,11 @@ return new class extends Migration
             $table->string('referencia_pago', 120)->nullable();
 
             $table->index(['id_venta', 'fecha_pago']);
-            $table->foreign('id_venta')->references('id_venta')->on('ventas');
-            $table->foreign('id_metodo_pago')->references('id_metodo_pago')->on('metodos_pago');
-            $table->foreign('id_caja')->references('id_caja')->on('cajas');
-            $table->foreign('id_cuenta')->references('id_cuenta')->on('cuentas');
-            $table->foreign('id_usuario')->references('id_usuario')->on('usuarios');
+            $table->foreign('id_venta')->references('id_venta')->on('ventas')->onDelete('cascade');
+            $table->foreign('id_metodo_pago')->references('id_metodo_pago')->on('metodos_pago')->onDelete('cascade');
+            $table->foreign('id_caja')->references('id_caja')->on('cajas')->onDelete('cascade');
+            $table->foreign('id_cuenta')->references('id_cuenta')->on('cuentas')->onDelete('cascade');
+            $table->foreign('id_usuario')->references('id_usuario')->on('usuarios')->onDelete('cascade');
         });
 
         Schema::create('aplicaciones_pago_cuota', function (Blueprint $table) {
@@ -60,18 +60,18 @@ return new class extends Migration
             $table->decimal('monto_aplicado', 10, 2);
 
             $table->unique(['id_pago_venta', 'id_cuota']);
-            $table->foreign('id_pago_venta')->references('id_pago_venta')->on('pagos_venta');
-            $table->foreign('id_cuota')->references('id_cuota')->on('cuotas_venta');
+            $table->foreign('id_pago_venta')->references('id_pago_venta')->on('pagos_venta')->onDelete('cascade');
+            $table->foreign('id_cuota')->references('id_cuota')->on('cuotas_venta')->onDelete('cascade');
         });
 
         Schema::table('movimientos_caja', function (Blueprint $table) {
             $table->unsignedInteger('id_pago_venta')->nullable()->unique();
-            $table->foreign('id_pago_venta')->references('id_pago_venta')->on('pagos_venta');
+            $table->foreign('id_pago_venta')->references('id_pago_venta')->on('pagos_venta')->onDelete('cascade');
         });
 
         Schema::table('movimientos_cuentas', function (Blueprint $table) {
             $table->unsignedInteger('id_pago_venta')->nullable()->unique();
-            $table->foreign('id_pago_venta')->references('id_pago_venta')->on('pagos_venta');
+            $table->foreign('id_pago_venta')->references('id_pago_venta')->on('pagos_venta')->onDelete('cascade');
         });
     }
 

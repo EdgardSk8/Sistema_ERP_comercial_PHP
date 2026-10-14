@@ -240,12 +240,18 @@ export default function initCompras() {
         if (cantidad <= 0) return mostrarToast('Cantidad inválida', 'danger');
         //if (precio <= 0) return mostrarToast('Precio inválido', 'danger');
 
-        let existente = carrito.find(p => p.id === data.id && (p.id_variacion_talla || null) === (data.id_variacion_talla || null));
+        // Fusiona solo si es el mismo producto/variante Y el mismo precio; así un
+        // mismo producto puede registrarse en varias líneas (p. ej. 6 pares a C$100
+        // y 1 par a C$950), y el costo promedio ponderado se calcula correctamente.
+        let existente = carrito.find(p =>
+            p.id === data.id &&
+            (p.id_variacion_talla || null) === (data.id_variacion_talla || null) &&
+            Number(p.precio) === Number(precio)
+        );
 
         if (existente) {
 
             existente.cantidad += cantidad;
-            existente.precio = precio;
             existente.impuesto = data.impuesto;
 
         } else {

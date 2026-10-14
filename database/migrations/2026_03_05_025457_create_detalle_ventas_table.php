@@ -20,19 +20,21 @@ class CreateDetalleVentasTable extends Migration
             $table->unsignedInteger('id_producto');
 
             $table->integer('cantidad_venta');
-            $table->decimal('precio_unitario_venta',10,2);
-            $table->decimal('subtotal_detalle_venta',10,2);
+            $table->decimal('precio_unitario_venta', 10, 2);
+            $table->decimal('subtotal_detalle_venta', 10, 2);
 
             $table->decimal('porcentaje_impuesto', 5, 2);
             $table->decimal('monto_impuesto', 10, 2);
 
             $table->foreign('id_venta')
-                  ->references('id_venta')
-                  ->on('ventas');
+                ->references('id_venta')
+                ->on('ventas')
+                ->onDelete('cascade');
 
             $table->foreign('id_producto')
-                  ->references('id_producto')
-                  ->on('productos');
+                ->references('id_producto')
+                ->on('productos')
+                ->onDelete('cascade');
         });
     }
 

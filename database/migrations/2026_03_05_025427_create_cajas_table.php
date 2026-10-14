@@ -19,20 +19,21 @@ class CreateCajasTable extends Migration
             $table->dateTime('fecha_apertura')->useCurrent();
             $table->dateTime('fecha_cierre')->nullable();
 
-            $table->decimal('monto_inicial',10,2);
-            $table->decimal('monto_final',10,2)->nullable();
+            $table->decimal('monto_inicial', 10, 2);
+            $table->decimal('monto_final', 10, 2)->nullable();
 
-            $table->decimal('monto_teorico',10,2)->nullable();
-            $table->decimal('monto_real',10,2)->nullable();
-            $table->decimal('diferencia',10,2)->nullable();
+            $table->decimal('monto_teorico', 10, 2)->nullable();
+            $table->decimal('monto_real', 10, 2)->nullable();
+            $table->decimal('diferencia', 10, 2)->nullable();
 
             $table->boolean('estado_caja')->default(true);
 
             $table->unsignedInteger('id_usuario');
 
             $table->foreign('id_usuario')
-                  ->references('id_usuario')
-                  ->on('usuarios');
+                ->references('id_usuario')
+                ->on('usuarios')
+                ->onDelete('cascade');
         });
     }
 

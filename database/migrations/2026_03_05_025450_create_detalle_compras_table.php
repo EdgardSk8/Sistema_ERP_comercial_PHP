@@ -20,16 +20,18 @@ class CreateDetalleComprasTable extends Migration
             $table->unsignedInteger('id_producto');
 
             $table->integer('cantidad_compra');
-            $table->decimal('precio_unitario_compra',10,2);
-            $table->decimal('subtotal_detalle_compra',10,2);
+            $table->decimal('precio_unitario_compra', 10, 2);
+            $table->decimal('subtotal_detalle_compra', 10, 2);
 
             $table->foreign('id_compra')
-                  ->references('id_compra')
-                  ->on('compras');
+                ->references('id_compra')
+                ->on('compras')
+                ->onDelete('cascade');
 
             $table->foreign('id_producto')
-                  ->references('id_producto')
-                  ->on('productos');
+                ->references('id_producto')
+                ->on('productos')
+                ->onDelete('cascade');
         });
     }
 
