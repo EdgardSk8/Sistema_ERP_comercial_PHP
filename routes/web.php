@@ -307,6 +307,10 @@ Route::view('/cuentas-por-cobrar', 'cuentasporcobrar.CuentasPorCobrar')->middlew
 Route::post('/caja/abrir', [CajaController::class, 'AbrirCaja'])->middleware('permiso:abrir_caja');
 Route::post('/caja/cerrar', [CajaController::class, 'CerrarCaja'])->middleware('permiso:cerrar_caja');
 Route::get('/caja/verificar', [CajaController::class, 'VerificarCaja']); //->middleware('permiso:verificar_caja');
+Route::get('/cajas/arqueo', [CajaController::class, 'MostrarArqueo'])->middleware('permiso:mostrar_cajas');
+Route::put('/cajas/{id}/arqueo', [CajaController::class, 'GuardarArqueo'])->middleware('permiso:editar_arqueo_cajas');
+Route::get('/cajas/arqueo/imprimir', [CajaController::class, 'ImprimirArqueo'])->middleware('permiso:mostrar_cajas');
+Route::get('/cajas/arqueo/{id}/imprimir', [CajaController::class, 'ImprimirArqueoCaja'])->middleware('permiso:mostrar_cajas');
 
 Route::post('/validar-stock-carrito', [FacturacionController::class, 'ValidarStockCarrito']);
 Route::get('/tipo-cambio/pos', [FacturacionController::class, 'MostrarTipoCambio']);

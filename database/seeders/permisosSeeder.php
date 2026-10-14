@@ -136,6 +136,7 @@ class permisosSeeder extends Seeder
             /* ═════════════ CAJAS ═════════════ */
             ['nombre_permiso'=>'vista_cajas','descripcion_permiso'=>'Ver vista cajas','modulo_permiso'=>'cajas'],
             ['nombre_permiso'=>'mostrar_cajas','descripcion_permiso'=>'Listar cajas','modulo_permiso'=>'cajas'],
+            ['nombre_permiso'=>'editar_arqueo_cajas','descripcion_permiso'=>'Registrar y corregir arqueos de caja','modulo_permiso'=>'cajas'],
 
             /* ═════════════ MOVIMIENTO CAJAS ═════════════ */
             ['nombre_permiso'=>'vista_movimientos_cajas','descripcion_permiso'=>'Ver Movimientos caja','modulo_permiso'=>'movimiento_cajas'],

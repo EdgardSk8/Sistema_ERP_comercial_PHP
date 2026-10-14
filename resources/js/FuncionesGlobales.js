@@ -418,7 +418,9 @@ window.FechaSimple = function(fechaSQL) {
 
     if (!fechaSQL) return '';
 
-    const fecha = new Date(fechaSQL);
+    const fecha = /^\d{4}-\d{2}-\d{2}$/.test(fechaSQL)
+        ? new Date(`${fechaSQL}T00:00:00`)
+        : new Date(fechaSQL);
 
     const meses = [
         "Enero", "Febrero", "Marzo", "Abril",

@@ -56,6 +56,7 @@ class rol_permisoSeeder extends Seeder
             /* CAJAS */
             'vista_cajas',
             'mostrar_cajas',
+            'editar_arqueo_cajas',
         ];
 
         foreach ($permisosCajero as $nombrePermiso) {
@@ -163,6 +164,7 @@ class rol_permisoSeeder extends Seeder
 
             'vista_cajas',
             'mostrar_cajas',
+            'editar_arqueo_cajas',
             'vista_movimientos_cajas',
 
             'vista_movimientos_inventario',

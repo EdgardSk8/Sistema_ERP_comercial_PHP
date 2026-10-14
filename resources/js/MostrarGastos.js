@@ -38,7 +38,7 @@ export default function initMostrarGastos() {
                     const estado = (data || '').toUpperCase();
                     if (estado === 'PAGADO') { return '<span class="estado estado-activo">Pagado</span>'; }
                     if (estado === 'ATRASADO') { return '<span class="estado estado-inactivo">Atrasado</span>'; }
-                    return '<span class="estado estado-pendiente">Sin pagar</span>';
+                    return '<span class="estado estado-pendiente">Pendiente</span>';
                 }
             },
 
@@ -799,7 +799,11 @@ export default function initMostrarGastos() {
                     } else { mostrarToast(res.mensaje || 'Error al pagar', 'danger'); }
                 },
 
-                error: function (xhr) { mostrarToast(xhr.responseJSON?.mensaje || 'Error al registrar el pago', 'danger'); },
+                error: function (xhr) {
+                    const errores = xhr.responseJSON?.errors;
+                    const primerError = errores ? Object.values(errores).flat()[0] : null;
+                    mostrarToast(primerError || xhr.responseJSON?.mensaje || xhr.responseJSON?.message || 'Error al registrar el pago', 'danger');
+                },
                 complete: function () { btn.data('loading', false).prop('disabled', false); }
 
             });

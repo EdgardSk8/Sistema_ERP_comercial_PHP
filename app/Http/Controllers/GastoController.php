@@ -16,27 +16,26 @@ use Carbon\Carbon;
 class GastoController extends Controller
 {
 
-    private function calcularEstadoPago(Gasto $gasto, ?MovimientoGasto $ultimo): string
+    private function calcularEstadoPago(Gasto $gasto): string
     {
         $fechaVencimiento = $gasto->proximo_pago ?: $gasto->fecha_pago;
-        $ultimoPago = $ultimo?->fecha ?? $gasto->ultimo_pago;
 
         if (!$fechaVencimiento) {
             return strtoupper($gasto->estado_pago ?? 'SIN PAGAR');
         }
 
         $vencimiento = Carbon::parse($fechaVencimiento)->startOfDay();
-        $fechaUltimoPago = $ultimoPago ? Carbon::parse($ultimoPago)->startOfDay() : null;
+        $inicioMesActual = today()->startOfMonth();
 
-        if ($fechaUltimoPago && $fechaUltimoPago->greaterThanOrEqualTo($vencimiento)) {
-            return 'PAGADO';
-        }
-
-        if ($vencimiento->lessThan(today())) {
+        if ($vencimiento->lt($inicioMesActual)) {
             return 'ATRASADO';
         }
 
-        return strtoupper($gasto->estado_pago ?? '') === 'PAGADO' ? 'PAGADO' : 'SIN PAGAR';
+        if ($vencimiento->isSameMonth($inicioMesActual)) {
+            return 'PENDIENTE';
+        }
+
+        return strtoupper($gasto->estado_pago ?? '') === 'PAGADO' ? 'PAGADO' : 'PENDIENTE';
     }
 
 /*  ╔════════════ Mostrar Gastos ════════════╗ 
@@ -58,7 +57,7 @@ class GastoController extends Controller
                         ->first();
 
                     $fechaBase = $gasto->proximo_pago ?: $gasto->fecha_pago;
-                    $estadoPago = $this->calcularEstadoPago($gasto, $ultimo);
+                    $estadoPago = $this->calcularEstadoPago($gasto);
                     $dias_restantes = null;
                     $dias_atraso = null;
 
@@ -70,7 +69,7 @@ class GastoController extends Controller
                         $fechaBase = Carbon::parse($fechaBase)->startOfDay();
                         if ($estadoPago === 'ATRASADO') {
                             $dias_atraso = $fechaBase->diffInDays($hoy);
-                        } elseif ($estadoPago === 'SIN PAGAR' && $fechaBase->gt($hoy)) {
+                        } elseif ($estadoPago === 'PENDIENTE' && $fechaBase->gt($hoy)) {
                             $dias_restantes = $hoy->diffInDays($fechaBase);
                         }
                     }
@@ -329,7 +328,7 @@ class GastoController extends Controller
             'nombre_gasto' => $gasto->nombre_gasto,
             'descripcion_gasto' => $gasto->descripcion_gasto,
             'tipo' => $gasto->tipoGasto->nombre_tipo_gasto ?? '—',
-            'estado_pago' => $this->calcularEstadoPago($gasto, $ultimo),
+            'estado_pago' => $this->calcularEstadoPago($gasto),
 
             // 🔥 FIX REAL: asegurar orden correcto del último pago
             'ultimo_pago_fecha' =>
@@ -615,7 +614,7 @@ class GastoController extends Controller
                 'id_caja' => 'nullable|exists:cajas,id_caja',
                 'id_cuenta' => 'nullable|exists:cuentas,id_cuenta',
                 'renovar_vencimiento' => 'required|in:auto,manual',
-                'nueva_fecha' => 'required_if:renovar_vencimiento,manual|nullable|date|after:today'
+                'nueva_fecha' => 'required_if:renovar_vencimiento,manual|nullable|date'
             ]);
 
             DB::beginTransaction();
@@ -779,9 +778,6 @@ class GastoController extends Controller
                 🔥 RENOVACIÓN DE VENCIMIENTO
             ═══════════════════════════════ */
             $fechaBaseProximoPago = Carbon::parse($gasto->proximo_pago ?: $gasto->fecha_pago ?: $fecha->toDateString());
-            if ($request->renovar_vencimiento === 'auto' && $fechaBaseProximoPago->lessThanOrEqualTo($fecha->copy()->startOfDay())) {
-                $fechaBaseProximoPago = $fecha->copy()->startOfDay();
-            }
 
             $gasto->fecha_pago = $fecha->toDateString();
             $gasto->ultimo_pago = $fecha->toDateString();

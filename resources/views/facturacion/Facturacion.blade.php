@@ -41,7 +41,7 @@
 
                 <div class="mini-contenedor-pos">
 
-                <table id="tablaProductos" class="table  table-bordered">
+                <table id="tablaProductos" class="table table-bordered">
                     <thead>
                         <tr>
                             <th>Producto / SKU</th>

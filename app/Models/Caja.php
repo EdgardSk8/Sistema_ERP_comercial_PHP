@@ -20,6 +20,9 @@ class Caja extends Model
         'fecha_cierre',
         'monto_inicial',
         'monto_final',
+        'monto_teorico',
+        'monto_real',
+        'diferencia',
         'estado_caja',
         'id_usuario'
     ];
