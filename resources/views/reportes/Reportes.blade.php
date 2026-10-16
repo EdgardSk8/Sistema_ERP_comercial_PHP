@@ -16,7 +16,7 @@
             <input type="radio" name="reporte" id="ventas" value="ventas" hidden>
 
             <label for="ventas" class="card-reporte ventas">
-                <span>📈</span>
+                <i class="ph ph-chart-line"></i>
                 <small>Ventas</small>
             </label>
 
@@ -24,7 +24,7 @@
             <input type="radio" name="reporte" id="inventario" value="inventario" hidden>
 
             <label for="inventario" class="card-reporte inventario">
-                <span>📦</span>
+                <i class="ph ph-package"></i>
                 <small>Inventario</small>
             </label>
 
@@ -32,7 +32,7 @@
             <input type="radio" name="reporte" id="movimientos" value="movimientoinventario" hidden>
 
             <label for="movimientos" class="card-reporte movimientos">
-                <span>🔄</span>
+                <i class="ph ph-arrows-left-right"></i>
                 <small>Movimientos</small>
             </label>
 
@@ -40,7 +40,7 @@
             <input type="radio" name="reporte" id="clientes" value="clientes" hidden>
 
             <label for="clientes" class="card-reporte clientes">
-                <span>👤</span>
+                <i class="ph ph-user"></i>
                 <small>Clientes</small>
             </label>
 
@@ -48,7 +48,7 @@
             <input type="radio" name="reporte" id="usuarios" value="usuarios" hidden>
 
             <label for="usuarios" class="card-reporte usuarios">
-                <span>👨‍💼</span>
+                <i class="ph ph-users"></i>
                 <small>Usuarios</small>
             </label>
 
@@ -56,7 +56,7 @@
             <input type="radio" name="reporte" id="cajas" value="cajas" hidden>
 
             <label for="cajas" class="card-reporte cajas">
-                <span>💰</span>
+                <i class="ph ph-wallet"></i>
                 <small>Cajas</small>
             </label>
 

@@ -41,7 +41,7 @@ export default function initMostrarTallas() {
             {
                 data: 'variaciones_count',
                 className: 'text-center',
-                render: data => `<span class="badge text-bg-secondary">${Number(data || 0)}</span>`
+                render: data => `<span>${Number(data || 0)}</span>`
             },
             {
                 data: 'estado_talla',

@@ -11,7 +11,7 @@ class BackupExcelExport implements WithMultipleSheets
     {
         $tablas = DB::select('SHOW TABLES');
 
-        $db = env('DB_DATABASE');
+        $db = DB::connection()->getDatabaseName();
         $key = "Tables_in_{$db}";
 
         $sheets = [];

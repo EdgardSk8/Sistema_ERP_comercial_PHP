@@ -33,6 +33,7 @@ export default function initDashboard() {
         compras: '/dashboard/compras',
         ganancias: '/dashboard/ganancias',
         cajas: '/dashboard/cajas',
+        tallas: '/dashboard/tallas',
         Movimiento_inventario: '/dashboard/movimiento-inventario'
     };
     

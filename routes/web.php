@@ -113,6 +113,7 @@ Route::get('/dashboard/movimiento-inventario', [DashboardController::class, 'mov
 Route::get('/dashboard/ganancias', [DashboardController::class, 'Ganancias'])->middleware('permiso:mostrar_dashboard_ganancias');
 Route::get('/dashboard/compras', [DashboardController::class, 'Compras'])->middleware('permiso:mostrar_dashboard_compras');
 Route::get('/dashboard/cajas', [DashboardController::class, 'Cajas'])->middleware('permiso:mostrar_dashboard_cajas');
+Route::get('/dashboard/tallas', [DashboardController::class, 'Tallas'])->middleware('permiso:mostrar_dashboard_tallas');
 
 /*  ╔════════════ Endpoint Empresa ══════════════╗ 
     ╚════════════════════════════════════════════╝ */

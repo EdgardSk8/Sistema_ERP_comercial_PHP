@@ -15,6 +15,45 @@ export default function initCuentasPorCobrar() {
     const escapar = valor => $('<div>').text(valor ?? '').html();
     const estadoTexto = estado => ({ atrasada: 'Atrasada', pendiente: 'Pendiente', parcial: 'Parcial', pagada: 'Pagada' })[estado] || estado;
 
+    const $filtroEstado = $('#filtroEstadoCartera');
+
+    // SELECT2 PARA EL FILTRO DE ESTADO (MISMO TEMA QUE EL RESTO DEL SISTEMA)
+    $filtroEstado.select2({
+        width: '100%',
+        dropdownCssClass: 'cartera-select2-dropdown'
+    });
+
+    // RESUMEN DE CARTERA (TODAS LAS CUENTAS, SIN IMPORTAR EL FILTRO)
+    function actualizarResumen() {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        let total = 0;
+        let vencido = 0;
+        const clientes = new Set();
+
+        planes.forEach(plan => {
+            const saldo = Number(plan.saldo) || 0;
+            if (saldo <= 0) return;
+
+            total += saldo;
+            clientes.add(plan.cliente);
+
+            (plan.cuotas || []).forEach(cuota => {
+                const saldoCuota = Number(cuota.saldo) || 0;
+                if (saldoCuota <= 0 || !cuota.fecha_vencimiento) return;
+
+                const vence = new Date(`${cuota.fecha_vencimiento}T00:00:00`);
+                if (vence < hoy) vencido += saldoCuota;
+            });
+        });
+
+        $('#resumenCarteraTotal').text(moneda(total));
+        $('#resumenCarteraVencido').text(moneda(vencido));
+        $('#resumenCarteraPorVencer').text(moneda(Math.max(0, total - vencido)));
+        $('#resumenCarteraClientes').text(clientes.size);
+    }
+
     async function cargarMetodos() {
         const respuesta = await $.getJSON('/metodo-pago/pos');
         cuentasMetodoPago = respuesta.data || [];
@@ -39,7 +78,7 @@ export default function initCuentasPorCobrar() {
                 : '—';
             const fila = document.createElement('tr');
             const botonAbono = Number(plan.saldo) > 0
-                ? `<button type="button" class="btn btn-sm btn-success ms-1" data-accion="abono" data-venta="${Number(plan.id_venta)}" title="Registrar abono" aria-label="Registrar abono"><i class="fa-solid fa-hand-holding-dollar"></i></button>`
+                ? `<button type="button" class="btn btn-sm btn-success ms-1" data-accion="abono" data-venta="${Number(plan.id_venta)}" title="Registrar abono" aria-label="Registrar abono"><i class="ph ph-hand-coins"></i></button>`
                 : '';
             fila.innerHTML = `
                 <td>${escapar(plan.numero_factura)}</td>
@@ -49,7 +88,7 @@ export default function initCuentasPorCobrar() {
                 <td>${escapar(fechaProxima)}</td>
                 <td><span class="cartera-estado ${escapar(plan.estado)}">${estadoTexto(plan.estado)}</span></td>
                 <td class="text-end cartera-acciones">
-                    <button type="button" class="btn btn-sm btn-outline-primary" data-accion="detalle" data-venta="${Number(plan.id_venta)}" title="Ver plan e historial" aria-label="Ver plan e historial"><i class="fa-solid fa-eye"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-accion="detalle" data-venta="${Number(plan.id_venta)}" title="Ver plan e historial" aria-label="Ver plan e historial"><i class="ph ph-eye"></i></button>
                     ${botonAbono}
                 </td>`;
             tbody.append(fila);
@@ -64,6 +103,7 @@ export default function initCuentasPorCobrar() {
             const respuesta = await $.getJSON('/cuentas-por-cobrar/mostrar', { estado });
             if (!respuesta.success) throw new Error('No se pudo consultar la cartera.');
             planes = respuesta.planes || [];
+            actualizarResumen();
             renderizar();
         } catch (error) {
             $('#errorCartera').removeClass('d-none').text(error.responseJSON?.mensaje || error.message || 'Error al consultar la cartera.');

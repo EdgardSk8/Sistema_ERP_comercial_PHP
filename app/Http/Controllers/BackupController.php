@@ -61,12 +61,14 @@ class BackupController extends Controller
             File::makeDirectory(storage_path('app/backups'), 0777, true);
         }
 
-        $mysqldump = env('MYSQLDUMP_PATH');
+        $mysqldump = config('backup.mysqldump_path');
 
-        $host = env('DB_HOST');
-        $port = env('DB_PORT');
-        $user = env('DB_USERNAME');
-        $pass = env('DB_PASSWORD');
+        $config = DB::connection()->getConfig();
+
+        $host = $config['host'] ?? '127.0.0.1';
+        $port = $config['port'] ?? '3306';
+        $user = $config['username'] ?? '';
+        $pass = $config['password'] ?? '';
 
         putenv("MYSQL_PWD={$pass}");
 

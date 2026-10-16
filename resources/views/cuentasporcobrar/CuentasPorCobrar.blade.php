@@ -2,26 +2,47 @@
     @vite(['resources/css/cuentasporcobrar/CuentasPorCobrar.css'])
 
     <section class="cartera-page">
-        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
-            <div>
-                <!-- <h4 class="mb-1">Cuentas por cobrar</h4> -->
-                <div class="small text-secondary">Seguimiento de cuotas y abonos</div>
+
+        <div class="cartera-toolbar">
+
+            <div class="cartera-toolbar-info">
+                <h4 class="cartera-toolbar-titulo">Cuentas por cobrar</h4>
+                <span class="cartera-toolbar-sub">Seguimiento de cuotas y abonos</span>
             </div>
-            <div class="d-flex align-items-end gap-2">
-                <div>
-                    <label for="filtroEstadoCartera" class="form-label small mb-1">Estado</label>
-                    <select id="filtroEstadoCartera" class="form-select form-select-sm">
-                        <option value="todas">Todas</option>
-                        <option value="atrasada">Atrasadas</option>
-                        <option value="pendiente">Pendientes</option>
-                        <option value="parcial">Con abono parcial</option>
-                        <option value="pagada">Pagadas</option>
-                    </select>
+
+            <div class="cartera-toolbar-resumen">
+                <div class="cartera-chip">
+                    <span>Por cobrar</span>
+                    <strong id="resumenCarteraTotal">C$ 0.00</strong>
                 </div>
+                <div class="cartera-chip cartera-chip-vencido">
+                    <span>Vencido</span>
+                    <strong id="resumenCarteraVencido">C$ 0.00</strong>
+                </div>
+                <div class="cartera-chip cartera-chip-porvencer">
+                    <span>Por vencer</span>
+                    <strong id="resumenCarteraPorVencer">C$ 0.00</strong>
+                </div>
+                <div class="cartera-chip cartera-chip-clientes">
+                    <span>Clientes</span>
+                    <strong id="resumenCarteraClientes">0</strong>
+                </div>
+            </div>
+
+            <div class="cartera-toolbar-filtros">
+                <label for="filtroEstadoCartera" class="visually-hidden">Estado</label>
+                <select id="filtroEstadoCartera" class="form-select form-select-sm">
+                    <option value="todas">Todas</option>
+                    <option value="atrasada">Atrasadas</option>
+                    <option value="pendiente">Pendientes</option>
+                    <option value="parcial">Con abono parcial</option>
+                    <option value="pagada">Pagadas</option>
+                </select>
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="recargarCartera" title="Actualizar" aria-label="Actualizar cartera">
-                    <i class="fa-solid fa-rotate"></i>
+                    <i class="ph ph-arrows-clockwise"></i>
                 </button>
             </div>
+
         </div>
 
         <div class="table-responsive cartera-tabla-wrap">

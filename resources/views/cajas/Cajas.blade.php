@@ -105,8 +105,8 @@
                     <div class="arqueo-diferencia-preview" id="arqueoCajaDiferencia" aria-live="polite"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-success btn-sm" id="btnGuardarArqueo">Guardar arqueo</button>
+                    <button type="button" class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn guardar btn-sm-modal" id="btnGuardarArqueo">Guardar arqueo</button>
                 </div>
             </div>
         </div>

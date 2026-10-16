@@ -84,11 +84,12 @@ export default function initCompras() {
         }
     });
 
+    // ⚠️ Las opciones ya vienen del Blade, así que NO se le pasa `data` a Select2
+    // (eso reemplazaba/duplicaba el placeholder). Mismo patrón que los demás selectores.
     $('#cajacuentaselect').select2({
-        data: [
-            { id: 'caja', text: 'Caja' },
-            { id: 'cuenta', text: 'Cuenta' }
-        ]
+        placeholder: 'Seleccione un Tipo de Pago',
+        allowClear: false,
+        width: '100%'
     });
 
     $('#crear_medida_producto').select2({
@@ -422,7 +423,7 @@ export default function initCompras() {
         carrito = [];
         renderCarrito();
 
-        $('#proveedor, #tipo_factura, #metodo_pago, #cuenta').val(null).trigger('change');
+        $('#proveedor, #tipo_factura, #metodo_pago, #cuenta, #caja_select, #cajacuentaselect').val(null).trigger('change');
 
         $('#numero_factura, #subtotal, #total, #impuesto').val('');
         $('#descuento').val(0);

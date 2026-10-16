@@ -36,8 +36,8 @@ class CompraController extends Controller
             // =====================
             $validator = Validator::make($request->all(), [
                 'proveedor' => 'required|exists:proveedores,id_proveedor',
-                'metodo_pago' => 'required|exists:metodos_pago,id_metodo_pago',
-                'tipo_factura' => 'required|exists:tipos_factura,id_tipo_factura',
+                'metodo_pago' => 'nullable|exists:metodos_pago,id_metodo_pago',
+                'tipo_factura' => 'nullable|exists:tipos_factura,id_tipo_factura',
                 'caja' => 'nullable|exists:cajas,id_caja',
                 'cuenta' => 'nullable|exists:cuentas,id_cuenta',
                 'carrito' => 'required|array|min:1',
@@ -184,11 +184,22 @@ class CompraController extends Controller
                 $caja = Caja::find($request->caja);
 
                 if (! $caja) {
+                    DB::rollBack();
+
                     return response()->json(['success' => false, 'mensaje' => 'Caja no encontrada'], 422);
                 }
 
-                if ($caja->saldo_actual < $totalCalculado) {
-                    return response()->json(['success' => false, 'mensaje' => 'Saldo insuficiente en caja'], 422);
+                // 🧮 El saldo de la caja se calcula con sus movimientos (la tabla no
+                // guarda saldo): monto inicial + ingresos − salidas.
+                $saldoCaja = $caja->saldo_actual;
+
+                if ($saldoCaja < $totalCalculado) {
+                    DB::rollBack();
+
+                    return response()->json([
+                        'success' => false,
+                        'mensaje' => 'Saldo insuficiente en caja (disponible: C$ '.number_format($saldoCaja, 2).')',
+                    ], 422);
                 }
 
                 MovimientoCaja::create([
@@ -208,11 +219,18 @@ class CompraController extends Controller
                 $cuenta = Cuenta::find($request->cuenta);
 
                 if (! $cuenta) {
+                    DB::rollBack();
+
                     return response()->json(['success' => false, 'mensaje' => 'Cuenta no encontrada'], 422);
                 }
 
                 if ($cuenta->saldo_actual < $totalCalculado) {
-                    return response()->json(['success' => false, 'mensaje' => 'Saldo insuficiente en cuenta'], 422);
+                    DB::rollBack();
+
+                    return response()->json([
+                        'success' => false,
+                        'mensaje' => 'Saldo insuficiente en cuenta (disponible: C$ '.number_format((float) $cuenta->saldo_actual, 2).')',
+                    ], 422);
                 }
 
                 MovimientoCuenta::create([

@@ -53,6 +53,27 @@ class Caja extends Model
             'id_caja'
         );
     }
+
+    /**
+     * Saldo disponible de la caja.
+     *
+     * La tabla `cajas` no guarda saldo: se deriva de sus movimientos
+     * (monto inicial + ingresos − salidas), igual que CajaController::calcularTotalesCaja.
+     * Antes se leía como si existiera la columna, devolvía null y bloqueaba las
+     * compras pagadas con caja (null < total siempre es verdadero).
+     */
+    public function getSaldoActualAttribute(): float
+    {
+        $ingresos = (float) $this->movimientos()
+            ->where('tipo_movimiento_caja', 'INGRESO')
+            ->sum('monto_movimiento_caja');
+
+        $salidas = (float) $this->movimientos()
+            ->where('tipo_movimiento_caja', 'SALIDA')
+            ->sum('monto_movimiento_caja');
+
+        return round((float) $this->monto_inicial + $ingresos - $salidas, 2);
+    }
     
 }
 

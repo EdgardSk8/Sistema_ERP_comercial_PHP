@@ -146,7 +146,7 @@ class ProductoController extends Controller
 /*  ╔══════════ Editar Producto ══════════╗ 
     ╚═════════════════════════════════════╝ */
 
-    public function EditarProducto($id)
+    public function EditarProducto(int|string $id)
     {
         try {
             $producto = Producto::with([
@@ -184,7 +184,7 @@ class ProductoController extends Controller
 /*  ╔════════ Actualizar Producto ════════╗ 
     ╚═════════════════════════════════════╝ */
 
-    public function ActualizarProducto(Request $request, $id)
+    public function ActualizarProducto(Request $request, int|string $id)
     {
         DB::beginTransaction();
 
@@ -486,7 +486,7 @@ class ProductoController extends Controller
 /*  ╔══════ Cambiar Estado Producto ═════╗ 
     ╚════════════════════════════════════╝ */
 
-    public function CambiarEstadoProducto($id) {
+    public function CambiarEstadoProducto(int|string $id) {
 
         try {
             $producto = Producto::find($id);

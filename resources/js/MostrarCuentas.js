@@ -189,7 +189,6 @@ export default function initCuentas() {
         /* ═════════════ ( CONFIGURACIÓN ) ═════════════ */
 
         let titulo = tipo === 'AGREGAR' ? 'Agregar Saldo' : 'Retirar Saldo';
-        let colorBtn = tipo === 'AGREGAR' ? 'success' : 'success';
         let saldoActual = parseFloat(cuenta.saldo_actual);
         let opcionesConcepto = tipo === 'AGREGAR'
             ? `
@@ -323,13 +322,14 @@ export default function initCuentas() {
 
                 <div class="modal-footer">
 
-                    <button class="btn btn-sm cancelar" data-bs-dismiss="modal">
+                    <button class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">
                         Cancelar
                     </button>
 
                     <button
+                        type="button"
                         id="btnGuardarMovimiento"
-                        class="btn btn-sm btn-${colorBtn}">
+                        class="btn guardar btn-sm-modal">
                         Confirmar
                     </button>
 

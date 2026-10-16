@@ -30,6 +30,11 @@
                         Cajas
                     </label>
 
+                    <input type="radio" id="tallas" name="dashboard" value="tallas">
+                    <label for="tallas" class="BotonGrupo">
+                        Tallas
+                    </label>
+
                     <!-- <input type="radio" id="Movimiento_inventario" name="dashboard" value="Movimiento_inventario">
                     <label for="Movimiento_inventario" class="BotonGrupo">
                         Movimiento Inventario

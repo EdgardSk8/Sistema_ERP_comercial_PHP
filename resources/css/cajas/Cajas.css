@@ -42,10 +42,7 @@
 	align-items:flex-end;
 	gap:6px;
 }
-
-.arqueo-filtros > div{
-	/* width:min(150px, 100%); */
-}
+/* .arqueo-filtros > div{ width:min(150px, 100%); } */
 
 .arqueo-filtros .form-label{
 	margin:0 0 2px;

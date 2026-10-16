@@ -22,23 +22,22 @@ export default function initRespaldo() {
 
                         <div class="modal-content">
 
-                            <div class="modal-header aviso-header py-2">
+                            <div class="modal-header">
 
-                                <h6 class="modal-title mb-0">
-                                    <i class="bi bi-exclamation-triangle me-1"></i>
-                                    <span class="aviso-titulo">Aviso</span>
-                                </h6>
+                                <h5 class="modal-title aviso-titulo">Aviso</h5>
 
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 
                             </div>
 
-                            <div class="modal-body p-3">
-                                <p class="mb-0 text-center aviso-mensaje"></p>
+                            <div class="modal-body">
+
+                                <div class="card-responsive text-center aviso-mensaje"></div>
+
                             </div>
 
-                            <div class="modal-footer py-2">
-                                <button type="button" class="btn btn-success btn-sm-modal" data-bs-dismiss="modal">
+                            <div class="modal-footer">
+                                <button type="button" class="btn actualizar btn-sm-modal" data-bs-dismiss="modal">
                                     Aceptar
                                 </button>
                             </div>
@@ -53,15 +52,10 @@ export default function initRespaldo() {
             modalEl = document.getElementById('modalAvisoRespaldo');
         }
 
-        const estilos = {
-            danger: 'bg-danger text-white',
-            warning: '',
-            success: 'bg-success text-white'
-        };
-
+        // El estilo del modal es único (ver Modales.css): el parámetro `tipo` se
+        // conserva por compatibilidad con las llamadas existentes.
         $('.aviso-titulo', modalEl).text(titulo);
         $('.aviso-mensaje', modalEl).text(mensaje);
-        $('.aviso-header', modalEl).attr('class', `modal-header aviso-header py-2 ${estilos[tipo] ?? estilos.danger}`.trim());
 
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
     }

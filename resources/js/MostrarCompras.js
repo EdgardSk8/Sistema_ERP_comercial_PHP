@@ -121,15 +121,19 @@ function crearModalAnularCompra() {
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
-                <div class="modal-body p-2">
-                    ¿Seguro que deseas anular esta compra?
+                <div class="modal-body">
+
+                    <div class="card-responsive">
+                        ¿Seguro que deseas anular esta compra?
+                    </div>
+
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-danger btn-sm" data-bs-dismiss="modal">
+                    <button class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">
                         Cancelar
                     </button>
-                    <button class="btn btn-success btn-sm" id="btnConfirmarAnulacionCompra">
+                    <button type="button" class="btn actualizar btn-sm-modal" id="btnConfirmarAnulacionCompra">
                         Anular
                     </button>
                 </div>

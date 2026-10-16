@@ -615,8 +615,8 @@ const  PlantillaExcel = function (config = {}) {
             PlantillaPDF({ filename: nombre, tipoReporte: reporte }),
             PlantillaCSV({ filename: nombre, title: nombre }),
 
-            { extend: 'copyHtml5', text: '📋 Copiar', className: 'btn btn-danger' },
-            { extend: 'print', text: '🖨️ Imprimir', className: 'btn btn-dark' }
+            { extend: 'copyHtml5', text: '<i class="ph ph-copy"></i> Copiar', className: 'btn btn-danger' },
+            { extend: 'print', text: '<i class="ph ph-printer"></i> Imprimir', className: 'btn btn-dark' }
 
         ];
     }

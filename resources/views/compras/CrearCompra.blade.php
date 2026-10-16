@@ -175,7 +175,7 @@
                         </div>
 
                         <!-- BOTONES -->
-                        <div class="mt-auto d-flex justify-content-end gap-2">
+                        <div class="mt-auto d-flex justify-content-between gap-2">
 
                             <button class="btn btn-danger btn-sm" id="btnLimpiar">
                                 Limpiar

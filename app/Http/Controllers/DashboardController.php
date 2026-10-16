@@ -1492,4 +1492,187 @@ class DashboardController extends Controller
 
         return response()->json($respuesta);
     }
+
+    // GRAFICA DE TALLAS
+    public function Tallas(Request $request)
+    {
+        $inicio = $request->inicio;
+        $fin = $request->fin;
+
+        $query = Venta::query()->where('estado_venta', 1);
+
+        // FILTRO FECHAS
+        if ($inicio && $fin) {
+            $query->whereBetween('fecha_venta', [
+                $inicio.' 00:00:00',
+                $fin.' 23:59:59',
+            ]);
+        }
+
+        $respuesta = [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | DATASET PRINCIPAL - TALLAS CON MAYOR MOVIMIENTO
+        |--------------------------------------------------------------------------
+        */
+
+        $tallas = (clone $query)
+
+            ->join('detalle_ventas', 'ventas.id_venta', '=', 'detalle_ventas.id_venta')
+            ->join('variacion_tallas', 'detalle_ventas.id_variacion_talla', '=', 'variacion_tallas.id_variacion_talla')
+            ->join('tallas', 'variacion_tallas.id_talla', '=', 'tallas.id_talla')
+
+            ->selectRaw('tallas.talla as label')
+            ->selectRaw('SUM(detalle_ventas.cantidad_venta) as cantidad')
+            ->selectRaw('SUM(detalle_ventas.subtotal_detalle_venta + detalle_ventas.monto_impuesto) as total')
+
+            ->groupBy('tallas.id_talla', 'tallas.talla')
+            ->orderByDesc('cantidad')
+            ->get()
+
+            ->map(function ($item) {
+
+                return [
+                    'label' => $item->label,
+                    'cantidad' => (int) $item->cantidad,
+                    'total' => round((float) $item->total, 2),
+                ];
+
+            });
+
+        /*
+        |--------------------------------------------------------------------------
+        | GRAFICA 1 - UNIDADES POR TALLA
+        |--------------------------------------------------------------------------
+        */
+
+        $respuesta['grafica_1'] = $tallas;
+
+        /*
+        |--------------------------------------------------------------------------
+        | GRAFICA 2 - PARTICIPACION DE TALLAS
+        |--------------------------------------------------------------------------
+        */
+
+        $respuesta['grafica_2'] = $tallas->take(10)->values();
+
+        /*
+        |--------------------------------------------------------------------------
+        | GRAFICA 3 - INGRESOS POR TALLA
+        |--------------------------------------------------------------------------
+        */
+
+        $respuesta['grafica_3'] = $tallas
+            ->sortByDesc('total')
+            ->values();
+
+        /*
+        |--------------------------------------------------------------------------
+        | TABLA 1 - TALLAS MAS VENDIDAS
+        |--------------------------------------------------------------------------
+        */
+
+        $respuesta['tabla_1'] = $tallas->take(10)->values();
+
+        /*
+        |--------------------------------------------------------------------------
+        | KPIS
+        |--------------------------------------------------------------------------
+        */
+
+        $unidades = $tallas->sum('cantidad');
+        $ingresos = $tallas->sum('total');
+
+        $tallaMasVendida = $tallas->first();
+
+        $tallaMasRentable = $tallas
+            ->sortByDesc('total')
+            ->first();
+
+        $respuesta['kpis'] = [
+
+            'unidades' => [
+                'titulo' => 'UNIDADES VENDIDAS',
+                'valor' => number_format($unidades, 0, ',', '.'),
+                'tooltip' => 'Unidades vendidas con talla registrada',
+                'icono' => 'fas fa-boxes',
+            ],
+
+            'talla_mas_vendida' => [
+                'titulo' => 'TALLA MAS VENDIDA',
+                'valor' => $tallaMasVendida
+                    ? $tallaMasVendida['label'].' ('.number_format($tallaMasVendida['cantidad'], 0, ',', '.').')'
+                    : 'Sin datos',
+                'tooltip' => 'Talla con mayor cantidad de unidades vendidas',
+                'icono' => 'fas fa-crown',
+            ],
+
+            'talla_mas_rentable' => [
+                'titulo' => 'TALLA MAS RENTABLE',
+                'valor' => $tallaMasRentable
+                    ? 'C$ '.number_format($tallaMasRentable['total'], 2, ',', '.').' ('.$tallaMasRentable['label'].')'
+                    : 'Sin datos',
+                'tooltip' => 'Talla que genera mayores ingresos',
+                'icono' => 'fas fa-money-bill-wave',
+            ],
+
+            'promedio_talla' => [
+                'titulo' => 'PROMEDIO POR TALLA',
+                'valor' => number_format($tallas->count() > 0 ? $unidades / $tallas->count() : 0, 0, ',', '.'),
+                'tooltip' => 'Promedio de unidades vendidas por talla',
+                'icono' => 'fas fa-chart-line',
+            ],
+
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | TEXTOS UI
+        |--------------------------------------------------------------------------
+        */
+
+        $respuesta['ui'] = [
+
+            'grafica_1' => [
+                'titulo' => 'Tallas con mayor movimiento',
+                'dataset' => 'Unidades vendidas',
+                'labels' => [
+                    'cantidad' => ' Unidades',
+                    'total' => ' Ingresos',
+                ],
+            ],
+
+            'grafica_2' => [
+                'titulo' => 'Participacion por talla',
+                'dataset' => 'Unidades',
+                'labels' => [
+                    'cantidad' => ' Unidades',
+                    'total' => ' Ingresos',
+                ],
+            ],
+
+            'grafica_3' => [
+                'titulo' => 'Ingresos por talla',
+                'dataset' => 'Ingresos',
+                'labels' => [
+                    'cantidad' => ' Unidades',
+                    'total' => ' Ingresos',
+                ],
+            ],
+
+            'tabla_1' => [
+                'titulo' => 'Tallas mas vendidas',
+                'vacio' => 'Sin tallas vendidas',
+                'columnas' => [
+                    'label' => 'Talla',
+                    'cantidad' => 'Unidades',
+                    'total' => 'Ingresos',
+                ],
+            ],
+
+        ];
+
+        return response()->json($respuesta);
+    }
 }

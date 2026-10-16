@@ -58,6 +58,13 @@ export default function initFacturacion() {
     /* --- AGREGAR PRODUCTOS AL CARRITO --- */
     function agregarProductoCarrito(producto) {
 
+        // Sin stock no se agrega: el botón ya viene deshabilitado y esto cubre la
+        // búsqueda por SKU (Enter) y cualquier otro origen.
+        if (!(Number(producto.stock) > 0)) {
+            mostrarToast(`Sin stock disponible de ${producto.nombre}`, 'danger');
+            return;
+        }
+
         let existente = carrito.find(p => p.id === producto.id && p.id_variacion_talla === producto.id_variacion_talla);
         if (existente) {
             if (existente.cantidad >= existente.stock) { mostrarToast(`No hay más stock de ${existente.nombre}`, 'danger'); return; }
@@ -336,18 +343,20 @@ export default function initFacturacion() {
                     render: function (data, type, row) {
 
                         const stock = Number(row.stock_actual ?? 0);
-                        const deshabilitado = stock <= 0 ? 'disabled' : '';
-                        const clase = stock <= 0 ? 'btn-danger' : 'btn-dark';
+                        const sinStock = stock <= 0;
+                        const etiqueta = sinStock ? 'Sin stock' : 'Agregar al carrito';
 
                         return `
-                            <button class="${clase} agregarProducto"
+                            <button class="btn-dark agregarProducto"
                                 data-id="${row.id_producto}"
                                 data-variacion-talla="${row.id_variacion_talla ?? ''}"
                                 data-nombre="${row.nombre_producto}"
                                 data-precio="${row.precio_con_iva}"
                                 data-stock="${row.stock_actual}"
                                 data-porcentaje="${row.iva}"
-                                ${deshabilitado}>
+                                title="${etiqueta}"
+                                aria-label="${etiqueta}"
+                                ${sinStock ? 'disabled' : ''}>
                                 <i class="fa-solid fa-cart-shopping"></i>
                             </button>
                         `;
@@ -1150,17 +1159,18 @@ async function obtenerCredencialesEmpresa() {
 
                 <div class="modal-content">
 
-                    <div class="modal-header bg-success text-white py-2">
+                    <div class="modal-header">
 
-                        <h6 class="modal-title mb-0">
-                            <i class="fa-solid fa-cash-register"></i>
-                            Apertura de Caja
-                        </h6>
+                        <h5 class="modal-title">Apertura de Caja</h5>
+
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 
                     </div>
 
 
-                    <div class="modal-body p-2">
+                    <div class="modal-body">
+
+                        <div class="card-responsive">
 
                         <div class="row g-2">
 
@@ -1252,25 +1262,20 @@ async function obtenerCredencialesEmpresa() {
 
                         </div>
 
+                        </div>
+
                     </div>
 
 
                     <div class="modal-footer">
 
-                        <button 
-                            class="btn btn-danger btn-sm"
-                            data-bs-dismiss="modal">
+                        <button class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">
                             Cancelar
                         </button>
 
 
-                        <button 
-                            class="btn btn-success btn-sm"
-                            id="confirmarAbrirCaja">
-
-                            <i class="fa-solid fa-lock-open"></i>
+                        <button type="button" class="btn guardar btn-sm-modal" id="confirmarAbrirCaja">
                             Abrir Caja
-
                         </button>
 
                     </div>

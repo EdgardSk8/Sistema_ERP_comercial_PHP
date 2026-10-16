@@ -1,0 +1,25 @@
+{
+  "manifestVersion": 1,
+  "id": "018c5d4c-ffd6-4cad-90a5-5ff2e79b89de",
+  "name": "Sistema_ERP_para_gestion_comercial_y_punto_de_venta_PHP",
+  "path": "C:\\Users\\Admin\\Desktop\\Sistema_ERP_para_gestion_comercial_y_punto_de_venta_PHP\\.zvec-grep",
+  "rootPaths": [
+    {
+      "absolutePath": "C:\\Users\\Admin\\Desktop\\Sistema_ERP_para_gestion_comercial_y_punto_de_venta_PHP",
+      "recursive": true
+    }
+  ],
+  "indexPolicy": "enabled",
+  "embedding": {
+    "provider": "local",
+    "model": "potion-code-16m-v2",
+    "dimension": 256,
+    "metric": "cosine"
+  },
+  "indexVersion": 1,
+  "createdTime": 1792169307736,
+  "updatedTime": 1792169325325,
+  "embeddingRuntime": {
+    "device": "auto"
+  }
+}

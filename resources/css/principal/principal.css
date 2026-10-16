@@ -333,7 +333,7 @@ body{
     z-index: 10;
     display:flex;
     align-items:center;
-    justify-content:flex-start;
+    justify-content: center;
     height:30px;
     min-height:30px;
     padding:0 18px;
@@ -697,6 +697,22 @@ td:last-child{  white-space: nowrap; }/* Btn horizontales */
 .dataTables_length, .dataTables_filter, .dataTables_info{ font-size: var(--fs-sm);  }
 .form-select{ padding: 2px 20px 2px 6px;}
 
+/* Select "Mostrar N registros": sin flecha de despliegue y número centrado */
+.dataTables_length select{
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: none;
+    padding: 2px 8px;
+    text-align: center;
+    text-align-last: center;
+    cursor: pointer;
+}
+
+.dataTables_length select option{
+    cursor: pointer;
+}
+
 /* ESTILO SELECT2 */
 
 .select2-results__options { font-size: var(--fs-m);}
@@ -1011,6 +1027,18 @@ button i{ pointer-events:none; }
 /* CLASE PERZONALIZADA */
 .agregarProducto:active{ transform: scale(0.85); color: var(--azul);}
 .agregarProducto:hover{ color: var(--azul); }
+
+/* Sin stock: no se puede usar y no reacciona al puntero */
+.agregarProducto:disabled{
+    color: var(--text-soft);
+    opacity: .5;
+    cursor: not-allowed;
+}
+.agregarProducto:disabled:hover,
+.agregarProducto:disabled:active{
+    color: var(--text-soft);
+    transform: none;
+}
 
 .estado{ display: flex; justify-content: center; transition: all 0.15s ease; cursor: pointer; }
 .estado-inactivo i{ color: var(--rojo); font-size: var(--fs-xlg);  }

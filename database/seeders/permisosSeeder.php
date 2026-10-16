@@ -19,6 +19,7 @@ class permisosSeeder extends Seeder
 
             ['nombre_permiso' => 'mostrar_dashboard_compras','descripcion_permiso' => 'Ver datos compras dashboard','modulo_permiso' => 'dashboard'],
             ['nombre_permiso' => 'mostrar_dashboard_cajas','descripcion_permiso' => 'Ver datos cajas dashboard','modulo_permiso' => 'dashboard'],
+            ['nombre_permiso' => 'mostrar_dashboard_tallas','descripcion_permiso' => 'Ver datos tallas dashboard','modulo_permiso' => 'dashboard'],
 
             /* ═════════════ USUARIOS ═════════════ */
             ['nombre_permiso'=>'vista_usuarios','descripcion_permiso'=>'Ver vista usuarios','modulo_permiso'=>'usuarios'],
