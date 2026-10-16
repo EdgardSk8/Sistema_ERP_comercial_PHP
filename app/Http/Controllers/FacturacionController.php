@@ -293,29 +293,37 @@ class FacturacionController extends Controller
                     ? ($variacionTalla->precio_venta ?? $producto->precio_venta)
                     : $producto->precio_venta;
 
-                $precioSinImpuesto = $precioCatalogoSinImpuesto;
+                $factorImpuesto = 1 + ($porcentaje / 100);
+
+                // 💵 PRECIO FINAL unitario = lo que paga el cliente (base + impuesto).
+                $precioFinalUnitario = (float) $precioCatalogoSinImpuesto * $factorImpuesto;
                 $precioFinalAplicado = null;
+
                 if (isset($item['precio_venta_final'])) {
                     $precioFinalSolicitado = filter_var($item['precio_venta_final'], FILTER_VALIDATE_FLOAT);
-                    $factorImpuesto = 1 + ($porcentaje / 100);
-                    $precioCatalogoFinal = round($precioCatalogoSinImpuesto * $factorImpuesto, 2);
 
                     if ($precioFinalSolicitado === false || $precioFinalSolicitado <= 0 || $factorImpuesto <= 0) {
                         throw new \Exception('El precio de liquidación no es válido');
                     }
 
-                    if ($precioFinalSolicitado > $precioCatalogoFinal + 0.001) {
+                    if ($precioFinalSolicitado > round($precioFinalUnitario, 2) + 0.001) {
                         throw new \Exception('El precio de liquidación no puede superar el precio normal');
                     }
 
                     $precioFinalAplicado = round($precioFinalSolicitado, 2);
-                    $precioSinImpuesto = round($precioFinalAplicado / $factorImpuesto, 2);
+                    $precioFinalUnitario = $precioFinalAplicado;
                 }
 
-                // 🔥 cálculo correcto
-                $impuestoUnitario = $precioFinalAplicado !== null
-                    ? round($precioFinalAplicado - $precioSinImpuesto, 2)
-                    : $precioSinImpuesto * ($porcentaje / 100);
+                $precioFinalUnitario = round($precioFinalUnitario, 2);
+
+                // 🧾 El impuesto se calcula sobre el PRECIO FINAL y la base sale por
+                // resta: así base + impuesto = precio final exacto y no quedan centavos
+                // fantasma (1,000 con IVA 15 % → 869.57 + 130.43 = 1,000.00).
+                $impuestoUnitario = $factorImpuesto > 0
+                    ? round($precioFinalUnitario * ($porcentaje / 100) / $factorImpuesto, 2)
+                    : 0.0;
+
+                $precioSinImpuesto = round($precioFinalUnitario - $impuestoUnitario, 2);
 
                 $subtotal = round($precioSinImpuesto * $cantidad, 2);
                 $impuesto = round($impuestoUnitario * $cantidad, 2);
@@ -336,8 +344,11 @@ class FacturacionController extends Controller
                     $costoRespaldo
                 );
 
+                // Se guarda con 6 decimales porque una línea puede consumir VARIOS
+                // lotes: redondear aquí a 2 desviaba el total de la línea
+                // (4,800 / 7 = 685.71 → 7 × 685.71 = 4,799.97).
                 $costoUnitario = $cantidad > 0
-                    ? round($costeoFifo['costo_total'] / $cantidad, 2)
+                    ? round($costeoFifo['costo_total'] / $cantidad, 6)
                     : 0.0;
 
                 DetalleVenta::create([

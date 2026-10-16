@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use App\Models\Producto;
 use Intervention\Image\Facades\Image;
 use App\Models\MovimientoInventario;
@@ -21,6 +22,26 @@ class ProductoController extends Controller
     public function CrearProducto(Request $request)
     {
         try {
+
+            // 🧹 La medida es OPCIONAL: cuando no se elige, el select manda null y
+            // FormData lo transforma en el texto "null" (no en un null real), por
+            // eso la regla "exists" lo rechazaba. Aquí lo normalizamos a null.
+            $idMedida = $request->input('id_medida');
+            if (! is_numeric($idMedida) || (int) $idMedida <= 0) {
+                $idMedida = null;
+            } else {
+                $idMedida = (int) $idMedida;
+            }
+
+            // 🧹 Igual con la ubicación: es OPCIONAL y el select vacío también
+            // llegaba como el texto "null".
+            $idUbicacion = $request->input('id_ubicacion');
+            if (! is_numeric($idUbicacion) || (int) $idUbicacion <= 0) {
+                $idUbicacion = null;
+            } else {
+                $idUbicacion = (int) $idUbicacion;
+            }
+
             $validator = Validator::make(
                 [
                     'nombre_producto' => $request->nombre_producto,
@@ -28,11 +49,11 @@ class ProductoController extends Controller
                     'imagen_producto' => $request->imagen_producto,
                     'id_categoria' => $request->id_categoria,
                     'id_impuesto' => $request->id_impuesto,
-                    'id_ubicacion' => $request->id_ubicacion,
+                    'id_ubicacion' => $idUbicacion,
                     'precio_compra' => $request->precio_compra,
                     'precio_venta' => $request->precio_venta,
                     'stock_actual' => $request->stock_actual,
-                    'id_medida' => $request->id_medida,
+                    'id_medida' => $idMedida,
                 ],
                 [
                     'nombre_producto' => 'required|max:150',
@@ -46,7 +67,7 @@ class ProductoController extends Controller
                     'precio_compra' => 'nullable|numeric|min:0',
                     'precio_venta' => 'nullable|numeric|min:0',
                     'stock_actual' => 'nullable|integer|min:0',
-                    'id_medida' => 'required|exists:medidas,id_medida',
+                    'id_medida' => 'nullable|exists:medidas,id_medida',
                 ],
                 [
                     'required' => 'El campo :attribute es obligatorio.',
@@ -93,11 +114,11 @@ class ProductoController extends Controller
             'imagen_producto' => $nombreImagen,
             'id_categoria' => $request->id_categoria,
             'id_impuesto' => $request->id_impuesto,
-            'id_ubicacion' => $request->id_ubicacion,
+            'id_ubicacion' => $idUbicacion,
             'precio_compra' => $request->precio_compra,
             'precio_venta' => $request->precio_venta,
             'stock_actual' => 0,
-            'id_medida' => $request->id_medida,
+            'id_medida' => $idMedida,
             
         ]);
 
@@ -110,7 +131,10 @@ class ProductoController extends Controller
             ]
         ], 200);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
+            Log::error('Error al crear producto: '.$e->getMessage());
+
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al crear producto',
@@ -145,7 +169,10 @@ class ProductoController extends Controller
                 'producto' => $producto
             ], 200);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
+            Log::error('Error al obtener producto: '.$e->getMessage());
+
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener producto',
@@ -175,6 +202,24 @@ class ProductoController extends Controller
             // STOCK ANTERIOR
             $stockAnterior = (int) $producto->stock_actual;
 
+            // 🧹 La medida es OPCIONAL: si el select queda vacío el JS manda null y
+            // FormData lo convierte en el texto "null", que rompía el UPDATE.
+            $idMedida = $request->input('id_medida');
+            if (! is_numeric($idMedida) || (int) $idMedida <= 0) {
+                $idMedida = null;
+            } else {
+                $idMedida = (int) $idMedida;
+            }
+
+            // 🧹 Igual con la ubicación: es OPCIONAL y el select vacío también
+            // llegaba como el texto "null".
+            $idUbicacion = $request->input('id_ubicacion');
+            if (! is_numeric($idUbicacion) || (int) $idUbicacion <= 0) {
+                $idUbicacion = null;
+            } else {
+                $idUbicacion = (int) $idUbicacion;
+            }
+
             $validator = Validator::make(
                 [
                     'nombre_producto' => $request->nombre_producto,
@@ -182,7 +227,7 @@ class ProductoController extends Controller
                     'imagen_producto' => $request->file('imagen_producto'),
                     'id_categoria' => $request->id_categoria,
                     'id_impuesto' => $request->id_impuesto,
-                    'id_ubicacion' => $request->id_ubicacion,
+                    'id_ubicacion' => $idUbicacion,
                     'precio_compra' => $request->precio_compra,
                     'precio_venta' => $request->precio_venta,
                     'stock_actual' => $request->stock_actual,
@@ -342,11 +387,11 @@ class ProductoController extends Controller
             $producto->descripcion_producto = $request->descripcion_producto;
             $producto->id_categoria = $request->id_categoria;
             $producto->id_impuesto = $request->id_impuesto;
-            $producto->id_ubicacion = $request->id_ubicacion;
+            $producto->id_ubicacion = $idUbicacion;
             $producto->precio_compra = $request->precio_compra;
             $producto->precio_venta = $request->precio_venta;
             $producto->stock_actual = $request->stock_actual ?? $producto->stock_actual;
-            $producto->id_medida = $request->id_medida;
+            $producto->id_medida = $idMedida;
 
             $producto->save();
 
@@ -424,7 +469,9 @@ class ProductoController extends Controller
             ], 200);
 
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
+            Log::error('Error al actualizar producto: '.$e->getMessage());
 
             DB::rollBack();
 
@@ -459,7 +506,10 @@ class ProductoController extends Controller
                 'mensaje' => 'Estado del producto actualizado'
             ], 200);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
+            Log::error('Error al cambiar estado del producto: '.$e->getMessage());
+
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al cambiar estado del producto',
@@ -502,7 +552,10 @@ class ProductoController extends Controller
                 'productos' => $productos
             ], 200);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
+            Log::error('Error al obtener productos: '.$e->getMessage());
+
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener productos',
@@ -561,7 +614,9 @@ class ProductoController extends Controller
                 ]
             ], 200);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
+            Log::error('Error al obtener datos del formulario de productos: '.$e->getMessage());
 
             return response()->json([
                 'error' => true,

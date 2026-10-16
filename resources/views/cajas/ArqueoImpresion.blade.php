@@ -12,14 +12,14 @@
         h1{font-size:22px;margin:0 0 5px}
         p{margin:0;color:#59616b}
         button{border:1px solid #59616b;background:#fff;padding:8px 12px;border-radius:4px;cursor:pointer}
-        .resumen{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:20px}
-        .resumen div{border:1px solid #d8dde2;padding:10px}
-        .resumen span{display:block;color:#59616b;margin-bottom:6px}
-        .resumen strong{font-size:15px;font-variant-numeric:tabular-nums}
-        table{width:100%;border-collapse:collapse}
-        th,td{border:1px solid #cbd0d5;padding:7px;text-align:left;vertical-align:top}
-        th{background:#eef1f3}
-        .numero{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+        .resumen{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:16px}
+        .resumen div{border:1px solid #d8dde2;padding:7px 9px;text-align:center}
+        .resumen span{display:block;color:#59616b;margin-bottom:3px;font-size:11px}
+        .resumen strong{font-size:13px;font-variant-numeric:tabular-nums}
+        table{width:100%;border-collapse:collapse;font-size:11.5px}
+        th,td{border:1px solid #cbd0d5;padding:6px 7px;text-align:center;vertical-align:middle}
+        th{background:#eef1f3;font-size:11px}
+        .numero{font-variant-numeric:tabular-nums;white-space:nowrap}
         .positivo{color:#14783b;font-weight:bold}
         .negativo{color:#b42318;font-weight:bold}
         .pendiente{color:#667085}
@@ -28,6 +28,17 @@
     </style>
 </head>
 <body>
+    @php
+        // Quién exporta (usuario de la sesión) y la fecha completa con el mismo
+        // formato del helper global window.formatearFechaDiaHora().
+        $usuarioExporta = session('usuario.nombre') ?? 'Usuario no identificado';
+        $rolExporta = session('usuario.rol') ?? null;
+
+        $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        $ahora = \Carbon\Carbon::now();
+        $fechaExportacion = $ahora->format('j').' de '.$meses[$ahora->month - 1].' del '.$ahora->format('Y').' '.$ahora->format('h:i A');
+    @endphp
+
     <header>
         <div>
             <h1>Registro de arqueo de cajas</h1>
@@ -38,7 +49,8 @@
             @else
                 <p>Periodo: {{ \Carbon\Carbon::parse($fechaInicio)->format('d/m/Y') }} al {{ \Carbon\Carbon::parse($fechaFin)->format('d/m/Y') }}</p>
             @endif
-            <p>Impreso: {{ now()->format('d/m/Y H:i') }}</p>
+            <p>Exportado por: {{ $usuarioExporta }}@if ($rolExporta) · {{ $rolExporta }}@endif</p>
+            <p>Fecha de exportación: {{ $fechaExportacion }}</p>
         </div>
         <button type="button" onclick="window.print()">Imprimir</button>
     </header>
@@ -73,8 +85,8 @@
                 <tr>
                     <td>#{{ data_get($caja, 'id_caja') }}</td>
                     <td>{{ data_get($caja, 'usuario', '—') }}</td>
-                    <td>{{ data_get($caja, 'fecha_apertura') ? \Carbon\Carbon::parse(data_get($caja, 'fecha_apertura'))->format('d/m/Y H:i') : '—' }}</td>
-                    <td>{{ data_get($caja, 'fecha_cierre') ? \Carbon\Carbon::parse(data_get($caja, 'fecha_cierre'))->format('d/m/Y H:i') : '—' }}</td>
+                    <td>{{ data_get($caja, 'fecha_apertura') ? \Carbon\Carbon::parse(data_get($caja, 'fecha_apertura'))->format('d/m/Y h:i A') : '—' }}</td>
+                    <td>{{ data_get($caja, 'fecha_cierre') ? \Carbon\Carbon::parse(data_get($caja, 'fecha_cierre'))->format('d/m/Y h:i A') : '—' }}</td>
                     <td class="numero">C$ {{ number_format((float) data_get($caja, 'monto_inicial', 0), 2) }}</td>
                     <td class="numero">C$ {{ number_format((float) data_get($caja, 'monto_teorico', 0), 2) }}</td>
                     <td class="numero">{{ $real === null ? 'Pendiente' : 'C$ ' . number_format((float) $real, 2) }}</td>

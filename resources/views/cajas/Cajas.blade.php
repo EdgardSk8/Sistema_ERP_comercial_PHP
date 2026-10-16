@@ -23,9 +23,9 @@
                 <label for="arqueoFechaFin" class="form-label">Hasta</label>
                 <input type="text" class="form-control form-control-sm" id="arqueoFechaFin" placeholder="Sin límite" autocomplete="off">
             </div>
-            <button type="button" class="btn btn-success btn-sm arqueo-btn-mini" id="btnArqueoHoy">Hoy</button>
-            <button type="button" class="btn btn-primary btn-sm arqueo-btn-mini" id="btnArqueoSemana">Esta semana</button>
-            <button type="button" class="btn btn-danger btn-sm arqueo-btn-mini" id="btnLimpiarFiltros">
+            <button type="button" class="btn btn-success btn-sm " id="btnArqueoHoy">Hoy</button>
+            <button type="button" class="btn btn-primary btn-sm " id="btnArqueoSemana">Esta semana</button>
+            <button type="button" class="btn btn-danger btn-sm " id="btnLimpiarFiltros">
                 <i class="fa-solid fa-eraser" aria-hidden="true"></i>
                 Limpiar
             </button>
@@ -113,41 +113,76 @@
     </div>
 
     <div class="modal fade" id="modalArqueoMultiple" tabindex="-1" aria-labelledby="tituloModalArqueoMultiple" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <div>
-                        <h2 class="modal-title fs-6" id="tituloModalArqueoMultiple">Arqueo múltiple</h2>
-                        <div class="small text-muted"><span id="arqueoMultipleCantidad">0</span> cajas seleccionadas</div>
-                    </div>
+                    <h2 class="modal-title fs-6" id="tituloModalArqueoMultiple">Arqueo múltiple</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="arqueo-multiple-incluidas" id="arqueoMultipleIncluidas"></p>
+                    <div class="row g-3">
 
-                    <div class="arqueo-multiple-fila">
-                        <span>Teórico total</span>
-                        <strong id="arqueoMultipleTeorico">C$ 0.00</strong>
-                    </div>
+                        <!-- IZQUIERDA: cajas, efectivo contado y totales -->
+                        <div class="col-md-5">
 
-                    <div class="arqueo-multiple-fila">
-                        <label for="arqueoMultipleReal">Efectivo contado (total)</label>
-                        <div class="input-group input-group-sm arqueo-multiple-campo">
-                            <span class="input-group-text">C$</span>
-                            <input type="number" class="form-control form-control-sm" id="arqueoMultipleReal" min="0" step="0.01" inputmode="decimal" placeholder="0.00" required>
+                            <div class="arqueo-multiple-bloque">
+                                <span class="arqueo-multiple-etiqueta">1 · Cajas a arquear</span>
+                                <div class="arqueo-multiple-chips" id="arqueoMultipleIncluidas"></div>
+                                <div class="small text-muted mt-2">
+                                    <span id="arqueoMultipleCantidad">0</span> cajas · un solo efectivo contado para todo el lote
+                                </div>
+                            </div>
+
+                            <div class="arqueo-multiple-bloque">
+                                <label class="arqueo-multiple-etiqueta" for="arqueoMultipleReal">2 · Efectivo contado (total del lote)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">C$</span>
+                                    <input type="number" class="form-control form-control-sm" id="arqueoMultipleReal" min="0" step="0.01" inputmode="decimal" placeholder="0.00" required>
+                                </div>
+
+                                <div class="arqueo-multiple-totales">
+                                    <div class="arqueo-multiple-fila">
+                                        <span>Teórico total del lote</span>
+                                        <strong id="arqueoMultipleTeorico">C$ 0.00</strong>
+                                    </div>
+
+                                    <div class="arqueo-multiple-fila">
+                                        <span>Diferencia (contado − teórico)</span>
+                                        <strong id="arqueoMultipleDiferencia" class="arqueo-diferencia-cero">C$ 0.00</strong>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
-                    </div>
 
-                    <div class="arqueo-multiple-fila">
-                        <span>Diferencia</span>
-                        <strong id="arqueoMultipleDiferencia" class="arqueo-diferencia-cero">C$ 0.00</strong>
-                    </div>
+                        <!-- DERECHA: resultado por caja -->
+                        <div class="col-md-7">
+                            <div class="arqueo-multiple-bloque">
+                                <span class="arqueo-multiple-etiqueta">3 · Qué se guardará en cada caja</span>
+                                <div class="arqueo-multiple-tabla-wrap">
+                                    <table class="arqueo-multiple-tabla">
+                                        <thead>
+                                            <tr>
+                                                <th>Caja</th>
+                                                <th>Teórico</th>
+                                                <th>Se guardará</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="arqueoMultipleDetalle"></tbody>
+                                    </table>
+                                </div>
+                                <p class="arqueo-multiple-nota">
+                                    La diferencia del lote se aplica a la <strong>primera caja</strong>;
+                                    las demás se guardan con su monto teórico.
+                                </p>
+                            </div>
+                        </div>
 
-                    <p class="arqueo-multiple-nota">El total se registra en la primera caja; las demás quedan con su monto teórico.</p>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-success btn-sm" id="btnGuardarArqueoMultiple">Guardar arqueos</button>
+                    <button type="button" class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn guardar btn-sm-modal" id="btnGuardarArqueoMultiple">Guardar arqueos</button>
                 </div>
             </div>
         </div>

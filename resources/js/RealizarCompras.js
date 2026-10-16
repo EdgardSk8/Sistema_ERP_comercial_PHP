@@ -302,6 +302,12 @@ export default function initCompras() {
         return valor;
     }
 
+    // 🔥 El precio del proveedor puede traer el IVA incluido (lo normal) o no.
+    // Si viene incluido, NO se suma nada y el IVA del cuadro de totales queda en 0.
+    function ivaEstaIncluido() {
+        return $('#chk_iva_incluido').is(':checked');
+    }
+
     function renderCarrito() {
 
         tabla.clear();
@@ -310,7 +316,7 @@ export default function initCompras() {
             
 
             let subtotal = (Number(p.precio) || 0) * (Number(p.cantidad) || 0);
-            let impuestoPorcentaje = obtenerPorcentajeImpuesto(p);
+            let impuestoPorcentaje = ivaEstaIncluido() ? 0 : obtenerPorcentajeImpuesto(p);
             let impuestoValor = subtotal * (impuestoPorcentaje / 100);
             let totalItem = subtotal + impuestoValor;
 
@@ -368,6 +374,14 @@ export default function initCompras() {
         recalcularTodo();
     });
 
+/* 🔥 IVA INCLUIDO / NO INCLUIDO (cuadro de totales) */
+/* ------------------------------------------------------------------------------------------------------------------- */
+
+    $('#chk_iva_incluido').on('change', function () {
+        recalcularTodo();
+        renderCarrito();
+    });
+
 /* ------------------------------------------------------------------------------------------------------------------- */
 /* 🔥 CÁLCULO GLOBAL REAL */
 /* ------------------------------------------------------------------------------------------------------------------- */
@@ -380,7 +394,7 @@ export default function initCompras() {
         carrito.forEach(p => {
 
             let subtotal = (p.precio || 0) * (p.cantidad || 0);
-            let impuestoPorcentaje = obtenerPorcentajeImpuesto(p);
+            let impuestoPorcentaje = ivaEstaIncluido() ? 0 : obtenerPorcentajeImpuesto(p);
             let impuesto = subtotal * (impuestoPorcentaje / 100);
 
             subtotalGeneral += subtotal;
@@ -619,7 +633,9 @@ export default function initCompras() {
                     let precioBase = precioCompra * (1 + porcentaje / 100);
                     let precioTotal = precioBase * (1 + iva / 100);
 
-                    inputPrecioVenta.val(precioBase.toFixed(2));
+                    // 6 decimales: la base sin IVA debe ser exacta para que el precio
+                    // final (+IVA) no quede con centavos fantasma.
+                    inputPrecioVenta.val(precioBase.toFixed(6));
                     inputPrecioTotal.val(precioTotal.toFixed(2));
 
                     porcentajeOriginal = porcentaje;
@@ -650,7 +666,8 @@ export default function initCompras() {
                 let precioBase = total / (1 + iva / 100);
                 let porcentaje = ((precioBase / precioCompra) - 1) * 100;
 
-                inputPrecioVenta.val(precioBase.toFixed(2));
+                // 6 decimales para que base × (1 + IVA) devuelva el total exacto.
+                inputPrecioVenta.val(precioBase.toFixed(6));
                 inputPorcentaje.val(porcentaje.toFixed(2));
 
                 calcularGanancia();
@@ -680,7 +697,7 @@ export default function initCompras() {
                     porcentajeOriginal = nuevoPorcentaje;
 
                     inputPorcentaje.val(nuevoPorcentaje.toFixed(3));
-                    inputPrecioVenta.val(baseRedondeada.toFixed(2));
+                    inputPrecioVenta.val(baseRedondeada.toFixed(6));
                     inputPrecioTotal.val(totalRedondeado);
                     calcularGanancia();
 
@@ -693,7 +710,7 @@ export default function initCompras() {
 
                     let nuevoPrecioVenta = totalRedondeado / (1 + iva / 100);
 
-                    inputPrecioVenta.val(nuevoPrecioVenta.toFixed(2));
+                    inputPrecioVenta.val(nuevoPrecioVenta.toFixed(6));
                     inputPrecioTotal.val(totalRedondeado);
                     calcularGanancia();
                 }
@@ -743,7 +760,7 @@ export default function initCompras() {
 
             if(nombre === ''){ mostrarToast('El nombre del producto es obligatorio', 'danger'); return; }
 
-            if(!categoria || !ubicacion || !impuesto || !medida){
+            if(!categoria || !ubicacion || !impuesto /* || !medida */){
                 mostrarToast('Debe seleccionar categoría, ubicación, impuesto y medida', 'danger');
                 return;
             }

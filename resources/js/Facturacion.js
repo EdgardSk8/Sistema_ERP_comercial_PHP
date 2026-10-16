@@ -1398,14 +1398,12 @@ async function obtenerCredencialesEmpresa() {
 
 $(document).on('click.facturacion', '#btnCerrarCaja', function () {
 
-    if (!window.confirm('¿Cerrar la caja sin arqueo? Podrás registrar o corregir el arqueo después desde Cajas.')) return;
-
     $.post('/caja/cerrar', {
         _token: $('meta[name="csrf-token"]').attr('content')
     })
         .done(function (res) {
             verificarCajaEstado();
-            mostrarToast(res.mensaje || 'Caja cerrada. Puedes arquearla después desde Cajas.', 'success');
+            mostrarToast(`Caja cerrada · Total: ${moneda(res.total ?? 0)}`, 'success');
         })
         .fail(function (xhr) {
             mostrarToast(xhr.responseJSON?.mensaje || 'Error al cerrar caja', 'danger');

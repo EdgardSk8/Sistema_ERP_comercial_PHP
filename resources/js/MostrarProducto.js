@@ -682,7 +682,9 @@ export default function initMostrarProductos() {
                 let precioBase = precioCompra * (1 + porcentaje / 100);
                 let precioTotal = precioBase * (1 + iva / 100);
 
-                inputPrecioVenta.val(precioBase.toFixed(2));
+                // 6 decimales: la base sin IVA debe ser exacta para que el precio
+                // final (+IVA) no quede con centavos fantasma.
+                inputPrecioVenta.val(precioBase.toFixed(6));
                 inputPrecioTotal.val(precioTotal.toFixed(2));
                 calcularGanancia();
 
@@ -713,7 +715,8 @@ export default function initMostrarProductos() {
             let precioBase = total / (1 + iva / 100);
             let porcentaje = ((precioBase / precioCompra) - 1) * 100;
 
-            inputPrecioVenta.val(precioBase.toFixed(2));
+            // 6 decimales para que base × (1 + IVA) devuelva el total exacto.
+            inputPrecioVenta.val(precioBase.toFixed(6));
             inputPorcentaje.val(porcentaje.toFixed(2));
             calcularGanancia();
             porcentajeOriginal = porcentaje;
@@ -741,7 +744,7 @@ export default function initMostrarProductos() {
                 porcentajeOriginal = nuevoPorcentaje;
 
                 inputPorcentaje.val(nuevoPorcentaje.toFixed(3));
-                inputPrecioVenta.val(baseRedondeada.toFixed(2));
+                inputPrecioVenta.val(baseRedondeada.toFixed(6));
                 inputPrecioTotal.val(totalRedondeado);
                 calcularGanancia();
             } else {
@@ -753,7 +756,7 @@ export default function initMostrarProductos() {
 
                 let nuevoPrecioVenta = totalRedondeado / (1 + iva / 100);
 
-                inputPrecioVenta.val(nuevoPrecioVenta.toFixed(2));
+                inputPrecioVenta.val(nuevoPrecioVenta.toFixed(6));
                 inputPrecioTotal.val(totalRedondeado);
                 calcularGanancia();
             }

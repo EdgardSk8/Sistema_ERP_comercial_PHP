@@ -44,7 +44,7 @@
 }
 
 .arqueo-filtros > div{
-	width:min(150px, 100%);
+	/* width:min(150px, 100%); */
 }
 
 .arqueo-filtros .form-label{
@@ -80,7 +80,7 @@
 	flex-direction:column;
 	align-items:center;
 	gap:2px;
-	padding:8px 10px;
+	padding: 8px 10px;
 	border:1px solid var(--table-border);
 	border-radius:var(--radius);
 	background:var(--surface);
@@ -233,11 +233,31 @@
 .arqueo-col-check .form-check-input{margin:0;float:none;cursor:pointer}
 
 /* Arqueo múltiple */
-.arqueo-multiple-incluidas{
-	margin:0 0 12px;
+.arqueo-multiple-bloque + .arqueo-multiple-bloque{margin-top:16px}
+
+.arqueo-multiple-etiqueta{
+	display:block;
+	margin:0 0 6px;
 	color:var(--text-soft);
+	font-size:11px;
+	font-weight:600;
+	letter-spacing:.04em;
+	text-transform:uppercase;
+}
+
+.arqueo-multiple-chips{display:flex;flex-wrap:wrap;gap:6px}
+
+.arqueo-multiple-chip{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	min-width:38px;
+	padding:3px 9px;
+	border:1px solid var(--table-border);
+	border-radius:999px;
+	background:var(--surface);
 	font-size:12px;
-	line-height:1.4;
+	font-variant-numeric:tabular-nums;
 }
 
 .arqueo-multiple-fila{
@@ -263,10 +283,63 @@
 	font-variant-numeric:tabular-nums;
 }
 
-.arqueo-multiple-campo{max-width:170px}
+/* Totales del lote: dos tarjetas lado a lado */
+.arqueo-multiple-totales{
+	display:grid;
+	grid-template-columns:1fr 1fr;
+	gap:10px;
+	margin-top:12px;
+}
+
+.arqueo-multiple-totales .arqueo-multiple-fila{
+	flex-direction:column;
+	align-items:flex-start;
+	gap:3px;
+	padding:9px 11px;
+	border:1px solid var(--table-border);
+	border-radius:8px;
+	background:var(--surface);
+}
+
+.arqueo-multiple-totales .arqueo-multiple-fila > strong{font-size:15px}
+
+/* La tabla se queda dentro del modal cuando hay muchas cajas */
+.arqueo-multiple-tabla-wrap{max-height:245px;overflow-y:auto}
+
+.arqueo-multiple-tabla thead th{
+	position:sticky;
+	top:0;
+	background:var(--surface);
+}
+
+.arqueo-multiple-tabla{
+	width:100%;
+	border-collapse:collapse;
+	font-size:12px;
+	font-variant-numeric:tabular-nums;
+}
+
+.arqueo-multiple-tabla th{
+	padding: 4px 0 4px 0;
+	border-bottom:1px solid var(--table-border);
+	color:var(--text);
+	font-size:11px;
+	font-weight:600;
+	text-align:center;
+	/* border: 2px solid red; */
+}
+
+.arqueo-multiple-tabla td{
+	padding:6px 0;
+	border-bottom:1px solid var(--table-border);
+	color:var(--text-soft);
+	text-align:center;
+}
+
+.arqueo-multiple-tabla tr:last-child td{border-bottom:0}
 
 .arqueo-multiple-nota{
-	margin:12px 0 0;
+	margin:10px 0 0;
 	color:var(--text-soft);
 	font-size:11px;
 	line-height:1.4;

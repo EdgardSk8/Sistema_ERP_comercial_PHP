@@ -5,6 +5,67 @@ export default function initRespaldo() {
     if (titulo) titulo.textContent = 'RESPALDO Y RESTAURACIÓN DE BASE DE DATOS';
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
+    /*  ╔═══════════ Modal de aviso ═══════════╗
+        Reemplaza a los alert() del navegador.
+        ╚═════════════════════════════════════╝ */
+
+    function mostrarAviso(mensaje, titulo = 'Aviso', tipo = 'danger') {
+
+        let modalEl = document.getElementById('modalAvisoRespaldo');
+
+        if (!modalEl) {
+
+            $('body').append(`
+                <div class="modal fade" id="modalAvisoRespaldo" tabindex="-1" aria-hidden="true">
+
+                    <div class="modal-dialog modal-dialog-centered">
+
+                        <div class="modal-content">
+
+                            <div class="modal-header aviso-header py-2">
+
+                                <h6 class="modal-title mb-0">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    <span class="aviso-titulo">Aviso</span>
+                                </h6>
+
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+
+                            </div>
+
+                            <div class="modal-body p-3">
+                                <p class="mb-0 text-center aviso-mensaje"></p>
+                            </div>
+
+                            <div class="modal-footer py-2">
+                                <button type="button" class="btn btn-success btn-sm-modal" data-bs-dismiss="modal">
+                                    Aceptar
+                                </button>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            `);
+
+            modalEl = document.getElementById('modalAvisoRespaldo');
+        }
+
+        const estilos = {
+            danger: 'bg-danger text-white',
+            warning: '',
+            success: 'bg-success text-white'
+        };
+
+        $('.aviso-titulo', modalEl).text(titulo);
+        $('.aviso-mensaje', modalEl).text(mensaje);
+        $('.aviso-header', modalEl).attr('class', `modal-header aviso-header py-2 ${estilos[tipo] ?? estilos.danger}`.trim());
+
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+
     $(document).on('click.respaldo', '#btnExportarSistema', async function () {
 
     // =========================================================
@@ -95,7 +156,7 @@ export default function initRespaldo() {
         } catch (error) {
 
             console.error('🔥 Error exportación:', error);
-            alert(error.message || 'Error inesperado');
+            mostrarAviso(error.message || 'Error inesperado', 'Error en la exportación');
 
         } finally {
 
@@ -117,7 +178,7 @@ export default function initRespaldo() {
         const btn = this;
 
         if (!input.files || !input.files.length) {
-            alert('Selecciona un archivo SQL');
+            mostrarAviso('Selecciona un archivo SQL', 'Archivo requerido', 'warning');
             return;
         }
 
@@ -164,7 +225,7 @@ export default function initRespaldo() {
         } catch (error) {
 
             console.error('🔥 Error importación:', error);
-            alert(error.message || 'Error inesperado');
+            mostrarAviso(error.message || 'Error inesperado', 'Error en la importación');
 
         } finally {
 

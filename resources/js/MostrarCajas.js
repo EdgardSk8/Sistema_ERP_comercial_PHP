@@ -306,6 +306,26 @@ export default function initMostrarCajas() {
         return Math.round(filas.reduce((suma, fila) => suma + Number(fila.monto_teorico || 0), 0) * 100) / 100;
     }
 
+    // Vista previa: qué monto quedará guardado en cada caja (la diferencia va a la primera).
+    function renderDetalleMultiple(diferencia = 0) {
+        const cuerpo = document.getElementById('arqueoMultipleDetalle');
+        if (!cuerpo) return;
+
+        cuerpo.innerHTML = cajasMultiple.map(function (fila, indice) {
+            const teorico = Number(fila.monto_teorico || 0);
+            const real = indice === 0 ? Math.round((teorico + diferencia) * 100) / 100 : teorico;
+            const clase = indice === 0 && diferencia !== 0
+                ? (diferencia > 0 ? 'arqueo-diferencia-positiva' : 'arqueo-diferencia-negativa')
+                : 'arqueo-diferencia-cero';
+
+            return `<tr>
+                        <td>Caja #${Number(fila.id_caja)}</td>
+                        <td>${moneda(teorico)}</td>
+                        <td class="${clase}">${moneda(real)}</td>
+                    </tr>`;
+        }).join('');
+    }
+
     function actualizarDiferenciaMultiple() {
         const salida = document.getElementById('arqueoMultipleDiferencia');
         const boton = document.getElementById('btnGuardarArqueoMultiple');
@@ -317,6 +337,7 @@ export default function initMostrarCajas() {
                 salida.className = 'arqueo-diferencia-cero';
             }
             if (boton) boton.disabled = true;
+            renderDetalleMultiple(0);
             return false;
         }
 
@@ -329,6 +350,7 @@ export default function initMostrarCajas() {
         }
 
         if (boton) boton.disabled = false;
+        renderDetalleMultiple(diferencia);
         return true;
     }
 
@@ -346,7 +368,7 @@ export default function initMostrarCajas() {
         if (cantidad) cantidad.textContent = filas.length;
 
         const incluidas = document.getElementById('arqueoMultipleIncluidas');
-        if (incluidas) incluidas.textContent = 'Cajas incluidas: ' + filas.map(fila => `#${Number(fila.id_caja)}`).join(', ');
+        if (incluidas) incluidas.innerHTML = filas.map(fila => `<span class="arqueo-multiple-chip">#${Number(fila.id_caja)}</span>`).join('');
 
         const teorico = document.getElementById('arqueoMultipleTeorico');
         if (teorico) teorico.textContent = moneda(totalTeoricoMultiple());

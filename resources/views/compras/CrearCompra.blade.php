@@ -155,6 +155,20 @@
                             <input id="impuesto" class="form-control form-control-sm text-end" readonly>
                         </div>
 
+                        <!-- ═══ EL PRECIO DEL PROVEEDOR TRAE IVA O NO ═══ -->
+                        <div class="mb-2">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       role="switch"
+                                       id="chk_iva_incluido"
+                                       checked>
+                                <label class="form-check-label small" for="chk_iva_incluido">
+                                    IVA incluido
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="mb-2">
                             <label class="small fw-bold">Total</label>
                             <input type="text" id="total" class="form-control form-control-sm text-end fw-bold" readonly>
