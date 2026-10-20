@@ -35,16 +35,16 @@ export default function initMostrarMedidas() {
                     let botonEstado = row.estado_medida == 1
 
                     ? `<button class="btn-baja bajaMedida" data-id="${data}">
-                            <i class="fa-solid fa-ban"></i>
+                            <i class="ph ph-prohibit"></i>
                     </button>`
 
                     : `<button class="btn-alta bajaMedida" data-id="${data}">
-                            <i class="fa-solid fa-circle-check"></i>
+                            <i class="ph ph-check-circle"></i>
                     </button>`;
 
                     return `
                         <button class="btn-editar editarMedida" data-id="${data}">
-                            <i class="fa-solid fa-pencil-alt"></i>
+                            <i class="ph ph-pencil-simple"></i>
                         </button>
                         ${botonEstado}
                     `;

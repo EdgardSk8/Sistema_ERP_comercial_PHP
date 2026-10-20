@@ -206,11 +206,11 @@
                         <div class="d-flex align-items-center gap-1 ms-auto">
                             <button class="btn-editar editarVariacionTalla"
                                 data-id="${talla.id_variacion_talla}" title="Editar talla y stock">
-                                <i class="fa-solid fa-pencil-alt"></i>
+                                <i class="ph ph-pencil-simple"></i>
                             </button>
                             <button class="btn-baja eliminarVariacionTalla"
                                 data-id="${talla.id_variacion_talla}" title="Quitar talla">
-                                <i class="fa-solid fa-xmark"></i>
+                                <i class="ph ph-x"></i>
                             </button>
                         </div>
                     </div>
@@ -221,12 +221,12 @@
         <div class="d-flex flex-wrap align-items-center justify-content-center gap-4 mt-2">
             <button class="btn-transferir verImagenesVariacion"
                 data-id="${variacion.id_variacion}" title="Ver imágenes">
-                <i class="fa-solid fa-images"></i> ${variacion.imagenes.length}
+                <i class="ph ph-images"></i> ${variacion.imagenes.length}
                 ${variacion.imagenes.length === 1 ? 'Imagen' : 'Imágenes'}
             </button>
             <button class="btn-alta agregarTallaVariacion"
                 data-id="${variacion.id_variacion}" title="Agregar talla">
-                <i class="fa-solid fa-ruler"></i> Tallas
+                <i class="ph ph-ruler"></i> Tallas
             </button>
         </div>
     </section>
@@ -265,19 +265,19 @@
                     <button type="button" class="btn btn-sm btn-light border position-absolute top-0 start-0 m-1 p-1 reordenarVariacionImagen"
                         title="Arrastrar para cambiar el orden" aria-label="Arrastrar imagen ${escapar(imagen.orden)} para cambiar el orden"
                         style="touch-action:none; cursor:grab;">
-                        <i class="fa-solid fa-grip-lines"></i>
+                        <i class="ph ph-dots-six-vertical"></i>
                     </button>
                 </div>
                 <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
                     <small class="text-muted">Imagen ${escapar(imagen.orden)}</small>
                     <div class="d-flex align-items-center gap-1">
-                        <button type="button" class="btn btn-sm border-0 p-1 text-primary reemplazarVariacionImagen"
+                        <button type="button" class="btn-editar reemplazarVariacionImagen"
                             data-id="${imagen.id_imagen}" data-variacion="${variacion.id_variacion}" title="Reemplazar imagen" aria-label="Reemplazar imagen ${escapar(imagen.orden)}">
-                            <i class="fa-solid fa-pen-to-square"></i>
+                            <i class="ph ph-pencil-simple-line"></i>
                         </button>
-                        <button type="button" class="btn btn-sm border-0 p-1 text-danger eliminarVariacionImagen"
+                        <button type="button" class="btn-baja eliminarVariacionImagen"
                             data-id="${imagen.id_imagen}" title="Eliminar imagen" aria-label="Eliminar imagen ${escapar(imagen.orden)}">
-                            <i class="fa-regular fa-trash-can"></i>
+                            <i class="ph ph-trash"></i>
                         </button>
                     </div>
                 </div>

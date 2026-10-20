@@ -394,6 +394,10 @@ const  PlantillaExcel = function (config = {}) {
     const $fechaInicio = $('#FechaInicio');
     const $fechaFin = $('#FechaFin');
     const $limite = $('#LimiteDatos');
+
+    // Tope por defecto: evita que un reporte sin limite traiga la tabla completa
+    // (con millones de filas eso bloquea el navegador y la base).
+    const LIMITE_REPORTE = 500;
     const Primer_Reporte = $('input[name="reporte"]').first();
 
     /* MAPEO DE RUTAS */
@@ -504,7 +508,7 @@ const  PlantillaExcel = function (config = {}) {
             data: {
                 fecha_inicio: $fechaInicio.val(),
                 fecha_fin: $fechaFin.val(),
-                limite: $limite.val() !== '' ? $limite.val() : null
+                limite: $limite.val() !== '' ? $limite.val() : LIMITE_REPORTE
             },
 
             success: function (respuesta) {
@@ -642,11 +646,7 @@ const  PlantillaExcel = function (config = {}) {
 
         if ( (inicio && !fin) || (!inicio && fin) ) {
 
-            Swal.fire({
-                icon: 'warning',
-                title: 'Fechas incompletas',
-                text: 'Debes seleccionar fecha de inicio y fecha fin.'
-            });
+            mostrarToast('Debes seleccionar fecha de inicio y fecha fin.', 'warning');
 
             return;
         }

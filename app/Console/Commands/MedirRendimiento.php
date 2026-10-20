@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\CompraController;
 use App\Http\Controllers\CuentaPorCobrarController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MovimientoInventarioController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\VentaController;
@@ -53,7 +55,7 @@ class MedirRendimiento extends Command
         }
 
         $this->info("Usuario simulado: {$this->usuario['nombre_completo_usuario']} (rol {$this->usuario['id_rol']})");
-        $this->info("Repeticiones por endpoint: {$repeticiones}".(app()->isLocal() ? ' | APP_DEBUG=ON (los tiempos estan inflados)' : ''));
+        $this->info('Repeticiones por endpoint: '.$repeticiones.(config('app.debug') ? ' | APP_DEBUG=ON (los tiempos estan inflados)' : ''));
 
         $piso = $this->medirPisoHttp(2);
 
@@ -69,7 +71,7 @@ class MedirRendimiento extends Command
             $medicion = $this->medir($caso, $repeticiones);
 
             if ($medicion['error']) {
-                $filas[] = [$caso['grupo'], $caso['nombre'], 'ERROR', '-', '-', '-', $medicion['error']];
+                $filas[] = [$caso['grupo'], $caso['nombre'], 'ERROR', '-', '-', '-', '-', '-', $medicion['error']];
 
                 continue;
             }
@@ -81,6 +83,8 @@ class MedirRendimiento extends Command
                 $this->ms($medicion['db']),
                 $this->ms(max(0, $medicion['total'] - $medicion['db'])),
                 $medicion['queries'],
+                $medicion['filas'],
+                $this->kb($medicion['payload']),
                 $this->kb($medicion['memoria']),
             ];
 
@@ -89,7 +93,7 @@ class MedirRendimiento extends Command
 
         $this->newLine();
         $this->table(
-            ['Grupo', 'Endpoint', 'Tiempo', 'En BD', 'En PHP', 'Consultas', 'Memoria'],
+            ['Grupo', 'Endpoint', 'Tiempo', 'En BD', 'En PHP', 'Consultas', 'Filas', 'Payload', 'Memoria'],
             $filas
         );
 
@@ -158,8 +162,32 @@ class MedirRendimiento extends Command
             ['grupo' => 'dashboard', 'nombre' => 'dashboard/cajas', 'controlador' => DashboardController::class, 'metodo' => 'Cajas', 'params' => $periodo],
             ['grupo' => 'dashboard', 'nombre' => 'dashboard/tallas', 'controlador' => DashboardController::class, 'metodo' => 'Tallas', 'params' => $periodo],
             ['grupo' => 'dashboard', 'nombre' => 'dashboard/movimiento-inventario', 'controlador' => DashboardController::class, 'metodo' => 'Movimientoinventario', 'params' => $periodo],
-            ['grupo' => 'ventas', 'nombre' => 'ventas/mostrar', 'controlador' => VentaController::class, 'metodo' => 'MostrarVentas', 'params' => []],
-            ['grupo' => 'productos', 'nombre' => 'productos/mostrar', 'controlador' => ProductoController::class, 'metodo' => 'MostrarProductos', 'params' => []],
+            ['grupo' => 'ventas', 'nombre' => 'ventas (todo)', 'controlador' => VentaController::class, 'metodo' => 'MostrarVentas', 'params' => []],
+            ['grupo' => 'ventas', 'nombre' => 'ventas (paginado)', 'controlador' => VentaController::class, 'metodo' => 'MostrarVentas', 'params' => [
+                'draw' => 1, 'start' => 0, 'length' => 50,
+                'search' => ['value' => ''],
+                'order' => [['column' => 0, 'dir' => 'desc']],
+                'columns' => [],
+            ]],
+            ['grupo' => 'productos', 'nombre' => 'productos (todo)', 'controlador' => ProductoController::class, 'metodo' => 'MostrarProductos', 'params' => []],
+            ['grupo' => 'productos', 'nombre' => 'productos (paginado)', 'controlador' => ProductoController::class, 'metodo' => 'MostrarProductos', 'params' => [
+                'draw' => 1, 'start' => 0, 'length' => 50,
+                'search' => ['value' => ''],
+                'order' => [['column' => 0, 'dir' => 'asc']],
+                'columns' => [],
+            ]],
+            ['grupo' => 'kardex', 'nombre' => 'kardex (paginado)', 'controlador' => MovimientoInventarioController::class, 'metodo' => 'MostrarMovimientosInventario', 'params' => [
+                'draw' => 1, 'start' => 0, 'length' => 50,
+                'search' => ['value' => ''],
+                'order' => [['column' => 0, 'dir' => 'desc']],
+                'columns' => [],
+            ]],
+            ['grupo' => 'compras', 'nombre' => 'compras (paginado)', 'controlador' => CompraController::class, 'metodo' => 'MostrarCompras', 'params' => [
+                'draw' => 1, 'start' => 0, 'length' => 50,
+                'search' => ['value' => ''],
+                'order' => [['column' => 0, 'dir' => 'desc']],
+                'columns' => [],
+            ]],
             ['grupo' => 'reportes', 'nombre' => 'reportes/ventas', 'controlador' => ReporteController::class, 'metodo' => 'ReporteVentas', 'params' => $reporte],
             ['grupo' => 'reportes', 'nombre' => 'reportes/clientes', 'controlador' => ReporteController::class, 'metodo' => 'ReporteClientes', 'params' => $reporte],
             ['grupo' => 'reportes', 'nombre' => 'reportes/inventario', 'controlador' => ReporteController::class, 'metodo' => 'ReporteInventario', 'params' => $reporte],
@@ -181,6 +209,8 @@ class MedirRendimiento extends Command
         $tiemposDb = [];
         $consultas = [];
         $lentas = [];
+        $payload = [];
+        $filas = [];
         $error = null;
 
         for ($i = 0; $i < $repeticiones; $i++) {
@@ -197,7 +227,12 @@ class MedirRendimiento extends Command
             try {
                 $controlador = app($caso['controlador']);
                 $respuesta = $controlador->{$caso['metodo']}($request);
-                unset($respuesta);
+
+                $contenido = method_exists($respuesta, 'getContent') ? $respuesta->getContent() : (string) json_encode($respuesta);
+                $payload[] = strlen($contenido);
+                $filas[] = $this->contarFilas($contenido);
+
+                unset($respuesta, $contenido);
             } catch (\Throwable $e) {
                 $error = get_class($e).': '.$e->getMessage();
             }
@@ -220,7 +255,7 @@ class MedirRendimiento extends Command
         }
 
         if ($error) {
-            return ['error' => $error, 'total' => 0, 'db' => 0, 'queries' => 0, 'memoria' => 0, 'lentas' => []];
+            return ['error' => $error, 'total' => 0, 'db' => 0, 'queries' => 0, 'memoria' => 0, 'lentas' => [], 'payload' => 0, 'filas' => 0];
         }
 
         return [
@@ -230,7 +265,29 @@ class MedirRendimiento extends Command
             'queries' => (int) round($this->promedio($consultas)),
             'memoria' => $memoria ?? 0,
             'lentas' => $this->mergeLentas($lentas),
+            'payload' => (int) round($this->promedio($payload)),
+            'filas' => (int) round($this->promedio($filas)),
         ];
+    }
+
+    /**
+     * Cuenta los registros devueltos por el endpoint (primer array de objetos del JSON).
+     */
+    protected function contarFilas(string $contenido): int
+    {
+        $datos = json_decode($contenido, true);
+
+        if (! is_array($datos)) {
+            return 0;
+        }
+
+        foreach ($datos as $valor) {
+            if (is_array($valor) && $valor !== [] && array_is_list($valor) && is_array(reset($valor))) {
+                return count($valor);
+            }
+        }
+
+        return 0;
     }
 
     protected function requestSimulado(array $caso): Request

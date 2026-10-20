@@ -1,10 +1,29 @@
 export default function initMovimientoInventario() {
 
+    let opcionesFiltros = {};
+
     document.getElementById('titulo').textContent = 'MOVIMIENTOS DE INVENTARIO';
 
     $('#tablaKardex').DataTable({
 
-        ajax: { url: '/movimiento-inventario/mostrar', type: 'GET', dataSrc: 'movimientos' },
+        serverSide: true,
+
+        ajax: {
+            url: '/movimiento-inventario/mostrar',
+            type: 'GET',
+
+            // El backend solo envia la pagina visible; las opciones de los
+            // filtros de columna llegan en la misma respuesta.
+            dataSrc: function (json) {
+                if (json.opciones && Object.keys(opcionesFiltros).length === 0) {
+                    opcionesFiltros = json.opciones;
+                }
+
+                return json.data;
+            }
+        },
+
+        deferRender: true,
 
         columns: [
             { data: 'id_movimiento_inventario' },
@@ -32,7 +51,7 @@ export default function initMovimientoInventario() {
         ],
 
         drawCallback: function () { AnimarFilasVisibles(this.api()); }, order: [[0, 'desc']],
-        initComplete: function () { ConfigurarFiltrosDataTable(this, { columnasSelect: [0, 1, 4, 5, 6]}); }
+        initComplete: function () { ConfigurarFiltrosDataTable(this, { columnasSelect: [1, 5, 6], columnasIgnorar: [4, 11], opciones: opcionesFiltros }); }
 
     }); // Fin de DataTables
 

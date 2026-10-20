@@ -47,7 +47,7 @@ export default function initMostrarProductoVariaciones() {
                 orderable:false,
                 searchable:false,
                 render:function(data){
-                    return `<button class="btn-editar editarProductoVariacion" data-id="${data}"><i class="fa-solid fa-pencil-alt"></i></button>`;
+                    return `<button class="btn-editar editarProductoVariacion" data-id="${data}"><i class="ph ph-pencil-simple"></i></button>`;
                 }
             }
         ],
@@ -122,7 +122,7 @@ export default function initMostrarProductoVariaciones() {
         const html=visibles.length ? visibles.map(v => `
             <div class="d-flex justify-content-between align-items-center border rounded mb-2 px-2 colorVariacionEdicion">
                 <span class="badge ${v.estado_variacion == 1 ? 'bg-success' : 'bg-secondary'}">${$('<div>').text(v.color || '').html()}</span>
-                <button type="button" class="btn btn-sm text-danger quitarColorVariacion" data-id="${v.id_variacion}" title="Quitar color"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="btn-baja quitarColorVariacion" data-id="${v.id_variacion}" title="Quitar color"><i class="ph ph-x"></i></button>
             </div>`).join('') : '<div class="text-muted small">No hay colores asignados</div>';
         $('#listaColoresEditarVariacion').html(html);
     }

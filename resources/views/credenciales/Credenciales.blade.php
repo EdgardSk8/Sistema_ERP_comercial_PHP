@@ -60,10 +60,10 @@
                         </div>
                         <div class="d-flex flex-wrap gap-2 mt-2">
                             <button type="button" class="btn btn-sm credencial-btn credencial-btn-logo" id="btnCambiarLogo">
-                                <i class="bi bi-image me-1"></i>Seleccionar logo
+                                <i class="ph ph-image me-1"></i>Seleccionar logo
                             </button>
                             <button type="button" class="btn btn-sm credencial-btn credencial-btn-eliminar d-none" id="btnEliminarLogo">
-                                <i class="bi bi-trash me-1"></i>Eliminar logo
+                                <i class="ph ph-trash me-1"></i>Eliminar logo
                             </button>
                         </div>
                     </div>

@@ -41,20 +41,20 @@ export default function initMostrarImpuestos() {
                     let botonEstado = row.estado_impuesto == 1 
                         ? `<button class="btn-baja bajaImpuesto" data-id="${data}">
                         
-                            <i class="fa-solid fa-ban"></i>
+                            <i class="ph ph-prohibit"></i>
 
                         </button>` 
 
                         : `<button class="btn-alta bajaImpuesto" data-id="${data}">
                         
-                            <i class="fa-solid fa-circle-check"></i>
+                            <i class="ph ph-check-circle"></i>
                         
                         </button>`;
 
                     return `
                         <button class="btn-editar editarImpuesto" data-id="${data}">
                         
-                            <i class="fa-solid fa-pencil-alt"></i>
+                            <i class="ph ph-pencil-simple"></i>
                         
                         </button>
 
@@ -237,7 +237,7 @@ export default function initMostrarImpuestos() {
                         mostrarToast("Estado del impuesto actualizado", "success");
                         $('#tablaImpuestos').DataTable().ajax.reload(null, false);
                     } else {
-                        mostrarToast("Error al cambiar estado", "danger");
+                        mostrarToast(data.mensaje || "Error al cambiar estado", "danger");
                     }
 
                 } catch (error) {

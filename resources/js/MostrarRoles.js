@@ -44,13 +44,13 @@ export default function initMostrarRoles() {
                     let botonEstado = row.estado_rol == 1 
                         ? `<button class="btn-baja bajaRol" data-id="${data}">
                         
-                            <i class="fa-solid fa-ban"></i>
+                            <i class="ph ph-prohibit"></i>
                         
                         </button>` 
 
                         : `<button class="btn-baja bajaRol" data-id="${data}">
                         
-                            <i class="fa-solid fa-circle-check"></i>
+                            <i class="ph ph-check-circle"></i>
                         
                         </button>`;
 
@@ -58,7 +58,7 @@ export default function initMostrarRoles() {
 
                         <button class="btn-editar editarRol" data-id="${data}">
                         
-                            <i class="fa-solid fa-pencil-alt"></i>
+                            <i class="ph ph-pencil-simple"></i>
                         
                         </button>
                         
@@ -208,7 +208,7 @@ export default function initMostrarRoles() {
                         mostrarToast("Estado del rol actualizado", "success");
                         $('#tablaRoles').DataTable().ajax.reload(null, false);
                     } else {
-                        mostrarToast("Error al cambiar estado", "danger");
+                        mostrarToast(data.mensaje || "Error al cambiar estado", "danger");
                     }
 
                 } catch (error) {

@@ -34,6 +34,10 @@ class CuentaPorCobrarController extends Controller
             }
         })->orderByDesc('id_plan_pago');
 
+        // El filtro por estado se resuelve en SQL: asi la base no devuelve
+        // planes que se van a descartar despues en PHP.
+        $this->filtrarPorEstadoEnSql($consulta, $request->input('estado'), now()->startOfDay()->toDateString());
+
         $hoy = now()->startOfDay();
         $planes = $consulta->get()->map(function (PlanPago $plan) use ($hoy) {
             $cuotas = $plan->cuotas->map(function ($cuota) use ($hoy) {
@@ -89,6 +93,49 @@ class CuentaPorCobrarController extends Controller
         }
 
         return response()->json(['success' => true, 'planes' => $planes]);
+    }
+
+    /**
+     * Reduce en SQL los planes segun su estado de cobro. El estado real se
+     * sigue calculando en PHP al armar la respuesta, esto solo evita traer
+     * de la base lo que se va a descartar.
+     */
+    private function filtrarPorEstadoEnSql($consulta, ?string $estado, string $hoy): void
+    {
+        if (! $estado || $estado === 'todas') {
+            return;
+        }
+
+        $totalCuotas = '(select coalesce(sum(c.monto_cuota), 0) from cuotas_venta c where c.id_plan_pago = planes_pago.id_plan_pago)';
+
+        $pagadoCuotas = '(select coalesce(sum(a.monto_aplicado), 0) from aplicaciones_pago_cuota a
+            join cuotas_venta c2 on c2.id_cuota = a.id_cuota
+            where c2.id_plan_pago = planes_pago.id_plan_pago)';
+
+        $cuotaVencida = "(select count(*) from cuotas_venta c3
+            where c3.id_plan_pago = planes_pago.id_plan_pago
+              and c3.fecha_vencimiento < '{$hoy}'
+              and c3.monto_cuota > (select coalesce(sum(a3.monto_aplicado), 0) from aplicaciones_pago_cuota a3 where a3.id_cuota = c3.id_cuota))";
+
+        match ($estado) {
+            'pagada' => $consulta->whereRaw("({$totalCuotas} - {$pagadoCuotas}) <= 0"),
+
+            'atrasada' => $consulta
+                ->whereRaw("({$totalCuotas} - {$pagadoCuotas}) > 0")
+                ->whereRaw("{$cuotaVencida} > 0"),
+
+            'parcial' => $consulta
+                ->whereRaw("({$totalCuotas} - {$pagadoCuotas}) > 0")
+                ->whereRaw("{$pagadoCuotas} > 0")
+                ->whereRaw("{$cuotaVencida} = 0"),
+
+            'pendiente' => $consulta
+                ->whereRaw("({$totalCuotas} - {$pagadoCuotas}) > 0")
+                ->whereRaw("{$pagadoCuotas} = 0")
+                ->whereRaw("{$cuotaVencida} = 0"),
+
+            default => null,
+        };
     }
 
     public function RegistrarPago(Request $request, int $idVenta, RegistrarPagoVenta $registrarPago)

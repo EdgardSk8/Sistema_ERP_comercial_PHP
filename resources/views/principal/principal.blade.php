@@ -41,7 +41,7 @@
     <div class="sidebar">
 
    <div class="sidebar-title"> FLIX
-            <!-- <i class="bi bi-shop"></i> -->
+            <!-- <i class="ph ph-storefront"></i> -->
            
         </div>
 
@@ -312,7 +312,7 @@
                 <a href="{{ route('tipos.medidas') }}"
                 class="sidebar-link"
                 data-turbo-frame="contenido-dinamico">
-                    <i class="fa-solid fa-ruler-combined text-primary"></i>
+                    <i class="ph ph-ruler text-primary"></i>
                     Tipos de Medidas
                 </a>
             @endif
@@ -321,7 +321,7 @@
                 <a href="{{ route('medidas') }}"
                 class="sidebar-link"
                 data-turbo-frame="contenido-dinamico">
-                    <i class="fa-solid fa-ruler text-success"></i>
+                    <i class="ph ph-ruler text-success"></i>
                     Medidas
                 </a>
             @endif
@@ -474,7 +474,7 @@
 
                 <button id="btnLogout" class="btn-login">
                     Cerrar sesión
-                    <!-- <i class="bi bi-box-arrow-right"></i> -->
+                    <!-- <i class="ph ph-sign-out"></i> -->
                 </button>
 
             </div>

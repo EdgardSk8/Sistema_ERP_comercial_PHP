@@ -68,7 +68,7 @@
                         <div class="input-group">
 
                             <span class="input-group-text">
-                                <i class="bi bi-person"></i>
+                                <i class="ph ph-user"></i>
                             </span>
 
                             <input
@@ -91,7 +91,7 @@
                         <div class="input-group">
 
                             <span class="input-group-text">
-                                <i class="bi bi-lock"></i>
+                                <i class="ph ph-lock"></i>
                             </span>
 
                             <input
@@ -107,10 +107,10 @@
                     </div>
 
                     <button
-                        class="btn guardar w-100"
+                        class="btn guardar btn-sm-modal w-100"
                         type="submit">
 
-                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        <i class="ph ph-sign-in me-2"></i>
                         Ingresar
 
                     </button>

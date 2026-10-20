@@ -7,8 +7,8 @@
     <!-- Bootstrap (asumiendo que ya lo tienes global, si no, puedes omitir esto) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Phosphor Icons (CDN con respaldo local) -->
+    <link rel="stylesheet" href="{{ \App\Support\Recursos::url('phosphor_css') }}">
 </head>
 
 <body>
@@ -19,7 +19,7 @@
 
         <!-- Icono -->
         <div class="mb-3">
-            <i class="bi bi-shield-lock-fill text-danger" style="font-size: 4rem;"></i>
+            <i class="ph ph-shield-check text-danger" style="font-size: 4rem;"></i>
         </div>
 
         <!-- Título -->
@@ -34,7 +34,7 @@
 
         <!-- Botón opcional -->
         <a href="/" class="btn btn-primary">
-            <i class="bi bi-house-door"></i>
+            <i class="ph ph-house"></i>
             Ir al inicio
         </a>
 

@@ -343,8 +343,8 @@ export default function initCompras() {
                 moneda(impuestoValor),
                 moneda(totalItem),
 
-                `<button class="btn btn-danger btn-sm eliminar" data-index="${i}">
-                    <i class="bi bi-trash"></i>
+                `<button class="btn-baja eliminar" data-index="${i}">
+                    <i class="ph ph-trash"></i>
                 </button>`
             ]);
         });

@@ -6,13 +6,27 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
+                // CSS globales
                 'resources/css/variables.css',
                 'resources/css/app.css',
                 'resources/css/principal/principal.css',
-                'resources/css/facturacion/Facturacion.css',
+                'resources/css/login/login.css',
+
+                // CSS por modulo (los piden las vistas con @vite o Vite::asset)
                 'resources/css/cajas/Cajas.css',
-                'resources/js/app.js',
+                'resources/css/compras/Compras.css',
                 'resources/css/cuentasporcobrar/CuentasPorCobrar.css',
+                'resources/css/dashboard/Dashboard.css',
+                'resources/css/facturacion/Facturacion.css',
+                'resources/css/permisos/Permisos.css',
+                'resources/css/reportes/Reportes.css',
+                'resources/css/respaldo/Respaldo.css',
+
+                // JS cargados directamente desde las vistas (no por app.js)
+                'resources/js/app.js',
+                'resources/js/FuncionesGlobales.js',
+                'resources/js/Login.js',
+                'resources/js/logout.js',
             ],
             refresh: true,
         }),

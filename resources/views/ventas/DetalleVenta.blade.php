@@ -13,12 +13,12 @@
 
                 <div class="btns-right d-flex align-items-center gap-2">
 
-                <button type="button" class="btn btn-success btn-sm-modal" id="btnImprimir">
-                    <i class="bi bi-printer"></i> Imprimir Factura
+                <button type="button" class="btn guardar btn-sm-modal" id="btnImprimir">
+                    <i class="ph ph-printer"></i> Imprimir Factura
                 </button>
 
-                <button type="button" data-id="" class="btn btn-danger btn-sm-modal" id="btnAnular">
-                    <i class="bi bi-x-circle"></i> Anular Factura
+                <button type="button" data-id="" class="btn cancelar btn-sm-modal" id="btnAnular">
+                    <i class="ph ph-x-circle"></i> Anular Factura
                 </button>
 
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

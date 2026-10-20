@@ -22,7 +22,8 @@ $(document).ready(function(){
             success: function(res){
 
                 if(res.success){
-                    mostrarToast(res.mensaje, 'success');
+                    // FuncionesGlobales.js expone window.mostrarToast (crea el toast si no existe)
+                    window.mostrarToast(res.mensaje, 'success');
 
                     setTimeout(() => {
                         window.location.href = '/';
@@ -37,11 +38,11 @@ $(document).ready(function(){
                     let errores = err.responseJSON.errors;
                     let mensaje = Object.values(errores)[0][0];
 
-                    mostrarToast(mensaje, 'danger');
+                    window.mostrarToast(mensaje, 'danger');
 
                 } else {
                     let mensaje = err.responseJSON.mensaje || 'Error en el login';
-                    mostrarToast(mensaje, 'danger');
+                    window.mostrarToast(mensaje, 'danger');
                 }
 
             }
@@ -51,15 +52,3 @@ $(document).ready(function(){
     });
 
 });
-
-
-function mostrarToast (mensaje, tipo = "success") {
-    const toastElemento = document.getElementById("toastMensaje");
-    const toastTexto = document.getElementById("toastTexto");
-
-    toastElemento.className = `toast text-bg-${tipo} border-0`;
-    toastTexto.textContent = mensaje;
-
-    const toast = new bootstrap.Toast(toastElemento, { delay: 5000 });
-    toast.show();
-}

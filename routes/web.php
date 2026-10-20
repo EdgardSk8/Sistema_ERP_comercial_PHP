@@ -53,7 +53,7 @@ use App\Http\Controllers\UbicacionController;
 
 Route::get('/login', [LoginController::class, 'mostrarLogin'])->name('login');
 
-Route::post('/login', [LoginController::class, 'login'])->name('login');
+Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::get('/me', [LoginController::class, 'me']);

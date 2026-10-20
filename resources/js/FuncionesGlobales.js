@@ -104,7 +104,7 @@ window.mostrarToast = function (mensaje, tipo = "success") {
             titulo.textContent = "Éxito";
 
             icono.innerHTML =
-                '<i class="fa-solid fa-circle-check"></i>';
+                '<i class="ph ph-check-circle"></i>';
 
             toast.classList.add("toast-success");
 
@@ -116,7 +116,7 @@ window.mostrarToast = function (mensaje, tipo = "success") {
             titulo.textContent = "Error";
 
             icono.innerHTML =
-                '<i class="fa-solid fa-circle-xmark"></i>';
+                '<i class="ph ph-x-circle"></i>';
 
             toast.classList.add("toast-danger");
 
@@ -128,7 +128,7 @@ window.mostrarToast = function (mensaje, tipo = "success") {
             titulo.textContent = "Advertencia";
 
             icono.innerHTML =
-                '<i class="fa-solid fa-triangle-exclamation"></i>';
+                '<i class="ph ph-warning"></i>';
 
             toast.classList.add("toast-warning");
 
@@ -140,7 +140,7 @@ window.mostrarToast = function (mensaje, tipo = "success") {
             titulo.textContent = "Información";
 
             icono.innerHTML =
-                '<i class="fa-solid fa-circle-info"></i>';
+                '<i class="ph ph-info"></i>';
 
             toast.classList.add("toast-info");
 
@@ -380,6 +380,25 @@ window.formatearFecha = function(fechaSQL) {
     const horasFormateadas = horas.toString().padStart(2, '0');
 
     return `${dia}/${mes}/${año} ${horasFormateadas}:${minutos} ${ampm}`;
+}
+
+/* Fecha corta sin hora (dd/mm/aaaa). Acepta 'YYYY-MM-DD' y 'YYYY-MM-DD HH:MM:SS'. */
+window.formatearFechaCorta = function(fechaSQL) {
+
+    if (!fechaSQL) return '';
+
+    const texto = String(fechaSQL).trim();
+
+    const fecha = /^\d{4}-\d{2}-\d{2}/.test(texto)
+        ? new Date(texto.slice(0, 10) + 'T00:00:00')
+        : new Date(texto);
+
+    if (isNaN(fecha.getTime())) return texto;
+
+    const dia = fecha.getDate().toString().padStart(2, '0');
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+
+    return `${dia}/${mes}/${fecha.getFullYear()}`;
 }
 
 window.formatearFechaDiaHora = function(fechaSQL) { 
@@ -666,10 +685,18 @@ window.ConfigurarFiltrosDataTable = function(tabla, config = {}) {
                 column.search(val ? '^' + val + '$' : '', true, false).draw();
             });
 
-            let valores = [];
-            column.data().each(function (d) { d = $('<div>').html(d).text().trim(); if(d && !valores.includes(d)){ valores.push(d); } });
+            // Las tablas en modo servidor reciben sus opciones del backend
+            // (solo conocen la pagina actual, no todas las filas).
+            let valores = config.opciones?.[index];
 
-            valores.sort();
+            if (!Array.isArray(valores)) {
+
+                valores = [];
+                column.data().each(function (d) { d = $('<div>').html(d).text().trim(); if(d && !valores.includes(d)){ valores.push(d); } });
+
+                valores.sort();
+            }
+
             valores.forEach(function (d) { select.append(`<option value="${d}">${d}</option>`); });
 
         } else{ //INPUT
@@ -781,6 +808,62 @@ window.PluginSinDatos = {
 
         ctx.restore();
     }
+};
+
+/* -------------------------------------------------------------------------------- */
+
+/* RESPUESTAS 401 y 403 EN PETICIONES AJAX
+
+   El backend responde JSON con el motivo real (por ejemplo "No estas autorizado
+   para esta accion"). Sin esto, las tablas y los $.ajax mostraban un error
+   generico. mostrarToast reutiliza el mismo aviso, asi que el mensaje del
+   servidor reemplaza al generico en lugar de acumularse. */
+
+$(document).ajaxError(function (_evento, xhr) {
+
+    if (xhr.status !== 401 && xhr.status !== 403) return;
+
+    mostrarToast(
+        xhr.responseJSON?.mensaje
+            || (xhr.status === 401
+                ? 'Tu sesión expiró. Vuelve a iniciar sesión.'
+                : 'No estás autorizado para esta acción.'),
+        'danger'
+    );
+
+});
+
+/* -------------------------------------------------------------------------------- */
+
+/* PETICIONES FETCH
+
+   Los modulos hacen fetch enviando solo el token CSRF, asi que Laravel no las
+   reconocia como AJAX ($request->ajax() y expectsJson() daban false) y respondia
+   redirecciones o vistas HTML. De ahi el error
+   "Unexpected token '<', "<!DOCTYPE "... is not valid JSON" al hacer response.json().
+
+   Aqui se marca cada peticion como AJAX en un unico punto, para que el backend
+   responda siempre JSON (incluidos los mensajes de permiso y de sesion expirada). */
+
+const fetchOriginal = window.fetch.bind(window);
+
+window.fetch = function (recurso, opciones = {}) {
+
+    const marcar = (headers) => {
+        if (headers instanceof Headers) {
+            headers.set('X-Requested-With', 'XMLHttpRequest');
+        } else if (Array.isArray(headers)) {
+            headers.push(['X-Requested-With', 'XMLHttpRequest']);
+        } else {
+            headers['X-Requested-With'] = 'XMLHttpRequest';
+        }
+
+        return headers;
+    };
+
+    opciones.headers = marcar(opciones.headers || {});
+
+    return fetchOriginal(recurso, opciones);
 };
 
 /* -------------------------------------------------------------------------------- */

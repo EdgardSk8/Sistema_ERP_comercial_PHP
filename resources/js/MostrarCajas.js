@@ -120,9 +120,9 @@ export default function initMostrarCajas() {
 
                     return `<div class="arqueo-acciones">
                         <button type="button" class="btn-arqueo js-abrir-arqueo" data-id="${caja}" title="${etiqueta} de la caja #${caja}" aria-label="${etiqueta} de la caja #${caja}">
-                            <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+                            <i class="ph ph-scales" aria-hidden="true"></i>
                         </button>
-                        ${pendiente ? '' : `<button type="button" class="btn-arqueo btn-arqueo-print js-imprimir-caja" data-id="${caja}" title="Imprimir arqueo de la caja #${caja}" aria-label="Imprimir arqueo de la caja #${caja}"><i class="fa-solid fa-print" aria-hidden="true"></i></button>`}
+                        ${pendiente ? '' : `<button type="button" class="btn-arqueo btn-arqueo-print js-imprimir-caja" data-id="${caja}" title="Imprimir arqueo de la caja #${caja}" aria-label="Imprimir arqueo de la caja #${caja}"><i class="ph ph-printer" aria-hidden="true"></i></button>`}
                     </div>`;
                 }
             }

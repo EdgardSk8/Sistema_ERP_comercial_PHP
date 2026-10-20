@@ -3,12 +3,29 @@ import { imprimirFacturaTermica } from './ImprimirFacturaTermica';
 export default function initMostrarVentas() {
 
     let ventaActualParaImpresion = null;
+    let opcionesFiltros = {};
 
     document.getElementById('titulo').textContent = 'HISTORIAL DE VENTAS';
 
     const table = $('#tablaVentas').DataTable({
 
-        ajax: { url: '/ventas/mostrar', type: 'GET', dataSrc: 'ventas' },
+        serverSide: true,
+
+        ajax: {
+            url: '/ventas/mostrar',
+            type: 'GET',
+
+            // El backend solo envia la pagina visible; las opciones de los
+            // filtros de columna llegan en la misma respuesta.
+            dataSrc: function (json) {
+                if (json.opciones && Object.keys(opcionesFiltros).length === 0) {
+                    opcionesFiltros = json.opciones;
+                }
+
+                return json.data;
+            }
+        },
+
         deferRender: true,
 
         columns: [
@@ -30,8 +47,8 @@ export default function initMostrarVentas() {
             { data: 'estado_venta',
                 render: function(data){
                     return data == 1
-                        ? '<span class="estado estado-activo"><i class="fa-solid fa-check me-1"></i></span>'
-                        : '<span class="estado estado-inactivo"><i class="fa-solid fa-ban me-1"></i></span>';
+                        ? '<span class="estado estado-activo"><i class="ph ph-check me-1"></i></span>'
+                        : '<span class="estado estado-inactivo"><i class="ph ph-prohibit me-1"></i></span>';
                 }
             },
 
@@ -40,7 +57,7 @@ export default function initMostrarVentas() {
                 render: function(data){
                     return `
                         <button class="detalle-venta btn-detalle" data-id="${data}">
-                            <i class="fa-solid fa-eye"></i>
+                            <i class="ph ph-eye"></i>
                         </button>
                     `;
                 }
@@ -50,7 +67,7 @@ export default function initMostrarVentas() {
        
         order: [[0, 'desc']],
         initComplete: function () {
-            ConfigurarFiltrosDataTable(this, { columnasSelect: [2,3, 9], columnasIgnorar: [11] });
+            ConfigurarFiltrosDataTable(this, { columnasSelect: [2,3, 9], columnasIgnorar: [11], opciones: opcionesFiltros });
         },
 
         drawCallback: function () { AnimarFilasVisibles(this.api()); }
@@ -115,8 +132,8 @@ export default function initMostrarVentas() {
 
             btn.data('id', venta.id_venta);
 
-            if (venta.estado_venta == 0) { btn.prop('disabled', true).html('<i class="bi bi-x-circle me-1"></i> Factura Anulada');
-            } else { btn.prop('disabled', false) .html('<i class="bi bi-x-circle me-1"></i> Anular Factura'); }
+            if (venta.estado_venta == 0) { btn.prop('disabled', true).html('<i class="ph ph-x-circle me-1"></i> Factura Anulada');
+            } else { btn.prop('disabled', false) .html('<i class="ph ph-x-circle me-1"></i> Anular Factura'); }
 
             $('#facturaTitulo').text(`Factura: ${venta.numero_factura}`);
             $('#clienteNombre').text(venta.cliente?.nombre_cliente ?? '—');

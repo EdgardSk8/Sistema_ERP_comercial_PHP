@@ -30,16 +30,16 @@ export default function initMostrarMetodosPagosCuenta() {
 
                         let botonEstado = row.estado == 1
                             ? `<button class="btn-baja cambiarEstado" data-id="${row.id_metodo_pago_cuenta}">
-                                    <i class="fa-solid fa-ban"></i>
+                                    <i class="ph ph-prohibit"></i>
                             </button>`
                             : `<button class="btn-alta cambiarEstado" data-id="${row.id_metodo_pago_cuenta}">
-                                    <i class="fa-solid fa-circle-check"></i>
+                                    <i class="ph ph-check-circle"></i>
                             </button>`;
 
                         let botonEditar = `
                             <button class="btn-editar editarMetodoPagoCuenta"
                                 data-id="${row.id_metodo_pago_cuenta}">
-                                <i class="fa-solid fa-pencil-alt"></i>
+                                <i class="ph ph-pencil-simple"></i>
                             </button> `; botones = botonEditar + botonEstado;
                     }
 
@@ -110,7 +110,7 @@ export default function initMostrarMetodosPagosCuenta() {
 
                 if (response.success) {
 
-                    $('#ModalCrearMetodoPagoCuenta').modal('hide');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('ModalCrearMetodoPagoCuenta')).hide();
                     $('#tablaMetodoPagoCuenta').DataTable().ajax.reload(null, false);
 
                     mostrarToast(response.mensaje || 'Vínculo creado correctamente','success');
@@ -173,11 +173,11 @@ export default function initMostrarMetodosPagosCuenta() {
 
                             <button
                                 type="button"
-                                class="btn btn-sm text-danger quitarCuentaVinculada"
+                                class="btn-baja quitarCuentaVinculada"
                                 data-id="${cuenta.id_metodo_pago_cuenta}"
                                 title="Quitar vínculo">
 
-                                <i class="bi bi-x-lg"></i>
+                                <i class="ph ph-x"></i>
 
                             </button>
 

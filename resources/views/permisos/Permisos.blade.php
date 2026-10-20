@@ -24,7 +24,7 @@
 
         <div class="hijo-permisos">
             <div id="estadoSinRol" class="estado-sin-rol">
-                <div class="estado-sin-rol-icono"><i class="fa-solid fa-user-shield"></i></div>
+                <div class="estado-sin-rol-icono"><i class="ph ph-shield-check"></i></div>
                 <h3>Selecciona un rol</h3>
                 <p>Al elegirlo, aqu&iacute; aparecer&aacute;n sus permisos agrupados por m&oacute;dulo.</p>
             </div>

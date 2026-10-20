@@ -13,6 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
 
+        // Confiar en los proxies (Cloudflare Tunnel, ngrok, balanceadores) para que
+        // Laravel detecte el esquema real (https) via X-Forwarded-Proto y genere
+        // los assets con la URL correcta (evita contenido mixto).
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'permiso' => \App\Http\Middleware\PermisoMiddleware::class,
         ]);

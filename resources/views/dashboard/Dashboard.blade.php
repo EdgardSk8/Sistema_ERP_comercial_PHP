@@ -84,7 +84,7 @@
 
                         <input type="date" class="form-control form-control-sm" id="Fecha_Inicio" placeholder="Fecha inicio" autocomplete="off" >
                         <input  type="date" class="form-control form-control-sm" id="Fecha_Fin" placeholder="Fecha fin" autocomplete="off" >
-                        <button type="button" class="btn btn-limpiar-filtro" id="Btn_Limpiar_Filtros"> <i class="fa-solid fa-trash-can"></i> </button>
+                        <button type="button" class="btn btn-limpiar-filtro" id="Btn_Limpiar_Filtros"> <i class="ph ph-trash"></i> </button>
 
                     </div>
 

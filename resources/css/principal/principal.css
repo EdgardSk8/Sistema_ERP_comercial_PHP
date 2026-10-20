@@ -974,7 +974,7 @@ table.dataTable tfoot select{
 
 /* CONFIGURACION GENERAL DEL BTN */
 
-.btn-detalle, .btn-editar, .btn-baja, .btn-alta, .btn-transferir, .agregar-saldo, .retirar-saldo, 
+.btn-detalle, .btn-editar, .btn-baja, .btn-alta, .btn-transferir, .btn-abonar, .agregar-saldo, .retirar-saldo, 
 .pagar-gasto, .agregarProducto, .cuentatransferir{
     transition: all 0.15s ease;
     background: transparent;
@@ -987,6 +987,7 @@ button i{ pointer-events:none; }
 /* COLORES DE BTN */
 
 .btn-detalle { color: var(--azul); }
+.btn-abonar { color: var(--verde); }
 .btn-editar { color: var(--azul); }
 .btn-baja { color: var(--rojo); }
 .btn-alta {color: var(--azul); }
@@ -1000,6 +1001,7 @@ button i{ pointer-events:none; }
 
 .estado:hover,
 .btn-detalle:hover,
+.btn-abonar:hover,
 .btn-editar:hover, 
 .btn-baja:hover,
 .btn-alta:hover,
@@ -1012,6 +1014,7 @@ button i{ pointer-events:none; }
 /* AL PRESIONAR  */
 
 .btn-detalle:active,
+.btn-abonar:active,
 .btn-editar:active, 
 .btn-baja:active,
 .btn-alta:active,
@@ -1057,13 +1060,13 @@ button i{ pointer-events:none; }
 
 .btn-sm-modal i{ font-size: var(--fs-lg); }
 
-.guardar, .actualizar { background-color: var(--verde); transition: background-color 0.2s ease; transition: all 0.15s ease; color: var(--bg); }
-.btn.guardar:hover, .btn.actualizar:hover { background-color: var(--verde-hover); color: var(--bg); }
-.btn.guardar:active, .btn.actualizar:active { background-color: var(--verde); color: var(--bg); transform: scale(0.90); }
+.guardar, .actualizar { background-color: var(--verde); transition: background-color 0.2s ease; transition: all 0.15s ease; color: var(--text-on-accent); }
+.btn.guardar:hover, .btn.actualizar:hover { background-color: var(--verde-hover); color: var(--text-on-accent); }
+.btn.guardar:active, .btn.actualizar:active { background-color: var(--verde); color: var(--text-on-accent); transform: scale(0.90); }
 
-.cancelar { background-color: var(--rojo); transition: background-color 0.2s ease; transition: all 0.15s ease; color: var(--bg); }
-.btn.cancelar:hover { background-color: var(--rojo-hover); color: var(--bg); }
-.btn.cancelar:active { background-color: var(--rojo); color:var(--bg); transform: scale(0.90); }
+.cancelar { background-color: var(--rojo); transition: background-color 0.2s ease; transition: all 0.15s ease; color: var(--text-on-accent); }
+.btn.cancelar:hover { background-color: var(--rojo-hover); color: var(--text-on-accent); }
+.btn.cancelar:active { background-color: var(--rojo); color:var(--text-on-accent); transform: scale(0.90); }
 
 
 

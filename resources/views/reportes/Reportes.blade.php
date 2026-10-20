@@ -118,7 +118,7 @@
             <div class="grupo-filtro">
 
                 <label class="label-filtro" for="LimiteDatos">Cantidad de datos</label>
-                <input type="number" id="LimiteDatos" class="form-control form-control-sm" min="1" value="">
+                <input type="number" id="LimiteDatos" class="form-control form-control-sm" min="1" value="500" placeholder="Por defecto 500">
 
             </div>
 

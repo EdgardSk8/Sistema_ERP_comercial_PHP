@@ -1,13 +1,6 @@
 <turbo-frame id="contenido-dinamico">
 
     <link rel="stylesheet" href="{{ Vite::asset('resources/css/facturacion/Facturacion.css') }}">
-<!-- 
-    <script src="{{ Vite::asset('resources/js/facturacion/ImprimirFactura.js') }}"></script>
-    <script src="{{ Vite::asset('resources/js/facturacion/vuelto.js') }}"></script>
-    <script src="{{ Vite::asset('resources/js/facturacion/VerificarCaja.js') }}"></script>
-    <script src="{{ Vite::asset('resources/js/facturacion/Select.js') }}"></script>
-    
-    <script data-ejecutar="true" src="{{ Vite::asset('resources/js/facturacion/Facturacion.js') }}"></script> -->
 
     <div class="Contenedor-General">
 
@@ -21,19 +14,21 @@
                     <input type="checkbox" id="toggleFactura" hidden>
 
                     <label id="BTN-Imprimir-Factura" for="toggleFactura" class="btn-factura">
-                        <i class="bi bi-receipt-cutoff"> </i>
+                        <i class="ph ph-receipt"> </i>
                         Imprimir Factura
                     </label>
 
                     <input type="checkbox" id="toggleProformaFactura" hidden>
 
                     <label id="BTN-Imprimir-Proforma" for="toggleProformaFactura" class="btn-proforma">
-                        <i class="bi-file-earmark-text-fill"> </i>
+                        <i class="ph ph-file-text"> </i>
                         Imprimir Proforma
                     </label>
 
-                    <label id="btnLimpiarCaja" class="btn btn-sm">
-                        <i class="bi bi-trash"> </i> 
+                    <input type="checkbox" id="toggleLimpiarCaja" hidden>
+
+                    <label id="btnLimpiarCaja" for="toggleLimpiarCaja" class="btn-borrar-filtros">
+                        <!-- <i class="ph ph-trash"> </i>  -->
                         Borrar Filtros
                     </label>
 
@@ -232,8 +227,8 @@
                             <tbody id="filasPlanPagoVenta"></tbody>
                         </table>
                     </div>
-                    <button type="button" class="btn btn-sm btn-success" id="agregarCuotaPlanPago">
-                        <i class="fa-solid fa-plus me-1"></i>Agregar cuota
+                    <button type="button" class="btn guardar btn-sm-modal" id="agregarCuotaPlanPago">
+                        <i class="ph ph-plus me-1"></i>Agregar cuota
                     </button>
                     <div class="d-flex justify-content-between mt-3" role="status">
                         <span>Suma de cuotas</span><strong id="sumaPlanPagoVenta">C$ 0.00</strong>
@@ -241,8 +236,8 @@
                     <div id="avisoPlanPagoVenta" class="small mt-1" aria-live="polite"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-danger" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-sm btn-success" id="confirmarPlanPagoVenta" disabled>Confirmar venta a plazos</button>
+                    <button type="button" class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn guardar btn-sm-modal" id="confirmarPlanPagoVenta" disabled>Confirmar venta a plazos</button>
                 </div>
             </div>
         </div>
@@ -274,8 +269,8 @@
                     <div id="liquidacionAviso" class="small text-danger mt-2" role="status"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-sm btn-success" id="btnAplicarLiquidacion" disabled>Aplicar y facturar</button>
+                    <button type="button" class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn guardar btn-sm-modal" id="btnAplicarLiquidacion" disabled>Aplicar y facturar</button>
                 </div>
             </div>
         </div>

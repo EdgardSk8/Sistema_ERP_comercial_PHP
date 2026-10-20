@@ -39,13 +39,13 @@ export default function initMostrarUsuarios() {
                     let botonEstado = row.estado_usuario == 1 
                         ? `<button class="btn-baja bajaUsuario" data-id="${data}">
                         
-                            <i class="fa-solid fa-ban"></i>
+                            <i class="ph ph-prohibit"></i>
                         
                         </button>` 
 
                         : `<button class="btn-baja bajaUsuario" data-id="${data}">
                         
-                            <i class="fa-solid fa-circle-check"></i>
+                            <i class="ph ph-check-circle"></i>
                         
                         </button>`;
 
@@ -53,7 +53,7 @@ export default function initMostrarUsuarios() {
 
                         <button class="btn-editar editarUsuario" data-id="${data}">
                         
-                           <i class="fa-solid fa-pencil-alt"></i>
+                           <i class="ph ph-pencil-simple"></i>
                         
                         </button>
                         
@@ -246,7 +246,7 @@ export default function initMostrarUsuarios() {
                     if (data.success) {
                         mostrarToast("Estado actualizado", "success");
                         $('#tablaUsuarios').DataTable().ajax.reload(null, false);
-                    } else { mostrarToast("Error al cambiar estado", "danger"); }
+                    } else { mostrarToast(data.mensaje || "Error al cambiar estado", "danger"); }
 
                 } catch (error) { mostrarToast("Error de conexión", "danger"); }
                 modal.hide();

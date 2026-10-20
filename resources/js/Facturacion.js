@@ -96,8 +96,8 @@ export default function initFacturacion() {
                     <td>C$ ${p.precio.toFixed(2)}</td>
                     <td>C$ ${subtotal.toFixed(2)}</td>
                     <td>
-                        <button class="eliminar" data-index="${i}">
-                            <i class="fa-regular fa-trash-can"></i>
+                        <button class="btn-baja eliminar" data-index="${i}">
+                            <i class="ph ph-trash"></i>
                         </button>
                     </td>
                 </tr>
@@ -357,7 +357,7 @@ export default function initFacturacion() {
                                 title="${etiqueta}"
                                 aria-label="${etiqueta}"
                                 ${sinStock ? 'disabled' : ''}>
-                                <i class="fa-solid fa-cart-shopping"></i>
+                                <i class="ph ph-shopping-cart"></i>
                             </button>
                         `;
                     }
@@ -412,7 +412,6 @@ export default function initFacturacion() {
                 $('#vueltoDolares').prop('disabled', false);
                 $('#btnFacturar').css('background', '#22C55E');
                 $('#btnFacturar').css('none');
-                $('#btnFacturar').text('Facturar e Imprimir Factura');
             }
             calcularVueltos();
         }
@@ -492,7 +491,7 @@ export default function initFacturacion() {
         <input type="number" class="form-control form-control-sm monto-cuota-plan mx-auto text-center w-100" style="max-width: 5rem;" min="0.01" step="0.01" value="${monto}" aria-label="Importe cuota ${numero}">
     </td>
     <td class="text-center align-middle">
-        <button type="button" class="btn btn-sm btn-outline-danger quitar-cuota-plan" title="Quitar cuota" aria-label="Quitar cuota ${numero}"><i class="fa-solid fa-trash fa-xs"></i></button>
+        <button type="button" class="btn-baja quitar-cuota-plan" title="Quitar cuota" aria-label="Quitar cuota ${numero}"><i class="ph ph-trash"></i></button>
     </td>
 `;
         const campoFecha = fila.querySelector('.fecha-cuota-plan');
@@ -1452,8 +1451,8 @@ $(document).on('click.facturacion', '#btnCerrarCaja', function () {
 
         if (metodoPagoActual !== 'efectivo') {
 
-            $('#vueltoCordobas').val('C$ 0.00');
-            $('#vueltoDolares').val('$ 0.00');
+            $('#vueltoCordobas').val('');
+            $('#vueltoDolares').val('');
             return;
         }
 
@@ -1467,7 +1466,7 @@ $(document).on('click.facturacion', '#btnCerrarCaja', function () {
         let vueltoC = totalPagadoC - total;
 
         if (vueltoC < 0) {
-            $('#vueltoCordobas').val('C$ 0.00'); $('#vueltoDolares').val('$ 0.00'); return;
+            $('#vueltoCordobas').val(''); $('#vueltoDolares').val(''); return;
         }
 
         let vueltoD = vueltoC / TASA;
@@ -1494,8 +1493,8 @@ $(document).on('click.facturacion', '#btnCerrarCaja', function () {
             $('#pagoCordobas').prop('disabled', true);
             $('#pagoDolares').prop('disabled', true);
 
-            $('#vueltoCordobas').val('C$ 0.00');
-            $('#vueltoDolares').val('$ 0.00');
+            $('#vueltoCordobas').val('');
+            $('#vueltoDolares').val('');
         }
     }
 

@@ -83,7 +83,7 @@
     margin-bottom: 10px;
 }
 
-.btn-factura, .btn-proforma{
+.btn-factura, .btn-proforma, .btn-borrar-filtros{
     display: flex;
     align-items: center;
     justify-content: center;

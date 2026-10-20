@@ -66,12 +66,12 @@ export default function initCajaTransferencia() {
                         <button class="${cajaAbierta ? 'text-danger' : 'text-success'} btn-transferir"
                             data-id_caja="${row.numero_caja}"
                             ${deshabilitarTransferir ? 'disabled title="' + (cajaAbierta ? 'La caja aún está abierta' : 'Saldo insuficiente') + '"' : ''}>
-                            <i class="fa-solid fa-right-left"></i>
+                            <i class="ph ph-arrows-left-right"></i>
                         </button>
 
-                        <button class="btn btn-sm btn-detalle"
+                        <button class="btn-detalle"
                             data-id_caja="${row.numero_caja}">
-                            <i class="fa-solid fa-eye"></i>
+                            <i class="ph ph-eye"></i>
                         </button>
                     `;
                 }
@@ -256,7 +256,7 @@ export default function initCajaTransferencia() {
 
                 if (res.success) {
                     mostrarToast(res.mensaje, 'success');
-                    $('#modalTransferir').modal('hide');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalTransferir')).hide();
                     $('#tablaCajaCuenta').DataTable().ajax.reload();
                 } else {
                     mostrarToast(res.mensaje || 'Error al transferir', 'danger');

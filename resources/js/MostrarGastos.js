@@ -60,15 +60,15 @@ export default function initMostrarGastos() {
 
                     return `
                         <button class="btn-editar editarGasto" data-id="${data}">
-                            <i class="fa-solid fa-pencil-alt"></i>
+                            <i class="ph ph-pencil-simple"></i>
                         </button>
 
                         <button class="btn-detalle detalleGasto" data-id="${data}">
-                            <i class="fa-solid fa-eye"></i>
+                            <i class="ph ph-eye"></i>
                         </button>
 
                         <button class="pagar-gasto pagarGasto" data-id="${data}">
-                            <i class="fa-solid fa-credit-card"></i>
+                            <i class="ph ph-credit-card"></i>
                         </button>
                     `;
                 }
@@ -489,9 +489,9 @@ export default function initMostrarGastos() {
                             <td>${m.usuario.nombre}</td>
 
                             <td>
-                                <button class="btn btn-success btn-sm editarPago">Editar</button>
-                                <button class="btn btn-danger btn-sm cancelarPago d-none">Cancelar</button>
-                                <button class="btn btn-success btn-sm guardarPago d-none">Guardar</button>
+                                <button class="btn btn-sm guardar editarPago">Editar</button>
+                                <button class="btn btn-sm cancelar cancelarPago d-none">Cancelar</button>
+                                <button class="btn btn-sm guardar guardarPago d-none">Guardar</button>
                             </td>
 
                         </tr>
@@ -536,9 +536,9 @@ export default function initMostrarGastos() {
                             </td>
                             <td>${escapeHtml(movimiento.usuario?.nombre ?? '—')}</td>
                             <td>
-                                <button class="btn btn-success btn-sm editarPago" type="button">Editar</button>
-                                <button class="btn btn-danger btn-sm cancelarPago d-none" type="button">Cancelar</button>
-                                <button class="btn btn-success btn-sm guardarPago d-none" type="button">Guardar</button>
+                                <button class="btn btn-sm guardar editarPago" type="button">Editar</button>
+                                <button class="btn btn-sm cancelar cancelarPago d-none" type="button">Cancelar</button>
+                                <button class="btn btn-sm guardar guardarPago d-none" type="button">Guardar</button>
                             </td>
                         </tr>
                     `;

@@ -47,15 +47,15 @@ export default function initMostrarUbicaciones() {
                 render: (id, type, ubicacion) => {
                     const activa = Number(ubicacion.estado_ubicacion) === 1;
                     const tituloEstado = activa ? 'Dar de baja' : 'Reactivar';
-                    const iconoEstado = activa ? 'fa-ban' : 'fa-circle-check';
+                    const iconoEstado = activa ? 'ph-prohibit' : 'ph-check-circle';
                     const claseEstado = activa ? 'btn-baja' : 'btn-alta';
 
                     return `
                         <button type="button" class="btn-editar editarUbicacion" data-id="${id}" title="Editar ubicación" aria-label="Editar ubicación">
-                            <i class="fa-solid fa-pencil-alt"></i>
+                            <i class="ph ph-pencil-simple"></i>
                         </button>
                         <button type="button" class="${claseEstado} cambiarEstadoUbicacion" data-id="${id}" data-activa="${activa}" title="${tituloEstado}" aria-label="${tituloEstado}">
-                            <i class="fa-solid ${iconoEstado}"></i>
+                            <i class="ph ${iconoEstado}"></i>
                         </button>
                     `;
                 }

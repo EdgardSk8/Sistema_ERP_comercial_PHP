@@ -156,7 +156,7 @@ export default function initRespaldo() {
 
             btn.disabled = false;
             btn.innerHTML = `
-                <i class="bi bi-download me-1"></i>
+                <i class="ph ph-download-simple me-1"></i>
                 Exportar Todo
             `;
         }
@@ -225,7 +225,7 @@ export default function initRespaldo() {
 
             btn.disabled = false;
             btn.innerHTML = `
-                <i class="bi bi-upload"></i>
+                <i class="ph ph-upload-simple"></i>
                 Importar
             `;
         }

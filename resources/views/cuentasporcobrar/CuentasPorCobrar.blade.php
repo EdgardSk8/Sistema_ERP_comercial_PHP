@@ -70,7 +70,12 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <div><h5 class="modal-title" id="tituloDetalleCartera">Detalle del plan de pagos</h5></div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="imprimirDetalleCartera" title="Imprimir detalle" aria-label="Imprimir detalle">
+                            <i class="ph ph-printer"></i> Imprimir
+                        </button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
                 </div>
                 <div class="modal-body">
                     <div class="cartera-resumen-detalle mb-3">
@@ -126,8 +131,8 @@
                     <div id="errorAbonoCartera" class="small text-danger mt-2" role="alert"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-danger" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-sm btn-success" id="guardarAbonoCartera">Registrar abono</button>
+                    <button type="button" class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn guardar btn-sm-modal" id="guardarAbonoCartera">Registrar abono</button>
                 </div>
             </form>
         </div>

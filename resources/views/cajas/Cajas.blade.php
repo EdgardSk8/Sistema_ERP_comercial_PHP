@@ -9,7 +9,7 @@
                 <p>Consulta sesiones, registra el efectivo contado y corrige arqueos.</p>
             </div>
             <button type="button" class="btn btn-primary btn-sm arqueo-btn-mini" id="btnImprimirArqueo">
-                <i class="fa-solid fa-print" aria-hidden="true"></i>
+                <i class="ph ph-printer" aria-hidden="true"></i>
                 Imprimir periodo
             </button>
         </header>
@@ -26,7 +26,7 @@
             <button type="button" class="btn btn-success btn-sm " id="btnArqueoHoy">Hoy</button>
             <button type="button" class="btn btn-primary btn-sm " id="btnArqueoSemana">Esta semana</button>
             <button type="button" class="btn btn-danger btn-sm " id="btnLimpiarFiltros">
-                <i class="fa-solid fa-eraser" aria-hidden="true"></i>
+                <i class="ph ph-eraser" aria-hidden="true"></i>
                 Limpiar
             </button>
         </div>
@@ -57,7 +57,7 @@
             </label>
             <span class="arqueo-seleccion-texto"><strong id="arqueoSeleccionCantidad">0</strong> seleccionadas</span>
             <button type="button" class="btn btn-success btn-sm arqueo-btn-mini" id="btnArquearSeleccionadas" disabled>
-                <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+                <i class="ph ph-scales" aria-hidden="true"></i>
                 Arquear seleccionadas
             </button>
         </div>

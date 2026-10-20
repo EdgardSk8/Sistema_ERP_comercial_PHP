@@ -201,7 +201,7 @@
 
                         <!-- ================= IMAGEN ================= -->
 
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">Imagen del Producto</label>
                             <input type="file" id="editar_imagen_producto" class="form-control form-control-sm" accept="image/*">
                         </div>

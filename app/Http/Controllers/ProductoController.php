@@ -10,6 +10,8 @@ use App\Models\Producto;
 use Intervention\Image\Facades\Image;
 use App\Models\MovimientoInventario;
 use App\Models\VariacionTalla;
+use App\Support\DataTableServidor;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 
@@ -521,11 +523,11 @@ class ProductoController extends Controller
 /*  ╔═════════ Mostrar Producto ═════════╗ 
     ╚════════════════════════════════════╝ */
 
-    public function MostrarProductos()
+    public function MostrarProductos(Request $request)
     {
         try {
 
-            $productos = Producto::query()
+            $consulta = Producto::query()
                 ->select([
                     'id_producto',
                     'nombre_producto',
@@ -544,13 +546,38 @@ class ProductoController extends Controller
                     'impuesto:id_impuesto,nombre_impuesto,porcentaje_impuesto',
                     'ubicacion:id_ubicacion,nombre_ubicacion',
                     'medida:id_medida,nombre_medida',
-                ])
-                ->get();
+                ]);
 
-            return response()->json([
-                'success' => true,
-                'productos' => $productos
-            ], 200);
+            // Modo compatible: sin parametros de DataTables devuelve todo (como antes).
+            if (! $request->filled('draw')) {
+
+                return response()->json([
+                    'success' => true,
+                    'productos' => $consulta->orderBy('id_producto')->get(),
+                ], 200);
+
+            }
+
+            // Modo servidor: la base solo devuelve la pagina visible.
+            return DataTableServidor::responder($request, $consulta, [
+                'columnas' => [
+                    0 => ['col' => 'id_producto'],
+                    2 => ['col' => 'nombre_producto', 'buscar' => true],
+                    3 => ['rel' => 'categoria', 'col' => 'nombre_categoria', 'buscar' => true],
+                    4 => ['rel' => 'medida', 'col' => 'nombre_medida', 'buscar' => true],
+                    5 => ['col' => 'precio_compra'],
+                    6 => ['col' => 'precio_venta'],
+                    10 => ['rel' => 'impuesto', 'col' => 'porcentaje_impuesto'],
+                    11 => ['col' => 'stock_actual'],
+                    12 => ['col' => 'estado_producto'],
+                ],
+                'orden' => [
+                    3 => '(select nombre_categoria from categoria where categoria.id_categoria = productos.id_categoria)',
+                    4 => '(select nombre_medida from medidas where medidas.id_medida = productos.id_medida)',
+                ],
+                'ordenDefault' => ['columna' => 'id_producto', 'dir' => 'asc'],
+                'extras' => ['opciones' => $this->opcionesFiltrosProductos()],
+            ]);
 
         } catch (\Throwable $e) {
 
@@ -562,6 +589,23 @@ class ProductoController extends Controller
                 'detalle' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Valores para los filtros de columna (categoria), indexados por columna.
+     * Se cachean porque no cambian en cada consulta.
+     *
+     * @return array<int, array<int, string>>
+     */
+    private function opcionesFiltrosProductos(): array
+    {
+        return Cache::remember('productos_opciones_filtros', now()->addMinutes(10), function () {
+
+            return [
+                3 => DB::table('categoria')->orderBy('nombre_categoria')->pluck('nombre_categoria')->all(),
+            ];
+
+        });
     }
 
 /*  ╔══════════ Mostrar Datos ═══════════╗ 

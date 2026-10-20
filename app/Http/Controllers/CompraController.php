@@ -17,7 +17,9 @@ use App\Models\Proveedor;
 use App\Models\TipoFactura;
 use App\Models\VariacionTalla;
 use App\Services\CosteoInventarioService;
+use App\Support\DataTableServidor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -783,20 +785,49 @@ class CompraController extends Controller
         }
     }
 
-    public function MostrarCompras()
+    public function MostrarCompras(Request $request)
     {
         try {
 
-            $compras = Compra::with([
+            $consulta = Compra::query()->with([
                 'proveedor:id_proveedor,nombre_proveedor',
                 'usuario:id_usuario,nombre_usuario',
                 'metodoPago:id_metodo_pago,nombre_metodo_pago',
-            ])->get();
+            ]);
 
-            return response()->json([
-                'success' => true,
-                'compras' => $compras,
-            ], 200);
+            // Modo compatible: sin parametros de DataTables devuelve todo (como antes).
+            if (! $request->filled('draw')) {
+
+                return response()->json([
+                    'success' => true,
+                    'compras' => $consulta->orderByDesc('id_compra')->get(),
+                ], 200);
+
+            }
+
+            // Modo servidor: la base solo devuelve la pagina visible.
+            return DataTableServidor::responder($request, $consulta, [
+                'columnas' => [
+                    0 => ['col' => 'id_compra'],
+                    1 => ['col' => 'numero_factura_compra', 'buscar' => true],
+                    2 => ['rel' => 'proveedor', 'col' => 'nombre_proveedor', 'buscar' => true],
+                    3 => ['rel' => 'usuario', 'col' => 'nombre_usuario', 'buscar' => true],
+                    4 => ['fecha' => 'fecha_compra'],
+                    5 => ['col' => 'subtotal_compra'],
+                    6 => ['col' => 'descuento_compra'],
+                    7 => ['col' => 'impuesto_compra'],
+                    8 => ['col' => 'total_compra'],
+                    9 => ['rel' => 'metodoPago', 'col' => 'nombre_metodo_pago'],
+                    10 => ['col' => 'estado_compra'],
+                ],
+                'orden' => [
+                    2 => '(select nombre_proveedor from proveedores where proveedores.id_proveedor = compras.id_proveedor)',
+                    3 => '(select nombre_usuario from usuarios where usuarios.id_usuario = compras.id_usuario)',
+                    9 => '(select nombre_metodo_pago from metodos_pago where metodos_pago.id_metodo_pago = compras.id_metodo_pago)',
+                ],
+                'ordenDefault' => ['columna' => 'id_compra', 'dir' => 'desc'],
+                'extras' => ['opciones' => $this->opcionesFiltrosCompras()],
+            ]);
 
         } catch (\Exception $e) {
 
@@ -807,6 +838,42 @@ class CompraController extends Controller
             ], 500);
 
         }
+    }
+
+    /**
+     * Valores para los filtros de columna (proveedor, usuario, metodo de pago),
+     * indexados por la posicion de la columna. Se cachean.
+     *
+     * @return array<int, array<int, string>>
+     */
+    private function opcionesFiltrosCompras(): array
+    {
+        return Cache::remember('compras_opciones_filtros', now()->addMinutes(10), function () {
+
+            return [
+                2 => DB::table('compras')
+                    ->join('proveedores', 'compras.id_proveedor', '=', 'proveedores.id_proveedor')
+                    ->distinct()
+                    ->orderBy('proveedores.nombre_proveedor')
+                    ->pluck('proveedores.nombre_proveedor')
+                    ->all(),
+
+                3 => DB::table('compras')
+                    ->join('usuarios', 'compras.id_usuario', '=', 'usuarios.id_usuario')
+                    ->distinct()
+                    ->orderBy('usuarios.nombre_usuario')
+                    ->pluck('usuarios.nombre_usuario')
+                    ->all(),
+
+                9 => DB::table('compras')
+                    ->join('metodos_pago', 'compras.id_metodo_pago', '=', 'metodos_pago.id_metodo_pago')
+                    ->distinct()
+                    ->orderBy('metodos_pago.nombre_metodo_pago')
+                    ->pluck('metodos_pago.nombre_metodo_pago')
+                    ->all(),
+            ];
+
+        });
     }
 
     public function MostrarDetalleCompra(int|string $id)

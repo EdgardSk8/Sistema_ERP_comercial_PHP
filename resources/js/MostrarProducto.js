@@ -1,5 +1,7 @@
 export default function initMostrarProductos() {
 
+    let opcionesFiltros = {};
+
 /* ════════════════════════════════════════════════════════════════════════════════════════════════════════════════ */
 
 /* ════════════════ TÍTULO DINAMICO DE LA VISTA ════════════════ */
@@ -12,7 +14,23 @@ export default function initMostrarProductos() {
 
     const tabla = $('#TablaMostrarProductos').DataTable({
 
-        ajax: { url: '/productos/mostrar', type: 'GET', dataSrc: 'productos' },
+        serverSide: true,
+
+        ajax: {
+            url: '/productos/mostrar',
+            type: 'GET',
+
+            // El backend solo envia la pagina visible; las opciones de los
+            // filtros de columna llegan en la misma respuesta.
+            dataSrc: function (json) {
+                if (json.opciones && Object.keys(opcionesFiltros).length === 0) {
+                    opcionesFiltros = json.opciones;
+                }
+
+                return json.data;
+            }
+        },
+
         deferRender: true,
 
         columns: [
@@ -74,19 +92,19 @@ export default function initMostrarProductos() {
 
                         ? `<button class="btn-baja bajaProducto" data-id="${data}">
                         
-                           <i class="fa-solid fa-ban"></i>
+                           <i class="ph ph-prohibit"></i>
                         
                         </button>` 
 
                         : `<button class="btn-baja bajaProducto" data-id="${data}">
                         
-                            <i class="fa-solid fa-circle-check"></i>
+                            <i class="ph ph-check-circle"></i>
                         
                         </button>`;
                     
                         let botonDetalles = `<button class="btn-detalle detallesProducto" data-id="${data}">
                         
-                            <i class="fa-solid fa-eye"></i>
+                            <i class="ph ph-eye"></i>
                         
                         </button>`;
                     
@@ -94,7 +112,7 @@ export default function initMostrarProductos() {
 
                         <button class="btn-editar editarProducto" data-id="${data}">
                         
-                            <i class="fa-solid fa-pencil-alt"></i>
+                            <i class="ph ph-pencil-simple"></i>
                         
                         </button>
 
@@ -105,9 +123,9 @@ export default function initMostrarProductos() {
                 }
             }
         ],
-        drawCallback: function () { AnimarFilasVisibles(this.api()); }, order: [[1, 'asc']],
+        drawCallback: function () { AnimarFilasVisibles(this.api()); }, order: [[0, 'asc']],
         initComplete: function () {
-            ConfigurarFiltrosDataTable(this, { columnasSelect: [3, 9], columnasIgnorar: [1, 12] });
+            ConfigurarFiltrosDataTable(this, { columnasSelect: [3], columnasIgnorar: [1, 7, 8, 9, 12, 13], opciones: opcionesFiltros });
         }
 
     }); // Fin de Funcion de inicializacion de tabla
@@ -848,7 +866,7 @@ export default function initMostrarProductos() {
                         mostrarToast("Estado del producto actualizado", "success");
                         $('#TablaMostrarProductos').DataTable().ajax.reload(null, false);
                     } else {
-                        mostrarToast("Error al cambiar estado", "danger");
+                        mostrarToast(data.mensaje || "Error al cambiar estado", "danger");
                     }
 
                 } catch (error) {

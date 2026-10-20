@@ -31,7 +31,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn actualizar btn-sm-modal" id="galeria_variacion_agregar">
-                        <i class="fa-solid fa-plus"></i> Agregar imagen
+                        <i class="ph ph-plus"></i> Agregar imagen
                     </button>
                     <button type="button" class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">Cerrar</button>
                 </div>

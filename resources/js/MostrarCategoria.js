@@ -37,13 +37,13 @@ export default function initMostrarCategorias() {
                     let botonEstado = row.estado_categoria == 1
                         ? `<button class="btn-baja bajaCategoria" data-id="${data}">
                         
-                            <i class="fa-solid fa-ban"></i>
+                            <i class="ph ph-prohibit"></i>
                         
                         </button>`
 
                         : `<button class="btn-baja bajaCategoria" data-id="${data}">
                         
-                            <i class="fa-solid fa-circle-check"></i>
+                            <i class="ph ph-check-circle"></i>
                         
                         </button>`;
 
@@ -51,7 +51,7 @@ export default function initMostrarCategorias() {
 
                         <button class="btn-editar editarCategoria" data-id="${data}">
                         
-                            <i class="fa-solid fa-pencil-alt"></i>
+                            <i class="ph ph-pencil-simple"></i>
                          
                         </button>
 
@@ -228,7 +228,7 @@ export default function initMostrarCategorias() {
 
                     } else {
 
-                        mostrarToast("Error al cambiar estado", "danger");
+                        mostrarToast(data.mensaje || "Error al cambiar estado", "danger");
 
                     }
 

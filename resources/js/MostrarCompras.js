@@ -1,11 +1,30 @@
 export default function initMostrarCompras() {
 
+    let opcionesFiltros = {};
+
     $(document).off('.mostrarCompras');
 
     document.getElementById('titulo').textContent = 'HISTORIAL DE COMPRAS';
 
     $('#tablaCompras').DataTable({
-        ajax: { url: '/compras/mostrar', type: 'GET', dataSrc: 'compras' },
+
+        serverSide: true,
+
+        ajax: {
+            url: '/compras/mostrar',
+            type: 'GET',
+
+            // El backend solo envia la pagina visible; las opciones de los
+            // filtros de columna llegan en la misma respuesta.
+            dataSrc: function (json) {
+                if (json.opciones && Object.keys(opcionesFiltros).length === 0) {
+                    opcionesFiltros = json.opciones;
+                }
+
+                return json.data;
+            }
+        },
+
         deferRender: true,
 
         columns: [
@@ -35,13 +54,13 @@ export default function initMostrarCompras() {
                 render: function (data) {
                     return `
                         <button class="detalle-compra btn-detalle" data-id="${data}">
-                            <i class="fa-solid fa-eye"></i>
+                            <i class="ph ph-eye"></i>
                         </button>
                     `;
                 }
             }
         ], drawCallback: function () { AnimarFilasVisibles(this.api()); }, order: [[0, 'desc']],
-        initComplete: function () { ConfigurarFiltrosDataTable(this, { columnasSelect: [2,3,9], columnasIgnorar: [11] }); }
+        initComplete: function () { ConfigurarFiltrosDataTable(this, { columnasSelect: [2,3,9], columnasIgnorar: [11], opciones: opcionesFiltros }); }
     });
 
     configurarToggleColumnas('tablaCompras');
@@ -63,10 +82,10 @@ export default function initMostrarCompras() {
 
             if (compra.estado_compra == 0) {
                 btnAnular.prop('disabled', true)
-                    .html('<i class="bi bi-x-circle me-1"></i> Factura Anulada');
+                    .html('<i class="ph ph-x-circle me-1"></i> Factura Anulada');
             } else {
                 btnAnular.prop('disabled', false)
-                    .html('<i class="bi bi-x-circle me-1"></i> Anular Factura');
+                    .html('<i class="ph ph-x-circle me-1"></i> Anular Factura');
             }
 
             $('#facturaTituloCompra').text(`Factura: ${compra.numero_factura_compra ?? 'Sin Numero de Factura' }`);

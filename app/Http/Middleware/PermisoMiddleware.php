@@ -13,7 +13,20 @@ class PermisoMiddleware
     {
         $usuario = session('usuario');
 
+        // Las peticiones AJAX/JSON reciben JSON con el motivo real. Antes se
+        // devolvia una redireccion (HTML) y el front mostraba "error de conexion"
+        // en lugar de "no estas autorizado".
+        $esperaJson = $request->expectsJson() || $request->ajax();
+
         if (!$usuario) {
+
+            if ($esperaJson) {
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'Tu sesión expiró. Vuelve a iniciar sesión.',
+                ], 401);
+            }
+
             return response()->view('errors.sin_permiso', [], 401);
         }
 
@@ -25,6 +38,15 @@ class PermisoMiddleware
             ->exists();
 
         if (!$tienePermiso) {
+
+            if ($esperaJson) {
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'No estás autorizado para esta acción.',
+                    'permiso' => $permiso,
+                ], 403);
+            }
+
             return redirect()->route('error');
         }
 

@@ -13,8 +13,8 @@
 
                 <div class="btns-right d-flex align-items-center gap-2">
 
-                    <button type="button" data-id="" class="btn btn-danger btn-sm" id="btnAnularCompra">
-                        <i class="bi bi-x-circle"></i> Anular Factura
+                    <button type="button" data-id="" class="btn cancelar btn-sm-modal" id="btnAnularCompra">
+                        <i class="ph ph-x-circle"></i> Anular Factura
                     </button>
 
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

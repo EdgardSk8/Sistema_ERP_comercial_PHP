@@ -11,6 +11,9 @@ use App\Models\Producto;
 use App\Models\VariacionTalla;
 use App\Models\Venta;
 use App\Services\CosteoInventarioService;
+use App\Support\DataTableServidor;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class VentaController extends Controller
@@ -18,22 +21,62 @@ class VentaController extends Controller
     /*  ╔════════════ Mostrar Venta ═══════════╗
         ╚══════════════════════════════════════╝ */
 
-    public function MostrarVentas()
+    public function MostrarVentas(Request $request)
     {
         try {
 
-            $ventas = Venta::with([
+            $consulta = Venta::query()->with([
                 'cliente:id_cliente,nombre_cliente',
                 'usuario:id_usuario,nombre_usuario',
                 'metodoPago:id_metodo_pago,nombre_metodo_pago',
                 'planPago:id_plan_pago,id_venta',
                 // 'caja'
-            ])->get();
+            ]);
 
-            return response()->json([
-                'success' => true,
-                'ventas' => $ventas,
-            ], 200);
+            // Modo compatible: sin parametros de DataTables devuelve todo (como antes).
+            if (! $request->filled('draw')) {
+
+                return response()->json([
+                    'success' => true,
+                    'ventas' => $consulta->orderByDesc('id_venta')->get(),
+                ], 200);
+
+            }
+
+            // Modo servidor: la base solo devuelve la pagina visible.
+            return DataTableServidor::responder($request, $consulta, [
+                'columnas' => [
+                    0 => ['col' => 'id_venta'],
+                    1 => ['col' => 'numero_factura', 'buscar' => true],
+                    2 => ['rel' => 'cliente', 'col' => 'nombre_cliente', 'buscar' => true],
+                    3 => ['rel' => 'usuario', 'col' => 'nombre_usuario', 'buscar' => true],
+                    4 => ['col' => 'id_caja'],
+                    5 => ['fecha' => 'fecha_venta'],
+                    6 => ['col' => 'subtotal_venta'],
+                    7 => ['col' => 'impuesto_venta'],
+                    8 => ['col' => 'total_venta'],
+                    9 => [
+                        'callback' => function ($query, string $valor) {
+                            $limpio = str_replace('\\', '', trim($valor, '^$'));
+
+                            if (stripos($limpio, 'plazo') !== false) {
+                                $query->has('planPago');
+
+                                return;
+                            }
+
+                            $query->whereHas('metodoPago', fn ($metodo) => $metodo->where('nombre_metodo_pago', 'like', "%{$limpio}%"));
+                        },
+                    ],
+                    10 => ['col' => 'estado_venta'],
+                ],
+                'orden' => [
+                    2 => '(select nombre_cliente from clientes where clientes.id_cliente = ventas.id_cliente)',
+                    3 => '(select nombre_usuario from usuarios where usuarios.id_usuario = ventas.id_usuario)',
+                ],
+                'ordenDefault' => ['columna' => 'id_venta', 'dir' => 'desc'],
+                'extras' => ['opciones' => $this->opcionesFiltrosVentas()],
+            ]);
 
         } catch (\Exception $e) {
 
@@ -44,6 +87,46 @@ class VentaController extends Controller
             ], 500);
 
         }
+    }
+
+    /**
+     * Valores para los filtros de columna (cliente, usuario, metodo de pago),
+     * indexados por la posicion de la columna. Se cachean porque no cambian
+     * en cada consulta.
+     *
+     * @return array<int, array<int, string>>
+     */
+    private function opcionesFiltrosVentas(): array
+    {
+        return Cache::remember('ventas_opciones_filtros', now()->addMinutes(10), function () {
+
+            return [
+                2 => DB::table('ventas')
+                    ->join('clientes', 'ventas.id_cliente', '=', 'clientes.id_cliente')
+                    ->distinct()
+                    ->orderBy('clientes.nombre_cliente')
+                    ->pluck('clientes.nombre_cliente')
+                    ->all(),
+
+                3 => DB::table('ventas')
+                    ->join('usuarios', 'ventas.id_usuario', '=', 'usuarios.id_usuario')
+                    ->distinct()
+                    ->orderBy('usuarios.nombre_usuario')
+                    ->pluck('usuarios.nombre_usuario')
+                    ->all(),
+
+                9 => array_values(array_filter(array_merge(
+                    ['A plazos'],
+                    DB::table('ventas')
+                        ->join('metodos_pago', 'ventas.id_metodo_pago', '=', 'metodos_pago.id_metodo_pago')
+                        ->distinct()
+                        ->orderBy('metodos_pago.nombre_metodo_pago')
+                        ->pluck('metodos_pago.nombre_metodo_pago')
+                        ->all()
+                ))),
+            ];
+
+        });
     }
 
     public function AnularVenta($id)

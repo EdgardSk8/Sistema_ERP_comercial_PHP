@@ -5,6 +5,7 @@ export default function initCuentasPorCobrar() {
 
     let planes = [];
     let ventaSeleccionada = null;
+    let planDetalleActual = null;
     let metodos = [];
     let cuentasMetodoPago = [];
     const tbody = tabla.querySelector('tbody');
@@ -78,7 +79,7 @@ export default function initCuentasPorCobrar() {
                 : '—';
             const fila = document.createElement('tr');
             const botonAbono = Number(plan.saldo) > 0
-                ? `<button type="button" class="btn btn-sm btn-success ms-1" data-accion="abono" data-venta="${Number(plan.id_venta)}" title="Registrar abono" aria-label="Registrar abono"><i class="ph ph-hand-coins"></i></button>`
+                ? `<button type="button" class="btn-abonar" data-accion="abono" data-venta="${Number(plan.id_venta)}" title="Registrar abono" aria-label="Registrar abono"><i class="ph ph-hand-coins"></i></button>`
                 : '';
             fila.innerHTML = `
                 <td>${escapar(plan.numero_factura)}</td>
@@ -88,7 +89,7 @@ export default function initCuentasPorCobrar() {
                 <td>${escapar(fechaProxima)}</td>
                 <td><span class="cartera-estado ${escapar(plan.estado)}">${estadoTexto(plan.estado)}</span></td>
                 <td class="text-end cartera-acciones">
-                    <button type="button" class="btn btn-sm btn-outline-primary" data-accion="detalle" data-venta="${Number(plan.id_venta)}" title="Ver plan e historial" aria-label="Ver plan e historial"><i class="ph ph-eye"></i></button>
+                    <button type="button" class="btn-detalle" data-accion="detalle" data-venta="${Number(plan.id_venta)}" title="Ver plan e historial" aria-label="Ver plan e historial"><i class="ph ph-eye"></i></button>
                     ${botonAbono}
                 </td>`;
             tbody.append(fila);
@@ -111,21 +112,146 @@ export default function initCuentasPorCobrar() {
     }
 
     function abrirDetalle(plan) {
+        planDetalleActual = plan;
         $('#facturaDetalleCartera').text(plan.numero_factura || '—');
         $('#clienteDetalleCartera').text(plan.cliente || '—');
         $('#totalDetalleCartera').text(moneda(plan.total));
         $('#saldoDetalleCartera').text(moneda(plan.saldo));
         const cuotas = $('#cuotasDetalleCartera').empty();
         plan.cuotas.forEach(cuota => {
-            cuotas.append(`<tr><td>${Number(cuota.numero)}</td><td>${escapar(cuota.fecha_vencimiento)}</td><td>${moneda(cuota.monto)}</td><td>${moneda(cuota.pagado)}</td><td>${moneda(cuota.saldo)}</td><td><span class="cartera-estado ${escapar(cuota.estado)}">${estadoTexto(cuota.estado)}</span></td></tr>`);
+            cuotas.append(`<tr><td>${Number(cuota.numero)}</td><td>${formatearFechaCorta(cuota.fecha_vencimiento)}</td><td>${moneda(cuota.monto)}</td><td>${moneda(cuota.pagado)}</td><td>${moneda(cuota.saldo)}</td><td><span class="cartera-estado ${escapar(cuota.estado)}">${estadoTexto(cuota.estado)}</span></td></tr>`);
         });
         const pagos = $('#pagosDetalleCartera').empty();
         if (plan.pagos.length === 0) {
             pagos.append('<tr><td colspan="4" class="text-center text-secondary">Aún no hay abonos registrados.</td></tr>');
         } else {
-            plan.pagos.forEach(pago => pagos.append(`<tr><td>${escapar(pago.fecha)}</td><td>${escapar(pago.metodo)}${pago.cuenta ? ` · ${escapar(pago.cuenta)}` : ''}</td><td>${escapar(pago.referencia || '—')}</td><td class="text-end">${moneda(pago.monto)}</td></tr>`));
+            plan.pagos.forEach(pago => pagos.append(`<tr><td>${formatearFechaCorta(pago.fecha)}</td><td>${escapar(pago.metodo)}${pago.cuenta ? ` · ${escapar(pago.cuenta)}` : ''}</td><td>${escapar(pago.referencia || '—')}</td><td class="text-end">${moneda(pago.monto)}</td></tr>`));
         }
         modalDetalle.show();
+    }
+
+    async function obtenerCredencialesEmpresa() {
+        try {
+            const respuesta = await $.getJSON('/credenciales/mostrar');
+            return respuesta?.data || {};
+        } catch (_) {
+            return {};
+        }
+    }
+
+    async function imprimirDetalle(plan) {
+        const empresa = await obtenerCredencialesEmpresa();
+        const totalPagado = plan.cuotas.reduce((suma, cuota) => suma + Number(cuota.pagado || 0), 0);
+
+        const filasCuotas = plan.cuotas.map(cuota => `
+            <tr>
+                <td class="c">${Number(cuota.numero)}</td>
+                <td>${escapar(formatearFechaCorta(cuota.fecha_vencimiento))}</td>
+                <td class="r">${moneda(cuota.monto)}</td>
+                <td class="r">${moneda(cuota.pagado)}</td>
+                <td class="r">${moneda(cuota.saldo)}</td>
+                <td class="c">${escapar(estadoTexto(cuota.estado))}</td>
+            </tr>`).join('');
+
+        const filasPagos = plan.pagos.length
+            ? plan.pagos.map(pago => `
+                <tr>
+                    <td>${escapar(formatearFechaCorta(pago.fecha))}</td>
+                    <td>${escapar(pago.metodo)}${pago.cuenta ? ' · ' + escapar(pago.cuenta) : ''}</td>
+                    <td>${escapar(pago.referencia || '—')}</td>
+                    <td class="r">${moneda(pago.monto)}</td>
+                </tr>`).join('')
+            : '<tr><td colspan="4" class="c">Sin abonos registrados</td></tr>';
+
+        const ventana = window.open('', '_blank', 'width=900,height=800');
+
+        if (!ventana) {
+            mostrarToast('Permite las ventanas emergentes para imprimir el detalle.', 'danger');
+            return;
+        }
+
+        ventana.document.write(`
+            <!doctype html>
+            <html lang="es">
+            <head>
+                <meta charset="utf-8">
+                <title>Plan de pagos ${escapar(plan.numero_factura || '')}</title>
+                <style>
+                    @page { size: A4; margin: 12mm; }
+                    * { box-sizing: border-box; }
+                    body { margin: 0; color: #1f2328; font: 12px/1.45 Arial, Helvetica, sans-serif; }
+                    header { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 2px solid #333; }
+                    .empresa { font-size: 16px; font-weight: 700; }
+                    .datos-empresa, .datos-doc { color: #555; font-size: 11px; }
+                    .datos-doc { text-align: right; }
+                    h1 { margin: 14px 0 8px; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; }
+                    .resumen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 20px; margin-bottom: 14px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+                    .resumen div { display: flex; justify-content: space-between; gap: 10px; }
+                    .resumen span { color: #555; }
+                    h2 { margin: 16px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { padding: 5px 6px; border: 1px solid #ccc; }
+                    th { background: #f1f3f5; text-align: left; font-size: 11px; text-transform: uppercase; }
+                    .c { text-align: center; }
+                    .r { text-align: right; white-space: nowrap; }
+                    tfoot td { font-weight: 700; background: #fafafa; }
+                    footer { margin-top: 18px; padding-top: 8px; border-top: 1px solid #ccc; color: #666; font-size: 10px; display: flex; justify-content: space-between; }
+                    @media print { * { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
+                </style>
+            </head>
+            <body>
+                <header>
+                    <div>
+                        <div class="empresa">${escapar(empresa?.nombre_empresa || 'Empresa')}</div>
+                        ${empresa?.ruc_empresa ? `<div class="datos-empresa">RUC: ${escapar(empresa.ruc_empresa)}</div>` : ''}
+                        ${empresa?.direccion_empresa ? `<div class="datos-empresa">${escapar(empresa.direccion_empresa)}</div>` : ''}
+                        ${empresa?.telefono_empresa ? `<div class="datos-empresa">Tel: ${escapar(empresa.telefono_empresa)}</div>` : ''}
+                    </div>
+                    <div class="datos-doc">
+                        <div>Impreso: ${escapar(formatearFechaDiaHora(new Date()))}</div>
+                    </div>
+                </header>
+
+                <h1>Plan de pagos</h1>
+
+                <section class="resumen">
+                    <div><span>Factura</span><strong>${escapar(plan.numero_factura || '—')}</strong></div>
+                    <div><span>Cliente</span><strong>${escapar(plan.cliente || '—')}</strong></div>
+                    <div><span>Total de la venta</span><strong>${moneda(plan.total)}</strong></div>
+                    <div><span>Total abonado</span><strong>${moneda(totalPagado)}</strong></div>
+                    <div><span>Saldo pendiente</span><strong>${moneda(plan.saldo)}</strong></div>
+                    <div><span>Estado</span><strong>${escapar(estadoTexto(plan.estado))}</strong></div>
+                </section>
+
+                <h2>Cuotas</h2>
+                <table>
+                    <thead>
+                        <tr><th class="c">N.º</th><th>Vencimiento</th><th class="r">Importe</th><th class="r">Pagado</th><th class="r">Saldo</th><th class="c">Estado</th></tr>
+                    </thead>
+                    <tbody>${filasCuotas}</tbody>
+                    <tfoot>
+                        <tr><td colspan="4" class="r">Totales</td><td class="r">${moneda(plan.saldo)}</td><td></td></tr>
+                    </tfoot>
+                </table>
+
+                <h2>Abonos recibidos</h2>
+                <table>
+                    <thead>
+                        <tr><th>Fecha</th><th>Método</th><th>Referencia</th><th class="r">Importe</th></tr>
+                    </thead>
+                    <tbody>${filasPagos}</tbody>
+                </table>
+
+                <footer>
+                    <span>${escapar(empresa?.nombre_empresa || '')}</span>
+                    <span>Saldo pendiente: ${moneda(plan.saldo)}</span>
+                </footer>
+            </body>
+            </html>`);
+
+        ventana.document.close();
+        ventana.focus();
+        ventana.print();
     }
 
     function actualizarCuentas() {
@@ -199,6 +325,10 @@ export default function initCuentasPorCobrar() {
     $('#montoAbonoCartera').off('input.cartera').on('input.cartera', actualizarResumenAbono);
     $('#filtroEstadoCartera').on('change', cargarPlanes);
     $('#recargarCartera').on('click', cargarPlanes);
+
+    $('#imprimirDetalleCartera').on('click', function () {
+        if (planDetalleActual) imprimirDetalle(planDetalleActual);
+    });
 
     $('#formAbonoCartera').on('submit', async function (event) {
         event.preventDefault();

@@ -59,7 +59,7 @@ export default function initMostrarTallas() {
                     let botones = '';
 
                     if (puedeEditar) {
-                        botones += `<button class="btn-editar editarTalla" data-id="${id}" title="Editar talla"><i class="fa-solid fa-pencil-alt"></i></button>`;
+                        botones += `<button class="btn-editar editarTalla" data-id="${id}" title="Editar talla"><i class="ph ph-pencil-simple"></i></button>`;
                     }
 
                     if (puedeCambiarEstado) {
@@ -67,8 +67,8 @@ export default function initMostrarTallas() {
                         const deshabilitado = row.estado_talla == 1 && tieneStock ? 'disabled' : '';
                         const titulo = deshabilitado ? 'No se puede desactivar mientras haya stock' : 'Cambiar estado';
                         const clase = row.estado_talla == 1 ? 'btn-baja' : 'btn-alta';
-                        const icono = row.estado_talla == 1 ? 'fa-ban' : 'fa-circle-check';
-                        botones += `<button class="${clase} cambiarEstadoTalla" data-id="${id}" data-estado="${row.estado_talla}" title="${titulo}" ${deshabilitado}><i class="fa-solid ${icono}"></i></button>`;
+                        const icono = row.estado_talla == 1 ? 'ph-prohibit' : 'ph-check-circle';
+                        botones += `<button class="${clase} cambiarEstadoTalla" data-id="${id}" data-estado="${row.estado_talla}" title="${titulo}" ${deshabilitado}><i class="ph ${icono}"></i></button>`;
                     }
 
                     return botones || '<span class="text-muted">Sin acciones</span>';

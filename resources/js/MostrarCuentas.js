@@ -67,10 +67,10 @@ export default function initCuentas() {
 
         let botonEstado = row.estado == 1
             ? `<button class="btn-baja bajaCuenta" data-id="${data}">
-                <i class="fa-solid fa-ban"></i>
+                <i class="ph ph-prohibit"></i>
               </button>`
             : `<button class="btn-alta bajaCuenta" data-id="${data}">
-                <i class="fa-solid fa-circle-check"></i>
+                <i class="ph ph-check-circle"></i>
               </button>`;
         let botonesSaldo = '';
 
@@ -78,18 +78,18 @@ export default function initCuentas() {
             
             botonesSaldo = `
                 <button class="agregar-saldo" data-id="${data}">
-                    <i class="fa-solid fa-plus"></i>
+                    <i class="ph ph-plus"></i>
                 </button>
 
                 <button class="retirar-saldo" data-id="${data}">
-                    <i class="fa-solid fa-minus"></i>
+                    <i class="ph ph-minus"></i>
                 </button>
             `;
         }
 
         return `
             <button class="btn-editar editarCuenta" data-id="${data}">
-                <i class="fa-solid fa-pencil-alt"></i>
+                <i class="ph ph-pencil-simple"></i>
             </button>
 
             ${botonesSaldo}
@@ -402,7 +402,7 @@ export default function initCuentas() {
         };
 
         if (!validarMovimiento(data)) { window.procesandoMovimiento = false; return; }
-        btn.prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i> Procesando...');
+        btn.prop('disabled', true).html('<i class="ph ph-hourglass me-1"></i> Procesando...');
 
         $.ajax({ url: '/cuenta/movimiento', type: 'POST', data,
 
@@ -418,7 +418,7 @@ export default function initCuentas() {
 
             complete: function () { window.procesandoMovimiento = false;
                 btn.prop('disabled', false)
-                .html('<i class="bi bi-check-circle me-1"></i> Confirmar');
+                .html('<i class="ph ph-check-circle me-1"></i> Confirmar');
             }
 
         });
@@ -532,7 +532,7 @@ export default function initCuentas() {
 
                     } else {
 
-                        mostrarToast("Error al cambiar estado", "danger");
+                        mostrarToast(data.mensaje || "Error al cambiar estado", "danger");
 
                     }
 
@@ -755,7 +755,7 @@ export default function initCuentas() {
 
                 success: function (res) {
 
-                    if (res.success) { mostrarToast(res.mensaje, 'success'); $('#ModalTransferirCuenta').modal('hide');
+                    if (res.success) { mostrarToast(res.mensaje, 'success'); bootstrap.Modal.getOrCreateInstance(document.getElementById('ModalTransferirCuenta')).hide();
                         if ($.fn.DataTable.isDataTable('#tablaCuentas')) { $('#tablaCuentas').DataTable().ajax.reload(); }
                     } else { mostrarToast(res.mensaje || 'Error', 'error'); }
 
