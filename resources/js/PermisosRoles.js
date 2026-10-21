@@ -244,17 +244,10 @@ export default function initPermisos() {
     // ═══════════════════════════════════════
     // 7. TOAST
     // ═══════════════════════════════════════
+    // Se delega al toast global (FuncionesGlobales.js), que crea su propio
+    // contenedor. Así no falla si la vista no trae el markup del toast.
     function mostrarToast(mensaje, tipo = 'success') {
-
-        const toastEl = document.getElementById('toastMensaje');
-        const toastTexto = document.getElementById('toastTexto');
-
-        toastTexto.textContent = mensaje;
-
-        toastEl.className = `toast text-bg-${tipo} border-0`;
-
-        const toast = new bootstrap.Toast(toastEl);
-        toast.show();
+        window.mostrarToast(mensaje, tipo);
     }
 
     // INIT

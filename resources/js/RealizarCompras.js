@@ -596,6 +596,13 @@ export default function initCompras() {
             const inputPrecioTotal = $('#crear_precio_venta_TOTAL');
             const selectImpuesto = $('#crear_id_impuesto');
 
+            // Precio de venta con máximo 2 decimales y sin decimales innecesarios: 150.00 → 150, 150.50 → 150.5
+            const precioVentaCorto = valor => {
+                const numero = Number(valor);
+                if (!Number.isFinite(numero)) return '';
+                return String(parseFloat(numero.toFixed(2)));
+            };
+
             let porcentajeOriginal = parseFloat(inputPorcentaje.val()) || 0;
             let bloqueando = false;
             let modoRedondeo = false;
@@ -634,9 +641,8 @@ export default function initCompras() {
                     let precioBase = precioCompra * (1 + porcentaje / 100);
                     let precioTotal = precioBase * (1 + iva / 100);
 
-                    // 6 decimales: la base sin IVA debe ser exacta para que el precio
-                    // final (+IVA) no quede con centavos fantasma.
-                    inputPrecioVenta.val(precioBase.toFixed(6));
+                    // El precio de venta se muestra con máximo 2 decimales.
+                    inputPrecioVenta.val(precioVentaCorto(precioBase));
                     inputPrecioTotal.val(precioTotal.toFixed(2));
 
                     porcentajeOriginal = porcentaje;
@@ -667,8 +673,8 @@ export default function initCompras() {
                 let precioBase = total / (1 + iva / 100);
                 let porcentaje = ((precioBase / precioCompra) - 1) * 100;
 
-                // 6 decimales para que base × (1 + IVA) devuelva el total exacto.
-                inputPrecioVenta.val(precioBase.toFixed(6));
+                // El precio de venta se muestra con máximo 2 decimales.
+                inputPrecioVenta.val(precioVentaCorto(precioBase));
                 inputPorcentaje.val(porcentaje.toFixed(2));
 
                 calcularGanancia();
@@ -698,7 +704,7 @@ export default function initCompras() {
                     porcentajeOriginal = nuevoPorcentaje;
 
                     inputPorcentaje.val(nuevoPorcentaje.toFixed(3));
-                    inputPrecioVenta.val(baseRedondeada.toFixed(6));
+                    inputPrecioVenta.val(precioVentaCorto(baseRedondeada));
                     inputPrecioTotal.val(totalRedondeado);
                     calcularGanancia();
 
@@ -711,7 +717,7 @@ export default function initCompras() {
 
                     let nuevoPrecioVenta = totalRedondeado / (1 + iva / 100);
 
-                    inputPrecioVenta.val(nuevoPrecioVenta.toFixed(6));
+                    inputPrecioVenta.val(precioVentaCorto(nuevoPrecioVenta));
                     inputPrecioTotal.val(totalRedondeado);
                     calcularGanancia();
                 }
@@ -759,10 +765,38 @@ export default function initCompras() {
             const stock = $('#crear_stock_actual').val();
             const imagen = $('#crear_imagen_producto')[0].files[0];
 
-            if(nombre === ''){ mostrarToast('El nombre del producto es obligatorio', 'danger'); return; }
+            // ✅ VALIDACIÓN DE CAMPOS OBLIGATORIOS
+            // Ubicación, medida, descripción e imagen SÍ admiten nulos: no se validan.
+            const faltantes = [];
 
-            if(!categoria || !ubicacion || !impuesto /* || !medida */){
-                mostrarToast('Debe seleccionar categoría, ubicación, impuesto y medida', 'danger');
+            if(nombre === '') faltantes.push('el nombre del producto');
+
+            if(!categoria) faltantes.push('la categoría');
+            if(!impuesto) faltantes.push('el impuesto');
+
+            const precioCompraNum = parseFloat(precioCompra);
+            if(precioCompra === '' || precioCompra === null || isNaN(precioCompraNum)){
+                faltantes.push('el precio de compra');
+            } else if(precioCompraNum < 0){
+                mostrarToast('El precio de compra no puede ser negativo', 'danger');
+                return;
+            }
+
+            const precioVentaNum = parseFloat(precioVenta);
+            if(precioVenta === '' || precioVenta === null || isNaN(precioVentaNum)){
+                faltantes.push('el precio de venta');
+            } else if(precioVentaNum < 0){
+                mostrarToast('El precio de venta no puede ser negativo', 'danger');
+                return;
+            }
+
+            if(stock !== '' && (!Number.isInteger(Number(stock)) || Number(stock) < 0)){
+                mostrarToast('La cantidad inicial debe ser un número entero mayor o igual a 0', 'danger');
+                return;
+            }
+
+            if(faltantes.length > 0){
+                mostrarToast('Debe completar: ' + faltantes.join(', '), 'danger');
                 return;
             }
 
@@ -824,21 +858,19 @@ export default function initCompras() {
 
                 error: function(err){
 
-                    console.error(err);
-
-                    if(err.status === 422){
+                    if(err.status === 422 && err.responseJSON?.errors){
 
                         const errores = err.responseJSON.errors;
                         let mensaje = '';
                         for(let campo in errores){ mensaje = errores[campo][0]; break; }
                         mostrarToast(mensaje, 'danger');
 
-                    } 
+                    }
                     else if(err.responseJSON && err.responseJSON.mensaje){
 
                         mostrarToast(err.responseJSON.mensaje, 'danger');
 
-                    }  else { mostrarToast('Error inesperado del servidor', 'danger'); }
+                    }  else { mostrarToast('No se pudo crear el producto. Verifica los datos e intenta de nuevo.', 'danger'); }
 
                 }
 

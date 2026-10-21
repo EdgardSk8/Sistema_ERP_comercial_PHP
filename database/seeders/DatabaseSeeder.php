@@ -2,8 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Credenciales;
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -23,43 +21,43 @@ class DatabaseSeeder extends Seeder
             usuariosSeeder::class,
 
             // 📦 Catálogos base
-            //categoriaSeeder::class,
+            // categoriaSeeder::class,
             impuestosSeeder::class,
             metodos_pagoSeeder::class,
-            //tipo_gastoSeeder::class,
+            // tipo_gastoSeeder::class,
 
             // 👥 Terceros
-            // proveedoresSeeder::class,
-            //clientesSeeder::class,
+            // proveedoresSeeder::class, // vacío a propósito: se crean desde el sistema
+            clientesSeeder::class, // solo el Cliente Genérico
 
             // 💰 Estructura financiera (ANTES de usarse)
-            //cuentasSeeder::class,
-            //cajasSeeder::class,
+            // cuentasSeeder::class,
+            // cajasSeeder::class,
 
             // 🛒 Productos
-            //productosSeeder::class,
+            // productosSeeder::class,
 
             // 📥 Compras (usan proveedores + productos + cuentas/caja)
-            //comprasSeeder::class,
-            //detalle_comprasSeeder::class,
+            // comprasSeeder::class,
+            // detalle_comprasSeeder::class,
 
             // 📦 Inventario (depende de compras/productos)
-            //movimientos_inventarioSeeder::class,
+            // movimientos_inventarioSeeder::class,
 
             // 📤 Ventas (usan clientes + usuarios + caja/cuenta)
-            //ventasSeeder::class,
-            //detalle_ventasSeeder::class,
+            // ventasSeeder::class,
+            // detalle_ventasSeeder::class,
 
             // 💸 Gastos (usan tipo_gasto + caja/cuenta)
-            //gastosSeeder::class,
-            //movimientos_gastosSeeder::class,
+            // gastosSeeder::class,
+            // movimientos_gastosSeeder::class,
 
             // 💵 Movimientos financieros (al final)
-            //movimientos_cajaSeeder::class,
-            //movimientos_cuentasSeeder::class,
-            //UbicacionesSeeder::class,
+            // movimientos_cajaSeeder::class,
+            // movimientos_cuentasSeeder::class,
+            // UbicacionesSeeder::class,
             credencialesSeeder::class,
-            TiposFacturaSeeder::class
+            TiposFacturaSeeder::class,
         ]);
     }
 }

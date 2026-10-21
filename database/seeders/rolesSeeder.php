@@ -17,8 +17,10 @@ class rolesSeeder extends Seeder
         DB::table('roles')->insert([
             [
                 'nombre_rol' => 'Administrador',
-                'descripcion_rol' => 'Acceso total al sistema, configuración, usuarios, reportes y control general.'
+                'descripcion_rol' => 'Acceso total al sistema, configuración, usuarios, reportes y control general.',
             ],
+
+            /*
             [
                 'nombre_rol' => 'Cajero',
                 'descripcion_rol' => 'Encargado de realizar ventas, cobros, apertura y cierre de caja.'
@@ -35,6 +37,7 @@ class rolesSeeder extends Seeder
                 'nombre_rol' => 'Contador',
                 'descripcion_rol' => 'Gestiona gastos, cuentas, reportes financieros e información contable.'
             ],
+            */
         ]);
 
     }

@@ -20,6 +20,8 @@ class metodos_pagoSeeder extends Seeder
                 'descripcion_metodo_pago' => 'Pago físico con papel moneda o monedas',
                 'estado_metodo_pago' => true,
             ],
+
+            /*
             [
                 'nombre_metodo_pago' => 'Tarjeta de Débito/Crédito',
                 'descripcion_metodo_pago' => 'Pagos procesados por terminal bancaria (POS)',
@@ -35,6 +37,7 @@ class metodos_pagoSeeder extends Seeder
                 'descripcion_metodo_pago' => 'Pago desde aplicación móvil o banca digital',
                 'estado_metodo_pago' => true,
             ],
+            */
         ]);
     }
 }

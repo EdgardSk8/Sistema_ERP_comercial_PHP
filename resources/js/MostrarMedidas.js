@@ -1,3 +1,6 @@
+// Referencia única del listener: evita que se duplique al re-inicializar el módulo (Turbo).
+let manejadorBajaMedida = null;
+
 export default function initMostrarMedidas() {
 
     document.getElementById('titulo').textContent = 'GESTIÓN DE MEDIDAS';
@@ -211,11 +214,19 @@ export default function initMostrarMedidas() {
 
     });
 
-    document.addEventListener("click", async function(e){
+    // Se retira el listener anterior antes de registrar el nuevo.
+    if(manejadorBajaMedida){
+        document.removeEventListener("click", manejadorBajaMedida);
+    }
 
-        if(e.target.classList.contains("bajaMedida")){
+    manejadorBajaMedida = async function(e){
 
-            const id = e.target.dataset.id;
+        // closest() permite que el clic caiga en el icono <i> del botón.
+        const boton = e.target.closest(".bajaMedida");
+
+        if(boton){
+
+            const id = boton.dataset.id;
             let modalElement = document.getElementById("modalConfirmarEstadoMedida");
 
             if(!modalElement){
@@ -280,7 +291,8 @@ export default function initMostrarMedidas() {
                 modal.hide();
             };
         }
-    });
+    };
 
+    document.addEventListener("click", manejadorBajaMedida);
 
 }

@@ -47,6 +47,7 @@ use App\Http\Controllers\ProductoVariacionController;
 use App\Http\Controllers\VariacionImagenController;
 use App\Http\Controllers\VariacionTallaController;
 use App\Http\Controllers\UbicacionController;
+use App\Http\Controllers\WebsiteController;
 
 /*  ╔════════════ LOGIN ═════════════╗ 
     ╚════════════════════════════════╝ */
@@ -432,6 +433,22 @@ Route::post('/variacion-tallas/crear', [VariacionTallaController::class, 'CrearV
 Route::get('/variacion-tallas/editar/{id}', [VariacionTallaController::class, 'EditarVariacionTalla'])->middleware('permiso:editar_variacion_tallas');
 Route::put('/variacion-tallas/actualizar/{id}', [VariacionTallaController::class, 'ActualizarVariacionTalla'])->middleware('permiso:actualizar_variacion_tallas');
 Route::delete('/variacion-tallas/eliminar/{id}', [VariacionTallaController::class, 'EliminarVariacionTalla'])->middleware('permiso:eliminar_variacion_tallas');
+
+/* ╔════════════ Módulo Tienda (Website público) ════════════╗
+   ╚══════════════════════════════════════════════════════════╝ */
+
+// Vistas
+Route::get('/tienda', [WebsiteController::class, 'inicio'])->name('tienda');
+Route::get('/tienda/producto/{id}', [WebsiteController::class, 'productoVista'])->name('tienda.producto');
+Route::get('/tienda/carrito', [WebsiteController::class, 'carritoVista'])->name('tienda.carrito');
+
+// Recursos estáticos de la carpeta website/
+Route::get('/tienda/recursos/{archivo}', [WebsiteController::class, 'archivo'])
+    ->where('archivo', '.*')->name('tienda.recursos');
+
+// API de catálogo
+Route::get('/tienda/api/productos', [WebsiteController::class, 'productos'])->name('tienda.api.productos');
+Route::get('/tienda/api/productos/{id}', [WebsiteController::class, 'productoDetalle'])->name('tienda.api.producto');
 
 
 

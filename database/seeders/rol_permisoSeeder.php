@@ -18,7 +18,7 @@ class rol_permisoSeeder extends Seeder
             $rolesPermisos[] = [
                 'id_rol' => 1,
                 'id_permiso' => $permiso->id_permiso,
-                'fecha_asignacion_rol_permiso' => now()
+                'fecha_asignacion_rol_permiso' => now(),
             ];
         }
 
@@ -34,7 +34,7 @@ class rol_permisoSeeder extends Seeder
             'mostrar_cuentas_por_cobrar',
             'registrar_pagos_venta',
 
-            /* MOVIMIENTO CAJAS*/ 
+            /* MOVIMIENTO CAJAS */
             'vista_movimiento_cajas',
             'mostrar_movimiento_cajas',
 
@@ -43,7 +43,7 @@ class rol_permisoSeeder extends Seeder
             'usar_facturacion',
             'abrir_caja',
             'cerrar_caja',
-            //'verificar_caja',
+            // 'verificar_caja',
 
             /* CLIENTES */
             'vista_clientes',
@@ -69,7 +69,7 @@ class rol_permisoSeeder extends Seeder
                 $rolesPermisos[] = [
                     'id_rol' => 2,
                     'id_permiso' => $permiso->id_permiso,
-                    'fecha_asignacion_rol_permiso' => now()
+                    'fecha_asignacion_rol_permiso' => now(),
                 ];
             }
         }
@@ -144,7 +144,7 @@ class rol_permisoSeeder extends Seeder
                 $rolesPermisos[] = [
                     'id_rol' => 3,
                     'id_permiso' => $permiso->id_permiso,
-                    'fecha_asignacion_rol_permiso' => now()
+                    'fecha_asignacion_rol_permiso' => now(),
                 ];
             }
         }
@@ -184,7 +184,7 @@ class rol_permisoSeeder extends Seeder
                 $rolesPermisos[] = [
                     'id_rol' => 4,
                     'id_permiso' => $permiso->id_permiso,
-                    'fecha_asignacion_rol_permiso' => now()
+                    'fecha_asignacion_rol_permiso' => now(),
                 ];
             }
         }
@@ -200,7 +200,6 @@ class rol_permisoSeeder extends Seeder
             /* REPORTES */
             'vista_reportes',
             'mostrar_reportes',
-
 
             /* GASTOS */
             'vista_gastos',
@@ -227,7 +226,7 @@ class rol_permisoSeeder extends Seeder
             'vista_transferenciacajacuenta',
             'mostrar_transferencias_caja_cuenta',
             'transferir_caja_cuentas',
-            'mostrar_detalle_transferencias_caja_cuenta'
+            'mostrar_detalle_transferencias_caja_cuenta',
         ];
 
         foreach ($permisosContador as $nombrePermiso) {
@@ -240,10 +239,21 @@ class rol_permisoSeeder extends Seeder
                 $rolesPermisos[] = [
                     'id_rol' => 5,
                     'id_permiso' => $permiso->id_permiso,
-                    'fecha_asignacion_rol_permiso' => now()
+                    'fecha_asignacion_rol_permiso' => now(),
                 ];
             }
         }
+
+        /*
+        | Solo se siembra el rol Administrador: se descartan los permisos
+        | calculados para los roles 2-5 (Cajero, Bodeguero, Supervisor, Contador).
+        */
+        $rolesExistentes = DB::table('roles')->pluck('id_rol')->all();
+
+        $rolesPermisos = array_values(array_filter(
+            $rolesPermisos,
+            fn (array $fila) => in_array($fila['id_rol'], $rolesExistentes, true)
+        ));
 
         DB::table('rol_permiso')->insertOrIgnore($rolesPermisos);
     }

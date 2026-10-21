@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5EEDE">
+  <title>Producto · Tellez Nic Store</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css">
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="contenedor">
+      <a class="icono-btn" href="/tienda" aria-label="Volver">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+
+      <a class="marca" href="/tienda">
+        <img class="marca__logo" src="/tienda/recursos/img/minilogo.png" alt="">
+        Tellez Nic Store
+      </a>
+
+      <div class="header-acciones">
+        <button class="icono-btn" type="button" aria-label="Favoritos">
+          <i class="bi bi-heart"></i>
+        </button>
+        <a class="icono-btn" href="/tienda/carrito" aria-label="Carrito">
+          <i class="bi bi-bag"></i>
+          <span class="icono-btn__badge" data-carrito-badge hidden>0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Detalle ─────────────────────────────────────────────── -->
+  <main class="producto" id="productoDetalle">
+
+    <!-- Título y descripción encima de la imagen grande -->
+    <div class="producto__cabecera">
+      <div class="producto__titulo-fila">
+        <h1 class="producto__nombre" id="productoNombre">Cargando…</h1>
+        <button class="btn-compartir" type="button" id="btnCompartir" aria-label="Compartir producto">
+          <i class="bi bi-share"></i> Compartir
+        </button>
+      </div>
+      <p class="producto__descripcion" id="productoDescripcion"></p>
+    </div>
+
+    <div class="producto__media">
+      <div class="galeria">
+        <!-- Imagen grande en carrusel (Splide) -->
+        <div class="galeria__principal">
+          <div class="splide" id="galeriaCarrusel" aria-label="Imágenes del producto">
+            <div class="splide__track">
+              <ul class="splide__list" id="galeriaPrincipalLista"></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Miniaturas cuadradas debajo -->
+        <div class="galeria__minis" id="galeriaMinis"></div>
+      </div>
+    </div>
+
+    <div class="producto__panel">
+      <!-- Color -->
+      <div class="opcion opcion--color">
+        <p class="opcion__titulo">
+          Colores <span class="opcion__valor" id="colorSeleccionado"></span>
+        </p>
+        <div class="colores" id="productoColores"></div>
+      </div>
+
+      <div class="producto__precios">
+        <span class="producto__precio" id="productoPrecio">—</span>
+        <span class="producto__nota" id="productoImpuesto"></span>
+      </div>
+
+      <span class="producto__categoria">Categoría: <span id="productoCategoria">Cargando…</span></span>
+
+      <!-- Talla -->
+      <div class="opcion">
+        <p class="opcion__titulo">Tallas</p>
+        <div class="tallas" id="productoTallas"></div>
+      </div>
+
+      <!-- Acciones (estilo Amazon: debajo del detalle) -->
+      <div class="producto__acciones">
+        <button class="btn-primario" type="button" id="btnComprar">
+          Comprar ahora
+        </button>
+        <button class="btn-secundario" type="button" id="btnAgregar">
+          <i class="bi bi-bag-plus me-2"></i> Añadir al carrito
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ── Productos relacionados ─────────────────────────────── -->
+  <section class="relacionados" id="relacionados" hidden>
+    <div class="contenedor">
+      <div class="seccion__cabecera">
+        <h2 class="seccion__titulo">Productos relacionados</h2>
+      </div>
+
+      <div class="splide relacionados__carrusel" id="relacionadosCarrusel" aria-label="Productos relacionados">
+        <div class="splide__track">
+          <ul class="splide__list" id="relacionadosGrid"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <div class="pie__grid">
+
+        <div class="pie__bloque pie__bloque--marca">
+          <a class="marca" href="/tienda">Tellez Nic Store</a>
+          <p class="pie__eslogan">Para nosotros, tu experiencia es lo más importante.</p>
+
+          <div class="pie__redes">
+            <a href="https://www.instagram.com/tellez.store.nic/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <i class="bi bi-instagram"></i>
+            </a>
+            <a href="https://www.facebook.com/profile.php?id=61594097712925" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <i class="bi bi-facebook"></i>
+            </a>
+            <a href="https://wa.me/50584774288" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+              <i class="bi bi-whatsapp"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="pie__bloque">
+          <h3 class="pie__titulo">Contacto</h3>
+          <ul class="pie__lista">
+            <li>
+              <i class="bi bi-envelope"></i>
+              <a href="mailto:tellezstorenic@gmail.com">tellezstorenic@gmail.com</a>
+            </li>
+            <li>
+              <i class="bi bi-whatsapp"></i>
+              <a href="https://wa.me/50584774288" target="_blank" rel="noopener noreferrer">+505 8477 4288</a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="pie__bloque">
+          <h3 class="pie__titulo">Pagos</h3>
+          <ul class="pie__lista">
+            <li><i class="bi bi-credit-card"></i> Lafise</li>
+            <li><i class="bi bi-phone"></i> Billetera móvil</li>
+            <li><i class="bi bi-cash-coin"></i> Efectivo</li>
+          </ul>
+        </div>
+
+        <div class="pie__bloque pie__bloque--mapa">
+          <h3 class="pie__titulo">Ubicación</h3>
+          <div class="pie__mapa">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d487.0490881321431!2d-86.84733917589323!3d12.423534455595828!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTLCsDI1JzI0LjciTiA4NsKwNTAnNTAuMSJX!5e0!3m2!1ses-419!2sni!4v1792555478726!5m2!1ses-419!2sni"
+              title="Ubicación de Tellez Nic Store"
+              loading="lazy"
+              allowfullscreen=""
+              referrerpolicy="strict-origin-when-cross-origin"></iframe>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="pie__legal">© 2026 Tellez Nic Store · Todos los derechos reservados</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+  <script src="/tienda/recursos/js/carrito-store.js"></script>
+  <script src="/tienda/recursos/js/producto.js" defer></script>
+</body>
+</html>

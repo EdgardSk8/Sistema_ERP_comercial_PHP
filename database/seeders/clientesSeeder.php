@@ -22,6 +22,7 @@ class clientesSeeder extends Seeder
                 'fecha_creacion_cliente' => now(),
             ],
 
+            /*
             [
                 'nombre_cliente' => 'Carlos Martínez',
                 'cedula_cliente' => '001-030304-1002B',
@@ -109,6 +110,7 @@ class clientesSeeder extends Seeder
                 'estado_cliente' => 1,
                 'fecha_creacion_cliente' => now(),
             ],
+            */
 
         ]);
     }

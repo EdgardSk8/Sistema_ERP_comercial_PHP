@@ -40,7 +40,7 @@
 
     <div class="sidebar">
 
-   <div class="sidebar-title"> FLIX
+   <div class="sidebar-title"> NUMBIO
             <!-- <i class="ph ph-storefront"></i> -->
            
         </div>

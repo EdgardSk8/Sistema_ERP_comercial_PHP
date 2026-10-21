@@ -24,8 +24,27 @@
     if (!$tabla.length) return;
     if ($.fn.DataTable.isDataTable($tabla[0])) $tabla.DataTable().destroy();
 
+    // Los precios de la variación se limitan a 2 decimales mientras se escriben.
+    ['#crear_precio_compra_variacion', '#crear_precio_venta_variacion',
+     '#editar_precio_compra_variacion', '#editar_precio_venta_variacion'].forEach(selector => {
+        $(selector).off('input.dosDecimales').on('input.dosDecimales', function () {
+            const [entero, decimales] = String(this.value).split('.');
+            if (decimales !== undefined && decimales.length > 2) {
+                this.value = `${entero}.${decimales.slice(0, 2)}`;
+            }
+        });
+    });
+
     function escapar(valor) {
         return $('<div>').text(valor ?? '').html();
+    }
+
+    // Números sin decimales innecesarios: 5.00 → 5, 5.50 → 5.5
+    function numeroCorto(valor) {
+        if (valor === null || valor === undefined || valor === '') return '';
+        const numero = Number(valor);
+        if (!Number.isFinite(numero)) return '';
+        return String(parseFloat(numero.toFixed(2)));
     }
 
     function calcularStockMaximoPorVariacion(idVariacion, idTallaActual = null) {
@@ -197,7 +216,7 @@
                         style="background:var(--bs-body-bg); border:1px solid var(--celeste-soft-border);">
 
                         <span><strong>Talla:</strong> ${escapar(talla.nombre_talla)}</span>
-                        <span><strong>Stock:</strong> ${escapar(talla.stock)}</span>
+                        <span><strong>Stock:</strong> ${escapar(numeroCorto(talla.stock))}</span>
                         <span><strong>SKU:</strong> ${escapar(talla.sku || '—')}</span>
                         <span><strong>Compra:</strong> C$ ${Number(talla.precio_compra || 0).toFixed(2)}</span>
                         <span><strong>Venta neta:</strong> C$ ${precioVentaBase.toFixed(2)}</span>
@@ -257,35 +276,33 @@
         const variacion = filas.find(fila => String(fila.id_variacion) === String($(this).data('id')));
         if (!variacion) return;
 
-        $('#galeria_variacion_titulo').text(` ${variacion.nombre_producto} · ${variacion.color || 'Sin color'}`);
+        $('#galeria_variacion_titulo').text(`${variacion.nombre_producto} · ${variacion.color || 'Sin color'}`);
+        $('#galeria_variacion_subtitulo').text(variacion.imagenes.length
+            ? `${variacion.imagenes.length} ${variacion.imagenes.length === 1 ? 'imagen' : 'imágenes'} · arrastra una imagen para cambiar el orden`
+            : 'Este color todavía no tiene imágenes');
+
         $('#galeria_variacion_contenido').html(variacion.imagenes.length ? variacion.imagenes.map(imagen => `
-            <div class="variacion-imagen-item border rounded p-2 flex-shrink-0" data-id="${imagen.id_imagen}" style="width:140px;">
-                <div class="position-relative">
-                    <img src="/${escapar(imagen.imagen)}" alt="Imagen ${escapar(variacion.color)}" class="d-block w-100 rounded" style="aspect-ratio:1/1; object-fit:cover;">
-                    <button type="button" class="btn btn-sm btn-light border position-absolute top-0 start-0 m-1 p-1 reordenarVariacionImagen"
-                        title="Arrastrar para cambiar el orden" aria-label="Arrastrar imagen ${escapar(imagen.orden)} para cambiar el orden"
-                        style="touch-action:none; cursor:grab;">
-                        <i class="ph ph-dots-six-vertical"></i>
+            <article class="variacion-imagen-item" data-id="${imagen.id_imagen}">
+                <div class="variacion-imagen-item__media">
+                    <img src="/${escapar(imagen.imagen)}" alt="Imagen ${escapar(imagen.orden)} de ${escapar(variacion.nombre_producto)}" draggable="false">
+                </div>
+
+                <span class="variacion-imagen-item__nombre">Imagen ${escapar(imagen.orden)}</span>
+
+                <div class="variacion-imagen-item__acciones">
+                    <button type="button" class="btn-editar reemplazarVariacionImagen"
+                        data-id="${imagen.id_imagen}" data-variacion="${variacion.id_variacion}" title="Reemplazar imagen" aria-label="Reemplazar imagen ${escapar(imagen.orden)}">
+                        <i class="ph ph-pencil-simple-line"></i>
+                    </button>
+                    <button type="button" class="btn-baja eliminarVariacionImagen"
+                        data-id="${imagen.id_imagen}" title="Eliminar imagen" aria-label="Eliminar imagen ${escapar(imagen.orden)}">
+                        <i class="ph ph-trash"></i>
                     </button>
                 </div>
-                <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
-                    <small class="text-muted">Imagen ${escapar(imagen.orden)}</small>
-                    <div class="d-flex align-items-center gap-1">
-                        <button type="button" class="btn-editar reemplazarVariacionImagen"
-                            data-id="${imagen.id_imagen}" data-variacion="${variacion.id_variacion}" title="Reemplazar imagen" aria-label="Reemplazar imagen ${escapar(imagen.orden)}">
-                            <i class="ph ph-pencil-simple-line"></i>
-                        </button>
-                        <button type="button" class="btn-baja eliminarVariacionImagen"
-                            data-id="${imagen.id_imagen}" title="Eliminar imagen" aria-label="Eliminar imagen ${escapar(imagen.orden)}">
-                            <i class="ph ph-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('') : '<div class="text-center py-4 w-100">Este color todavía no tiene imágenes.</div>');
-        const cantidadImagenes = variacion.imagenes.length;
-        const anchoModal = Math.min(900, Math.max(300, cantidadImagenes * 184 + 48));
-        $modalGaleriaImagenes.find('.modal-dialog').css('width', `${anchoModal}px`);
+            </article>
+        `).join('') : '<p class="galeria-vacia">Este color todavía no tiene imágenes.</p>');
+
+        $('#galeria_variacion_contenido').scrollLeft(0);
         $('#galeria_variacion_agregar').data('id', variacion.id_variacion);
         bootstrap.Modal.getOrCreateInstance($modalGaleriaImagenes[0]).show();
     });
@@ -296,6 +313,7 @@
         const cambioOrden = ids.some((id, indice) => id !== arrastre.idsOriginales[indice]);
 
         arrastre.elemento.classList.remove('imagen-en-arrastre');
+        arrastre.contenedor.classList.remove('arrastrando');
         arrastre.destino?.classList.remove('imagen-destino-arrastre');
         if (!cambioOrden) return;
 
@@ -324,93 +342,192 @@
 
     function cancelarArrastreGaleria(arrastre) {
         arrastre.elemento.classList.remove('imagen-en-arrastre');
+        arrastre.contenedor.classList.remove('arrastrando');
         arrastre.destino?.classList.remove('imagen-destino-arrastre');
         recargarDatos().then(() => {
             $tabla.find(`.verImagenesVariacion[data-id="${arrastre.idVariacion}"]`).trigger('click');
         });
     }
 
-    $modalGaleriaImagenes.off('pointerdown.detalle', '.reordenarVariacionImagen')
-        .on('pointerdown.detalle', '.reordenarVariacionImagen', function (event) {
+    $modalGaleriaImagenes.off('pointerdown.detalle', '.variacion-imagen-item')
+        .on('pointerdown.detalle', '.variacion-imagen-item', function (event) {
+            // Los botones de editar/eliminar siguen funcionando con clic normal.
+            if (event.target.closest('button, a, input')) return;
+
             const pointer = event.originalEvent;
             if (pointer.pointerType === 'mouse' && pointer.button !== 0) return;
 
-            const elemento = this.closest('.variacion-imagen-item');
-            if (!elemento) return;
-
+            const elemento = this;
             const contenedor = elemento.parentElement;
+
             arrastreImagenGaleria = {
                 elemento,
                 contenedor,
                 idVariacion: Number($('#galeria_variacion_agregar').data('id')),
                 pointerId: pointer.pointerId,
                 destino: null,
+                inicioX: pointer.clientX,
+                activo: false,
                 idsOriginales: Array.from(contenedor.querySelectorAll('.variacion-imagen-item'))
                     .map(item => Number(item.dataset.id))
             };
-            elemento.classList.add('imagen-en-arrastre');
-            this.setPointerCapture(pointer.pointerId);
-            event.preventDefault();
         });
 
-    $modalGaleriaImagenes.off('pointermove.detalle', '.reordenarVariacionImagen')
-        .on('pointermove.detalle', '.reordenarVariacionImagen', function (event) {
-            if (!arrastreImagenGaleria || event.originalEvent.pointerId !== arrastreImagenGaleria.pointerId) return;
+    function elementoGaleriaEnPunto(x, y, excluir) {
+        return (document.elementsFromPoint(x, y) || [])
+            .map(nodo => nodo.closest?.('.variacion-imagen-item'))
+            .find(item => item && item !== excluir) || null;
+    }
 
-            const objetivo = document.elementFromPoint(event.originalEvent.clientX, event.originalEvent.clientY)
-                ?.closest('.variacion-imagen-item');
-            if (!objetivo || objetivo === arrastreImagenGaleria.elemento || objetivo.parentElement !== arrastreImagenGaleria.contenedor) return;
-            if (objetivo === arrastreImagenGaleria.destino) return;
+    function moverArrastreGaleria(event) {
+        if (!arrastreImagenGaleria || event.pointerId !== arrastreImagenGaleria.pointerId) return;
 
-            const rectangulo = objetivo.getBoundingClientRect();
-            const despues = event.originalEvent.clientX > rectangulo.left + rectangulo.width / 2;
-            const arrastre = arrastreImagenGaleria;
-            if ((despues && objetivo.nextElementSibling === arrastre.elemento) || (!despues && objetivo.previousElementSibling === arrastre.elemento)) return;
+        const arrastre = arrastreImagenGaleria;
+        const contenedor = arrastre.contenedor;
 
-            const elementos = Array.from(arrastre.contenedor.querySelectorAll('.variacion-imagen-item'));
-            const posiciones = new Map(elementos.map(elemento => [elemento, elemento.getBoundingClientRect()]));
-            arrastre.destino?.classList.remove('imagen-destino-arrastre');
-            arrastre.contenedor.insertBefore(arrastre.elemento, despues ? objetivo.nextSibling : objetivo);
-            objetivo.classList.add('imagen-destino-arrastre');
-            arrastre.destino = objetivo;
+        // Se activa al mover 6px: un clic normal no arrastra nada.
+        if (!arrastre.activo) {
+            if (Math.abs(event.clientX - arrastre.inicioX) < 6) return;
+            arrastre.activo = true;
+            arrastre.elemento.classList.add('imagen-en-arrastre');
+            arrastre.contenedor.classList.add('arrastrando');
+        }
 
-            elementos.forEach(elemento => {
-                if (elemento === arrastre.elemento) return;
-                const posicionAnterior = posiciones.get(elemento);
-                const desplazamiento = posicionAnterior.left - elemento.getBoundingClientRect().left;
-                if (Math.abs(desplazamiento) < 1) return;
+        // Desplazamiento automático al acercarse a los bordes.
+        const rectContenedor = contenedor.getBoundingClientRect();
+        if (event.clientX > rectContenedor.right - 60) contenedor.scrollLeft += 14;
+        else if (event.clientX < rectContenedor.left + 60) contenedor.scrollLeft -= 14;
 
-                elemento.animate([
-                    { transform: `translateX(${desplazamiento}px)` },
-                    { transform: 'translateX(0)' }
-                ], {
-                    duration: 180,
-                    easing: 'cubic-bezier(.2,.75,.25,1)'
-                });
+        const objetivo = elementoGaleriaEnPunto(event.clientX, event.clientY, arrastre.elemento);
+        if (!objetivo || objetivo === arrastre.destino || objetivo.parentElement !== contenedor) return;
+
+        const rectangulo = objetivo.getBoundingClientRect();
+        const despues = event.clientX > rectangulo.left + rectangulo.width / 2;
+        if ((despues && objetivo.nextElementSibling === arrastre.elemento) ||
+            (!despues && objetivo.previousElementSibling === arrastre.elemento)) return;
+
+        const elementos = Array.from(contenedor.querySelectorAll('.variacion-imagen-item'));
+        const posiciones = new Map(elementos.map(elemento => [elemento, elemento.getBoundingClientRect()]));
+        arrastre.destino?.classList.remove('imagen-destino-arrastre');
+        contenedor.insertBefore(arrastre.elemento, despues ? objetivo.nextSibling : objetivo);
+        objetivo.classList.add('imagen-destino-arrastre');
+        arrastre.destino = objetivo;
+
+        elementos.forEach(elemento => {
+            if (elemento === arrastre.elemento) return;
+            const posicionAnterior = posiciones.get(elemento);
+            const desplazamiento = posicionAnterior.left - elemento.getBoundingClientRect().left;
+            if (Math.abs(desplazamiento) < 1) return;
+
+            elemento.animate([
+                { transform: `translateX(${desplazamiento}px)` },
+                { transform: 'translateX(0)' }
+            ], {
+                duration: 160,
+                easing: 'cubic-bezier(.2,.75,.25,1)'
             });
-            event.preventDefault();
         });
 
-    $modalGaleriaImagenes.off('pointerup.detalle', '.reordenarVariacionImagen')
-        .on('pointerup.detalle', '.reordenarVariacionImagen', function (event) {
-            if (!arrastreImagenGaleria || event.originalEvent.pointerId !== arrastreImagenGaleria.pointerId) return;
-            const arrastre = arrastreImagenGaleria;
-            arrastreImagenGaleria = null;
-            guardarOrdenGaleria(arrastre);
-        });
+        event.preventDefault();
+    }
 
-    $modalGaleriaImagenes.off('pointercancel.detalle', '.reordenarVariacionImagen')
-        .on('pointercancel.detalle', '.reordenarVariacionImagen', function (event) {
-            if (!arrastreImagenGaleria || event.originalEvent.pointerId !== arrastreImagenGaleria.pointerId) return;
-            const arrastre = arrastreImagenGaleria;
-            arrastreImagenGaleria = null;
-            cancelarArrastreGaleria(arrastre);
-        });
+    function finalizarArrastreGaleria(event) {
+        if (!arrastreImagenGaleria || event.pointerId !== arrastreImagenGaleria.pointerId) return;
 
+        const arrastre = arrastreImagenGaleria;
+        arrastreImagenGaleria = null;
+
+        if (!arrastre.activo) return; // fue un clic, no un arrastre
+
+        guardarOrdenGaleria(arrastre);
+    }
+
+    function cancelarArrastrePorEvento(event) {
+        if (!arrastreImagenGaleria || event.pointerId !== arrastreImagenGaleria.pointerId) return;
+
+        const arrastre = arrastreImagenGaleria;
+        arrastreImagenGaleria = null;
+
+        if (arrastre.activo) cancelarArrastreGaleria(arrastre);
+    }
+
+    $(document)
+        .off('.galeriaDrag')
+        .on('pointermove.galeriaDrag', moverArrastreGaleria)
+        .on('pointerup.galeriaDrag', finalizarArrastreGaleria)
+        .on('pointercancel.galeriaDrag', cancelarArrastrePorEvento);
+
+    // Agregar imágenes directo desde la galería (sin abrir otro modal).
     $('#galeria_variacion_agregar').off('click.detalle').on('click.detalle', function () {
-        const idVariacion = $(this).data('id');
-        bootstrap.Modal.getOrCreateInstance($modalGaleriaImagenes[0]).hide();
-        $modalGaleriaImagenes.one('hidden.bs.modal', () => abrirModalAgregarImagen(idVariacion));
+        const input = document.getElementById('agregar_imagenes_variacion');
+        input.dataset.idVariacion = $(this).data('id');
+        input.value = '';
+        input.click();
+    });
+
+    $('#agregar_imagenes_variacion').off('change.detalle').on('change.detalle', async function () {
+        const archivos = Array.from(this.files || []);
+        const idVariacion = this.dataset.idVariacion;
+        if (!archivos.length || !idVariacion) return;
+
+        const maximoBytes = 5 * 1024 * 1024;
+        const invalido = archivos.find(archivo => !archivo.type.startsWith('image/') || archivo.size > maximoBytes);
+        if (invalido) {
+            this.value = '';
+            return mostrarToast(`${invalido.name} no es una imagen válida o supera 5 MB.`, 'danger');
+        }
+
+        const $boton = $('#galeria_variacion_agregar');
+        const textoOriginal = $boton.html();
+        const imagenes = filas.find(fila => String(fila.id_variacion) === String(idVariacion))?.imagenes || [];
+        const ordenes = imagenes.map(imagen => Number(imagen.orden)).filter(Number.isFinite);
+        const ordenInicial = ordenes.length ? Math.max(...ordenes) + 1 : 1;
+
+        let subidas = 0;
+        $boton.prop('disabled', true);
+
+        try {
+            for (const [indice, archivo] of archivos.entries()) {
+                $boton.html(`<i class="ph ph-spinner-gap"></i> Subiendo ${indice + 1}/${archivos.length}...`);
+
+                const formData = new FormData();
+                formData.append('id_variacion', idVariacion);
+                formData.append('imagen', archivo);
+                formData.append('orden', String(ordenInicial + indice));
+                formData.append('_token', csrf());
+
+                const response = await $.ajax({
+                    url: '/variacion-imagenes/crear',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: { 'X-CSRF-TOKEN': csrf() }
+                });
+
+                if (!response.success) throw new Error(response.mensaje || 'No se pudo guardar la imagen.');
+                subidas++;
+            }
+
+            mostrarToast(`${subidas} ${subidas === 1 ? 'imagen agregada' : 'imágenes agregadas'} correctamente.`, 'success');
+        } catch (error) {
+            mostrarToast(`Se agregaron ${subidas} de ${archivos.length} imágenes. ${error.responseJSON?.mensaje || error.message || 'Ocurrió un error al subir.'}`, 'warning');
+        } finally {
+            $boton.prop('disabled', false).html(textoOriginal);
+            this.value = '';
+            recargarDatos().then(() => {
+                $tabla.find(`.verImagenesVariacion[data-id="${idVariacion}"]`).trigger('click');
+            });
+        }
+    });
+
+    // Rueda vertical → desplazamiento horizontal de la tira.
+    $('#galeria_variacion_contenido').off('wheel.detalle').on('wheel.detalle', function (event) {
+        if (this.scrollWidth <= this.clientWidth) return;
+        const original = event.originalEvent;
+        const delta = Math.abs(original.deltaY) > Math.abs(original.deltaX) ? original.deltaY : original.deltaX;
+        this.scrollLeft += delta;
+        event.preventDefault();
     });
 
     $modalGaleriaImagenes.off('click.detalle', '.reemplazarVariacionImagen').on('click.detalle', '.reemplazarVariacionImagen', function () {
@@ -638,8 +755,8 @@
         $('#formCrearVariacionTalla')[0].reset();
         $('#crear_talla_id_variacion').val(idVariacion);
         $('#crear_id_talla').val('').trigger('change');
-        $('#crear_precio_compra_variacion').val(variacion?.producto?.precio_compra ?? '');
-        $('#crear_precio_venta_variacion').val(variacion?.producto?.precio_venta ?? '');
+        $('#crear_precio_compra_variacion').val(numeroCorto(variacion?.producto?.precio_compra));
+        $('#crear_precio_venta_variacion').val(numeroCorto(variacion?.producto?.precio_venta));
         $('#crear_modo_precio_variacion').val('base');
         configurarLimiteStockInput('#crear_stock_variacion_talla', idVariacion);
         bootstrap.Modal.getOrCreateInstance($modalCrearTalla[0]).show();
@@ -697,10 +814,10 @@
             $('#editar_id_variacion_talla').data('variacion', response.variacion_talla.id_variacion);
             const variacion = filas.find(item => String(item.id_variacion) === String(response.variacion_talla.id_variacion));
             $('#editar_id_talla').val(response.variacion_talla.id_talla).trigger('change');
-            $('#editar_stock_variacion_talla').val(response.variacion_talla.stock);
+            $('#editar_stock_variacion_talla').val(numeroCorto(response.variacion_talla.stock));
             $('#editar_sku_variacion').val(response.variacion_talla.sku);
-            $('#editar_precio_compra_variacion').val(response.variacion_talla.precio_compra ?? variacion?.producto?.precio_compra ?? '');
-            $('#editar_precio_venta_variacion').val(response.variacion_talla.precio_venta ?? variacion?.producto?.precio_venta ?? '');
+            $('#editar_precio_compra_variacion').val(numeroCorto(response.variacion_talla.precio_compra ?? variacion?.producto?.precio_compra));
+            $('#editar_precio_venta_variacion').val(numeroCorto(response.variacion_talla.precio_venta ?? variacion?.producto?.precio_venta));
             $('#editar_modo_precio_variacion').val('base');
             configurarLimiteStockInput('#editar_stock_variacion_talla', response.variacion_talla.id_variacion, response.variacion_talla.id_variacion_talla);
             bootstrap.Modal.getOrCreateInstance($modalEditarTalla[0]).show();
@@ -734,7 +851,7 @@
             data: {
                 id_talla: idTalla,
                 stock: $('#editar_stock_variacion_talla').val(),
-                sku: $('#editar_sku_variacion').val(),
+                // El SKU no se envía: no es editable y el servidor lo regenera si cambia la talla.
                 precio_compra: $('#editar_precio_compra_variacion').val(),
                 precio_venta: precioVentaBase.toFixed(2),
                 _token: csrf()

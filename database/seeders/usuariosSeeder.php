@@ -24,8 +24,10 @@ class usuariosSeeder extends Seeder
                 'password_hash_usuario' => Hash::make('123456'),
                 'id_rol_usuario' => 1,
                 'estado_usuario' => true,
-                'fecha_creacion_usuario' => now()
+                'fecha_creacion_usuario' => now(),
             ],
+
+            /*
             [
                 'nombre_completo_usuario' => 'María José López',
                 'cedula_identidad_usuario' => '001-240899-1023A',
@@ -36,7 +38,7 @@ class usuariosSeeder extends Seeder
                 'fecha_creacion_usuario' => now()
             ],
 
-            /* ═════════════ BODEGUERO (REAL) ═════════════ */
+            // ═════════════ BODEGUERO (REAL) ═════════════
             [
                 'nombre_completo_usuario' => 'Carlos Alberto Pérez',
                 'cedula_identidad_usuario' => '002-120795-1045B',
@@ -47,7 +49,7 @@ class usuariosSeeder extends Seeder
                 'fecha_creacion_usuario' => now()
             ],
 
-            /* ═════════════ SUPERVISOR (NUEVO) ═════════════ */
+            // ═════════════ SUPERVISOR (NUEVO) ═════════════
             [
                 'nombre_completo_usuario' => 'Ana Sofía Martínez',
                 'cedula_identidad_usuario' => '003-180690-1078C',
@@ -58,7 +60,7 @@ class usuariosSeeder extends Seeder
                 'fecha_creacion_usuario' => now()
             ],
 
-            /* ═════════════ CONTADOR (NUEVO) ═════════════ */
+            // ═════════════ CONTADOR (NUEVO) ═════════════
             [
                 'nombre_completo_usuario' => 'José Ramón Castillo',
                 'cedula_identidad_usuario' => '004-050588-1099D',
@@ -68,6 +70,7 @@ class usuariosSeeder extends Seeder
                 'estado_usuario' => true,
                 'fecha_creacion_usuario' => now()
             ],
+            */
 
         ]);
     }

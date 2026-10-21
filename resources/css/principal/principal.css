@@ -267,13 +267,119 @@ body{
 .flatpickr-time .numInputWrapper span.arrowUp:after{border-bottom-color:var(--fp-calendar-muted)}
 .flatpickr-time .numInputWrapper span.arrowDown:after{border-top-color:var(--fp-calendar-muted)}
 
+/* ── Galería de imágenes de la variación ─────────────────────── */
+#modalGaleriaVariacionImagenes .modal-dialog{
+    width:min(94vw, 900px);
+    max-width:94vw;
+}
+
+#modalGaleriaVariacionImagenes .modal-header{
+    height:auto;
+    min-height:56px;
+    padding:12px 16px;
+    align-items:center;
+    gap:12px;
+}
+
+/* Modales.css fuerza height:30px y centra .modal-title: aquí se anula */
+#modalGaleriaVariacionImagenes .modal-title{
+    width:auto;
+    margin:0;
+    text-align:left;
+    font-size:1rem;
+    line-height:1.3;
+}
+
+#modalGaleriaVariacionImagenes .modal-footer{
+    padding:0;
+    gap:8px;
+}
+
+#modalGaleriaVariacionImagenes .galeria-subtitulo{
+    display:block;
+    margin-top:2px;
+    font-size:.72rem;
+    color:var(--text-muted, #6b7280);
+}
+
+#modalGaleriaVariacionImagenes .modal-body{
+    padding:8px 16px 16px;
+}
+
+#modalGaleriaVariacionImagenes .galeria-track{
+    display:flex;
+    align-items: flex-start;
+    gap:12px;
+    padding:8px 2px;
+    min-height:190px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scroll-snap-type:x proximity;
+    cursor:grab;
+    scrollbar-width:thin;
+    scrollbar-color:var(--verde) var(--verde-soft);
+}
+
+#modalGaleriaVariacionImagenes .galeria-track::-webkit-scrollbar{height:8px}
+#modalGaleriaVariacionImagenes .galeria-track.arrastrando{scroll-snap-type:none}
+#modalGaleriaVariacionImagenes .galeria-track::-webkit-scrollbar-track{background:var(--verde-soft);border-radius:8px}
+#modalGaleriaVariacionImagenes .galeria-track::-webkit-scrollbar-thumb{background:var(--verde);border-radius:8px}
+#modalGaleriaVariacionImagenes .galeria-track::-webkit-scrollbar-thumb:hover{background:var(--verde-hover)}
+
+#modalGaleriaVariacionImagenes .galeria-vacia{
+    margin:0;
+    padding:24px 8px;
+    text-align:center;
+    color:var(--text-muted, #6b7280);
+}
+
 #modalGaleriaVariacionImagenes .variacion-imagen-item{
     position:relative;
+    flex:0 0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    width:150px;
+    padding:8px;
+    border:1px solid var(--table-border, rgba(0,0,0,.12));
+    border-radius:12px;
+    background:var(--bs-body-bg, #fff);
+    text-align:center;
+    scroll-snap-align:start;
+    user-select:none;
+    touch-action:none;
+    cursor:grab;
     transition:transform .16s ease, box-shadow .16s ease, opacity .16s ease, border-color .16s ease;
+}
+
+#modalGaleriaVariacionImagenes .variacion-imagen-item__media{
+    position:relative;
+    border-radius:8px;
+    overflow:hidden;
+}
+
+#modalGaleriaVariacionImagenes .variacion-imagen-item__media img{
+    display:block;
+    width:100%;
+    aspect-ratio:1/1;
+    object-fit:cover;
+}
+
+#modalGaleriaVariacionImagenes .variacion-imagen-item__nombre{
+    font-size:.75rem;
+    font-weight:600;
+    color:var(--text);
+}
+
+#modalGaleriaVariacionImagenes .variacion-imagen-item__acciones{
+    display:flex;
+    justify-content:center;
+    gap:6px;
 }
 
 #modalGaleriaVariacionImagenes .variacion-imagen-item.imagen-en-arrastre{
     z-index:2;
+    cursor:grabbing;
     transform:scale(1.045) rotate(-1deg);
     opacity:.9;
     border-color:var(--verde)!important;
@@ -287,21 +393,10 @@ body{
     box-shadow:0 0 0 2px color-mix(in srgb, var(--verde) 30%, transparent);
 }
 
-#modalGaleriaVariacionImagenes .reordenarVariacionImagen{
-    transition:transform .16s ease, background-color .16s ease, color .16s ease;
-}
-
-#modalGaleriaVariacionImagenes .reordenarVariacionImagen:hover{
-    transform:scale(1.12);
-    color:var(--verde-hover)!important;
-}
-
-#modalGaleriaVariacionImagenes .reordenarVariacionImagen:active{cursor:grabbing!important}
 #modalGaleriaVariacionImagenes #galeria_variacion_contenido.guardando-orden-imagenes{opacity:.72;pointer-events:none}
 
 @media (prefers-reduced-motion: reduce){
-    #modalGaleriaVariacionImagenes .variacion-imagen-item,
-    #modalGaleriaVariacionImagenes .reordenarVariacionImagen{transition:none}
+    #modalGaleriaVariacionImagenes .variacion-imagen-item{transition:none}
 }
 
 /* ------------------------------------------------------ */
@@ -583,6 +678,20 @@ hr{height:0;margin:0}
 
 [data-theme="dark"] #tablaProductoVariacionDetalle_wrapper .dataTables_scrollBody::-webkit-scrollbar-thumb:hover{
     background: var(--verde);
+}
+
+/* Espaciado en las celdas: variaciones, colores, imágenes y tallas */
+#tablaProductoVariacionDetalle tbody td{
+    padding: 10px 12px !important;
+    vertical-align: top !important;
+}
+
+#tablaProductoVariacionDetalle tbody td > section{
+    margin-bottom: 10px;
+}
+
+#tablaProductoVariacionDetalle tbody td > section:last-child{
+    margin-bottom: 0;
 }
 
 .dataTables_scrollFoot{

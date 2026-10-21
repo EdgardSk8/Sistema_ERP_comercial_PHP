@@ -78,7 +78,7 @@ export default function initMostrarCategorias() {
             $('#editar_nombre_categoria').val(categoria.nombre_categoria);
             $('#editar_descripcion_categoria').val(categoria.descripcion_categoria);
             $('#editar_estado_categoria').val(categoria.estado_categoria);
-            $('#editar_fecha_creacion_categoria').val(categoria.fecha_creacion_categoria);
+            $('#editar_fecha_creacion_categoria').val(window.formatearFecha(categoria.fecha_creacion_categoria));
 
             const modal = new bootstrap.Modal(document.getElementById("modalEditarCategoria"));
             modal.show();
@@ -86,6 +86,12 @@ export default function initMostrarCategorias() {
         });
 
     }
+
+    // Evita que Enter envíe el formulario y recargue la página (dejaba el fondo oscuro)
+    $('#formEditarCategoria').off('submit.categorias').on('submit.categorias', function(event){
+        event.preventDefault();
+        $('#btnActualizarCategoria').trigger('click');
+    });
 
     // Actualizar categoria
     $('#btnActualizarCategoria').click(function() {

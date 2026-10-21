@@ -91,7 +91,7 @@
 
                             <input
                                 id="editar_fecha_creacion_categoria"
-                                type="datetime-local"
+                                type="text"
                                 class="form-control form-control-sm"
                                 disabled>
 

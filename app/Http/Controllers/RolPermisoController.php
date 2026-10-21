@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Rol;
 use App\Models\Permiso;
+use App\Models\Rol;
+use Illuminate\Http\Request;
 
 class RolPermisoController extends Controller
 {
@@ -19,7 +19,7 @@ class RolPermisoController extends Controller
 
         return response()->json([
             'roles' => $roles,
-            'permisos' => $permisos
+            'permisos' => $permisos,
         ]);
     }
 
@@ -31,17 +31,19 @@ class RolPermisoController extends Controller
         $request->validate([
             'id_rol' => 'required|exists:roles,id_rol',
             'id_permiso' => 'required|exists:permisos,id_permiso',
-            'asignar' => 'required|boolean'
+            'asignar' => 'required|boolean',
         ]);
 
         $rol = Rol::findOrFail($request->id_rol);
 
         // 🔥 PROTECCIÓN ADMINISTRADOR
-        if ($rol->id_rol == 1 && !$request->asignar) {
+        // Se responde 200 con success=false para que el front muestre un toast
+        // y no aparezca un error de red en la consola del navegador.
+        if ($rol->id_rol == 1 && ! $request->asignar) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'No se pueden quitar permisos al rol Administrador'
-            ], 403);
+                'mensaje' => 'No se pueden quitar permisos al rol Administrador',
+            ]);
         }
 
         if ($request->asignar) {
@@ -52,10 +54,7 @@ class RolPermisoController extends Controller
 
         return response()->json([
             'success' => true,
-            'mensaje' => 'Permiso actualizado correctamente'
+            'mensaje' => 'Permiso actualizado correctamente',
         ]);
     }
-
-
-
 }
