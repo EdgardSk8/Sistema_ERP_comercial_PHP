@@ -46,7 +46,7 @@
                             <textarea id="editar_descripcion_producto"
                               class="form-control form-control-sm"
                               placeholder="Descripción del producto"
-                              maxlength="150"
+                              maxlength="500"
                               rows="1"></textarea>
                         </div>
 

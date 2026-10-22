@@ -118,3 +118,55 @@ document.addEventListener('DOMContentLoaded', () => Carrito.actualizarBadges());
 window.addEventListener('storage', (event) => {
     if (event.key === 'tienda_carrito_v1') Carrito.actualizarBadges();
 });
+
+/* ── Menú de perfil: abre y cierra con animación ────────────── */
+const menuPerfil = () => document.querySelector('.perfil');
+
+function cerrarMenuPerfil() {
+    const menu = menuPerfil();
+    if (!menu || !menu.open) return;
+
+    const panel = menu.querySelector('.perfil__menu');
+    if (!panel) {
+        menu.open = false;
+        return;
+    }
+
+    // Se desliza hacia la derecha y, al terminar, se cierra.
+    panel.classList.add('perfil__menu--saliendo');
+
+    clearTimeout(menu._cerrarTimer);
+    menu._cerrarTimer = setTimeout(() => {
+        menu.open = false;
+        panel.classList.remove('perfil__menu--saliendo');
+    }, 180);
+}
+
+document.addEventListener('click', (event) => {
+    const menu = menuPerfil();
+    if (!menu) return;
+
+    if (event.target.closest('.perfil__boton')) {
+        // Controlamos la apertura y el cierre para poder animar ambos.
+        event.preventDefault();
+
+        if (menu.open) {
+            cerrarMenuPerfil();
+        } else {
+            menu.open = true;
+        }
+        return;
+    }
+
+    if (event.target.closest('.perfil__item')) {
+        event.preventDefault();
+        cerrarMenuPerfil();
+        return;
+    }
+
+    if (menu.open && !menu.contains(event.target)) cerrarMenuPerfil();
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') cerrarMenuPerfil();
+});

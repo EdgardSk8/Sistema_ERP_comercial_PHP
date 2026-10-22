@@ -4,6 +4,9 @@
 
 const IMAGEN_FALLBACK = '/tienda/recursos/img/producto.png';
 const API_PRODUCTOS = '/tienda/api/productos';
+const TALLAS_REFERENCIA = '/tienda/recursos/data/tallas.json';
+
+let tallasReferencia = null;
 
 const COLORES = {
     negro: '#22252A',
@@ -181,6 +184,58 @@ function pintarColores() {
     $('colorSeleccionado').textContent = variacionActual?.color || '';
 }
 
+/* ── Equivalencias de talla (la talla del sistema es la base) ── */
+function referenciaTalla(nombre) {
+    const numero = String(nombre ?? '').match(/\d+(?:[.,]\d+)?/);
+    if (!numero || !tallasReferencia) return null;
+
+    const eu = Number(numero[0].replace(',', '.'));
+    return tallasReferencia.tallas.find(t => Number(t.eu) === eu) || null;
+}
+
+function equivalenciaCorta(nombre) {
+    const ref = referenciaTalla(nombre);
+    return ref ? `${ref.cm} cm` : '';
+}
+
+function pintarGuiaTallas() {
+    const cuerpo = $('guiaTallasCuerpo');
+    if (!cuerpo || !tallasReferencia) return;
+
+    cuerpo.innerHTML = tallasReferencia.tallas
+        .filter(t => Number(t.eu) >= 36 && Number(t.eu) <= 44)
+        .map(t => `
+        <tr>
+            <td><strong>${t.eu}</strong></td>
+            <td>${t.us_hombre ?? '—'}</td>
+            <td>${t.us_mujer ?? '—'}</td>
+            <td>${t.uk ?? '—'}</td>
+            <td>${t.cm}</td>
+        </tr>
+    `).join('');
+
+    const nota = $('guiaTallasNota');
+    if (nota) nota.textContent = tallasReferencia.nota || '';
+
+    const caja = $('guiaTallas');
+    if (caja) caja.hidden = false;
+}
+
+async function cargarTallasReferencia() {
+    try {
+        const respuesta = await fetch(TALLAS_REFERENCIA, { headers: { Accept: 'application/json' } });
+        if (!respuesta.ok) return;
+
+        tallasReferencia = await respuesta.json();
+        pintarGuiaTallas();
+
+        // Repinta las tallas del producto con sus equivalencias en cm.
+        if (variacionActual) pintarTallas();
+    } catch (error) {
+        console.warn('No se pudo cargar la guía de tallas', error);
+    }
+}
+
 function pintarTallas() {
     const contenedor = $('productoTallas');
     const tallas = variacionActual?.tallas || [];
@@ -193,10 +248,12 @@ function pintarTallas() {
     contenedor.innerHTML = tallas.map(talla => {
         const agotada = Number(talla.stock) <= 0;
         const activa = tallaActual && talla.id === tallaActual.id ? ' talla-opcion--activo' : '';
+        const equiv = equivalenciaCorta(talla.nombre);
         return `
             <button type="button" class="talla-opcion${activa}" data-talla="${talla.id}"
                 ${agotada ? 'disabled' : ''} title="${agotada ? 'Agotada' : `Stock: ${talla.stock}`}">
-                ${escapar(talla.nombre)}
+                <span class="talla-opcion__base">${escapar(talla.nombre)}</span>
+                <span class="talla-opcion__equiv">${equiv || '&nbsp;'}</span>
             </button>
         `;
     }).join('');
@@ -307,8 +364,8 @@ function montarCarruselRelacionados() {
         breakpoints: {
             1200: { perPage: 5 },
             992: { perPage: 4 },
-            768: { perPage: 3 },
-            576: { perPage: 2 },
+            768: { perPage: 3, arrows: false },
+            576: { perPage: 2, arrows: false },
         },
     });
 
@@ -462,5 +519,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/tienda/carrito';
     });
 
+    cargarTallasReferencia();
     cargarProducto();
 });

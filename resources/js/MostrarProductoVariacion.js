@@ -117,11 +117,21 @@ export default function initMostrarProductoVariaciones() {
         return tabla.rows().data().toArray().find(grupo => String(grupo.id_producto) === String(idProducto));
     }
 
+    // Escapa el nombre del color para usarlo dentro del atributo value
+    const escaparAtributo=texto => $('<div>').text(texto ?? '').html().replace(/"/g,'&quot;');
+
     function renderizarColoresEdicion(){
         const visibles=variacionesEnEdicion.filter(v => !variacionesPorEliminar.has(String(v.id_variacion)));
         const html=visibles.length ? visibles.map(v => `
-            <div class="d-flex justify-content-between align-items-center border rounded mb-2 px-2 colorVariacionEdicion">
-                <span class="badge ${v.estado_variacion == 1 ? 'bg-success' : 'bg-secondary'}">${$('<div>').text(v.color || '').html()}</span>
+            <div class="d-flex align-items-center gap-2 border rounded mb-2 px-2 py-1 colorVariacionEdicion" data-id="${v.id_variacion}">
+                <span class="badge ${v.estado_variacion == 1 ? 'bg-success' : 'bg-secondary'}">${v.estado_variacion == 1 ? 'Activo' : 'Inactivo'}</span>
+                <input
+                    type="text"
+                    class="form-control form-control-sm editarColorVariacion"
+                    value="${escaparAtributo(v.color)}"
+                    maxlength="50"
+                    placeholder="Nombre del color"
+                    aria-label="Nombre del color">
                 <button type="button" class="btn-baja quitarColorVariacion" data-id="${v.id_variacion}" title="Quitar color"><i class="ph ph-x"></i></button>
             </div>`).join('') : '<div class="text-muted small">No hay colores asignados</div>';
         $('#listaColoresEditarVariacion').html(html);
@@ -219,7 +229,7 @@ export default function initMostrarProductoVariaciones() {
             $color.val('').attr('placeholder','Agregar un color nuevo');
             $color.closest('.col-12').find('label').text('Agregar color');
             if(!document.getElementById('listaColoresEditarVariacion')){
-                $('#editar_color').closest('.col-12').before('<div class="col-12"><label class="form-label">Colores asignados</label><div id="listaColoresEditarVariacion"></div></div>');
+                $('#editar_color').closest('.col-12').before('<div class="col-12"><label class="form-label">Colores asignados (edita el nombre o quítalo)</label><div id="listaColoresEditarVariacion"></div></div>');
             }
             renderizarColoresEdicion();
             bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarProductoVariacion')).show();
@@ -246,8 +256,28 @@ export default function initMostrarProductoVariaciones() {
         if(!producto){ mostrarToast('Seleccione un producto','danger'); return; }
         if(color && color.length > 50){ mostrarToast('El color no puede exceder 50 caracteres','danger'); return; }
 
+        // Toma los nombres editados en la lista de colores asignados
+        $('#listaColoresEditarVariacion .colorVariacionEdicion').each(function(){
+            const id=String($(this).data('id'));
+            const variacion=variacionesEnEdicion.find(v => String(v.id_variacion) === id);
+            if(variacion) variacion.color=String($(this).find('.editarColorVariacion').val() || '').trim();
+        });
+
         const conservar=variacionesEnEdicion.filter(v => !variacionesPorEliminar.has(String(v.id_variacion)));
-        if(color && variacionesEnEdicion.some(v => !variacionesPorEliminar.has(String(v.id_variacion)) && String(v.color).trim().toLocaleLowerCase() === color.toLocaleLowerCase())){
+
+        if(conservar.some(v => !v.color)){
+            mostrarToast('El nombre del color no puede quedar vacío','danger');
+            return;
+        }
+
+        const nombres=conservar.map(v => v.color.toLocaleLowerCase());
+
+        if(new Set(nombres).size !== nombres.length){
+            mostrarToast('Hay colores repetidos en la lista','warning');
+            return;
+        }
+
+        if(color && nombres.includes(color.toLocaleLowerCase())){
             mostrarToast('Ese color ya está asignado al producto','warning');
             return;
         }

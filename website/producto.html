@@ -29,13 +29,35 @@
       </a>
 
       <div class="header-acciones">
-        <button class="icono-btn" type="button" aria-label="Favoritos">
-          <i class="bi bi-heart"></i>
-        </button>
         <a class="icono-btn" href="/tienda/carrito" aria-label="Carrito">
           <i class="bi bi-bag"></i>
           <span class="icono-btn__badge" data-carrito-badge hidden>0</span>
         </a>
+
+        <details class="perfil" id="menuPerfil">
+          <summary class="icono-btn perfil__boton" aria-label="Mi cuenta">
+            <i class="bi bi-person"></i>
+          </summary>
+
+          <div class="perfil__menu">
+            <p class="perfil__cabecera">
+              <span class="perfil__nombre">Invitado</span>
+              <span class="perfil__detalle">Sin sesión iniciada</span>
+            </p>
+
+            <ul class="perfil__lista">
+              <li><a class="perfil__item" href="#"><i class="bi bi-person"></i> Perfil</a></li>
+              <li><a class="perfil__item" href="#"><i class="bi bi-heart"></i> Favoritos</a></li>
+              <li><a class="perfil__item" href="#"><i class="bi bi-receipt"></i> Historial de compras</a></li>
+              <li><a class="perfil__item" href="#"><i class="bi bi-ticket-perforated"></i> Descuento</a></li>
+              <li><a class="perfil__item" href="#"><i class="bi bi-gear"></i> Configuración</a></li>
+            </ul>
+
+            <a class="perfil__item perfil__item--salir" href="#">
+              <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </a>
+          </div>
+        </details>
       </div>
     </div>
   </header>
@@ -90,6 +112,19 @@
       <div class="opcion">
         <p class="opcion__titulo">Tallas</p>
         <div class="tallas" id="productoTallas"></div>
+
+        <details class="guia-tallas" id="guiaTallas" hidden>
+          <summary class="guia-tallas__boton">Guía de tallas · EU / US / UK / cm</summary>
+          <div class="guia-tallas__scroll">
+            <table class="guia-tallas__tabla">
+              <thead>
+                <tr><th>EU</th><th>US H</th><th>US M</th><th>UK</th><th>cm</th></tr>
+              </thead>
+              <tbody id="guiaTallasCuerpo"></tbody>
+            </table>
+          </div>
+          <p class="guia-tallas__nota" id="guiaTallasNota"></p>
+        </details>
       </div>
 
       <!-- Acciones (estilo Amazon: debajo del detalle) -->

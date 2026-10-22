@@ -29,13 +29,35 @@
       </nav>
 
       <div class="header-acciones">
-        <button class="icono-btn" type="button" aria-label="Favoritos">
-          <i class="bi bi-heart"></i>
-        </button>
         <a class="icono-btn" href="/tienda/carrito" aria-label="Carrito">
           <i class="bi bi-bag"></i>
           <span class="icono-btn__badge" data-carrito-badge hidden>0</span>
         </a>
+
+        <details class="perfil" id="menuPerfil">
+          <summary class="icono-btn perfil__boton" aria-label="Mi cuenta">
+            <i class="bi bi-person"></i>
+          </summary>
+
+          <div class="perfil__menu">
+            <p class="perfil__cabecera">
+              <span class="perfil__nombre">Invitado</span>
+              <span class="perfil__detalle">Sin sesión iniciada</span>
+            </p>
+
+            <ul class="perfil__lista">
+              <li><a class="perfil__item" href="#"><i class="bi bi-person"></i> Perfil</a></li>
+              <li><a class="perfil__item" href="#"><i class="bi bi-heart"></i> Favoritos</a></li>
+              <li><a class="perfil__item" href="#"><i class="bi bi-receipt"></i> Historial de compras</a></li>
+              <li><a class="perfil__item" href="#"><i class="bi bi-ticket-perforated"></i> Descuento</a></li>
+              <li><a class="perfil__item" href="#"><i class="bi bi-gear"></i> Configuración</a></li>
+            </ul>
+
+            <a class="perfil__item perfil__item--salir" href="#">
+              <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </a>
+          </div>
+        </details>
       </div>
     </div>
   </header>
@@ -72,6 +94,39 @@
       <input class="buscador__campo" id="buscadorProductos" type="search"
              placeholder="Buscar productos…" aria-label="Buscar productos" autocomplete="off">
     </form>
+
+    <!-- ── Filtros ─────────────────────────────────────────── -->
+    <details class="filtros" id="filtrosCatalogo">
+      <summary class="filtros__boton">
+        <i class="bi bi-sliders" aria-hidden="true"></i> Filtros
+        <span class="filtros__resumen" id="filtrosResumen" hidden></span>
+      </summary>
+
+      <div class="filtros__panel">
+        <p class="filtros__titulo">Rango de precio</p>
+
+        <div class="filtros__valores">
+          <span class="filtros__valor" id="precioMinEtiqueta">C$ 100.00</span>
+          <span class="filtros__valor" id="precioMaxEtiqueta">C$ 2,000.00</span>
+        </div>
+
+        <div class="filtros__slider" id="sliderPrecio">
+          <div class="filtros__pista"></div>
+          <div class="filtros__rango-activo" id="sliderRango"></div>
+          <input type="range" id="precioMin" min="100" max="2000" step="100" value="100"
+                 aria-label="Precio mínimo">
+          <input type="range" id="precioMax" min="100" max="2000" step="100" value="2000"
+                 aria-label="Precio máximo">
+        </div>
+
+        <p class="filtros__ayuda" id="filtrosAyuda"></p>
+
+        <div class="filtros__acciones">
+          <button type="button" class="filtros__limpiar" id="btnLimpiarFiltros">Limpiar</button>
+          <button type="button" class="filtros__aplicar" id="btnAplicarFiltros">Aplicar filtro</button>
+        </div>
+      </div>
+    </details>
   </div>
 
   <main class="contenedor">

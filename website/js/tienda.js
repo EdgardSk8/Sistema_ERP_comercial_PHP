@@ -129,6 +129,74 @@ function iniciarCatalogo(productos) {
 
     let categoriaActual = '';
 
+    /* ── Filtro por rango de precio (slider doble) ────────────── */
+    const LIMITE_MIN = 100;
+    const LIMITE_MAX = 2000;
+
+    const precioMinInput = document.getElementById('precioMin');
+    const precioMaxInput = document.getElementById('precioMax');
+    const sliderRango = document.getElementById('sliderRango');
+    const etiquetaMin = document.getElementById('precioMinEtiqueta');
+    const etiquetaMax = document.getElementById('precioMaxEtiqueta');
+    const filtrosCaja = document.getElementById('filtrosCatalogo');
+    const filtrosResumen = document.getElementById('filtrosResumen');
+    const filtrosAyuda = document.getElementById('filtrosAyuda');
+
+    let precioMin = null;
+    let precioMax = null;
+
+    const preciosCatalogo = variantes
+        .map(variante => Number(variante.precio) || 0)
+        .filter(precio => precio > 0);
+
+    if (filtrosAyuda && preciosCatalogo.length) {
+        filtrosAyuda.textContent = `Precios disponibles: ${moneda(Math.min(...preciosCatalogo))} a ${moneda(Math.max(...preciosCatalogo))}`;
+    }
+
+    const valorMin = () => Number(precioMinInput ? precioMinInput.value : LIMITE_MIN);
+    const valorMax = () => Number(precioMaxInput ? precioMaxInput.value : LIMITE_MAX);
+    const porcentaje = (valor) => ((valor - LIMITE_MIN) / (LIMITE_MAX - LIMITE_MIN)) * 100;
+
+    const pintarSlider = () => {
+        const min = valorMin();
+        const max = valorMax();
+
+        if (etiquetaMin) etiquetaMin.textContent = moneda(min);
+        if (etiquetaMax) etiquetaMax.textContent = moneda(max);
+
+        if (sliderRango) {
+            sliderRango.style.left = `${porcentaje(min)}%`;
+            sliderRango.style.width = `${porcentaje(max) - porcentaje(min)}%`;
+        }
+    };
+
+    const actualizarResumen = () => {
+        if (!filtrosResumen) return;
+
+        const activo = precioMin !== null || precioMax !== null;
+        filtrosResumen.hidden = !activo;
+
+        if (!activo) {
+            filtrosResumen.textContent = '';
+        } else if (precioMin !== null && precioMax !== null) {
+            filtrosResumen.textContent = `${moneda(precioMin)} – ${moneda(precioMax)}`;
+        } else {
+            filtrosResumen.textContent = precioMin !== null ? `Desde ${moneda(precioMin)}` : `Hasta ${moneda(precioMax)}`;
+        }
+    };
+
+    const aplicarRango = () => {
+        const min = valorMin();
+        const max = valorMax();
+
+        // Los extremos del slider son "sin filtro".
+        precioMin = min > LIMITE_MIN ? min : null;
+        precioMax = max < LIMITE_MAX ? max : null;
+
+        actualizarResumen();
+        pintar();
+    };
+
     // Círculos de categoría (con "Todos" para quitar el filtro)
     if (catGrid) {
         const opciones = [{ nombre: 'Todos', valor: '', icono: 'bi-grid' }]
@@ -148,12 +216,20 @@ function iniciarCatalogo(productos) {
         const lista = variantes.filter(variante => {
             const coincideCategoria = !categoriaActual || variante.categoria === categoriaActual;
             const coincideTexto = !termino || normalizar(variante.nombre).includes(termino);
-            return coincideCategoria && coincideTexto;
+            const precio = Number(variante.precio) || 0;
+            const coincidePrecio = (precioMin === null || precio >= precioMin)
+                && (precioMax === null || precio <= precioMax);
+
+            return coincideCategoria && coincideTexto && coincidePrecio;
         });
+
+        const hayFiltro = Boolean(termino) || precioMin !== null || precioMax !== null;
 
         grid.innerHTML = lista.length
             ? lista.map(tarjetaProducto).join('')
-            : `<p class="catalogo-vacio">${termino ? 'No se encontraron productos para esa búsqueda.' : 'No hay productos en esta categoría.'}</p>`;
+            : `<p class="catalogo-vacio">${hayFiltro
+                ? 'No hay productos que coincidan con la búsqueda o el filtro.'
+                : 'No hay productos en esta categoría.'}</p>`;
 
         if (contador) {
             contador.textContent = `${lista.length} ${lista.length === 1 ? 'producto' : 'productos'}`;
@@ -161,6 +237,34 @@ function iniciarCatalogo(productos) {
     };
 
     buscador?.addEventListener('input', pintar);
+
+    /* ── Eventos del slider de precio ─────────────────────────── */
+    precioMinInput?.addEventListener('input', () => {
+        // Los pulgares no se cruzan.
+        if (valorMin() > valorMax()) precioMinInput.value = precioMaxInput.value;
+        pintarSlider();
+    });
+
+    precioMaxInput?.addEventListener('input', () => {
+        if (valorMax() < valorMin()) precioMaxInput.value = precioMinInput.value;
+        pintarSlider();
+    });
+
+    document.getElementById('btnAplicarFiltros')?.addEventListener('click', () => {
+        aplicarRango();
+
+        // Se cierra el desplegable para ver los resultados (el rango queda en el botón).
+        if (filtrosCaja) filtrosCaja.open = false;
+    });
+
+    document.getElementById('btnLimpiarFiltros')?.addEventListener('click', () => {
+        if (precioMinInput) precioMinInput.value = String(LIMITE_MIN);
+        if (precioMaxInput) precioMaxInput.value = String(LIMITE_MAX);
+        pintarSlider();
+        aplicarRango();
+    });
+
+    pintarSlider();
 
     const marcarActivo = (categoria) => {
         catGrid?.querySelectorAll('.cat-item').forEach(item => {
