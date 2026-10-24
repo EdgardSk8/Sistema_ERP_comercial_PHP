@@ -15,6 +15,7 @@ class WebsiteController extends Controller
     {
         return response()->file(base_path('website/index.html'), [
             'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'no-cache',
         ]);
     }
 
@@ -22,6 +23,7 @@ class WebsiteController extends Controller
     {
         return response()->file(base_path('website/producto.html'), [
             'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'no-cache',
         ]);
     }
 
@@ -29,6 +31,15 @@ class WebsiteController extends Controller
     {
         return response()->file(base_path('website/carrito.html'), [
             'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'no-cache',
+        ]);
+    }
+
+    public function perfilVista(): BinaryFileResponse
+    {
+        return response()->file(base_path('website/perfil.html'), [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'no-cache',
         ]);
     }
 
@@ -126,6 +137,10 @@ class WebsiteController extends Controller
                 'imagen' => $this->urlVariacionImagen($variacion->imagenes->first()->imagen ?? null)
                     ?: $this->urlImagenProducto($producto),
                 'stock' => (int) $variacion->tallas->sum('stock'),
+                'tallas' => $variacion->tallas
+                    ->map(fn ($variacionTalla) => $variacionTalla->talla->talla ?? 'Única')
+                    ->unique()
+                    ->values(),
             ])
             ->unique('nombre')
             ->values();

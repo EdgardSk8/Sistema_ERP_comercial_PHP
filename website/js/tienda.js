@@ -113,6 +113,7 @@ function desagruparPorColor(productos) {
             color: color.nombre,
             imagen: color.imagen || producto.imagen,
             stock: color.stock ?? producto.stock,
+            tallas: color.tallas || producto.tallas || [],
         }));
     });
 }
@@ -141,6 +142,35 @@ function iniciarCatalogo(productos) {
     const filtrosCaja = document.getElementById('filtrosCatalogo');
     const filtrosResumen = document.getElementById('filtrosResumen');
     const filtrosAyuda = document.getElementById('filtrosAyuda');
+
+    /* ── Filtro por talla (Select2, 36 a 44) ──────────────────── */
+    const TALLAS_FILTRO = Array.from({ length: 9 }, (_, indice) => String(36 + indice));
+    const selectTallas = document.getElementById('filtroTallas');
+    let tallasSeleccionadas = [];
+
+    const tallasCatalogo = new Set(
+        variantes.flatMap(variante => (variante.tallas || []).map(talla => String(talla)))
+    );
+
+    if (selectTallas) {
+        selectTallas.innerHTML = TALLAS_FILTRO.map(talla => {
+            const disponible = tallasCatalogo.has(talla);
+            return `<option value="${talla}"${disponible ? '' : ' disabled'}>${talla}${disponible ? '' : ' · sin productos'}</option>`;
+        }).join('');
+
+        if (window.jQuery && window.jQuery.fn.select2) {
+            window.jQuery(selectTallas).select2({
+                placeholder: 'Todas las tallas',
+                width: '100%',
+                closeOnSelect: false,
+                allowClear: true,
+            });
+        }
+    }
+
+    const leerTallas = () => selectTallas
+        ? Array.from(selectTallas.selectedOptions).map(opcion => opcion.value)
+        : [];
 
     let precioMin = null;
     let precioMax = null;
@@ -173,16 +203,22 @@ function iniciarCatalogo(productos) {
     const actualizarResumen = () => {
         if (!filtrosResumen) return;
 
-        const activo = precioMin !== null || precioMax !== null;
-        filtrosResumen.hidden = !activo;
+        const partes = [];
 
-        if (!activo) {
-            filtrosResumen.textContent = '';
-        } else if (precioMin !== null && precioMax !== null) {
-            filtrosResumen.textContent = `${moneda(precioMin)} – ${moneda(precioMax)}`;
-        } else {
-            filtrosResumen.textContent = precioMin !== null ? `Desde ${moneda(precioMin)}` : `Hasta ${moneda(precioMax)}`;
+        if (precioMin !== null && precioMax !== null) {
+            partes.push(`${moneda(precioMin)} – ${moneda(precioMax)}`);
+        } else if (precioMin !== null) {
+            partes.push(`Desde ${moneda(precioMin)}`);
+        } else if (precioMax !== null) {
+            partes.push(`Hasta ${moneda(precioMax)}`);
         }
+
+        if (tallasSeleccionadas.length) {
+            partes.push(`Tallas ${tallasSeleccionadas.join(', ')}`);
+        }
+
+        filtrosResumen.hidden = !partes.length;
+        filtrosResumen.textContent = partes.join(' · ');
     };
 
     const aplicarRango = () => {
@@ -219,11 +255,14 @@ function iniciarCatalogo(productos) {
             const precio = Number(variante.precio) || 0;
             const coincidePrecio = (precioMin === null || precio >= precioMin)
                 && (precioMax === null || precio <= precioMax);
+            const coincideTalla = !tallasSeleccionadas.length
+                || (variante.tallas || []).some(talla => tallasSeleccionadas.includes(String(talla)));
 
-            return coincideCategoria && coincideTexto && coincidePrecio;
+            return coincideCategoria && coincideTexto && coincidePrecio && coincideTalla;
         });
 
-        const hayFiltro = Boolean(termino) || precioMin !== null || precioMax !== null;
+        const hayFiltro = Boolean(termino) || precioMin !== null || precioMax !== null
+            || tallasSeleccionadas.length > 0;
 
         grid.innerHTML = lista.length
             ? lista.map(tarjetaProducto).join('')
@@ -262,7 +301,35 @@ function iniciarCatalogo(productos) {
         if (precioMaxInput) precioMaxInput.value = String(LIMITE_MAX);
         pintarSlider();
         aplicarRango();
+
+        // Limpia las tallas seleccionadas.
+        if (selectTallas) {
+            if (window.jQuery && window.jQuery.fn.select2) {
+                window.jQuery(selectTallas).val(null).trigger('change');
+            } else {
+                Array.from(selectTallas.options).forEach(opcion => { opcion.selected = false; });
+            }
+        }
+
+        tallasSeleccionadas = [];
+        actualizarResumen();
+        pintar();
     });
+
+    /* Cambio de tallas: se aplica al instante y actualiza el resumen. */
+    if (selectTallas) {
+        const alCambiarTallas = () => {
+            tallasSeleccionadas = leerTallas();
+            actualizarResumen();
+            pintar();
+        };
+
+        if (window.jQuery && window.jQuery.fn.select2) {
+            window.jQuery(selectTallas).on('change', alCambiarTallas);
+        } else {
+            selectTallas.addEventListener('change', alCambiarTallas);
+        }
+    }
 
     pintarSlider();
 

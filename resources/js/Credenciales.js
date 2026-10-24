@@ -144,21 +144,65 @@ export default function initCredenciales() {
         });
     });
 
+    function confirmarEliminarLogo(alConfirmar) {
+        let modalElemento = document.getElementById('modalConfirmarEliminarLogoEmpresa');
+
+        if (!modalElemento) {
+            document.body.insertAdjacentHTML('beforeend', `
+                <div class="modal fade" id="modalConfirmarEliminarLogoEmpresa" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Eliminar logo</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-0">¿Desea eliminar el logo de la empresa?</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="button" class="btn actualizar btn-sm-modal" id="btnConfirmarEliminarLogoEmpresa">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+            modalElemento = document.getElementById('modalConfirmarEliminarLogoEmpresa');
+        }
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElemento);
+        const finalizar = () => {
+            $('#btnConfirmarEliminarLogoEmpresa').prop('disabled', false);
+            modal.hide();
+        };
+
+        $('#btnConfirmarEliminarLogoEmpresa')
+            .off('click.eliminarLogo')
+            .on('click.eliminarLogo', function () {
+                $(this).prop('disabled', true);
+                alConfirmar(finalizar);
+            });
+
+        modal.show();
+    }
+
     $('#btnEliminarLogo').off('click.logoCredenciales').on('click.logoCredenciales', function () {
         if (!idEmpresa || !logoActual) return;
-        if (!window.confirm('¿Desea eliminar el logo de la empresa?')) return;
 
-        $.ajax({
-            url: `/credenciales/${idEmpresa}/logo`,
-            type: 'DELETE',
-            data: { _token: $('meta[name="csrf-token"]').attr('content') },
-            success: function (res) {
-                renderLogo(null);
-                mostrarToast(res.mensaje || 'Logo eliminado correctamente', 'success');
-            },
-            error: function (xhr) {
-                mostrarToast(xhr.responseJSON?.mensaje || 'No se pudo eliminar el logo', 'danger');
-            }
+        confirmarEliminarLogo(finalizar => {
+            $.ajax({
+                url: `/credenciales/${idEmpresa}/logo`,
+                type: 'DELETE',
+                data: { _token: $('meta[name="csrf-token"]').attr('content') },
+                success: function (res) {
+                    renderLogo(null);
+                    mostrarToast(res.mensaje || 'Logo eliminado correctamente', 'success');
+                },
+                error: function (xhr) {
+                    mostrarToast(xhr.responseJSON?.mensaje || 'No se pudo eliminar el logo', 'danger');
+                },
+                complete: finalizar
+            });
         });
     });
 

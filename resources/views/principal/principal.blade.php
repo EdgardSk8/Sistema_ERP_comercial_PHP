@@ -254,6 +254,15 @@
                 </a>
             @endif
 
+            @if(in_array('vista_categorias', session('permisos', [])))
+                <a href="{{ route('categorias') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-tag text-warning"></i>
+                    Categorías
+                </a>
+            @endif
+
             @if(in_array('vista_ubicaciones', session('permisos', [])))
                 <a href="{{ route('ubicaciones') }}"
                 class="sidebar-link"
@@ -290,24 +299,6 @@
                 </a>
             @endif
 
-            @if(in_array('vista_categorias', session('permisos', [])))
-                <a href="{{ route('categorias') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                    <i class="ph ph-tag text-warning"></i>
-                    Categorías
-                </a>
-            @endif
-
-            @if(in_array('vista_movimientos_inventario', session('permisos', [])))
-                <a href="{{ route('movimientos.inventario') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                   <i class="ph ph-arrows-left-right text-success"></i>
-                    Movimientos Inventario
-                </a>
-            @endif
-
             @if(in_array('vista_tipos_medidas', session('permisos', [])))
                 <a href="{{ route('tipos.medidas') }}"
                 class="sidebar-link"
@@ -323,6 +314,15 @@
                 data-turbo-frame="contenido-dinamico">
                     <i class="ph ph-ruler text-success"></i>
                     Medidas
+                </a>
+            @endif
+
+            @if(in_array('vista_movimientos_inventario', session('permisos', [])))
+                <a href="{{ route('movimientos.inventario') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                   <i class="ph ph-arrows-left-right text-success"></i>
+                    Movimientos Inventario
                 </a>
             @endif
 
@@ -424,6 +424,15 @@
                 data-turbo-frame="contenido-dinamico">
                     <i class="ph ph-database text-primary"></i>
                     Respaldo
+                </a>
+            @endif
+
+            @if(session()->has('usuario'))
+                <a href="{{ route('manual') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-book-open-text text-warning"></i>
+                    Manual de uso
                 </a>
             @endif
 

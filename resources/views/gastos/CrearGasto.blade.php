@@ -45,7 +45,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label">Fecha de pago</label>
+                            <label class="form-label">Fecha de pago <span class="text-secondary">(opcional)</span></label>
                             <input
                                 id="crear_fecha_pago"
                                 type="date"

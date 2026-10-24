@@ -14,7 +14,7 @@
   <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/tienda/recursos/css/estilos.css">
 </head>
-<body>
+<body class="pagina-producto">
 
   <!-- ── Header ──────────────────────────────────────────────── -->
   <header class="app-header">
@@ -46,11 +46,11 @@
             </p>
 
             <ul class="perfil__lista">
-              <li><a class="perfil__item" href="#"><i class="bi bi-person"></i> Perfil</a></li>
-              <li><a class="perfil__item" href="#"><i class="bi bi-heart"></i> Favoritos</a></li>
-              <li><a class="perfil__item" href="#"><i class="bi bi-receipt"></i> Historial de compras</a></li>
-              <li><a class="perfil__item" href="#"><i class="bi bi-ticket-perforated"></i> Descuento</a></li>
-              <li><a class="perfil__item" href="#"><i class="bi bi-gear"></i> Configuración</a></li>
+              <li><a class="perfil__item" href="/tienda/perfil#perfil"><i class="bi bi-person"></i> Perfil</a></li>
+              <li><a class="perfil__item" href="/tienda/perfil#favoritos"><i class="bi bi-heart"></i> Favoritos</a></li>
+              <li><a class="perfil__item" href="/tienda/perfil#historial"><i class="bi bi-receipt"></i> Historial de compras</a></li>
+              <li><a class="perfil__item" href="/tienda/perfil#descuentos"><i class="bi bi-ticket-perforated"></i> Descuento</a></li>
+              <li><a class="perfil__item" href="/tienda/perfil#configuracion"><i class="bi bi-gear"></i> Configuración</a></li>
             </ul>
 
             <a class="perfil__item perfil__item--salir" href="#">
@@ -93,7 +93,22 @@
     </div>
 
     <div class="producto__panel">
-      <!-- Color -->
+      <div class="producto__precios">
+        <span class="producto__precio-etiqueta">Precio</span>
+        <span class="producto__precio" id="productoPrecio">—</span>
+        <span class="producto__nota" id="productoImpuesto"></span>
+      </div>
+
+      <span class="producto__categoria" hidden>Categoría: <span id="productoCategoria">Cargando…</span></span>
+
+      <!-- Talla -->
+      <div class="opcion opcion--tallas">
+        <p class="opcion__titulo">Tallas</p>
+        <div class="tallas" id="productoTallas"></div>
+        <label class="tallas__equiv" id="tallasEquiv" aria-live="polite"></label>
+      </div>
+
+      <!-- Color (después de las tallas) -->
       <div class="opcion opcion--color">
         <p class="opcion__titulo">
           Colores <span class="opcion__valor" id="colorSeleccionado"></span>
@@ -101,31 +116,19 @@
         <div class="colores" id="productoColores"></div>
       </div>
 
-      <div class="producto__precios">
-        <span class="producto__precio" id="productoPrecio">—</span>
-        <span class="producto__nota" id="productoImpuesto"></span>
-      </div>
-
-      <span class="producto__categoria">Categoría: <span id="productoCategoria">Cargando…</span></span>
-
-      <!-- Talla -->
-      <div class="opcion">
-        <p class="opcion__titulo">Tallas</p>
-        <div class="tallas" id="productoTallas"></div>
-
-        <details class="guia-tallas" id="guiaTallas" hidden>
-          <summary class="guia-tallas__boton">Guía de tallas · EU / US / UK / cm</summary>
-          <div class="guia-tallas__scroll">
-            <table class="guia-tallas__tabla">
-              <thead>
-                <tr><th>EU</th><th>US H</th><th>US M</th><th>UK</th><th>cm</th></tr>
-              </thead>
-              <tbody id="guiaTallasCuerpo"></tbody>
-            </table>
-          </div>
-          <p class="guia-tallas__nota" id="guiaTallasNota"></p>
-        </details>
-      </div>
+      <!-- Guía de tallas (ocupa todo el ancho del panel) -->
+      <details class="guia-tallas" id="guiaTallas" hidden>
+        <summary class="guia-tallas__boton">Guía de tallas · EU / US / UK / cm</summary>
+        <div class="guia-tallas__scroll">
+          <table class="guia-tallas__tabla">
+            <thead>
+              <tr><th>EU</th><th>US H</th><th>US M</th><th>UK</th><th>cm</th></tr>
+            </thead>
+            <tbody id="guiaTallasCuerpo"></tbody>
+          </table>
+        </div>
+        <p class="guia-tallas__nota" id="guiaTallasNota"></p>
+      </details>
 
       <!-- Acciones (estilo Amazon: debajo del detalle) -->
       <div class="producto__acciones">

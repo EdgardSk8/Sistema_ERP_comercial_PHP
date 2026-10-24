@@ -154,7 +154,8 @@ const modulos = [
     ['#tablaProductoVariaciones', () => import('./MostrarProductoVariacion')],
     ['#tablaProductoVariacionDetalle', () => import('./MostrarProductoVariacionDetalle')],
     ['#tablaUbicaciones', () => import('./MostrarUbicaciones')],
-    ['#tablaCuentasPorCobrar', () => import('./CuentasPorCobrar')]
+    ['#tablaCuentasPorCobrar', () => import('./CuentasPorCobrar')],
+    ['#manualNav', () => import('./Manual')]
 
 
 

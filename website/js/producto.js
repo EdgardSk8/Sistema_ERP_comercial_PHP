@@ -198,6 +198,20 @@ function equivalenciaCorta(nombre) {
     return ref ? `${ref.cm} cm` : '';
 }
 
+/* Todas las equivalencias de la talla: US hombre, US mujer, UK y cm. */
+function equivalenciasTalla(nombre) {
+    const ref = referenciaTalla(nombre);
+    if (!ref) return [];
+
+    const datos = [];
+
+    if (ref.us_hombre) datos.push({ etiqueta: 'US H', valor: ref.us_hombre });
+    if (ref.us_mujer) datos.push({ etiqueta: 'US M', valor: ref.us_mujer });
+    if (ref.cm) datos.push({ etiqueta: 'Pie', valor: `${ref.cm} cm` });
+
+    return datos;
+}
+
 function pintarGuiaTallas() {
     const cuerpo = $('guiaTallasCuerpo');
     if (!cuerpo || !tallasReferencia) return;
@@ -247,16 +261,38 @@ function pintarTallas() {
 
     contenedor.innerHTML = tallas.map(talla => {
         const agotada = Number(talla.stock) <= 0;
-        const activa = tallaActual && talla.id === tallaActual.id ? ' talla-opcion--activo' : '';
+        const activa = tallaActual && talla.id === tallaActual.id;
         const equiv = equivalenciaCorta(talla.nombre);
+
         return `
-            <button type="button" class="talla-opcion${activa}" data-talla="${talla.id}"
-                ${agotada ? 'disabled' : ''} title="${agotada ? 'Agotada' : `Stock: ${talla.stock}`}">
+            <div class="talla-opcion${activa ? ' talla-opcion--activo' : ''}${agotada ? ' talla-opcion--agotada' : ''}"
+                 data-talla="${talla.id}" title="${agotada ? 'Agotada' : `Stock: ${talla.stock}`}">
                 <span class="talla-opcion__base">${escapar(talla.nombre)}</span>
                 <span class="talla-opcion__equiv">${equiv || '&nbsp;'}</span>
-            </button>
+            </div>
         `;
     }).join('');
+
+    pintarEquivalencias();
+}
+
+/* Etiqueta fija: muestra US H / US M de la talla seleccionada. */
+function pintarEquivalencias() {
+    const caja = $('tallasEquiv');
+    if (!caja) return;
+
+    if (!tallaActual) {
+        caja.textContent = 'Selecciona una talla para ver sus equivalencias.';
+        return;
+    }
+
+    const datos = equivalenciasTalla(tallaActual.nombre)
+        .filter(dato => dato.etiqueta !== 'Pie')
+        .map(dato => `${dato.etiqueta} ${dato.valor}`);
+
+    caja.textContent = datos.length
+        ? `Talla ${tallaActual.nombre} · ${datos.join(' · ')}`
+        : `Talla ${tallaActual.nombre}`;
 }
 
 function pintarPrecio() {
@@ -355,16 +391,16 @@ function montarCarruselRelacionados() {
 
     carruselRelacionados = new Splide(contenedor, {
         type: total > 2 ? 'loop' : 'slide',
-        perPage: 6,
+        perPage: 5,
         perMove: 1,
         gap: '12px',
         arrows: total > 2,
         pagination: false,
         drag: true,
         breakpoints: {
-            1200: { perPage: 5 },
-            992: { perPage: 4 },
-            768: { perPage: 3, arrows: false },
+            1200: { perPage: 4 },
+            992: { perPage: 3 },
+            768: { perPage: 2, arrows: false },
             576: { perPage: 2, arrows: false },
         },
     });

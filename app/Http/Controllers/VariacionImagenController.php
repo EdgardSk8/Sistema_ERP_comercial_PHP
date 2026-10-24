@@ -2,18 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use App\Models\VariacionImagen;
-
+use App\Support\ImagenOptimizada;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Validator;
 
 class VariacionImagenController extends Controller
 {
-
-/*  ╔══════════════ Crear Imagen Variación ══════════════╗
-    ╚════════════════════════════════════════════════════╝ */
+    /*  ╔══════════════ Crear Imagen Variación ══════════════╗
+        ╚════════════════════════════════════════════════════╝ */
 
     public function CrearVariacionImagen(Request $request)
     {
@@ -24,24 +23,24 @@ class VariacionImagenController extends Controller
                 [
                     'id_variacion' => $request->id_variacion,
                     'imagen' => $request->imagen,
-                    'orden' => $request->orden
+                    'orden' => $request->orden,
                 ],
                 [
                     'id_variacion' => [
                         'required',
-                        'exists:producto_variaciones,id_variacion'
+                        'exists:producto_variaciones,id_variacion',
                     ],
                     'imagen' => [
                         'required',
                         'image',
                         'mimes:jpg,jpeg,png,gif,webp',
-                        'max:5120'
+                        'max:5120',
                     ],
                     'orden' => [
                         'nullable',
                         'integer',
-                        'min:0'
-                    ]
+                        'min:0',
+                    ],
                 ],
                 [
                     'id_variacion.required' => 'La variación es obligatoria.',
@@ -51,14 +50,14 @@ class VariacionImagenController extends Controller
                     'imagen.mimes' => 'La imagen debe ser JPG, JPEG, PNG, GIF o WEBP.',
                     'imagen.max' => 'La imagen no puede exceder 5 MB.',
                     'orden.integer' => 'El orden debe ser un número entero.',
-                    'orden.min' => 'El orden no puede ser negativo.'
+                    'orden.min' => 'El orden no puede ser negativo.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -67,27 +66,27 @@ class VariacionImagenController extends Controller
             VariacionImagen::create([
                 'id_variacion' => $request->id_variacion,
                 'imagen' => $rutaImagen,
-                'orden' => $request->orden ?? 0
+                'orden' => $request->orden ?? 0,
             ]);
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Imagen agregada correctamente'
+                'mensaje' => 'Imagen agregada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
             $this->eliminarArchivoImagen($rutaImagen);
+
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al agregar imagen',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔══════════════ Editar Imagen Variación ═════════════╗
-    ╚════════════════════════════════════════════════════╝ */
+    /*  ╔══════════════ Editar Imagen Variación ═════════════╗
+        ╚════════════════════════════════════════════════════╝ */
 
     public function EditarVariacionImagen($id)
     {
@@ -95,30 +94,29 @@ class VariacionImagenController extends Controller
 
             $imagen = VariacionImagen::find($id);
 
-            if (!$imagen) {
+            if (! $imagen) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Imagen no encontrada'
+                    'mensaje' => 'Imagen no encontrada',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'imagen' => $imagen
+                'imagen' => $imagen,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener imagen',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔════════════ Actualizar Imagen Variación ═══════════╗
-    ╚════════════════════════════════════════════════════╝ */
+    /*  ╔════════════ Actualizar Imagen Variación ═══════════╗
+        ╚════════════════════════════════════════════════════╝ */
 
     public function ActualizarVariacionImagen(Request $request, $id)
     {
@@ -127,30 +125,30 @@ class VariacionImagenController extends Controller
 
             $imagen = VariacionImagen::find($id);
 
-            if (!$imagen) {
+            if (! $imagen) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Imagen no encontrada'
+                    'mensaje' => 'Imagen no encontrada',
                 ], 404);
             }
 
             $validator = Validator::make(
                 [
                     'imagen' => $request->imagen,
-                    'orden' => $request->orden
+                    'orden' => $request->orden,
                 ],
                 [
                     'imagen' => [
                         'nullable',
                         'image',
                         'mimes:jpg,jpeg,png,gif,webp',
-                        'max:5120'
+                        'max:5120',
                     ],
                     'orden' => [
                         'required',
                         'integer',
-                        'min:0'
-                    ]
+                        'min:0',
+                    ],
                 ],
                 [
                     'imagen.image' => 'El archivo debe ser una imagen.',
@@ -158,14 +156,14 @@ class VariacionImagenController extends Controller
                     'imagen.max' => 'La imagen no puede exceder 5 MB.',
                     'orden.required' => 'El orden es obligatorio.',
                     'orden.integer' => 'El orden debe ser un número entero.',
-                    'orden.min' => 'El orden no puede ser negativo.'
+                    'orden.min' => 'El orden no puede ser negativo.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -183,22 +181,22 @@ class VariacionImagenController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Imagen actualizada correctamente'
+                'mensaje' => 'Imagen actualizada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
             $this->eliminarArchivoImagen($rutaNueva);
+
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al actualizar imagen',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔════════════ Cambiar Orden Imagen ════════════╗
-    ╚══════════════════════════════════════════════╝ */
+    /*  ╔════════════ Cambiar Orden Imagen ════════════╗
+        ╚══════════════════════════════════════════════╝ */
 
     public function CambiarOrdenVariacionImagen(Request $request, $id)
     {
@@ -206,35 +204,35 @@ class VariacionImagenController extends Controller
 
             $imagen = VariacionImagen::find($id);
 
-            if (!$imagen) {
+            if (! $imagen) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Imagen no encontrada'
+                    'mensaje' => 'Imagen no encontrada',
                 ], 404);
             }
 
             $validator = Validator::make(
                 [
-                    'orden' => $request->orden
+                    'orden' => $request->orden,
                 ],
                 [
                     'orden' => [
                         'required',
                         'integer',
-                        'min:0'
-                    ]
+                        'min:0',
+                    ],
                 ],
                 [
                     'orden.required' => 'El orden es obligatorio.',
                     'orden.integer' => 'El orden debe ser un número entero.',
-                    'orden.min' => 'El orden no puede ser negativo.'
+                    'orden.min' => 'El orden no puede ser negativo.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -243,14 +241,14 @@ class VariacionImagenController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Orden de imagen actualizado correctamente'
+                'mensaje' => 'Orden de imagen actualizado correctamente',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al cambiar orden de imagen',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -259,13 +257,13 @@ class VariacionImagenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => ['required', 'integer', 'distinct']
+            'ids.*' => ['required', 'integer', 'distinct'],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -279,7 +277,7 @@ class VariacionImagenController extends Controller
         if ($ids->count() !== $idsActuales->count() || $ids->sort()->values()->all() !== $idsActuales->sort()->values()->all()) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'La lista no coincide con las imágenes de esta variación.'
+                'mensaje' => 'La lista no coincide con las imágenes de esta variación.',
             ], 422);
         }
 
@@ -293,13 +291,12 @@ class VariacionImagenController extends Controller
 
         return response()->json([
             'success' => true,
-            'mensaje' => 'Orden de imágenes actualizado correctamente.'
+            'mensaje' => 'Orden de imágenes actualizado correctamente.',
         ]);
     }
 
-
-/*  ╔════════════ Mostrar Imágenes Variación ════════════╗
-    ╚════════════════════════════════════════════════════╝ */
+    /*  ╔════════════ Mostrar Imágenes Variación ════════════╗
+        ╚════════════════════════════════════════════════════╝ */
 
     public function MostrarVariacionImagen()
     {
@@ -312,14 +309,14 @@ class VariacionImagenController extends Controller
 
             return response()->json([
                 'success' => true,
-                'imagenes' => $imagenes
+                'imagenes' => $imagenes,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener imágenes',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -329,10 +326,10 @@ class VariacionImagenController extends Controller
         try {
             $imagen = VariacionImagen::find($id);
 
-            if (!$imagen) {
+            if (! $imagen) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Imagen no encontrada'
+                    'mensaje' => 'Imagen no encontrada',
                 ], 404);
             }
 
@@ -342,13 +339,13 @@ class VariacionImagenController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Imagen eliminada correctamente'
+                'mensaje' => 'Imagen eliminada correctamente',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Error al eliminar imagen',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -357,19 +354,23 @@ class VariacionImagenController extends Controller
     {
         $directorio = public_path('imagenes/productosvariaciones');
 
-        if (!File::exists($directorio)) {
+        if (! File::exists($directorio)) {
             File::makeDirectory($directorio, 0755, true);
         }
 
-        $nombreArchivo = $archivo->hashName();
-        $archivo->move($directorio, $nombreArchivo);
+        // Redimensiona y comprime en WebP (< 300 KB) con nombre aleatorio.
+        $nombreArchivo = ImagenOptimizada::guardar(
+            $archivo,
+            $directorio,
+            'Variacion'.now()->format('YmdHis').'_'
+        );
 
-        return 'imagenes/productosvariaciones/' . $nombreArchivo;
+        return 'imagenes/productosvariaciones/'.$nombreArchivo;
     }
 
     private function eliminarArchivoImagen(?string $ruta): void
     {
-        if (!$ruta || strpos($ruta, 'imagenes/productosvariaciones/') !== 0) {
+        if (! $ruta || strpos($ruta, 'imagenes/productosvariaciones/') !== 0) {
             return;
         }
 
@@ -378,10 +379,9 @@ class VariacionImagenController extends Controller
             return;
         }
 
-        $archivo = public_path('imagenes/productosvariaciones/' . $nombreArchivo);
+        $archivo = public_path('imagenes/productosvariaciones/'.$nombreArchivo);
         if (File::exists($archivo)) {
             File::delete($archivo);
         }
     }
-
 } // Fin de controlador

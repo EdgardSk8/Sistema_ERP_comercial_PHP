@@ -31,7 +31,7 @@ export default function initMostrarGastos() {
             { data: 'nombre_gasto', render: data => data ? data : '<span>—</span>' },
             { data: 'tipo', render: data => data ? data : '<span>—</span>' },
             { data: 'descripcion_gasto', render: data => data ? data : '<span>—</span>' },
-            { data: 'fecha_pago', render: function (data) { return data ? FechaSimple(data) : '—'; } },
+            { data: 'fecha_pago', render: function (data) { return data ? FechaSimple(data) : '<span class=\"text-muted\">Sin fecha</span>'; } },
 
             { data: 'estado_pago',
                 render: function (data) {
@@ -269,11 +269,6 @@ export default function initMostrarGastos() {
 
         if (!tipo) {
             mostrarToast('Seleccione el tipo de gasto', 'danger');
-            return;
-        }
-
-        if (!fecha_pago) {
-            mostrarToast('Seleccione la fecha de vencimiento', 'danger');
             return;
         }
 
@@ -742,7 +737,8 @@ export default function initMostrarGastos() {
                 $('#pagar_ultimo_monto').val(fila.ultimo_pago_monto ?? '0.00');
                 $('#pagar_monto').val(fila.ultimo_pago_monto ?? '');
                 $('#pagar_id_caja, #pagar_id_cuenta').val('');
-                $('#pagar_renovar_fecha').val('auto');
+                // Los gastos con fecha mantienen la renovación automática; los irregulares no.
+                $('#pagar_renovar_fecha').val(fila.proximo_pago || fila.fecha_pago ? 'auto' : 'ninguno');
                 $('#grupo_fecha_manual').addClass('d-none');
                 $('#pagar_nueva_fecha').val('');
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPagarGasto')).show();
@@ -811,7 +807,7 @@ export default function initMostrarGastos() {
         });
 
         
-        $('#pagar_renovar_fecha').off('change.renovarFecha').on('change', function () {
+        $('#pagar_renovar_fecha').off('change.renovarFecha').on('change.renovarFecha', function () {
 
             const valor = $(this).val();
             if (valor === 'manual') { $('#grupo_fecha_manual').removeClass('d-none');

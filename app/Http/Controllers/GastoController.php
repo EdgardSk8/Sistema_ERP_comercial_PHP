@@ -125,18 +125,7 @@ class GastoController extends Controller
             ]);
 
             /* ═══════════════════════════════════════
-            🔴 VALIDACIÓN LÓGICA
-            ═══════════════════════════════════════ */
-
-            if (!$request->fecha_pago && !$request->proximo_pago) {
-                return response()->json([
-                    'success' => false,
-                    'mensaje' => 'Debe definir una fecha de pago o próxima fecha de pago'
-                ], 422);
-            }
-
-            /* ═══════════════════════════════════════
-            🔥 FECHAS NORMALIZADAS
+             FECHAS NORMALIZADAS
             ═══════════════════════════════════════ */
 
             $fecha_pago   = $request->fecha_pago;
@@ -613,7 +602,7 @@ class GastoController extends Controller
                 'monto' => 'required|numeric|min:0.01',
                 'id_caja' => 'nullable|exists:cajas,id_caja',
                 'id_cuenta' => 'nullable|exists:cuentas,id_cuenta',
-                'renovar_vencimiento' => 'required|in:auto,manual',
+                'renovar_vencimiento' => 'required|in:auto,manual,ninguno',
                 'nueva_fecha' => 'required_if:renovar_vencimiento,manual|nullable|date'
             ]);
 
@@ -779,12 +768,28 @@ class GastoController extends Controller
             ═══════════════════════════════ */
             $fechaBaseProximoPago = Carbon::parse($gasto->proximo_pago ?: $gasto->fecha_pago ?: $fecha->toDateString());
 
-            $gasto->fecha_pago = $fecha->toDateString();
             $gasto->ultimo_pago = $fecha->toDateString();
-            $gasto->proximo_pago = $request->renovar_vencimiento === 'manual'
-                ? $request->nueva_fecha
-                : $fechaBaseProximoPago->addMonthNoOverflow()->toDateString();
             $gasto->estado_pago = 'PAGADO';
+
+            if ($request->renovar_vencimiento === 'manual') {
+
+                // Se programó una fecha concreta para el próximo pago.
+                $gasto->fecha_pago = $fecha->toDateString();
+                $gasto->proximo_pago = $request->nueva_fecha;
+
+            } elseif ($request->renovar_vencimiento === 'auto') {
+
+                // Se mantiene la regla de renovar un mes.
+                $gasto->fecha_pago = $fecha->toDateString();
+                $gasto->proximo_pago = $fechaBaseProximoPago->addMonthNoOverflow()->toDateString();
+
+            } else {
+
+                // Pago irregular: no hay próxima fecha programada.
+                $gasto->fecha_pago = null;
+                $gasto->proximo_pago = null;
+            }
+
             $gasto->save();
 
             DB::commit();

@@ -21,6 +21,7 @@ export default defineConfig({
                 'resources/css/permisos/Permisos.css',
                 'resources/css/reportes/Reportes.css',
                 'resources/css/respaldo/Respaldo.css',
+                'resources/css/manual/Manual.css',
 
                 // JS cargados directamente desde las vistas (no por app.js)
                 'resources/js/app.js',

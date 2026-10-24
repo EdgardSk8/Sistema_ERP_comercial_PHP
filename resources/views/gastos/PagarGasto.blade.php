@@ -80,11 +80,15 @@
                         </div>
 
                         <div class="col-md-12">
-                            <label class="form-label">Renovación de vencimiento</label>
+                            <label class="form-label">Próximo vencimiento</label>
 
                             <select
                                 id="pagar_renovar_fecha"
                                 class="form-select form-select-sm">
+
+                                <option value="ninguno" selected>
+                                    Sin próxima fecha (pago irregular)
+                                </option>
 
                                 <option value="auto">
                                     Automático ( +1 mes )
@@ -95,6 +99,10 @@
                                 </option>
 
                             </select>
+
+                            <div class="form-text">
+                                Si no sabes cuándo será el próximo pago, déjalo en “Sin próxima fecha”.
+                            </div>
                         </div>
 
                         <div class="col-12 d-none" id="grupo_fecha_manual">

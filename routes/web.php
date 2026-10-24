@@ -101,6 +101,17 @@ Route::view('/tallas', 'tallas.Tallas')->middleware('permiso:vista_tallas')->nam
 Route::view('/producto-variaciones', 'productosvariacion.ProductoVariaciones')->middleware('permiso:vista_producto_variaciones')->name('producto-variaciones');
 Route::view('/producto-variaciones-detalles', 'productosvariaciondetalles.ProductoVariacionDetalle')->middleware('permiso:vista_producto_variaciones_detalle')->name('producto-variaciones-detalles');
 
+/*  ╔════════════ MANUAL DE USO ═════════════╗
+    ╚════════════════════════════════════════╝ */
+
+Route::get('/manual', function () {
+    if (!session('usuario')) {
+        return redirect()->route('login');
+    }
+
+    return view('manual.Manual');
+})->name('manual');
+
 
 
 Route::view('/error', 'errors.sin_permiso')->name('error');
@@ -441,6 +452,7 @@ Route::delete('/variacion-tallas/eliminar/{id}', [VariacionTallaController::clas
 Route::get('/tienda', [WebsiteController::class, 'inicio'])->name('tienda');
 Route::get('/tienda/producto/{id}', [WebsiteController::class, 'productoVista'])->name('tienda.producto');
 Route::get('/tienda/carrito', [WebsiteController::class, 'carritoVista'])->name('tienda.carrito');
+Route::get('/tienda/perfil', [WebsiteController::class, 'perfilVista'])->name('tienda.perfil');
 
 // Recursos estáticos de la carpeta website/
 Route::get('/tienda/recursos/{archivo}', [WebsiteController::class, 'archivo'])

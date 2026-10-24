@@ -485,6 +485,7 @@
 
         let subidas = 0;
         $boton.prop('disabled', true);
+        mostrarToast('Sus imágenes se están comprimiendo, espere un momento...', 'info');
 
         try {
             for (const [indice, archivo] of archivos.entries()) {
@@ -644,6 +645,7 @@
         const textoOriginal = $botonGuardar.text();
         let subidas = 0;
         $botonGuardar.prop('disabled', true);
+        mostrarToast('Sus imágenes se están comprimiendo, espere un momento...', 'info');
 
         try {
             for (const [indice, archivo] of archivos.entries()) {
@@ -729,10 +731,60 @@
         });
     });
 
+    function confirmarAccionVariacion({ titulo, mensaje, textoConfirmar = 'Eliminar', alConfirmar }) {
+        let modalElemento = document.getElementById('modalConfirmarAccionVariacion');
+
+        if (!modalElemento) {
+            document.body.insertAdjacentHTML('beforeend', `
+                <div class="modal fade" id="modalConfirmarAccionVariacion" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="tituloConfirmarAccionVariacion"></h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-0" id="mensajeConfirmarAccionVariacion"></p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn cancelar btn-sm-modal" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="button" class="btn actualizar btn-sm-modal" id="btnConfirmarAccionVariacion"></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+            modalElemento = document.getElementById('modalConfirmarAccionVariacion');
+        }
+
+        $('#tituloConfirmarAccionVariacion').text(titulo);
+        $('#mensajeConfirmarAccionVariacion').text(mensaje);
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElemento);
+        const finalizar = () => {
+            $('#btnConfirmarAccionVariacion').prop('disabled', false);
+            modal.hide();
+            // Si otro modal (galería) sigue abierto, conserva el bloqueo de scroll.
+            if (document.querySelector('.modal.show')) {
+                document.body.classList.add('modal-open');
+            }
+        };
+
+        $('#btnConfirmarAccionVariacion')
+            .text(textoConfirmar)
+            .off('click.confirmarAccion')
+            .on('click.confirmarAccion', function () {
+                $(this).prop('disabled', true);
+                alConfirmar(finalizar);
+            });
+
+        modal.show();
+    }
+
     $(document).off('click.detalle', '.eliminarVariacionImagen').on('click.detalle', '.eliminarVariacionImagen', function () {
         const id = $(this).data('id');
         const idVariacion = filas.find(fila => fila.imagenes.some(imagen => String(imagen.id_imagen) === String(id)))?.id_variacion;
-        if (!window.confirm('Â¿Deseas eliminar esta imagen?')) return;
+
         $.ajax({
             url: `/variacion-imagenes/eliminar/${id}`,
             type: 'DELETE',
@@ -869,18 +921,26 @@
 
     $tabla.off('click.detalle', '.eliminarVariacionTalla').on('click.detalle', '.eliminarVariacionTalla', function () {
         const id = $(this).data('id');
-        if (!window.confirm('Â¿Deseas quitar esta talla de la variacion?')) return;
-        $.ajax({
-            url: `/variacion-tallas/eliminar/${id}`,
-            type: 'DELETE',
-            data: { _token: csrf() },
-            headers: { 'X-CSRF-TOKEN': csrf() },
-            success: response => {
-                if (!response.success) return mostrarToast(response.mensaje || 'No se pudo quitar la talla', 'danger');
-                mostrarToast(response.mensaje || 'Talla quitada correctamente', 'success');
-                recargarDatos();
-            },
-            error: xhr => mostrarError(xhr, 'Error al quitar la talla')
+
+        confirmarAccionVariacion({
+            titulo: 'Quitar talla',
+            mensaje: '¿Deseas quitar esta talla de la variación?',
+            textoConfirmar: 'Quitar',
+            alConfirmar: finalizar => {
+                $.ajax({
+                    url: `/variacion-tallas/eliminar/${id}`,
+                    type: 'DELETE',
+                    data: { _token: csrf() },
+                    headers: { 'X-CSRF-TOKEN': csrf() },
+                    success: response => {
+                        if (!response.success) return mostrarToast(response.mensaje || 'No se pudo quitar la talla', 'danger');
+                        mostrarToast(response.mensaje || 'Talla quitada correctamente', 'success');
+                        recargarDatos();
+                    },
+                    error: xhr => mostrarError(xhr, 'Error al quitar la talla'),
+                    complete: finalizar
+                });
+            }
         });
     });
 
