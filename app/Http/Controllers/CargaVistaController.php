@@ -23,6 +23,7 @@ class CargaVistaController extends Controller
             $permisos = DB::table('rol_permiso')
                 ->join('permisos', 'rol_permiso.id_permiso', '=', 'permisos.id_permiso')
                 ->where('rol_permiso.id_rol', $usuario['id_rol'])
+                ->where('permisos.estado_permiso', 1)
                 ->orderBy('rol_permiso.id_rol_permiso')
                 ->select('permisos.nombre_permiso')
                 ->get();

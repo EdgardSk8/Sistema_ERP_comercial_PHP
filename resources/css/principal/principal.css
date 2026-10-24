@@ -220,7 +220,8 @@ body{
 .flatpickr-current-month input.cur-year:focus{
     background:var(--fp-calendar-hover);
 }
-.flatpickr-weekday{color:var(--fp-calendar-muted)}
+span.flatpickr-weekday{color:var(--fp-calendar-muted)}
+[data-theme="dark"] span.flatpickr-weekday{color:var(--text-white)}
 .flatpickr-prev-month svg,
 .flatpickr-next-month svg{fill:var(--fp-calendar-muted)}
 .flatpickr-prev-month:hover svg,

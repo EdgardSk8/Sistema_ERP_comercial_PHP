@@ -43,7 +43,7 @@ class rol_permisoSeeder extends Seeder
             'usar_facturacion',
             'abrir_caja',
             'cerrar_caja',
-            // 'verificar_caja',
+            'verificar_caja',
 
             /* CLIENTES */
             'vista_clientes',

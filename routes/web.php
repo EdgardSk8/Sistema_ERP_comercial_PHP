@@ -146,7 +146,7 @@ Route::get('/usuarios/{id}/editar', [UsuarioController::class, 'EditarUsuario'])
 Route::put('/usuarios/{id}/actualizar', [UsuarioController::class, 'ActualizarUsuario']) ->middleware('permiso:actualizar_usuarios');
 Route::post('/usuarios/cambiar-estado/{id}', [UsuarioController::class, 'cambiarEstadoUsuario']) ->middleware('permiso:cambiar_estado_usuarios');
 
-Route::get('/roles-usuario/mostrar', [UsuarioController::class, 'MostrarRolesUsuario']); // No necesario
+Route::get('/roles-usuario/mostrar', [UsuarioController::class, 'MostrarRolesUsuario'])->middleware('permiso:mostrar_usuarios');
 
 /*  ╔═══════════ Endpoint Categorias ════════════╗ 
     ╚════════════════════════════════════════════╝ */
@@ -183,10 +183,10 @@ Route::post('/metodos-pago-cuenta/crear', [MetodoPagoCuentaController::class, 'C
 Route::get('/metodos-pago-cuenta/{id}/editar', [MetodoPagoCuentaController::class, 'EditarMetodoPagoCuenta'])->middleware('permiso:editar_metodos_pago_cuenta');
 Route::put('/metodos-pago-cuenta/{id}/actualizar', [MetodoPagoCuentaController::class, 'ActualizarMetodoPagoCuenta'])->middleware('permiso:actualizar_metodos_pago_cuenta');
 Route::post('/metodos-pago-cuenta/cambiar-estado/{id}', [MetodoPagoCuentaController::class, 'CambiarEstadoMetodoPagoCuenta'])->middleware('permiso:cambiar_estado_metodos_pago_cuenta');
-Route::get('/metodos-pago/{id}/cuentas', [MetodoPagoCuentaController::class, 'ObtenerCuentasPorMetodoPago']);
+Route::get('/metodos-pago/{id}/cuentas', [MetodoPagoCuentaController::class, 'ObtenerCuentasPorMetodoPago'])->middleware('permiso:mostrar_metodos_pago');
 
-Route::get('/metodos-pago-cuenta/metodos-cuentas/mostrar', [MetodoPagoCuentaController::class, 'ObtenerDatosFormulario']);
-Route::get('/metodos-pago-cuenta/cuentas-vinculadas/mostrar/{id}', [MetodoPagoCuentaController::class, 'ObtenerCuentasMetodoPago']);
+Route::get('/metodos-pago-cuenta/metodos-cuentas/mostrar', [MetodoPagoCuentaController::class, 'ObtenerDatosFormulario'])->middleware('permiso:mostrar_metodos_pago_cuenta');
+Route::get('/metodos-pago-cuenta/cuentas-vinculadas/mostrar/{id}', [MetodoPagoCuentaController::class, 'ObtenerCuentasMetodoPago'])->middleware('permiso:mostrar_metodos_pago_cuenta');
 
 /*  ╔══════════════ Endpoint Gastos ═════════════╗ 
     ╚════════════════════════════════════════════╝ */
@@ -200,8 +200,8 @@ Route::post('/gastos/pagar', [GastoController::class, 'PagarGasto'])->middleware
 Route::get('/gastos/detalle/{id}', [GastoController::class, 'DetalleGasto'])->middleware('permiso:mostrar_detalle_gastos');
 Route::post('/gastos/movimiento/editar', [GastoController::class, 'EditarMovimientoGasto'])->middleware('permiso:editar_movimiento_gastos');
 
-Route::get('/gastos-cuentas/mostrar', [GastoController::class, 'MostrarCuentasGastos']);
-Route::get('/gastos-cajas/mostrar', [GastoController::class, 'MostrarCajasGastos']);
+Route::get('/gastos-cuentas/mostrar', [GastoController::class, 'MostrarCuentasGastos'])->middleware('permiso:mostrar_gastos');
+Route::get('/gastos-cajas/mostrar', [GastoController::class, 'MostrarCajasGastos'])->middleware('permiso:mostrar_gastos');
 
 
 /*  ╔════════ Endpoint Movimiento Gasto ═════════╗ 
@@ -254,7 +254,7 @@ Route::get('/productos/{id}/editar', [ProductoController::class, 'EditarProducto
 Route::put('/productos/{id}/actualizar', [ProductoController::class, 'ActualizarProducto'])->middleware('permiso:actualizar_productos');
 Route::post('/productos/cambiar-estado/{id}', [ProductoController::class, 'CambiarEstadoProducto'])->middleware('permiso:cambiar_estado_productos');
 
-Route::get('/productos/formulario', [ProductoController::class, 'ObtenerDatosFormularioProducto']); //revisar
+Route::get('/productos/formulario', [ProductoController::class, 'ObtenerDatosFormularioProducto'])->middleware('permiso:mostrar_productos');
 
 
 /*  ╔══════════════ Endpoint Roles ══════════════╗ 
@@ -292,9 +292,9 @@ Route::get('/cuenta/{id}/editar', [CuentaController::class, 'EditarCuenta'])->mi
 Route::put('/cuenta/{id}/actualizar', [CuentaController::class, 'ActualizarCuenta'])->middleware('permiso:actualizar_cuentas');
 Route::post('/cuenta/cambiar-estado/{id}', [CuentaController::class, 'CambiarEstadoCuenta'])->middleware('permiso:cambiar_estado_cuentas');
 Route::post('/cuenta/transferir', [CuentaController::class, 'TransferirEntreCuentas'])->middleware('permiso:transferir_cuentas');
-Route::post('/cuenta/movimiento', [CuentaController::class, 'MovimientoCuenta']);// ->middleware('permiso:movimiento_cuentas');
+Route::post('/cuenta/movimiento', [CuentaController::class, 'MovimientoCuenta'])->middleware('permiso:movimiento_cuentas');
 
-Route::get('/cuenta/mostrarselector', [CuentaController::class, 'MostrarCuentasSelector']);
+Route::get('/cuenta/mostrarselector', [CuentaController::class, 'MostrarCuentasSelector'])->middleware('permiso:mostrar_cuentas');
 
 /*  ╔══════ Movimiento Cuentas (Kardex) ═════════╗ 
     ╚════════════════════════════════════════════╝ */
@@ -319,17 +319,17 @@ Route::view('/cuentas-por-cobrar', 'cuentasporcobrar.CuentasPorCobrar')->middlew
 
 Route::post('/caja/abrir', [CajaController::class, 'AbrirCaja'])->middleware('permiso:abrir_caja');
 Route::post('/caja/cerrar', [CajaController::class, 'CerrarCaja'])->middleware('permiso:cerrar_caja');
-Route::get('/caja/verificar', [CajaController::class, 'VerificarCaja']); //->middleware('permiso:verificar_caja');
+Route::get('/caja/verificar', [CajaController::class, 'VerificarCaja'])->middleware('permiso:verificar_caja');
 Route::get('/cajas/arqueo', [CajaController::class, 'MostrarArqueo'])->middleware('permiso:mostrar_cajas');
 Route::put('/cajas/{id}/arqueo', [CajaController::class, 'GuardarArqueo'])->middleware('permiso:editar_arqueo_cajas');
 Route::get('/cajas/arqueo/imprimir', [CajaController::class, 'ImprimirArqueo'])->middleware('permiso:mostrar_cajas');
 Route::get('/cajas/arqueo/{id}/imprimir', [CajaController::class, 'ImprimirArqueoCaja'])->middleware('permiso:mostrar_cajas');
 
-Route::post('/validar-stock-carrito', [FacturacionController::class, 'ValidarStockCarrito']);
-Route::get('/tipo-cambio/pos', [FacturacionController::class, 'MostrarTipoCambio']);
-Route::get('/clientes/pos', [FacturacionController::class, 'MostrarClientesPOS']);
-Route::get('/metodo-pago/pos', [FacturacionController::class, 'MostrarMetodoPagoPOS']);
-Route::get('/credenciales/pos', [FacturacionController::class, 'MostrarCredencialesPOS']);
+Route::post('/validar-stock-carrito', [FacturacionController::class, 'ValidarStockCarrito'])->middleware('permiso:usar_facturacion');
+Route::get('/tipo-cambio/pos', [FacturacionController::class, 'MostrarTipoCambio'])->middleware('permiso:usar_facturacion');
+Route::get('/clientes/pos', [FacturacionController::class, 'MostrarClientesPOS'])->middleware('permiso:usar_facturacion');
+Route::get('/metodo-pago/pos', [FacturacionController::class, 'MostrarMetodoPagoPOS'])->middleware('permiso:mostrar_cuentas_por_cobrar');
+Route::get('/credenciales/pos', [FacturacionController::class, 'MostrarCredencialesPOS'])->middleware('permiso:usar_facturacion');
 
 /*  ╔═════════════ Endpoint Compras ═════════════╗ 
     ╚════════════════════════════════════════════╝ */
@@ -338,14 +338,14 @@ Route::get('/compras/mostrar', [CompraController::class, 'MostrarCompras'])->mid
 Route::post('/compra/crear', [CompraController::class, 'RegistrarCompra'])->middleware('permiso:crear_compras');
 Route::post('/compras/anular/{id}', [CompraController::class, 'AnularCompra'])->middleware('permiso:anular_compras');
 
-Route::get('/productos-compra/mostrar', [CompraController::class, 'MostrarProductosCompras']);
+Route::get('/productos-compra/mostrar', [CompraController::class, 'MostrarProductosCompras'])->middleware('permiso:crear_compras');
 
-Route::get('/proveedores-compra/mostrar', [CompraController::class, 'MostrarProveedoresCompras']);
-Route::get('/tipo-factura-compra/mostrar', [CompraController::class, 'MostrarTiposFacturaCompras']);
-Route::get('/metodo-pago-compra/mostrar', [CompraController::class, 'MostrarMetodosPagoCompras']);
-Route::get('/cuenta-compra/mostrar', [CompraController::class, 'MostrarCuentasCompras']);
-Route::get('/caja-compra/mostrar', [CompraController::class, 'mostrarCajasAbiertas']);
-Route::get('/medidas-compra/mostrar', [CompraController::class, 'MostrarMedidasCompras']);
+Route::get('/proveedores-compra/mostrar', [CompraController::class, 'MostrarProveedoresCompras'])->middleware('permiso:crear_compras');
+Route::get('/tipo-factura-compra/mostrar', [CompraController::class, 'MostrarTiposFacturaCompras'])->middleware('permiso:crear_compras');
+Route::get('/metodo-pago-compra/mostrar', [CompraController::class, 'MostrarMetodosPagoCompras'])->middleware('permiso:crear_compras');
+Route::get('/cuenta-compra/mostrar', [CompraController::class, 'MostrarCuentasCompras'])->middleware('permiso:mostrar_cuentas');
+Route::get('/caja-compra/mostrar', [CompraController::class, 'mostrarCajasAbiertas'])->middleware('permiso:crear_compras');
+Route::get('/medidas-compra/mostrar', [CompraController::class, 'MostrarMedidasCompras'])->middleware('permiso:crear_compras');
 Route::get('/compras/{id}/detalle', [CompraController::class, 'MostrarDetalleCompra'])->middleware('permiso:mostrar_detalle_compras');
 
 /*  ╔════════════ Endpoint Permisos ═════════════╗ 
@@ -375,7 +375,7 @@ Route::get('/reportes/cajas', [ReporteController::class, 'ReporteCajas'])->middl
 
 Route::get('/tipos-medidas/mostrar', [TiposMedidasController::class, 'MostrarTiposMedidas'])->middleware('permiso:mostrar_tipos_medidas');
 Route::post('/tipos-medidas/crear', [TiposMedidasController::class, 'CrearTipoMedida'])->middleware('permiso:crear_tipos_medidas');
-Route::get('/tipos-medidas/editar/{id}', [TiposMedidasController::class, 'EditarTipoMedida']);//->middleware('permiso:editar_medidas');
+Route::get('/tipos-medidas/editar/{id}', [TiposMedidasController::class, 'EditarTipoMedida'])->middleware('permiso:editar_tipos_medidas');
 Route::put('/tipos-medidas/actualizar/{id}', [TiposMedidasController::class, 'ActualizarTipoMedida'])->middleware('permiso:actualizar_tipos_medidas');
 Route::put('/tipos-medidas/cambiar-estado/{id}', [TiposMedidasController::class, 'CambiarEstadoTipoMedida'])->middleware('permiso:cambiar_estado_tipos_medidas');
 
@@ -384,10 +384,10 @@ Route::put('/tipos-medidas/cambiar-estado/{id}', [TiposMedidasController::class,
 
 Route::get('/medidas/mostrar', [MedidasController::class, 'MostrarMedidas'])->middleware('permiso:mostrar_medidas');
 Route::post('/medidas/crear', [MedidasController::class, 'CrearMedida'])->middleware('permiso:crear_medidas');
-Route::get('/medidas/editar/{id}', [MedidasController::class, 'EditarMedida']);
+Route::get('/medidas/editar/{id}', [MedidasController::class, 'EditarMedida'])->middleware('permiso:editar_medidas');
 Route::put('/medidas/actualizar/{id}', [MedidasController::class, 'ActualizarMedida'])->middleware('permiso:actualizar_medidas');
 Route::put('/medidas/cambiar-estado/{id}', [MedidasController::class, 'CambiarEstadoMedida'])->middleware('permiso:cambiar_estado_medidas');
-Route::get('/medidas/tipos-medidas/mostrar',[MedidasController::class, 'MostrarTiposMedidas']);
+Route::get('/medidas/tipos-medidas/mostrar',[MedidasController::class, 'MostrarTiposMedidas'])->middleware('permiso:mostrar_medidas');
 
 /*  ╔════════════ Endpoint de Ubicaciones ════════╗
     ╚══════════════════════════════════════════════╝ */

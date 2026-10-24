@@ -35,7 +35,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-8">
+                        <div class="col-md-6">
                             <label class="form-label">Descripción</label>
                             <textarea
                                 id="crear_descripcion_gasto"
@@ -44,7 +44,7 @@
                                 placeholder="Detalle opcional"></textarea>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">Fecha de pago <span class="text-secondary">(opcional)</span></label>
                             <input
                                 id="crear_fecha_pago"

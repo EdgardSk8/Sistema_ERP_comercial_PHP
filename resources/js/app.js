@@ -236,6 +236,7 @@ const rutas = {
     vista_usuarios: '/usuarios',
     vista_proveedores: '/proveedores',
     vista_productos: '/productos',
+    vista_ubicaciones: '/ubicaciones',
     vista_roles: '/roles',
     vista_permisos: '/permisos',
     vista_categorias: '/categorias',
@@ -245,6 +246,7 @@ const rutas = {
     vista_compras: '/compras',
 
     vista_ventas: '/ventas',
+    vista_cuentas_por_cobrar: '/cuentas-por-cobrar',
 
     vista_impuestos: '/impuestos',
 
@@ -272,12 +274,11 @@ const rutas = {
     vista_respaldo: '/respaldo',
     vista_reportes: '/reportes',
 
-    vista_producto_variacion: '/producto-variaciones',
-    vista_tallas: '/tallas'
-
-
-
-
+    vista_tipos_medidas: '/tipos-medidas',
+    vista_medidas: '/medidas',
+    vista_tallas: '/tallas',
+    vista_producto_variaciones: '/producto-variaciones',
+    vista_producto_variaciones_detalle: '/producto-variaciones-detalles'
 };
 
 function cargarInicial(primero) {

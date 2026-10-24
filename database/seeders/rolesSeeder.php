@@ -14,7 +14,7 @@ class rolesSeeder extends Seeder
      */
     public function run()
     {
-        DB::table('roles')->insert([
+        DB::table('roles')->insertOrIgnore([
             [
                 'nombre_rol' => 'Administrador',
                 'descripcion_rol' => 'Acceso total al sistema, configuración, usuarios, reportes y control general.',

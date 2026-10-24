@@ -239,6 +239,7 @@ class permisosSeeder extends Seeder
             ['nombre_permiso' => 'vista_tipos_medidas','descripcion_permiso' => 'Ver Tipos de Medidas','modulo_permiso' => 'tipos_medidas'],
             ['nombre_permiso' => 'mostrar_tipos_medidas','descripcion_permiso' => 'Mostrar Tipos de Medidas','modulo_permiso' => 'tipos_medidas'],
             ['nombre_permiso' => 'crear_tipos_medidas','descripcion_permiso' => 'Crear Tipos de Medidas','modulo_permiso' => 'tipos_medidas'],
+            ['nombre_permiso' => 'editar_tipos_medidas','descripcion_permiso' => 'Editar Tipos de Medidas','modulo_permiso' => 'tipos_medidas'],
             ['nombre_permiso' => 'actualizar_tipos_medidas','descripcion_permiso' => 'Actualizar Tipos de Medidas','modulo_permiso' => 'tipos_medidas'],
             ['nombre_permiso' => 'cambiar_estado_tipos_medidas','descripcion_permiso' => 'Cambiar estado Tipos de Medidas','modulo_permiso' => 'tipos_medidas'],
 
@@ -247,6 +248,7 @@ class permisosSeeder extends Seeder
             ['nombre_permiso' => 'vista_medidas','descripcion_permiso' => 'Ver Medidas','modulo_permiso' => 'medidas'],
             ['nombre_permiso' => 'mostrar_medidas','descripcion_permiso' => 'Mostrar Medidas','modulo_permiso' => 'medidas'],
             ['nombre_permiso' => 'crear_medidas','descripcion_permiso' => 'Crear Medidas','modulo_permiso' => 'medidas'],
+            ['nombre_permiso' => 'editar_medidas','descripcion_permiso' => 'Editar Medidas','modulo_permiso' => 'medidas'],
             ['nombre_permiso' => 'actualizar_medidas','descripcion_permiso' => 'Actualizar Medidas','modulo_permiso' => 'medidas'],
             ['nombre_permiso' => 'cambiar_estado_medidas','descripcion_permiso' => 'Cambiar estado Medidas','modulo_permiso' => 'medidas'],
 
