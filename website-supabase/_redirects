@@ -1,9 +1,19 @@
-/tienda                /index.html     200
-/tienda/               /index.html     200
-/tienda/login          /login.html     200
-/tienda/carrito        /carrito.html   200
-/tienda/perfil         /perfil.html    200
-/producto              /producto.html  200
-/tienda/producto       /tienda         302
-/tienda/producto/*     /producto.html  200
-/tienda/recursos/*     /:splat         200
+# Cloudflare Pages aplica este archivo.
+# No reescribir (200) hacia .html: Pages redirige /x.html -> /x y se produce un bucle.
+# Los destinos deben ser rutas limpias (/login, /carrito, /perfil, /producto).
+
+/tienda                /             301
+/tienda/               /             301
+/tienda/login          /login        301
+/tienda/carrito        /carrito      301
+/tienda/perfil         /perfil       301
+/tienda/producto       /             301
+/tienda/producto/*     /producto?p=:splat  301
+/tienda/recursos/*     /:splat       200
+
+# Archivos internos que no deben publicarse
+/dev-server.php        /             301
+/README.md             /             301
+/NOTAS-PENDIENTES.md   /             301
+/TEMA-NAVIDAD.md       /             301
+/vercel.json           /             301
