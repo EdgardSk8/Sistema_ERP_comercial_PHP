@@ -10,19 +10,29 @@
                     <label class="form-check-label" for="colTalla">Talla</label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="1" id="colVariantesTalla" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="1" id="colTipoTalla" checked>
+                    <label class="form-check-label" for="colTipoTalla">Tipo</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="2" id="colVariantesTalla" checked>
                     <label class="form-check-label" for="colVariantesTalla">Variantes asignadas</label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="2" id="colEstadoTalla" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="3" id="colEstadoTalla" checked>
                     <label class="form-check-label" for="colEstadoTalla">Estado</label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="3" id="colAccionesTalla" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="4" id="colAccionesTalla" checked>
                     <label class="form-check-label" for="colAccionesTalla">Acciones</label>
                 </div>
             </div>
         </div>
+
+        @if(in_array('vista_tallas', session('permisos', [])))
+            <button class="btn-agregar" type="button" data-bs-toggle="modal" data-bs-target="#modalTiposTalla">
+                Tipos de talla
+            </button>
+        @endif
 
         @if(in_array('crear_tallas', session('permisos', [])))
             <button class="btn-agregar" type="button" data-bs-toggle="modal" data-bs-target="#modalCrearTalla">

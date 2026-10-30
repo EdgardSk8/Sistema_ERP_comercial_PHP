@@ -3,6 +3,9 @@
     @include('tallas.CheckColumnasTallas')
     @include('tallas.CrearTalla')
     @include('tallas.EditarTalla')
+    @include('tallas.TiposTallaModal')
+    @include('tallas.CrearTipoTalla')
+    @include('tallas.EditarTipoTalla')
 
     <div class="card">
         <table id="tablaTallas" class="table table-bordered"
@@ -11,6 +14,7 @@
             <thead>
                 <tr>
                     <th>Talla</th>
+                    <th>Tipo</th>
                     <th>Variantes asignadas</th>
                     <th>Estado</th>
                     <th>Acciones</th>
@@ -18,7 +22,7 @@
             </thead>
             <tbody></tbody>
             <tfoot>
-                <tr><th></th><th></th><th></th><th></th></tr>
+                <tr><th></th><th></th><th></th><th></th><th></th></tr>
             </tfoot>
         </table>
     </div>

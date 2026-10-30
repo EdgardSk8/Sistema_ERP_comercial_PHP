@@ -55,13 +55,19 @@
                     <div class="modal-body">
                         <input type="hidden" id="crear_talla_id_variacion" name="id_variacion">
                         <div class="row g-2">
-                            <div class="col-6">
-                                <label for="crear_id_talla" class="form-label">Talla del catalogo</label>
-                                <select id="crear_id_talla" name="id_talla" class="form-select form-select-sm" required>
-                                    <option value="">Seleccione una talla</option>
+                            <div class="col-12 col-md-4">
+                                <label for="crear_id_tipo_talla_var" class="form-label">Tipo de talla</label>
+                                <select id="crear_id_tipo_talla_var" class="form-select form-select-sm" required>
+                                    <option value="">Seleccione un tipo</option>
                                 </select>
                             </div>
-                            <div class="col-6">
+                            <div class="col-12 col-md-4">
+                                <label for="crear_id_talla" class="form-label">Talla</label>
+                                <select id="crear_id_talla" name="id_talla" class="form-select form-select-sm" required disabled>
+                                    <option value="">Seleccione un tipo primero</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
                                 <label for="crear_stock_variacion_talla" class="form-label">Stock</label>
                                 <input type="number" id="crear_stock_variacion_talla" name="stock" class="form-control form-control-sm" min="0" step="1" value="0" required>
                             </div>
@@ -95,13 +101,19 @@
                     <div class="modal-body">
                         <input type="hidden" id="editar_id_variacion_talla" name="id_variacion_talla">
                         <div class="row g-2">
-                            <div class="col-6">
-                                <label for="editar_id_talla" class="form-label">Talla del catalogo</label>
-                                <select id="editar_id_talla" name="id_talla" class="form-select form-select-sm" required>
-                                    <option value="">Seleccione una talla</option>
+                            <div class="col-12 col-md-4">
+                                <label for="editar_id_tipo_talla_var" class="form-label">Tipo de talla</label>
+                                <select id="editar_id_tipo_talla_var" class="form-select form-select-sm" required>
+                                    <option value="">Seleccione un tipo</option>
                                 </select>
                             </div>
-                            <div class="col-6">
+                            <div class="col-12 col-md-4">
+                                <label for="editar_id_talla" class="form-label">Talla</label>
+                                <select id="editar_id_talla" name="id_talla" class="form-select form-select-sm" required disabled>
+                                    <option value="">Seleccione un tipo primero</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
                                 <label for="editar_stock_variacion_talla" class="form-label">Stock</label>
                                 <input type="number" id="editar_stock_variacion_talla" name="stock" class="form-control form-control-sm" min="0" step="1" required>
                             </div>

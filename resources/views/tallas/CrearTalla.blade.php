@@ -9,9 +9,21 @@
                 <div class="card-responsive">
                     <form id="formCrearTalla">
                         @csrf
-                        <label for="crear_talla" class="form-label">Nombre de la talla</label>
-                        <input id="crear_talla" name="talla" type="text" class="form-control form-control-sm"
-                            maxlength="20" placeholder="Ejemplo: 39, M, 355 ml" required>
+                        <div class="mb-2">
+                            <label for="crear_talla" class="form-label">Nombre de la talla</label>
+                            <input id="crear_talla" name="talla" type="text" class="form-control form-control-sm"
+                                maxlength="20" placeholder="Ejemplo: 39, M, XL" required>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label for="crear_id_tipo_talla" class="form-label">Tipo de talla</label>
+                                <select id="crear_id_tipo_talla" name="id_tipo_talla" class="form-select form-select-sm" required>
+                                    <option value="">Seleccione</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <small class="text-muted d-block mt-2">Las tallas se asignan a variantes; las medidas de productos se administran por separado.</small>
                     </form>
                 </div>

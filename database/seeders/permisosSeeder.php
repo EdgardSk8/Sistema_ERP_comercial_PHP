@@ -113,6 +113,13 @@ class permisosSeeder extends Seeder
             ['nombre_permiso'=>'cambiar_estado_tallas','descripcion_permiso'=>'Cambiar estado de tallas','modulo_permiso'=>'producto_variaciones'],
             ['nombre_permiso'=>'eliminar_tallas','descripcion_permiso'=>'Eliminar tallas','modulo_permiso'=>'producto_variaciones'],
 
+            /* ═════════════ TIPOS DE TALLA (CRUD dentro de Tallas) ═════════════ */
+            ['nombre_permiso'=>'mostrar_tipos_tallas','descripcion_permiso'=>'Listar tipos o escalas de talla','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'crear_tipos_tallas','descripcion_permiso'=>'Crear tipos de talla','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'editar_tipos_tallas','descripcion_permiso'=>'Consultar tipos de talla para editar','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'actualizar_tipos_tallas','descripcion_permiso'=>'Actualizar tipos de talla','modulo_permiso'=>'producto_variaciones'],
+            ['nombre_permiso'=>'cambiar_estado_tipos_tallas','descripcion_permiso'=>'Cambiar estado de los tipos de talla','modulo_permiso'=>'producto_variaciones'],
+
             /* ═════════════ VENTAS ═════════════ */
             ['nombre_permiso'=>'vista_ventas','descripcion_permiso'=>'Ver vista ventas','modulo_permiso'=>'ventas'],
             ['nombre_permiso'=>'mostrar_ventas','descripcion_permiso'=>'Listar ventas','modulo_permiso'=>'ventas'],

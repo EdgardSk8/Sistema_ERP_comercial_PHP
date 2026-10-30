@@ -17,6 +17,7 @@
     };
     let tabla;
     let tallas = [];
+    let tiposTalla = [];
     let filas = [];
     let previewImagenCrearUrls = [];
     let arrastreImagenGaleria = null;
@@ -111,26 +112,100 @@
         mostrarToast(xhr.responseJSON?.mensaje || xhr.responseJSON?.message || primerError || fallback, 'danger');
     }
 
-    function opcionesTallas() {
-        [
-            { id: '#crear_id_talla', modal: $modalCrearTalla, disponibles: tallas.filter(talla => talla.estado_talla == 1) },
-            { id: '#editar_id_talla', modal: $modalEditarTalla, disponibles: tallas }
-        ].forEach(config => {
-            const $select = $(config.id);
-            if ($.fn.select2 && $select.hasClass('select2-hidden-accessible')) $select.select2('destroy');
-            $select.empty().append(new Option('Seleccione una talla', ''));
-            config.disponibles.forEach(talla => {
-                const nombre = talla.estado_talla == 1 ? talla.talla : `${talla.talla} (Inactiva)`;
-                $select.append(new Option(nombre, talla.id_talla));
-            });
-            if ($.fn.select2) {
-                $select.select2({
-                    width: '100%',
-                    dropdownParent: config.modal,
-                    placeholder: 'Buscar talla',
-                    allowClear: true
+    function tallasDeTipo(idTipo, incluirInactivas = false) {
+        if (!idTipo) return [];
+
+        return tallas.filter(talla => String(talla.id_tipo_talla) === String(idTipo)
+            && (incluirInactivas || talla.estado_talla == 1));
+    }
+
+    /* Los tipos se deducen de las tallas cargadas (evita otra petición). */
+    function tiposDesdeTallas() {
+        const mapa = new Map();
+
+        tallas.forEach(talla => {
+            if (!talla.id_tipo_talla) return;
+
+            const tipo = talla.tipo_talla || {};
+            const clave = String(talla.id_tipo_talla);
+
+            if (!mapa.has(clave)) {
+                mapa.set(clave, {
+                    id_tipo_talla: talla.id_tipo_talla,
+                    nombre_tipo_talla: tipo.nombre_tipo_talla || 'Sin tipo',
+                    estado_tipo_talla: tipo.estado_tipo_talla ?? 1
                 });
             }
+        });
+
+        return [...mapa.values()].sort((a, b) => String(a.nombre_tipo_talla)
+            .localeCompare(String(b.nombre_tipo_talla), 'es', { sensitivity: 'base' }));
+    }
+
+    /* Pinta el Select2 de tallas con las que pertenecen al tipo elegido. */
+    function pintarSelectTalla($select, idTipo, opciones = {}) {
+        const incluirInactivas = Boolean(opciones.incluirInactivas);
+        const valor = opciones.valor ?? '';
+        const disponibles = tallasDeTipo(idTipo, incluirInactivas);
+
+        if ($.fn.select2 && $select.hasClass('select2-hidden-accessible')) $select.select2('destroy');
+
+        $select.empty().append(new Option(
+            idTipo ? (disponibles.length ? 'Seleccione una talla' : 'Sin tallas en este tipo') : 'Seleccione un tipo primero',
+            ''
+        ));
+
+        disponibles.forEach(talla => {
+            const nombre = talla.estado_talla == 1 ? talla.talla : `${talla.talla} (Inactiva)`;
+            $select.append(new Option(nombre, talla.id_talla));
+        });
+
+        $select.prop('disabled', !disponibles.length);
+
+        if ($.fn.select2) {
+            $select.select2({
+                width: '100%',
+                dropdownParent: $select.closest('.modal'),
+                placeholder: 'Buscar talla',
+                allowClear: true
+            });
+        }
+
+        $select.val(valor || '').trigger('change.select2');
+    }
+
+    function opcionesTallas() {
+        [
+            { tipo: '#crear_id_tipo_talla_var', talla: '#crear_id_talla', incluirInactivas: false },
+            { tipo: '#editar_id_tipo_talla_var', talla: '#editar_id_talla', incluirInactivas: true }
+        ].forEach(config => {
+            const $tipo = $(config.tipo);
+            const $talla = $(config.talla);
+
+            if (!$tipo.length || !$talla.length) return;
+
+            if ($.fn.select2 && $tipo.hasClass('select2-hidden-accessible')) $tipo.select2('destroy');
+
+            $tipo.empty().append(new Option('Seleccione un tipo', ''));
+
+            tiposTalla
+                .filter(tipo => tipo.estado_tipo_talla == 1)
+                .forEach(tipo => $tipo.append(new Option(tipo.nombre_tipo_talla, tipo.id_tipo_talla)));
+
+            if ($.fn.select2) {
+                $tipo.select2({
+                    width: '100%',
+                    dropdownParent: $tipo.closest('.modal'),
+                    placeholder: 'Buscar tipo de talla',
+                    allowClear: false
+                });
+            }
+
+            pintarSelectTalla($talla, '', { incluirInactivas: config.incluirInactivas });
+
+            $tipo.off('change.tallas').on('change.tallas', function () {
+                pintarSelectTalla($talla, $(this).val(), { incluirInactivas: config.incluirInactivas });
+            });
         });
     }
 
@@ -148,6 +223,7 @@
             }
 
             tallas = tallasResponse.tallas || [];
+            tiposTalla = tiposDesdeTallas();
             opcionesTallas();
 
             const imagenes = imagenesResponse.imagenes || [];
@@ -806,7 +882,8 @@
         const variacion = filas.find(item => String(item.id_variacion) === String(idVariacion));
         $('#formCrearVariacionTalla')[0].reset();
         $('#crear_talla_id_variacion').val(idVariacion);
-        $('#crear_id_talla').val('').trigger('change');
+        $('#crear_id_tipo_talla_var').val('').trigger('change');
+        $('#crear_id_talla').val('').trigger('change.select2');
         $('#crear_precio_compra_variacion').val(numeroCorto(variacion?.producto?.precio_compra));
         $('#crear_precio_venta_variacion').val(numeroCorto(variacion?.producto?.precio_venta));
         $('#crear_modo_precio_variacion').val('base');
@@ -817,6 +894,7 @@
     $('#formCrearVariacionTalla').off('submit.detalle').on('submit.detalle', function (event) {
         event.preventDefault();
         const idVariacion = $('#crear_talla_id_variacion').val();
+        const idTipo = $('#crear_id_tipo_talla_var').val();
         const idTalla = $('#crear_id_talla').val();
         const stock = Number($('#crear_stock_variacion_talla').val() || 0);
         const precioVentaBase = calcularPrecioBase(
@@ -825,6 +903,7 @@
             $('#crear_modo_precio_variacion').val()
         );
         const repetida = filas.some(fila => String(fila.id_variacion) === String(idVariacion) && fila.tallas.some(talla => String(talla.id_talla) === String(idTalla)));
+        if (!idTipo) return mostrarToast('Seleccione el tipo de talla', 'warning');
         if (!idTalla) return mostrarToast('Seleccione una talla del catalogo', 'warning');
         if (repetida) return mostrarToast('Esa talla ya está asignada a este color', 'warning');
 
@@ -865,7 +944,11 @@
             $('#editar_id_variacion_talla').val(response.variacion_talla.id_variacion_talla);
             $('#editar_id_variacion_talla').data('variacion', response.variacion_talla.id_variacion);
             const variacion = filas.find(item => String(item.id_variacion) === String(response.variacion_talla.id_variacion));
-            $('#editar_id_talla').val(response.variacion_talla.id_talla).trigger('change');
+
+            const tallaEditada = tallas.find(talla => String(talla.id_talla) === String(response.variacion_talla.id_talla));
+            $('#editar_id_tipo_talla_var').val(tallaEditada ? tallaEditada.id_tipo_talla : '').trigger('change');
+            $('#editar_id_talla').val(response.variacion_talla.id_talla).trigger('change.select2');
+
             $('#editar_stock_variacion_talla').val(numeroCorto(response.variacion_talla.stock));
             $('#editar_sku_variacion').val(response.variacion_talla.sku);
             $('#editar_precio_compra_variacion').val(numeroCorto(response.variacion_talla.precio_compra ?? variacion?.producto?.precio_compra));
@@ -879,6 +962,7 @@
     $('#formEditarVariacionTalla').off('submit.detalle').on('submit.detalle', function (event) {
         event.preventDefault();
         const id = $('#editar_id_variacion_talla').val();
+        const idTipo = $('#editar_id_tipo_talla_var').val();
         const idTalla = $('#editar_id_talla').val();
         const stock = Number($('#editar_stock_variacion_talla').val() || 0);
         const precioVentaBase = calcularPrecioBase(
@@ -887,6 +971,7 @@
             $('#editar_modo_precio_variacion').val()
         );
         const repetida = filas.some(fila => String(fila.id_variacion) === String($('#editar_id_variacion_talla').data('variacion')) && fila.tallas.some(talla => String(talla.id_talla) === String(idTalla) && String(talla.id_variacion_talla) !== String(id)));
+        if (!idTipo) return mostrarToast('Seleccione el tipo de talla', 'warning');
         if (!idTalla) return mostrarToast('Seleccione una talla del catalogo', 'warning');
         if (repetida) return mostrarToast('Esa talla ya está asignada a este color', 'warning');
 

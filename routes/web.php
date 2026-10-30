@@ -12,8 +12,7 @@ Route::get('/', function () {
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CajaController;
 use App\Http\Controllers\CargaVistaController;
-use App\Http\Controllers\CategoriaController;
-use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\CategoriaController;use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ClienteWebController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\CredencialesController;
@@ -39,6 +38,7 @@ use App\Http\Controllers\ReseniaController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\RolPermisoController;
 use App\Http\Controllers\TallaController;
+use App\Http\Controllers\TipoTallaController;
 use App\Http\Controllers\TipoGastoController;
 use App\Http\Controllers\TiposMedidasController;
 use App\Http\Controllers\TransferenciaCajaCuentaController;
@@ -409,6 +409,20 @@ Route::put('/tallas/cambiar-estado/{id}', [TallaController::class, 'CambiarEstad
     ->middleware('permiso:cambiar_estado_tallas')->name('tallas.cambiar-estado');
 Route::delete('/tallas/eliminar/{id}', [TallaController::class, 'EliminarTalla'])
     ->middleware('permiso:eliminar_tallas')->name('tallas.eliminar');
+
+/* ╔════════════ Endpoint de Tipos de Talla ════════════╗
+   ╚═════════════════════════════════════════════════════╝ */
+
+Route::get('/tallas/tipos/mostrar', [TipoTallaController::class, 'MostrarTipoTalla'])
+    ->middleware('permiso:mostrar_tipos_tallas')->name('tipos-tallas.mostrar');
+Route::post('/tallas/tipos/crear', [TipoTallaController::class, 'CrearTipoTalla'])
+    ->middleware('permiso:crear_tipos_tallas')->name('tipos-tallas.crear');
+Route::get('/tallas/tipos/editar/{id}', [TipoTallaController::class, 'EditarTipoTalla'])
+    ->middleware('permiso:editar_tipos_tallas')->name('tipos-tallas.editar');
+Route::put('/tallas/tipos/actualizar/{id}', [TipoTallaController::class, 'ActualizarTipoTalla'])
+    ->middleware('permiso:actualizar_tipos_tallas')->name('tipos-tallas.actualizar');
+Route::put('/tallas/tipos/cambiar-estado/{id}', [TipoTallaController::class, 'CambiarEstadoTipoTalla'])
+    ->middleware('permiso:cambiar_estado_tipos_tallas')->name('tipos-tallas.cambiar-estado');
 
 /* ╔════════ Endpoint de Producto Variación ════════╗
    ╚════════════════════════════════════════════════╝ */

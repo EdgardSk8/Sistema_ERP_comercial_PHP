@@ -86,26 +86,100 @@ export default function initMostrarProductoVariaciones() {
     });
 
     // CARGAR PRODUCTOS EN LOS SELECTS
+    let productosVariacion = [];
+
+    /* Productos que ya tienen al menos una variación, según lo que muestra la tabla. */
+    function idsConVariaciones() {
+        return new Set(
+            tabla.rows().data().toArray()
+                .filter(grupo => (grupo.variaciones || []).length)
+                .map(grupo => String(grupo.id_producto))
+        );
+    }
+
+    /* Agrupa el select de "crear": primero los productos sin variaciones. */
+    function pintarProductosCrear() {
+        const $select = $('#crear_id_producto');
+
+        if (!$select.length || !productosVariacion.length) return;
+
+        const conVariaciones = idsConVariaciones();
+        const escapar = (texto) => $('<div>').text(texto ?? '').html();
+        const ordenar = (lista) => lista.sort((a, b) => String(a.nombre_producto)
+            .localeCompare(String(b.nombre_producto), 'es', { sensitivity: 'base' }));
+
+        const sin = ordenar(productosVariacion.filter(p => !conVariaciones.has(String(p.id_producto))));
+        const con = ordenar(productosVariacion.filter(p => conVariaciones.has(String(p.id_producto))));
+
+        let html = '<option value="">Seleccione un producto</option>';
+
+        if (sin.length) {
+            html += `<optgroup label="Sin variaciones (${sin.length})">`
+                + sin.map(p => `<option value="${p.id_producto}">${escapar(p.nombre_producto)}</option>`).join('')
+                + '</optgroup>';
+        }
+
+        if (con.length) {
+            html += `<optgroup label="Con variaciones (${con.length})">`
+                + con.map(p => `<option value="${p.id_producto}">${escapar(p.nombre_producto)}</option>`).join('')
+                + '</optgroup>';
+        }
+
+        $select.html(html).val('');
+
+        /* Las opciones cambiaron: "change" hace que Select2 vuelva a leerlas. */
+        if ($select.hasClass('select2-hidden-accessible')) $select.trigger('change');
+    }
+
     $.get('/producto-variaciones/mostrar-producto',function(response){
         if(!response.success || !Array.isArray(response.productos)){
             mostrarToast(response.mensaje || 'No se pudieron obtener los productos','danger');
             return;
         }
-        ['#crear_id_producto','#editar_id_producto'].forEach(selector => {
-            const select=$(selector);
-            select.html('<option value="">Seleccione un producto</option>');
-            response.productos.forEach(producto => {
-                select.append(`<option value="${producto.id_producto}">${$('<div>').text(producto.nombre_producto).html()}</option>`);
-            });
+
+        productosVariacion = response.productos;
+
+        const selectEditar=$('#editar_id_producto');
+        selectEditar.html('<option value="">Seleccione un producto</option>');
+        response.productos.forEach(producto => {
+            selectEditar.append(`<option value="${producto.id_producto}">${$('<div>').text(producto.nombre_producto).html()}</option>`);
         });
+
         const $productoCrear=$('#crear_id_producto');
         if($productoCrear.hasClass('select2-hidden-accessible')) $productoCrear.select2('destroy');
+
         $productoCrear.select2({
             width:'100%',
             dropdownParent:$('#modalCrearProductoVariacion'),
             placeholder:'Buscar producto',
-            allowClear:false
+            allowClear:false,
+            /* Busca sin importar tildes ni mayúsculas. */
+            matcher:function(params,data){
+                if($.trim(params.term) === '') return data;
+
+                const normalizar = (texto) => String(texto ?? '')
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g,'')
+                    .toLowerCase();
+
+                if(normalizar(data.text).includes(normalizar(params.term))) return data;
+
+                if(data.children){
+                    const coincidencias = data.children.filter(hijo =>
+                        normalizar(hijo.text).includes(normalizar(params.term)));
+
+                    if(coincidencias.length){
+                        const copia = $.extend({}, data);
+                        copia.children = coincidencias;
+                        return copia;
+                    }
+                }
+
+                return null;
+            }
         });
+
+        pintarProductosCrear();
     }).fail(function(xhr){
         mostrarToast(xhr.responseJSON?.mensaje || 'Error al obtener los productos','danger');
     });
@@ -226,6 +300,11 @@ export default function initMostrarProductoVariaciones() {
     $('#modalCrearProductoVariacion')
         .off('hidden.bs.modal.limpiarVariacion')
         .on('hidden.bs.modal.limpiarVariacion', limpiarFormularioVariacion);
+
+    /* Al abrir se reagrupa con los datos más recientes de la tabla. */
+    $('#modalCrearProductoVariacion')
+        .off('shown.bs.modal.agruparProductos')
+        .on('shown.bs.modal.agruparProductos', pintarProductosCrear);
 
 
     // EVENTO DE EDITAR VARIACION

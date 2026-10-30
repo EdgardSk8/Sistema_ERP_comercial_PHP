@@ -15,6 +15,15 @@
                             <label for="editar_talla" class="form-label">Nombre de la talla</label>
                             <input id="editar_talla" name="talla" type="text" class="form-control form-control-sm" maxlength="20" required>
                         </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-12">
+                                <label for="editar_id_tipo_talla" class="form-label">Tipo de talla</label>
+                                <select id="editar_id_tipo_talla" name="id_tipo_talla" class="form-select form-select-sm" required>
+                                    <option value="">Seleccione</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="mb-3">
                             <label class="form-label">Variantes que usan esta talla</label>
                             <input id="editar_variantes_talla" type="text" class="form-control form-control-sm" readonly>
