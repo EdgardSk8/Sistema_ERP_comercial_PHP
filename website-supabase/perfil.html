@@ -366,13 +366,13 @@
 
           <div id="configuracionContenido" hidden>
             <form id="formPassword" class="perfil-card">
-              <h3 class="perfil-card__titulo">Cambiar contraseña</h3>
-              <p class="perfil-card__texto">Usa una contraseña de al menos 6 caracteres.</p>
+              <h3 class="perfil-card__titulo" id="passwordTitulo">Cambiar contraseña</h3>
+              <p class="perfil-card__texto" id="passwordAyuda">Usa una contraseña de al menos 6 caracteres.</p>
 
               <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-4" id="passwordActualCol">
                   <label class="form-label" for="passwordActual">Contraseña actual</label>
-                  <input class="form-control" id="passwordActual" name="password_actual" type="password" autocomplete="current-password" required>
+                  <input class="form-control" id="passwordActual" name="password_actual" type="password" autocomplete="current-password">
                 </div>
 
                 <div class="col-md-4">
@@ -404,10 +404,10 @@
   <script src="/tienda/recursos/js/carrito-store.js?v=20261030g"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/tienda/recursos/js/supabase-config.js"></script>
-  <script src="/tienda/recursos/js/supabase-api.js?v=20261030i"></script>
+  <script src="/tienda/recursos/js/supabase-api.js?v=20261030j"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
   <script src="/tienda/recursos/js/cedula-nicaragua.js"></script>
-  <script src="/tienda/recursos/js/perfil.js?v=20261030g" defer></script>
+  <script src="/tienda/recursos/js/perfil.js?v=20261030j" defer></script>
 </body>
 </html>

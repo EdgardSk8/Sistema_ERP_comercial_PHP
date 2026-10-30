@@ -106,6 +106,15 @@
         };
     }
 
+    /* ¿La cuenta tiene contraseña? Las creadas con Google no la tienen. */
+    function cuentaTienePassword() {
+        if (!usuarioActual) return false;
+
+        return (usuarioActual.identities || []).some((identidad) => identidad.provider === 'email');
+    }
+
+    window.cuentaTienePassword = cuentaTienePassword;
+
     function datosCliente(fila) {
         if (!fila) return null;
 
@@ -446,27 +455,56 @@
 
         const actual = String(cuerpo.password_actual || '');
         const nueva = String(cuerpo.password_nueva || '');
+        const confirmacion = String(cuerpo.password_nueva_confirmation || '');
+        const tienePassword = cuentaTienePassword();
 
-        if (!actual || !nueva || nueva.length < 6) {
-            throw errorApi('La nueva contraseña debe tener al menos 6 caracteres.', 422);
+        if (!nueva || nueva.length < 6) {
+            throw errorApi('La nueva contraseña debe tener al menos 6 caracteres.', 422, {
+                password_nueva: ['La nueva contraseña debe tener al menos 6 caracteres.'],
+            });
         }
 
-        const { error: verificacion } = await supabase.auth.signInWithPassword({
-            email: usuarioActual.email,
-            password: actual,
-        });
-
-        if (verificacion) {
-            throw errorApi('La contraseña actual no es correcta.', 422, {
-                password_actual: ['La contraseña actual no es correcta.'],
+        if (confirmacion && nueva !== confirmacion) {
+            throw errorApi('Las contraseñas no coinciden.', 422, {
+                password_nueva_confirmation: ['Las contraseñas no coinciden.'],
             });
+        }
+
+        /* Una cuenta creada con Google no tiene contraseña: se crea sin pedir la actual. */
+        if (tienePassword) {
+            if (!actual) {
+                throw errorApi('Ingresa tu contraseña actual.', 422, {
+                    password_actual: ['Ingresa tu contraseña actual.'],
+                });
+            }
+
+            const { error: verificacion } = await supabase.auth.signInWithPassword({
+                email: usuarioActual.email,
+                password: actual,
+            });
+
+            if (verificacion) {
+                throw errorApi('La contraseña actual no es correcta.', 422, {
+                    password_actual: ['La contraseña actual no es correcta.'],
+                });
+            }
         }
 
         const { error } = await supabase.auth.updateUser({ password: nueva });
 
-        if (error) throw errorApi('No se pudo cambiar la contraseña.', 400);
+        if (error) throw errorApi('No se pudo actualizar la contraseña.', 400);
 
-        return { success: true, mensaje: 'Contraseña actualizada correctamente.' };
+        /* Refresca el usuario: ahora incluye la identidad de correo. */
+        const { data } = await supabase.auth.getUser();
+
+        if (data?.user) usuarioActual = data.user;
+
+        return {
+            success: true,
+            mensaje: tienePassword
+                ? 'Contraseña actualizada correctamente.'
+                : 'Contraseña creada. Ya puedes entrar también con tu correo.',
+        };
     }
 
     /* ── Direcciones ────────────────────────────────────────── */

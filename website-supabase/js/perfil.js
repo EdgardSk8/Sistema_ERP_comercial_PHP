@@ -232,6 +232,7 @@ async function cargarCuenta() {
     alternarCuenta(true);
     llenarPerfil(cliente);
     mostrarDescuento(cliente.descuento);
+    ajustarFormPassword();
 
     await Promise.allSettled([
         cargarDirecciones(),
@@ -335,14 +336,15 @@ function conectarFormularios() {
         bloquearBoton(boton, true);
 
         try {
-            await window.TiendaAPI.put('/tienda/api/perfil/password', {
-                password_actual: porId('passwordActual').value,
+            const datos = await window.TiendaAPI.put('/tienda/api/perfil/password', {
+                password_actual: porId('passwordActual')?.value || '',
                 password_nueva: porId('passwordNueva').value,
                 password_nueva_confirmation: porId('passwordNuevaConfirm').value,
             });
 
             evento.currentTarget.reset();
-            tiendaToast('Contraseña actualizada correctamente.');
+            tiendaToast(datos?.mensaje || 'Contraseña actualizada correctamente.');
+            ajustarFormPassword();
         } catch (error) {
             mostrarError(error);
         } finally {
@@ -350,6 +352,24 @@ function conectarFormularios() {
             if (texto) boton.textContent = texto;
         }
     });
+}
+
+/* Las cuentas creadas con Google no tienen contraseña: se oculta el campo actual. */
+function ajustarFormPassword() {
+    const tiene = typeof window.cuentaTienePassword === 'function' ? window.cuentaTienePassword() : true;
+    const columna = porId('passwordActualCol');
+    const titulo = porId('passwordTitulo');
+    const ayuda = porId('passwordAyuda');
+
+    if (columna) columna.hidden = !tiene;
+
+    if (titulo) titulo.textContent = tiene ? 'Cambiar contraseña' : 'Crear contraseña';
+
+    if (ayuda) {
+        ayuda.textContent = tiene
+            ? 'Usa una contraseña de al menos 6 caracteres.'
+            : 'Tu cuenta entra con Google. Crea una contraseña para poder entrar también con tu correo.';
+    }
 }
 
 /* ── Direcciones ─────────────────────────────────────────────── */
