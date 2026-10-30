@@ -779,17 +779,20 @@ button { font-family: inherit; }
   margin: 0;
 }
 
-/* "Comprar ahora" va debajo, a todo el ancho */
-.producto__acciones #btnComprar {
-  order: 3;
-  grid-column: 1 / -1;
-  width: 100%;
-}
+.producto__acciones > * { width: 100%; }
+
+/* Matriz 2x2: WhatsApp | Comprar ahora  ·  Añadir al carrito | Favoritos */
+.producto__acciones #btnWhatsapp { order: 1; }
+.producto__acciones #btnComprar { order: 2; }
+.producto__acciones #btnAgregar { order: 3; }
+.producto__acciones #btnFavorito { order: 4; }
 
 .producto__acciones .btn-primario,
-.producto__acciones .btn-secundario {
+.producto__acciones .btn-secundario,
+.producto__acciones .btn-whatsapp {
   height: 36px;
   padding: 0 var(--e-4);
+  border-radius: var(--r-pill);
   font-size: .75rem;
 }
 
@@ -802,6 +805,11 @@ button { font-family: inherit; }
 }
 
 .producto__acciones .btn-secundario:hover { background: var(--primario-medio); }
+
+.producto__acciones .btn-whatsapp:hover {
+  filter: brightness(.95);
+  transform: none;
+}
 
 .btn-primario,
 .btn-secundario {

@@ -28,7 +28,14 @@
     /* ── Utilidades ──────────────────────────────────────────── */
 
     function idProducto() {
+        /* El ID puede venir en la ruta (/tienda/producto/5) o en ?p= (/producto?p=5). */
+        const parametros = new URLSearchParams(location.search);
+        const deQuery = Number(parametros.get('p') || parametros.get('id'));
+
+        if (Number.isFinite(deQuery) && deQuery > 0) return deQuery;
+
         const id = Number(location.pathname.split('/').filter(Boolean).pop());
+
         return Number.isFinite(id) && id > 0 ? id : null;
     }
 
