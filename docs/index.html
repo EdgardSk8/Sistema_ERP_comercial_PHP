@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es" class="tema-navidad">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5EEDE">
+  <link rel="icon" type="image/webp" href="img/logo2.webp">
+  <link rel="apple-touch-icon" href="img/logo2.webp">
+  <title>Tellez Nic Store</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css?v=20261029c">
+  <link rel="stylesheet" href="css/navidad.css?v=20261029r">
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="contenedor">
+      <a class="marca" href="index.html">
+        <img class="marca__logo" src="img/minilogo.png" alt="">
+        Tellez Nic Store
+      </a>
+
+      <nav class="nav-escritorio">
+        <a href="#catalogo">Catálogo</a>
+        <a href="#categorias">Categorías</a>
+      </nav>
+
+      <div class="header-acciones">
+        <a class="icono-btn" href="carrito.html" aria-label="Carrito">
+          <i class="bi bi-bag"></i>
+          <span class="icono-btn__badge" data-carrito-badge hidden>0</span>
+        </a>
+
+        <!-- Visitante: menú de invitado -->
+        <details class="perfil" id="menuInvitado">
+          <summary class="perfil__acceso perfil__boton" aria-label="Cuenta">
+            <i class="bi bi-person-plus"></i>
+          </summary>
+
+          <div class="perfil__menu">
+            <p class="perfil__cabecera">
+              <span class="perfil__nombre">Invitado</span>
+              <span class="perfil__detalle">Sin sesión iniciada</span>
+            </p>
+
+            <ul class="perfil__lista">
+              <li><a class="perfil__item" href="login.html"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</a></li>
+              <li><a class="perfil__item" href="login.html?vista=registro"><i class="bi bi-person-plus"></i> Crear cuenta</a></li>
+            </ul>
+          </div>
+        </details>
+
+        <!-- Cliente con sesión: menú de la cuenta -->
+        <details class="perfil" id="menuPerfil" hidden>
+          <summary class="icono-btn perfil__boton" aria-label="Mi cuenta">
+            <i class="bi bi-person"></i>
+          </summary>
+
+          <div class="perfil__menu">
+            <p class="perfil__cabecera">
+              <span class="perfil__nombre">Invitado</span>
+              <span class="perfil__detalle">Sin sesión iniciada</span>
+            </p>
+
+            <ul class="perfil__lista">
+              <li><a class="perfil__item" href="perfil.html#perfil"><i class="bi bi-person"></i> Perfil</a></li>
+              <li><a class="perfil__item" href="perfil.html#direcciones"><i class="bi bi-geo-alt"></i> Direcciones</a></li>
+              <li><a class="perfil__item" href="perfil.html#favoritos"><i class="bi bi-heart"></i> Favoritos</a></li>
+              <li><a class="perfil__item" href="perfil.html#historial"><i class="bi bi-receipt"></i> Historial de compras</a></li>
+              <li><a class="perfil__item" href="perfil.html#descuentos"><i class="bi bi-ticket-perforated"></i> Descuento</a></li>
+              <li><a class="perfil__item" href="perfil.html#configuracion"><i class="bi bi-gear"></i> Configuración</a></li>
+            </ul>
+
+            <a class="perfil__item perfil__item--salir" href="#">
+              <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </a>
+          </div>
+        </details>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Hero (portada a ancho completo) ──────────────────── -->
+  <section class="hero">
+    <div class="hero__cuerpo">
+      <span class="hero__etiqueta">Nueva colección</span>
+      <h1 class="hero__titulo">Para nosotros, tu experiencia es lo más importante</h1>
+      <p class="hero__texto">Piezas atemporales, hechas para durar</p>
+      <a class="hero__btn" href="#catalogo">
+        Ver colección <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <!-- ── Beneficios (pie de la portada) ───────────────────── -->
+    <ul class="beneficios">
+      <li class="beneficios__item">
+        <i class="bi bi-truck"></i> Envíos a región occidente, central y norte
+      </li>
+      <li class="beneficios__item">
+        <i class="bi bi-headset"></i> Atención al cliente personalizada
+      </li>
+        <li class="beneficios__item">
+          <i class="bi bi-credit-card-2-front"></i> Flexibilidad en métodos de pago
+        </li>
+    </ul>
+  </section>
+
+  <!-- ── Buscador ──────────────────────────────────────────── -->
+  <div class="contenedor">
+    <form class="buscador" role="search" onsubmit="return false;">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <input class="buscador__campo" id="buscadorProductos" type="search"
+             placeholder="Buscar productos…" aria-label="Buscar productos" autocomplete="off">
+    </form>
+
+    <!-- ── Filtros ─────────────────────────────────────────── -->
+    <details class="filtros" id="filtrosCatalogo">
+      <summary class="filtros__boton">
+        <i class="bi bi-sliders" aria-hidden="true"></i> Filtros
+        <span class="filtros__resumen" id="filtrosResumen" hidden></span>
+      </summary>
+
+      <div class="filtros__panel">
+        <div class="filtros__fila">
+
+          <div class="filtros__col">
+            <p class="filtros__titulo">Talla</p>
+
+            <select id="filtroTallas" class="filtros__tallas" multiple="multiple"
+                    aria-label="Filtrar por talla"></select>
+          </div>
+
+          <div class="filtros__col">
+            <p class="filtros__titulo">Rango de precio</p>
+
+            <div class="filtros__valores">
+              <span class="filtros__valor" id="precioMinEtiqueta">C$ 100.00</span>
+              <span class="filtros__valor" id="precioMaxEtiqueta">C$ 2,000.00</span>
+            </div>
+
+            <div class="filtros__slider" id="sliderPrecio">
+              <div class="filtros__pista"></div>
+              <div class="filtros__rango-activo" id="sliderRango"></div>
+              <input type="range" id="precioMin" min="100" max="2000" step="100" value="100"
+                     aria-label="Precio mínimo">
+              <input type="range" id="precioMax" min="100" max="2000" step="100" value="2000"
+                     aria-label="Precio máximo">
+            </div>
+          </div>
+
+        </div>
+
+        <p class="filtros__ayuda" id="filtrosAyuda"></p>
+
+        <div class="filtros__acciones">
+          <button type="button" class="filtros__limpiar" id="btnLimpiarFiltros">Limpiar</button>
+          <button type="button" class="filtros__aplicar" id="btnAplicarFiltros">Aplicar filtro</button>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <main class="contenedor">
+
+    <!-- ── Categorías (círculos) ────────────────────────────── -->
+    <section class="seccion" id="categorias">
+      <div class="seccion__cabecera">
+        <h2 class="seccion__titulo">Categorías</h2>
+        <a class="seccion__enlace" href="#catalogo">Ver todo</a>
+      </div>
+
+      <div class="cat-grid" id="catGrid">
+        <p class="catalogo-vacio">Cargando categorías…</p>
+      </div>
+    </section>
+
+    <!-- ── Catálogo ─────────────────────────────────────────── -->
+    <section class="seccion" id="catalogo">
+      <div class="seccion__cabecera">
+        <h2 class="seccion__titulo">Catálogo</h2>
+        <span class="seccion__enlace" id="catalogoContador"></span>
+      </div>
+
+      <div class="grid-productos" id="catalogoGrid" aria-live="polite">
+        <p class="catalogo-vacio">Cargando productos…</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <div class="pie__grid">
+
+        <div class="pie__bloque pie__bloque--marca">
+          <a class="marca" href="index.html">Tellez Nic Store</a>
+          <p class="pie__eslogan">Para nosotros, tu experiencia es lo más importante.</p>
+
+          <div class="pie__redes">
+            <a href="https://www.instagram.com/tellez.store.nic/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <i class="bi bi-instagram"></i>
+            </a>
+            <a href="https://www.facebook.com/profile.php?id=61594097712925" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <i class="bi bi-facebook"></i>
+            </a>
+            <a href="https://wa.me/50584774288" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+              <i class="bi bi-whatsapp"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="pie__bloque">
+          <h3 class="pie__titulo">Contacto</h3>
+          <ul class="pie__lista">
+            <li>
+              <i class="bi bi-envelope"></i>
+              <a href="mailto:tellezstorenic@gmail.com">tellezstorenic@gmail.com</a>
+            </li>
+            <li>
+              <i class="bi bi-whatsapp"></i>
+              <a href="https://wa.me/50584774288" target="_blank" rel="noopener noreferrer">+505 8477 4288</a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="pie__bloque">
+          <h3 class="pie__titulo">Pagos</h3>
+          <ul class="pie__lista">
+            <li><i class="bi bi-credit-card"></i> Lafise</li>
+            <li><i class="bi bi-phone"></i> Billetera móvil</li>
+            <li><i class="bi bi-cash-coin"></i> Efectivo</li>
+          </ul>
+        </div>
+
+        <div class="pie__bloque pie__bloque--mapa">
+          <h3 class="pie__titulo">Ubicación</h3>
+          <div class="pie__mapa">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d487.0490881321431!2d-86.84733917589323!3d12.423534455595828!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTLCsDI1JzI0LjciTiA4NsKwNTAnNTAuMSJX!5e0!3m2!1ses-419!2sni!4v1792555478726!5m2!1ses-419!2sni"
+              title="Ubicación de Tellez Nic Store"
+              loading="lazy"
+              allowfullscreen=""
+              referrerpolicy="strict-origin-when-cross-origin"></iframe>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="pie__legal">© 2026 Tellez Nic Store · Todos los derechos reservados</p>
+    </div>
+  </footer>
+
+  <!-- ── Scripts ────────────────────────────────────────────── -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="js/carrito-store.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase-api.js"></script>
+  <script src="js/tienda.js?v=20261029d" defer></script>
+</body>
+</html>

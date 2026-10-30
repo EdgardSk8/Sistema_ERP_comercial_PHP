@@ -1,0 +1,317 @@
+{
+    "nota":  "Tabla orientativa de equivalencias. La talla real cambia entre marcas y modelos (hasta ±1 talla). Lo más fiable es medir el pie en cm y comparar con la columna cm.",
+    "medir":  "Pisa una hoja con el talón pegado a la pared, marca la punta del dedo más largo y mide la distancia en cm. Suma 0.5 cm de holgura.",
+    "unidad_cm":  "largo del pie en centímetros",
+    "tallas":  [
+                   {
+                       "eu":  20,
+                       "cm":  11.8,
+                       "pulgadas":  4.6,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "3.5C",
+                       "uk":  "3",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  21,
+                       "cm":  12.5,
+                       "pulgadas":  4.9,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "4.5C",
+                       "uk":  "4",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  22,
+                       "cm":  13.2,
+                       "pulgadas":  5.2,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "5.5C",
+                       "uk":  "5",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  23,
+                       "cm":  13.8,
+                       "pulgadas":  5.4,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "6C",
+                       "uk":  "5.5",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  24,
+                       "cm":  14.5,
+                       "pulgadas":  5.7,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "7C",
+                       "uk":  "6.5",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  25,
+                       "cm":  15.2,
+                       "pulgadas":  6,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "7.5C",
+                       "uk":  "7",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  26,
+                       "cm":  15.8,
+                       "pulgadas":  6.2,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "8.5C",
+                       "uk":  "8",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  27,
+                       "cm":  16.5,
+                       "pulgadas":  6.5,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "9.5C",
+                       "uk":  "9",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  28,
+                       "cm":  17.2,
+                       "pulgadas":  6.8,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "10C",
+                       "uk":  "9.5",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  29,
+                       "cm":  17.8,
+                       "pulgadas":  7,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "11C",
+                       "uk":  "10.5",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  30,
+                       "cm":  18.5,
+                       "pulgadas":  7.3,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "11.5C",
+                       "uk":  "11",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  31,
+                       "cm":  19.2,
+                       "pulgadas":  7.6,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "12.5C",
+                       "uk":  "12",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  32,
+                       "cm":  19.8,
+                       "pulgadas":  7.8,
+                       "us_hombre":  null,
+                       "us_mujer":  null,
+                       "us_nino":  "13C",
+                       "uk":  "12.5",
+                       "mx":  null
+                   },
+                   {
+                       "eu":  33,
+                       "cm":  20.5,
+                       "pulgadas":  8.1,
+                       "us_hombre":  "1.5",
+                       "us_mujer":  "3",
+                       "us_nino":  null,
+                       "uk":  "1",
+                       "mx":  "1.5"
+                   },
+                   {
+                       "eu":  34,
+                       "cm":  21.2,
+                       "pulgadas":  8.3,
+                       "us_hombre":  "2.5",
+                       "us_mujer":  "4",
+                       "us_nino":  null,
+                       "uk":  "2",
+                       "mx":  "2.5"
+                   },
+                   {
+                       "eu":  35,
+                       "cm":  21.8,
+                       "pulgadas":  8.6,
+                       "us_hombre":  "3",
+                       "us_mujer":  "4.5",
+                       "us_nino":  null,
+                       "uk":  "2.5",
+                       "mx":  "3"
+                   },
+                   {
+                       "eu":  36,
+                       "cm":  22.5,
+                       "pulgadas":  8.9,
+                       "us_hombre":  "4",
+                       "us_mujer":  "5.5",
+                       "us_nino":  null,
+                       "uk":  "3.5",
+                       "mx":  "4"
+                   },
+                   {
+                       "eu":  37,
+                       "cm":  23.2,
+                       "pulgadas":  9.1,
+                       "us_hombre":  "4.5",
+                       "us_mujer":  "6",
+                       "us_nino":  null,
+                       "uk":  "4",
+                       "mx":  "4.5"
+                   },
+                   {
+                       "eu":  38,
+                       "cm":  23.8,
+                       "pulgadas":  9.4,
+                       "us_hombre":  "5.5",
+                       "us_mujer":  "7",
+                       "us_nino":  null,
+                       "uk":  "5",
+                       "mx":  "5.5"
+                   },
+                   {
+                       "eu":  39,
+                       "cm":  24.5,
+                       "pulgadas":  9.6,
+                       "us_hombre":  "6",
+                       "us_mujer":  "7.5",
+                       "us_nino":  null,
+                       "uk":  "5.5",
+                       "mx":  "6"
+                   },
+                   {
+                       "eu":  40,
+                       "cm":  25.2,
+                       "pulgadas":  9.9,
+                       "us_hombre":  "7",
+                       "us_mujer":  "8.5",
+                       "us_nino":  null,
+                       "uk":  "6.5",
+                       "mx":  "7"
+                   },
+                   {
+                       "eu":  41,
+                       "cm":  25.8,
+                       "pulgadas":  10.2,
+                       "us_hombre":  "8",
+                       "us_mujer":  "9.5",
+                       "us_nino":  null,
+                       "uk":  "7.5",
+                       "mx":  "8"
+                   },
+                   {
+                       "eu":  42,
+                       "cm":  26.5,
+                       "pulgadas":  10.4,
+                       "us_hombre":  "8.5",
+                       "us_mujer":  "10",
+                       "us_nino":  null,
+                       "uk":  "8",
+                       "mx":  "8.5"
+                   },
+                   {
+                       "eu":  43,
+                       "cm":  27.2,
+                       "pulgadas":  10.7,
+                       "us_hombre":  "9.5",
+                       "us_mujer":  "11",
+                       "us_nino":  null,
+                       "uk":  "9",
+                       "mx":  "9.5"
+                   },
+                   {
+                       "eu":  44,
+                       "cm":  27.8,
+                       "pulgadas":  10.9,
+                       "us_hombre":  "10",
+                       "us_mujer":  "11.5",
+                       "us_nino":  null,
+                       "uk":  "9.5",
+                       "mx":  "10"
+                   },
+                   {
+                       "eu":  45,
+                       "cm":  28.5,
+                       "pulgadas":  11.2,
+                       "us_hombre":  "11",
+                       "us_mujer":  "12.5",
+                       "us_nino":  null,
+                       "uk":  "10.5",
+                       "mx":  "11"
+                   },
+                   {
+                       "eu":  46,
+                       "cm":  29.2,
+                       "pulgadas":  11.5,
+                       "us_hombre":  "11.5",
+                       "us_mujer":  "13",
+                       "us_nino":  null,
+                       "uk":  "11",
+                       "mx":  "11.5"
+                   },
+                   {
+                       "eu":  47,
+                       "cm":  29.8,
+                       "pulgadas":  11.7,
+                       "us_hombre":  "12.5",
+                       "us_mujer":  "14",
+                       "us_nino":  null,
+                       "uk":  "12",
+                       "mx":  "12.5"
+                   },
+                   {
+                       "eu":  48,
+                       "cm":  30.5,
+                       "pulgadas":  12,
+                       "us_hombre":  "13.5",
+                       "us_mujer":  "15",
+                       "us_nino":  null,
+                       "uk":  "13",
+                       "mx":  "13.5"
+                   },
+                   {
+                       "eu":  49,
+                       "cm":  31.2,
+                       "pulgadas":  12.3,
+                       "us_hombre":  "14",
+                       "us_mujer":  "15.5",
+                       "us_nino":  null,
+                       "uk":  "13.5",
+                       "mx":  "14"
+                   },
+                   {
+                       "eu":  50,
+                       "cm":  31.8,
+                       "pulgadas":  12.5,
+                       "us_hombre":  "15",
+                       "us_mujer":  "16.5",
+                       "us_nino":  null,
+                       "uk":  "14.5",
+                       "mx":  "15"
+                   }
+               ]
+}

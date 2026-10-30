@@ -85,6 +85,9 @@ class CredencialesController extends Controller
                     'telefono_empresa' => $request->telefono_empresa,
                     'correo_empresa' => $request->correo_empresa,
                     'tipo_cambio' => $request->tipo_cambio,
+                    'tarifa_km' => $request->tarifa_km,
+                    'latitud_empresa' => $request->latitud_empresa,
+                    'longitud_empresa' => $request->longitud_empresa,
                 ],
                 [
                     'nombre_empresa' => ['nullable', 'max:100'],
@@ -93,6 +96,9 @@ class CredencialesController extends Controller
                     'telefono_empresa' => ['nullable', 'max:20'],
                     'correo_empresa' => ['nullable', 'email', 'max:100'],
                     'tipo_cambio' => ['required', 'numeric'],
+                    'tarifa_km' => ['nullable', 'numeric', 'min:0'],
+                    'latitud_empresa' => ['nullable', 'numeric', 'between:-90,90'],
+                    'longitud_empresa' => ['nullable', 'numeric', 'between:-180,180'],
                 ],
                 [
                     'nombre_empresa.' => 'El nombre de la empresa es obligatorio.',
@@ -117,6 +123,9 @@ class CredencialesController extends Controller
             $credenciales->telefono_empresa = $request->telefono_empresa;
             $credenciales->correo_empresa = $request->correo_empresa;
             $credenciales->tipo_cambio = $request->tipo_cambio;
+            $credenciales->tarifa_km = $request->filled('tarifa_km') ? $request->tarifa_km : null;
+            $credenciales->latitud_empresa = $request->filled('latitud_empresa') ? $request->latitud_empresa : null;
+            $credenciales->longitud_empresa = $request->filled('longitud_empresa') ? $request->longitud_empresa : null;
 
             $credenciales->save();
 

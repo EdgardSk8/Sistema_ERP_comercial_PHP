@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" role="img" aria-label="Suéter tejido">
+  <rect width="600" height="800" fill="#EFE6D4"/>
+  <circle cx="300" cy="380" r="230" fill="#E8DCC4"/>
+  <g fill="#F9F3E6" stroke="#22252A" stroke-width="6" stroke-linejoin="round">
+    <path d="M232 214 L168 244 L112 398 L176 428 L206 352 L206 626 L394 626 L394 352 L424 428 L488 398 L432 244 L368 214 Q300 262 232 214 Z"/>
+    <path d="M232 214 Q300 262 368 214" fill="none"/>
+  </g>
+  <g stroke="#22252A" stroke-width="2.5" opacity=".35" fill="none">
+    <path d="M206 330 H394"/>
+    <path d="M206 368 H394"/>
+    <path d="M206 406 H394"/>
+    <path d="M206 444 H394"/>
+    <path d="M206 482 H394"/>
+    <path d="M206 520 H394"/>
+    <path d="M206 558 H394"/>
+    <path d="M206 596 H394"/>
+  </g>
+</svg>

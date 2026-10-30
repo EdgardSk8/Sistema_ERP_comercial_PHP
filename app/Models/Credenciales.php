@@ -17,9 +17,11 @@ class Credenciales extends Model
         'telefono_empresa',
         'correo_empresa',
         'logo_empresa',
-        'tipo_cambio' 
+        'tipo_cambio',
+        'tarifa_km',
+        'latitud_empresa',
+        'longitud_empresa',
     ];
-
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es" class="tema-navidad">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5EEDE">
+  <link rel="icon" type="image/webp" href="img/logo2.webp">
+  <link rel="apple-touch-icon" href="img/logo2.webp">
+  <title>Producto · Tellez Nic Store</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css?v=20261029c">
+  <link rel="stylesheet" href="css/navidad.css?v=20261029r">
+</head>
+<body class="pagina-producto">
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="contenedor">
+      <a class="icono-btn" href="index.html" aria-label="Volver">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+
+      <a class="marca" href="index.html">
+        <img class="marca__logo" src="img/minilogo.png" alt="">
+        Tellez Nic Store
+      </a>
+
+      <div class="header-acciones">
+        <a class="icono-btn" href="carrito.html" aria-label="Carrito">
+          <i class="bi bi-bag"></i>
+          <span class="icono-btn__badge" data-carrito-badge hidden>0</span>
+        </a>
+
+        <!-- Visitante: menú de invitado -->
+        <details class="perfil" id="menuInvitado">
+          <summary class="perfil__acceso perfil__boton" aria-label="Cuenta">
+            <i class="bi bi-person-plus"></i>
+          </summary>
+
+          <div class="perfil__menu">
+            <p class="perfil__cabecera">
+              <span class="perfil__nombre">Invitado</span>
+              <span class="perfil__detalle">Sin sesión iniciada</span>
+            </p>
+
+            <ul class="perfil__lista">
+              <li><a class="perfil__item" href="login.html"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</a></li>
+              <li><a class="perfil__item" href="login.html?vista=registro"><i class="bi bi-person-plus"></i> Crear cuenta</a></li>
+            </ul>
+          </div>
+        </details>
+
+        <!-- Cliente con sesión: menú de la cuenta -->
+        <details class="perfil" id="menuPerfil" hidden>
+          <summary class="icono-btn perfil__boton" aria-label="Mi cuenta">
+            <i class="bi bi-person"></i>
+          </summary>
+
+          <div class="perfil__menu">
+            <p class="perfil__cabecera">
+              <span class="perfil__nombre">Invitado</span>
+              <span class="perfil__detalle">Sin sesión iniciada</span>
+            </p>
+
+            <ul class="perfil__lista">
+              <li><a class="perfil__item" href="perfil.html#perfil"><i class="bi bi-person"></i> Perfil</a></li>
+              <li><a class="perfil__item" href="perfil.html#direcciones"><i class="bi bi-geo-alt"></i> Direcciones</a></li>
+              <li><a class="perfil__item" href="perfil.html#favoritos"><i class="bi bi-heart"></i> Favoritos</a></li>
+              <li><a class="perfil__item" href="perfil.html#historial"><i class="bi bi-receipt"></i> Historial de compras</a></li>
+              <li><a class="perfil__item" href="perfil.html#descuentos"><i class="bi bi-ticket-perforated"></i> Descuento</a></li>
+              <li><a class="perfil__item" href="perfil.html#configuracion"><i class="bi bi-gear"></i> Configuración</a></li>
+            </ul>
+
+            <a class="perfil__item perfil__item--salir" href="#">
+              <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </a>
+          </div>
+        </details>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Detalle ─────────────────────────────────────────────── -->
+  <main class="producto" id="productoDetalle">
+
+    <!-- Título y descripción encima de la imagen grande -->
+    <div class="producto__cabecera">
+      <div class="producto__titulo-fila">
+        <h1 class="producto__nombre" id="productoNombre">Cargando…</h1>
+        <button class="btn-compartir" type="button" id="btnCompartir" aria-label="Compartir producto">
+          <i class="bi bi-share"></i> Compartir
+        </button>
+      </div>
+
+      <!-- Calificación promedio (estilo Amazon) -->
+      <a class="producto__rating" id="productoRating" href="#resenias" hidden>
+        <span class="estrellas" id="productoRatingEstrellas" aria-hidden="true"></span>
+        <span class="producto__rating-num" id="productoRatingNum">0.0</span>
+        <span class="producto__rating-texto" id="productoRatingTexto">Sin opiniones</span>
+      </a>
+
+      <p class="producto__descripcion" id="productoDescripcion"></p>
+    </div>
+
+    <div class="producto__media">
+      <div class="galeria">
+        <!-- Imagen grande en carrusel (Splide) -->
+        <div class="galeria__principal">
+          <div class="splide" id="galeriaCarrusel" aria-label="Imágenes del producto">
+            <div class="splide__track">
+              <ul class="splide__list" id="galeriaPrincipalLista"></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Miniaturas cuadradas debajo -->
+        <div class="galeria__minis" id="galeriaMinis"></div>
+      </div>
+    </div>
+
+    <div class="producto__panel">
+      <div class="producto__precios">
+        <span class="producto__precio-etiqueta">Precio</span>
+        <span class="producto__precio" id="productoPrecio">—</span>
+        <span class="producto__nota" id="productoImpuesto"></span>
+      </div>
+
+      <span class="producto__categoria" hidden>Categoría: <span id="productoCategoria">Cargando…</span></span>
+
+      <!-- Talla -->
+      <div class="opcion opcion--tallas">
+        <p class="opcion__titulo">Tallas</p>
+        <div class="tallas" id="productoTallas"></div>
+        <label class="tallas__equiv" id="tallasEquiv" aria-live="polite"></label>
+      </div>
+
+      <!-- Color (después de las tallas) -->
+      <div class="opcion opcion--color">
+        <p class="opcion__titulo">
+          Colores <span class="opcion__valor" id="colorSeleccionado"></span>
+        </p>
+        <div class="colores" id="productoColores"></div>
+      </div>
+
+      <!-- Guía de tallas (ocupa todo el ancho del panel) -->
+      <details class="guia-tallas" id="guiaTallas" hidden>
+        <summary class="guia-tallas__boton">Guía de tallas · EU / US / UK / cm</summary>
+        <div class="guia-tallas__scroll">
+          <table class="guia-tallas__tabla">
+            <thead>
+              <tr><th>EU</th><th>US H</th><th>US M</th><th>UK</th><th>cm</th></tr>
+            </thead>
+            <tbody id="guiaTallasCuerpo"></tbody>
+          </table>
+        </div>
+        <p class="guia-tallas__nota" id="guiaTallasNota"></p>
+      </details>
+
+      <!-- Acciones (estilo Amazon: debajo del detalle) -->
+      <div class="producto__acciones">
+        <button class="btn-primario" type="button" id="btnComprar">
+          Comprar ahora
+        </button>
+        <button class="btn-secundario" type="button" id="btnAgregar">
+          <i class="bi bi-bag-plus me-2"></i> Añadir al carrito
+        </button>
+        <button class="btn-secundario" type="button" id="btnFavorito">
+          <i class="bi bi-heart me-2"></i> Favoritos
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ── Opiniones de clientes ───────────────────────────────── -->
+  <section class="resenias" id="resenias">
+    <div class="contenedor">
+
+      <div class="seccion__cabecera">
+        <h2 class="seccion__titulo">Opiniones de clientes</h2>
+      </div>
+
+      <div class="resenias__grid">
+
+        <!-- Resumen de calificaciones -->
+        <aside class="resenias__resumen" aria-label="Resumen de calificaciones">
+          <div class="resenias__global">
+            <span class="resenias__nota" id="reseniasPromedio">0.0</span>
+            <span class="resenias__de">de 5</span>
+          </div>
+          <span class="estrellas estrellas--lg" id="reseniasPromedioEstrellas" aria-hidden="true"></span>
+          <p class="resenias__total" id="reseniasTotal">Sin opiniones</p>
+          <div class="resenias__histograma" id="reseniasHistograma"></div>
+        </aside>
+
+        <!-- Formulario + lista -->
+        <div class="resenias__contenido">
+
+          <!-- Aviso para visitantes sin sesión -->
+          <div class="resenias__invitado" id="reseniasInvitado" hidden>
+            <p class="resenias__invitado-texto">
+              <strong>Inicia sesión</strong> para calificar y opinar sobre este producto.
+            </p>
+            <a class="btn-secundario" href="login.html">Iniciar sesión</a>
+          </div>
+
+          <!-- Acciones de opiniones -->
+          <div class="resenias__acciones">
+            <button class="btn-primario resenias__abrir" type="button" id="btnAbrirResenia" hidden>
+              <i class="bi bi-pencil-square me-2"></i> Escribir una opinión
+            </button>
+
+            <button class="btn-secundario resenias__ver" type="button" id="btnVerResenias"
+                    aria-expanded="false" aria-controls="desplegarResenias">
+              <i class="bi bi-chat-square-text me-2"></i> Mostrar reseñas
+            </button>
+          </div>
+
+          <!-- Formulario (solo clientes registrados) -->
+          <div class="resenias__desplegable" id="desplegableResenia" hidden>
+            <form class="resenias__form" id="formResenia" novalidate>
+            <h3 class="resenias__form-titulo" id="reseniasFormTitulo">Escribe tu opinión</h3>
+
+            <div class="resenias__selector-fila">
+              <div class="resenias__estrellas" id="reseniasSelector" role="radiogroup" aria-label="Tu calificación">
+                <button class="resenias__estrella" type="button" data-valor="1" role="radio" aria-checked="false" aria-label="1 estrella"><i class="bi bi-star"></i></button>
+                <button class="resenias__estrella" type="button" data-valor="2" role="radio" aria-checked="false" aria-label="2 estrellas"><i class="bi bi-star"></i></button>
+                <button class="resenias__estrella" type="button" data-valor="3" role="radio" aria-checked="false" aria-label="3 estrellas"><i class="bi bi-star"></i></button>
+                <button class="resenias__estrella" type="button" data-valor="4" role="radio" aria-checked="false" aria-label="4 estrellas"><i class="bi bi-star"></i></button>
+                <button class="resenias__estrella" type="button" data-valor="5" role="radio" aria-checked="false" aria-label="5 estrellas"><i class="bi bi-star"></i></button>
+              </div>
+              <span class="resenias__valor" id="reseniasValorTexto">Selecciona una calificación</span>
+            </div>
+
+            <textarea class="resenias__campo" id="reseniasComentario" rows="1" maxlength="1000"
+                      placeholder="Cuéntanos qué te pareció el producto (opcional)"></textarea>
+
+            <div class="resenias__form-pie">
+              <span class="resenias__contador" id="reseniasContador">0/1000</span>
+              <div class="resenias__form-acciones">
+                <button class="btn-secundario" type="button" id="btnCancelarResenia" hidden>Cancelar</button>
+                <button class="btn-primario" type="submit" id="btnGuardarResenia">Publicar opinión</button>
+              </div>
+            </div>
+            </form>
+          </div>
+
+          <!-- Contenedor desplegable -->
+          <div class="resenias__desplegar" id="desplegarResenias">
+            <div class="resenias__desplegar-interior">
+
+              <!-- Barra de la lista -->
+              <div class="resenias__barra" id="reseniasBarra" hidden>
+                <button class="resenias__tab is-activo" type="button" id="btnMasRecientes">Más recientes</button>
+                <button class="resenias__tab" type="button" id="btnCargarTodos">Cargar todos</button>
+              </div>
+
+              <!-- Lista de opiniones con scroll interno -->
+              <div class="resenias__scroll">
+                <div class="resenias__lista" id="reseniasLista"></div>
+
+                <div class="resenias__vacio" id="reseniasVacio" hidden>
+                  <i class="bi bi-chat-square-text"></i>
+                  <p>Todavía no hay opiniones de este producto.</p>
+                  <span>Sé el primero en compartir tu experiencia.</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Productos relacionados ─────────────────────────────── -->
+  <section class="relacionados" id="relacionados" hidden>
+    <div class="contenedor">
+      <div class="seccion__cabecera">
+        <h2 class="seccion__titulo">Productos relacionados</h2>
+      </div>
+
+      <div class="splide relacionados__carrusel" id="relacionadosCarrusel" aria-label="Productos relacionados">
+        <div class="splide__track">
+          <ul class="splide__list" id="relacionadosGrid"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <div class="pie__grid">
+
+        <div class="pie__bloque pie__bloque--marca">
+          <a class="marca" href="index.html">Tellez Nic Store</a>
+          <p class="pie__eslogan">Para nosotros, tu experiencia es lo más importante.</p>
+
+          <div class="pie__redes">
+            <a href="https://www.instagram.com/tellez.store.nic/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <i class="bi bi-instagram"></i>
+            </a>
+            <a href="https://www.facebook.com/profile.php?id=61594097712925" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <i class="bi bi-facebook"></i>
+            </a>
+            <a href="https://wa.me/50584774288" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+              <i class="bi bi-whatsapp"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="pie__bloque">
+          <h3 class="pie__titulo">Contacto</h3>
+          <ul class="pie__lista">
+            <li>
+              <i class="bi bi-envelope"></i>
+              <a href="mailto:tellezstorenic@gmail.com">tellezstorenic@gmail.com</a>
+            </li>
+            <li>
+              <i class="bi bi-whatsapp"></i>
+              <a href="https://wa.me/50584774288" target="_blank" rel="noopener noreferrer">+505 8477 4288</a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="pie__bloque">
+          <h3 class="pie__titulo">Pagos</h3>
+          <ul class="pie__lista">
+            <li><i class="bi bi-credit-card"></i> Lafise</li>
+            <li><i class="bi bi-phone"></i> Billetera móvil</li>
+            <li><i class="bi bi-cash-coin"></i> Efectivo</li>
+          </ul>
+        </div>
+
+        <div class="pie__bloque pie__bloque--mapa">
+          <h3 class="pie__titulo">Ubicación</h3>
+          <div class="pie__mapa">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d487.0490881321431!2d-86.84733917589323!3d12.423534455595828!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTLCsDI1JzI0LjciTiA4NsKwNTAnNTAuMSJX!5e0!3m2!1ses-419!2sni!4v1792555478726!5m2!1ses-419!2sni"
+              title="Ubicación de Tellez Nic Store"
+              loading="lazy"
+              allowfullscreen=""
+              referrerpolicy="strict-origin-when-cross-origin"></iframe>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="pie__legal">© 2026 Tellez Nic Store · Todos los derechos reservados</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+  <script src="js/carrito-store.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase-api.js"></script>
+  <script src="js/producto.js?v=20261029a" defer></script>
+  <script src="js/resenias.js" defer></script>
+</body>
+</html>

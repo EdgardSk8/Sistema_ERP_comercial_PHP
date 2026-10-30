@@ -244,6 +244,9 @@ export default function initCredenciales() {
                 telefono_empresa: $('#editar_telefono_empresa').val(),
                 correo_empresa: $('#editar_correo_empresa').val(),
                 tipo_cambio: $('#editar_tipo_cambio').val(), // ✅ SOLO ESTO
+                tarifa_km: $('#editar_tarifa_km').val(),
+                latitud_empresa: $('#editar_latitud_empresa').val(),
+                longitud_empresa: $('#editar_longitud_empresa').val(),
                 _token: $('meta[name="csrf-token"]').attr('content'),
                 _method: 'PUT' // ✅ importante para Laravel
             };
@@ -329,6 +332,9 @@ export default function initCredenciales() {
             $('#editar_telefono_empresa').val(empresa.telefono_empresa);
             $('#editar_correo_empresa').val(empresa.correo_empresa);
             $('#editar_tipo_cambio').val(empresa.tipo_cambio); // ✅ SOLO ESTO
+            $('#editar_tarifa_km').val(empresa.tarifa_km);
+            $('#editar_latitud_empresa').val(empresa.latitud_empresa);
+            $('#editar_longitud_empresa').val(empresa.longitud_empresa);
 
             // ==========================
             // ABRIR MODAL

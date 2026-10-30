@@ -79,6 +79,42 @@
                                 min="0">
                         </div>
 
+                        <div class="col-12">
+                            <hr class="my-1">
+                            <small class="text-muted">Envío por distancia</small>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Tarifa por km (C$)</label>
+                            <input
+                                type="number"
+                                id="editar_tarifa_km"
+                                class="form-control form-control-sm"
+                                placeholder="Ej. 15.00"
+                                step="0.01"
+                                min="0">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Latitud del negocio</label>
+                            <input
+                                type="number"
+                                id="editar_latitud_empresa"
+                                class="form-control form-control-sm"
+                                placeholder="Ej. 12.1364000"
+                                step="0.0000001">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Longitud del negocio</label>
+                            <input
+                                type="number"
+                                id="editar_longitud_empresa"
+                                class="form-control form-control-sm"
+                                placeholder="Ej. -86.2514000"
+                                step="0.0000001">
+                        </div>
+
                     </form>
 
                 </div>

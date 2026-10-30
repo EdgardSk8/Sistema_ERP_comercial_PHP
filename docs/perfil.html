@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es" class="tema-navidad">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5EEDE">
+  <link rel="icon" type="image/webp" href="img/logo2.webp">
+  <link rel="apple-touch-icon" href="img/logo2.webp">
+  <title>Mi perfil · Tellez Nic Store</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="css/estilos.css?v=20261029c">
+  <link rel="stylesheet" href="css/perfil.css">
+  <link rel="stylesheet" href="css/navidad.css?v=20261029r">
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="contenedor">
+      <a class="icono-btn" href="index.html" aria-label="Volver">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+
+      <a class="marca" href="index.html">
+        <img class="marca__logo" src="img/minilogo.png" alt="">
+        Tellez Nic Store
+      </a>
+
+      <div class="header-acciones">
+        <a class="icono-btn" href="carrito.html" aria-label="Carrito">
+          <i class="bi bi-bag"></i>
+          <span class="icono-btn__badge" data-carrito-badge hidden>0</span>
+        </a>
+
+        <!-- Visitante: menú de invitado -->
+        <details class="perfil" id="menuInvitado">
+          <summary class="perfil__acceso perfil__boton" aria-label="Cuenta">
+            <i class="bi bi-person-plus"></i>
+          </summary>
+
+          <div class="perfil__menu">
+            <p class="perfil__cabecera">
+              <span class="perfil__nombre">Invitado</span>
+              <span class="perfil__detalle">Sin sesión iniciada</span>
+            </p>
+
+            <ul class="perfil__lista">
+              <li><a class="perfil__item" href="login.html"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</a></li>
+              <li><a class="perfil__item" href="login.html?vista=registro"><i class="bi bi-person-plus"></i> Crear cuenta</a></li>
+            </ul>
+          </div>
+        </details>
+
+        <!-- Cliente con sesión: menú de la cuenta -->
+        <details class="perfil" id="menuPerfil" hidden>
+          <summary class="icono-btn perfil__boton" aria-label="Mi cuenta">
+            <i class="bi bi-person"></i>
+          </summary>
+
+          <div class="perfil__menu">
+            <p class="perfil__cabecera">
+              <span class="perfil__nombre">Invitado</span>
+              <span class="perfil__detalle">Sin sesión iniciada</span>
+            </p>
+
+            <ul class="perfil__lista">
+              <li><a class="perfil__item" href="perfil.html#perfil"><i class="bi bi-person"></i> Perfil</a></li>
+              <li><a class="perfil__item" href="perfil.html#direcciones"><i class="bi bi-geo-alt"></i> Direcciones</a></li>
+              <li><a class="perfil__item" href="perfil.html#favoritos"><i class="bi bi-heart"></i> Favoritos</a></li>
+              <li><a class="perfil__item" href="perfil.html#historial"><i class="bi bi-receipt"></i> Historial de compras</a></li>
+              <li><a class="perfil__item" href="perfil.html#descuentos"><i class="bi bi-ticket-perforated"></i> Descuento</a></li>
+              <li><a class="perfil__item" href="perfil.html#configuracion"><i class="bi bi-gear"></i> Configuración</a></li>
+            </ul>
+
+            <a class="perfil__item perfil__item--salir" href="#">
+              <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </a>
+          </div>
+        </details>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Página de perfil: sidebar + una sola hoja con secciones ── -->
+  <main class="contenedor perfil-pagina">
+
+    <aside class="perfil-nav" aria-label="Opciones de la cuenta">
+      <p class="perfil-nav__titulo">Mi cuenta</p>
+
+      <nav class="perfil-nav__lista">
+        <a class="perfil-nav__item is-activo" href="#perfil" data-seccion="perfil">
+          <i class="bi bi-person"></i> Perfil
+        </a>
+        <a class="perfil-nav__item" href="#direcciones" data-seccion="direcciones">
+          <i class="bi bi-geo-alt"></i> Direcciones
+        </a>
+        <a class="perfil-nav__item" href="#favoritos" data-seccion="favoritos">
+          <i class="bi bi-heart"></i> Favoritos
+        </a>
+        <a class="perfil-nav__item" href="#historial" data-seccion="historial">
+          <i class="bi bi-receipt"></i> Historial de compras
+        </a>
+        <a class="perfil-nav__item" href="#descuentos" data-seccion="descuentos">
+          <i class="bi bi-ticket-perforated"></i> Descuento
+        </a>
+        <a class="perfil-nav__item" href="#configuracion" data-seccion="configuracion">
+          <i class="bi bi-gear"></i> Configuración
+        </a>
+      </nav>
+
+      <a class="perfil-nav__item perfil-nav__item--salir" href="#">
+        <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+      </a>
+    </aside>
+
+    <div class="perfil-hoja">
+
+      <!-- Sección: Perfil / acceso -->
+      <section class="perfil-seccion" id="perfil">
+        <header class="perfil-seccion__cabecera">
+          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
+          <h1 class="perfil-seccion__titulo">Perfil</h1>
+          <p class="perfil-seccion__texto">Tus datos personales y de contacto.</p>
+        </header>
+
+        <div class="perfil-seccion__cuerpo">
+
+          <!-- Invitado: acceso -->
+          <div id="perfilInvitado">
+            <div class="perfil-vacio">
+              <i class="bi bi-person"></i>
+              <p>Inicia sesión para ver y editar tu perfil.</p>
+              <a class="btn-primario" href="login.html">Iniciar sesión</a>
+            </div>
+          </div>
+
+          <!-- Cliente autenticado -->
+          <div id="perfilLogueado" hidden>
+            <form id="formPerfil" class="perfil-card">
+              <h2 class="perfil-card__titulo">Datos personales</h2>
+              <p class="perfil-card__texto">Actualiza tu información de contacto.</p>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="perfilNombre">Nombre completo</label>
+                  <input class="form-control" id="perfilNombre" name="nombre_cliente" maxlength="150" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label" for="perfilUsuario">Usuario</label>
+                  <input class="form-control" id="perfilUsuario" name="usuario_cliente" maxlength="60" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label" for="perfilCorreo">Correo</label>
+                  <input class="form-control" id="perfilCorreo" name="correo_cliente" type="email" maxlength="100" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label" for="perfilTelefono">Teléfono</label>
+                  <input class="form-control" id="perfilTelefono" name="telefono_cliente" maxlength="20">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label" for="perfilFechaNacimiento">Fecha de nacimiento</label>
+                  <input class="form-control" id="perfilFechaNacimiento" name="fecha_nacimiento_cliente" type="text"
+                         placeholder="Día de mes de año" autocomplete="bday" inputmode="numeric">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label" for="perfilCedula">Cédula Nicaragüense (opcional)</label>
+                  <input class="form-control" id="perfilCedula" name="cedula_cliente" maxlength="16"
+                         placeholder="000-000000-0000A" inputmode="numeric">
+                </div>
+              </div>
+
+              <button class="btn-primario mt-3" type="submit">Guardar cambios</button>
+            </form>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Sección: Direcciones -->
+      <section class="perfil-seccion" id="direcciones">
+        <header class="perfil-seccion__cabecera">
+          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
+          <h2 class="perfil-seccion__titulo">Direcciones</h2>
+          <p class="perfil-seccion__texto">Casa, trabajo u otro lugar. Puedes guardar varias.</p>
+        </header>
+
+        <div class="perfil-seccion__cuerpo">
+          <div id="direccionesInvitado" class="perfil-vacio">
+            <i class="bi bi-geo-alt"></i>
+            <p>Inicia sesión para guardar tus direcciones.</p>
+          </div>
+
+          <div id="direccionesContenido" hidden>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <span class="perfil-seccion__texto">Tus direcciones guardadas</span>
+              <button type="button" class="btn-primario" id="btnNuevaDireccion">Agregar dirección</button>
+            </div>
+
+            <form id="formDireccion" class="perfil-card mb-3" hidden>
+              <input type="hidden" id="direccionId">
+              <input type="hidden" id="direccionLat">
+              <input type="hidden" id="direccionLng">
+
+              <div class="dir-campo">
+                <label class="form-label" for="direccionNombre">Nombre</label>
+                <input class="form-control" id="direccionNombre" maxlength="80" placeholder="Casa, Trabajo, etc." required>
+
+                <div class="dir-chips" role="group" aria-label="Nombre rápido de la dirección">
+                  <button type="button" class="dir-chip" data-nombre="Casa"><i class="bi bi-house"></i> Casa</button>
+                  <button type="button" class="dir-chip" data-nombre="Trabajo"><i class="bi bi-briefcase"></i> Trabajo</button>
+                  <button type="button" class="dir-chip" data-nombre="Otro"><i class="bi bi-geo"></i> Otro</button>
+                </div>
+              </div>
+
+              <div class="dir-ubicacion">
+                <button type="button" class="btn-primario dir-gps" id="btnUbicacion">
+                  <i class="bi bi-crosshair"></i> Usar mi ubicación actual
+                </button>
+                <p class="dir-gps__estado" id="estadoUbicacion" hidden></p>
+
+                <div class="dir-mapa" id="vistaUbicacion" hidden>
+                  <iframe id="mapaUbicacion" title="Ubicación de la dirección" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+
+                  <div class="dir-mapa__pie">
+                    <span id="coordsUbicacion"></span>
+                    <a id="enlaceUbicacion" href="#" target="_blank" rel="noopener noreferrer">Abrir en Google Maps</a>
+                  </div>
+                </div>
+
+                <details class="dir-pegar">
+                  <summary>O pegar un link de Google Maps</summary>
+                  <input class="form-control mt-2" id="direccionMaps" type="url" maxlength="500" placeholder="https://maps.google.com/...">
+                </details>
+              </div>
+
+              <div class="row g-3 mt-1">
+                <div class="col-12">
+                  <label class="form-label" for="direccionReferencia">Referencia</label>
+                  <textarea class="form-control" id="direccionReferencia" rows="2" maxlength="500" placeholder="Casa color turquesa con portón negro..."></textarea>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label" for="direccionManual">Dirección escrita</label>
+                  <textarea class="form-control" id="direccionManual" rows="2" maxlength="500" placeholder="Se llena con tu ubicación; puedes ajustarla..."></textarea>
+                </div>
+
+                <div class="col-12">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="direccionPredeterminada">
+                    <label class="form-check-label" for="direccionPredeterminada">Usar como dirección predeterminada</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex flex-wrap gap-2 mt-3">
+                <button class="btn-primario" type="submit">Guardar dirección</button>
+                <button class="btn-secundario" type="button" id="btnCancelarDireccion">Cancelar</button>
+              </div>
+            </form>
+
+            <div id="listaDirecciones" class="perfil-lista"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sección: Favoritos -->
+      <section class="perfil-seccion" id="favoritos">
+        <header class="perfil-seccion__cabecera">
+          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
+          <h2 class="perfil-seccion__titulo">Favoritos</h2>
+          <p class="perfil-seccion__texto">Los productos que guardaste para después.</p>
+        </header>
+
+        <div class="perfil-seccion__cuerpo">
+          <div id="favoritosInvitado" class="perfil-vacio">
+            <i class="bi bi-heart"></i>
+            <p>Inicia sesión para ver y guardar tus favoritos.</p>
+          </div>
+
+          <div id="favoritosVacio" class="perfil-vacio" hidden>
+            <i class="bi bi-heart"></i>
+            <p>Todavía no tienes productos favoritos.</p>
+          </div>
+
+          <div id="listaFavoritos" class="perfil-grid" hidden></div>
+        </div>
+      </section>
+
+      <!-- Sección: Historial de compras -->
+      <section class="perfil-seccion" id="historial">
+        <header class="perfil-seccion__cabecera">
+          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
+          <h2 class="perfil-seccion__titulo">Historial de compras</h2>
+          <p class="perfil-seccion__texto">Pedidos realizados y su estado.</p>
+        </header>
+
+        <div class="perfil-seccion__cuerpo">
+          <div id="historialInvitado" class="perfil-vacio">
+            <i class="bi bi-receipt"></i>
+            <p>Inicia sesión para ver tu historial de compras.</p>
+          </div>
+
+          <div id="historialVacio" class="perfil-vacio" hidden>
+            <i class="bi bi-receipt"></i>
+            <p>Aún no tienes compras registradas.</p>
+          </div>
+
+          <div id="listaHistorial" class="perfil-lista" hidden></div>
+        </div>
+      </section>
+
+      <!-- Sección: Descuento -->
+      <section class="perfil-seccion" id="descuentos">
+        <header class="perfil-seccion__cabecera">
+          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
+          <h2 class="perfil-seccion__titulo">Descuento</h2>
+          <p class="perfil-seccion__texto">Beneficio asignado a tu cuenta.</p>
+        </header>
+
+        <div class="perfil-seccion__cuerpo">
+          <div id="descuentoInvitado" class="perfil-vacio">
+            <i class="bi bi-ticket-perforated"></i>
+            <p>Inicia sesión para consultar tu descuento.</p>
+          </div>
+
+          <div id="contenidoDescuento" hidden></div>
+        </div>
+      </section>
+
+      <!-- Sección: Configuración -->
+      <section class="perfil-seccion" id="configuracion">
+        <header class="perfil-seccion__cabecera">
+          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
+          <h2 class="perfil-seccion__titulo">Configuración</h2>
+          <p class="perfil-seccion__texto">Preferencias de la cuenta y seguridad.</p>
+        </header>
+
+        <div class="perfil-seccion__cuerpo">
+          <div id="configuracionInvitado" class="perfil-vacio">
+            <i class="bi bi-gear"></i>
+            <p>Inicia sesión para configurar tu cuenta.</p>
+          </div>
+
+          <div id="configuracionContenido" hidden>
+            <form id="formPassword" class="perfil-card">
+              <h3 class="perfil-card__titulo">Cambiar contraseña</h3>
+              <p class="perfil-card__texto">Usa una contraseña de al menos 6 caracteres.</p>
+
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label" for="passwordActual">Contraseña actual</label>
+                  <input class="form-control" id="passwordActual" name="password_actual" type="password" autocomplete="current-password" required>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="passwordNueva">Nueva contraseña</label>
+                  <input class="form-control" id="passwordNueva" name="password_nueva" type="password" autocomplete="new-password" required>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="passwordNuevaConfirm">Confirmar nueva</label>
+                  <input class="form-control" id="passwordNuevaConfirm" name="password_nueva_confirmation" type="password" autocomplete="new-password" required>
+                </div>
+              </div>
+
+              <button class="btn-primario mt-3" type="submit">Actualizar contraseña</button>
+            </form>
+
+            <div class="perfil-card mt-4">
+              <h3 class="perfil-card__titulo">Sesión</h3>
+              <p class="perfil-card__texto">Puedes cerrar tu sesión en este dispositivo.</p>
+              <button class="btn-secundario" type="button" id="btnCerrarSesion">Cerrar sesión</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="js/carrito-store.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase-api.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
+  <script src="js/cedula-nicaragua.js"></script>
+  <script src="js/perfil.js" defer></script>
+</body>
+</html>
