@@ -487,7 +487,7 @@ async function cargarCatalogo() {
 document.addEventListener('DOMContentLoaded', () => {
     // La marca funciona como "Inicio": vuelve arriba con desplazamiento suave.
     document.querySelector('.app-header .marca')?.addEventListener('click', (event) => {
-        if (location.pathname !== '/tienda') return; // en otras páginas navega normal
+        if (location.pathname !== urlTienda()) return; // en otras páginas navega normal
 
         event.preventDefault();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -525,7 +525,7 @@ document.addEventListener('click', async (evento) => {
 
     if (!sesion?.autenticado) {
         tiendaToast('Inicia sesión para guardar tus favoritos.', 'aviso');
-        window.location.href = '/tienda/perfil#perfil';
+        window.location.href = `${urlTienda('perfil')}#perfil`;
         return;
     }
 

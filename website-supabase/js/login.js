@@ -41,10 +41,21 @@ function bloquearBoton(boton, bloqueado) {
     }
 }
 
-function destinoSeguro() {
-    const destino = new URLSearchParams(window.location.search).get('redirect') || '/tienda/perfil';
+let destinoGuardado = '';
 
-    return destino.startsWith('/tienda') ? destino : '/tienda/perfil';
+function destinoSeguro() {
+    const parametros = new URLSearchParams(window.location.search);
+
+    try {
+        destinoGuardado = sessionStorage.getItem('tienda_redirect') || '';
+        sessionStorage.removeItem('tienda_redirect');
+    } catch {
+        destinoGuardado = '';
+    }
+
+    const destino = parametros.get('redirect') || destinoGuardado;
+
+    return destinoInterno(destino, urlTienda('perfil'));
 }
 
 function iniciarAcceso() {
@@ -71,8 +82,12 @@ function iniciarSociales() {
     const error = parametros.get('error');
     const destino = parametros.get('redirect');
 
-    if (error) {
-        tiendaToast(error, 'aviso');
+    /* Supabase puede devolver el error en el hash (#error_description=...). */
+    const hash = new URLSearchParams(String(window.location.hash || '').replace(/^#/, ''));
+    const errorHash = hash.get('error_description') || hash.get('error');
+
+    if (error || errorHash) {
+        tiendaToast(error || errorHash, 'aviso');
     }
 
     if (!destino) return;

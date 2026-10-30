@@ -134,7 +134,7 @@ function urlSegura(valor) {
 
 function mostrarError(error) {
     if (error?.status === 401) {
-        window.location.href = '/tienda/login';
+        window.location.href = urlTienda('login');
         return;
     }
 
@@ -225,7 +225,7 @@ async function cargarCuenta() {
     const autenticado = Boolean(sesion?.autenticado && cliente);
 
     if (!autenticado) {
-        window.location.href = '/tienda/login';
+        window.location.href = urlTienda('login');
         return;
     }
 
@@ -822,7 +822,7 @@ function conectarSesion() {
     porId('btnCerrarSesion')?.addEventListener('click', async () => {
         try {
             await window.TiendaAPI.post('/tienda/api/auth/logout');
-            window.location.href = '/tienda';
+            window.location.href = urlTienda();
         } catch (error) {
             mostrarError(error);
         }

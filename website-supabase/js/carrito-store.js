@@ -1,4 +1,38 @@
 /* ╔══════════════════════════════════════════════════════════════╗
+   ║  Tienda · Rutas base                                          ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+/*
+   En local la tienda vive en /tienda y en Cloudflare Pages en la raíz.
+   BASE_TIENDA se deduce de la URL actual para que enlaces y redirecciones
+   apunten siempre al sitio correcto.
+*/
+const BASE_TIENDA = location.pathname.split('/').filter(Boolean)[0] === 'tienda' ? '/tienda' : '';
+
+function urlTienda(ruta = '') {
+    const limpia = String(ruta || '').replace(/^\/+/, '');
+
+    if (!limpia) return BASE_TIENDA || '/';
+
+    return `${BASE_TIENDA}/${limpia}`;
+}
+
+/* Normaliza un destino recibido por ?redirect= y evita salir del sitio. */
+function destinoInterno(valor, porDefecto = urlTienda('perfil')) {
+    const ruta = String(valor || '').trim();
+
+    if (!ruta.startsWith('/') || ruta.startsWith('//')) return porDefecto;
+
+    return BASE_TIENDA === ''
+        ? (ruta.replace(/^\/tienda(?=\/|$|#|\?)/, '') || '/')
+        : ruta;
+}
+
+window.BASE_TIENDA = BASE_TIENDA;
+window.urlTienda = urlTienda;
+window.destinoInterno = destinoInterno;
+
+/* ╔══════════════════════════════════════════════════════════════╗
    ║  Tienda · Carrito (localStorage)                              ║
    ╚══════════════════════════════════════════════════════════════╝ */
 

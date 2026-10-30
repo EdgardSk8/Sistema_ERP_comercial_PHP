@@ -64,6 +64,21 @@ function itemHTML(item) {
     `;
 }
 
+function enlaceWhatsappCarrito(items, total) {
+    const lineas = ['Hola, quiero pedir:'];
+
+    items.forEach((item) => {
+        const detalle = [item.color, item.talla ? `Talla ${item.talla}` : ''].filter(Boolean).join(' · ');
+        const monto = moneda(Number(item.precio || 0) * Number(item.cantidad || 0));
+
+        lineas.push(`• ${item.nombre}${detalle ? ` (${detalle})` : ''} x${item.cantidad} — ${monto}`);
+    });
+
+    lineas.push(`Total: ${moneda(total)}`);
+
+    return `https://wa.me/50584774288?text=${encodeURIComponent(lineas.join('\n'))}`;
+}
+
 function pintarCarrito() {
     const contenedor = document.getElementById('carritoLista');
     const resumen = document.getElementById('carritoResumen');
@@ -100,6 +115,10 @@ function pintarCarrito() {
             ? `(${descuentoCliente.etiqueta})`
             : '';
     }
+
+    const botonWhatsapp = document.getElementById('btnWhatsappCarrito');
+
+    if (botonWhatsapp) botonWhatsapp.href = enlaceWhatsappCarrito(items, total);
 }
 
 function cambiar(clave, accion) {

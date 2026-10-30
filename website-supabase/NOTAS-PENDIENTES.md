@@ -12,6 +12,8 @@
   - La ubicación del cliente es obligatoria para cotizar (por eso importan las coordenadas de `cliente_direcciones`).
 - [x] **Catálogo con paginación** (hallazgo 5: hoy se renderiza todo de una vez).
 - [x] **Verificación de correo con código** (hallazgo 6: hoy `web_autoconfirmar_correo` marca el correo como verificado sin comprobarlo).
+- [x] **Rutas adaptadas al hosting**: `urlTienda()` usa `/tienda/...` en local y la raíz en Cloudflare Pages; el login con Google y el registro ya apuntan al dominio actual.
+- [x] **Registro con entrada automática**: si Supabase no devuelve sesión, se intenta iniciar sesión de inmediato.
 - [x] **Perfil del cliente ampliado**: historial de ventas, deudas por pagar, etc.
 - [x] **Estados del pedido**: el cliente compra y paga en línea **o** solicita en línea → el negocio acepta el pedido → la transacción se realiza más adelante.
 - [x] **Productos agotados**: se siguen mostrando, marcados como "Agotado", al final del listado.
@@ -125,3 +127,12 @@
 - Cuotas/deudas: tablas de planes de pago del ERP (`2026_10_10_000002_create_payment_plans_tables`).
 - Anti-patrones detectados: `stock || 999` en el carrito, email autoconfirmado por trigger, envío "Gratis" fijo.
 - Envío por km: `credenciales.tarifa_km`, `credenciales.latitud_empresa`, `credenciales.longitud_empresa` (migración `2026_10_30_000001`). El cliente ya tiene coordenadas en `cliente_direcciones`.
+
+## 5. Configuración externa pendiente (Supabase / Cloudflare)
+
+- [ ] Supabase → Authentication → URL Configuration:
+  - Site URL: `https://tellezstorenic.pages.dev`
+  - Redirect URLs: `https://tellezstorenic.pages.dev/**` y `http://127.0.0.1:8090/**`
+- [ ] Supabase → Providers → Google: Client ID y Client Secret.
+- [ ] Google Cloud → URI autorizado: `https://tnzuicefxwowpbjtjdnx.supabase.co/auth/v1/callback`
+- [ ] Cloudflare Pages: publicar `_redirects` corregido (sin destinos `.html`).

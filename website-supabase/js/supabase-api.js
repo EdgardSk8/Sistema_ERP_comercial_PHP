@@ -9,9 +9,9 @@
     }
 
     if (window.TEMA_NAVIDAD !== false) {
-        const logoMini = '/tienda/recursos/img/logonavidad-mini.png';
-        const favicon = '/tienda/recursos/img/favicon-navidad.png';
-        const touchIcon = '/tienda/recursos/img/apple-touch-navidad.png';
+        const logoMini = '/tienda/recursos/img/logonavidad-mini.png?v=20261030h';
+        const favicon = '/tienda/recursos/img/favicon-navidad.png?v=20261030h';
+        const touchIcon = '/tienda/recursos/img/apple-touch-navidad.png?v=20261030h';
 
         document.querySelectorAll('img.marca__logo, img.acceso__logo').forEach((imagen) => {
             imagen.src = logoMini;
@@ -258,7 +258,7 @@
         evento.preventDefault();
 
         if (!window.clienteTienda) {
-            window.location.href = '/tienda/perfil#perfil';
+            window.location.href = `${urlTienda('perfil')}#perfil`;
             return;
         }
 
@@ -267,7 +267,7 @@
             usuarioActual = null;
             clienteActual = null;
             if (window.tiendaToast) window.tiendaToast('Sesión cerrada.', 'info');
-            window.location.href = '/tienda';
+            window.location.href = urlTienda();
         } catch (error) {
             if (window.tiendaToast) window.tiendaToast('No se pudo cerrar la sesión.', 'aviso');
         }
@@ -278,17 +278,30 @@
     document.querySelector('.acceso__social-btn--google')?.addEventListener('click', async (evento) => {
         evento.preventDefault();
 
-        const destino = `${window.location.origin}/tienda/login`;
+        /* Guarda el destino para recuperarlo cuando Supabase devuelva el control. */
+        try {
+            const volver = new URLSearchParams(window.location.search).get('redirect');
+
+            if (volver) sessionStorage.setItem('tienda_redirect', volver);
+            else sessionStorage.removeItem('tienda_redirect');
+        } catch {
+            /* sessionStorage no disponible: continúa sin destino. */
+        }
+
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: destino,
+                redirectTo: `${window.location.origin}${urlTienda('login')}`,
                 queryParams: { prompt: 'select_account' },
             },
         });
 
         if (error) {
-            if (window.tiendaToast) window.tiendaToast('No se pudo abrir Google. Intenta de nuevo.', 'aviso');
+            console.error('Error de Google OAuth:', error.message, error);
+
+            if (window.tiendaToast) {
+                window.tiendaToast(error.message || 'No se pudo abrir Google. Intenta de nuevo.', 'aviso');
+            }
         }
     });
 
@@ -352,7 +365,7 @@
             email: correo,
             password,
             options: {
-                emailRedirectTo: `${window.location.origin}/tienda/login`,
+                emailRedirectTo: `${window.location.origin}${urlTienda('login')}`,
                 data: {
                     nombre_cliente: nombre,
                     usuario_cliente: usuario,
@@ -371,10 +384,25 @@
         }
 
         if (!data.session) {
+            /* Si el correo ya está confirmado (o la confirmación está desactivada),
+               inicia sesión de inmediato para que el registro no obligue a un segundo paso. */
+            const { data: sesion } = await supabase.auth.signInWithPassword({ email: correo, password });
+
+            if (!sesion?.session) {
+                return {
+                    success: true,
+                    mensaje: 'Cuenta creada. Revisa tu correo para confirmarla y luego inicia sesión.',
+                    cliente: null,
+                };
+            }
+
+            usuarioActual = sesion.user;
+            clienteActual = await obtenerOCrearCliente(sesion.user);
+
             return {
                 success: true,
-                mensaje: 'Cuenta creada. Revisa tu correo para confirmarla y luego inicia sesión.',
-                cliente: null,
+                mensaje: 'Cuenta creada. ¡Bienvenido!',
+                cliente: datosCliente(clienteActual),
             };
         }
 

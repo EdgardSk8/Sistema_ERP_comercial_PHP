@@ -327,6 +327,39 @@ function pintarPrecio() {
 
     const impuesto = Number(producto.impuesto || 0);
     $('productoImpuesto').textContent = impuesto > 0 ? `IVA ${impuesto}% incluido` : '';
+
+    actualizarWhatsapp();
+}
+
+/* ── Pedido por WhatsApp ─────────────────────────────────────── */
+const WHATSAPP_NUMERO = '50584774288';
+
+function enlaceWhatsappProducto() {
+    if (!producto) return `https://wa.me/${WHATSAPP_NUMERO}`;
+
+    const lineas = [`Hola, quiero pedir: ${producto.nombre}`];
+
+    if (variacionActual?.color) lineas.push(`Color: ${variacionActual.color}`);
+    if (tallaActual?.nombre) lineas.push(`Talla: ${tallaActual.nombre}`);
+
+    const precio = tallaActual?.precio ?? producto.precio;
+
+    if (precio) lineas.push(`Precio: ${moneda(precio)}`);
+
+    lineas.push(
+        `${location.origin}${urlTienda('producto')}?p=${producto.id}`
+        + (variacionActual?.color ? `&color=${encodeURIComponent(variacionActual.color)}` : '')
+    );
+
+    return `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(lineas.join('\n'))}`;
+}
+
+function actualizarWhatsapp() {
+    const boton = document.getElementById('btnWhatsapp');
+
+    if (!boton || !producto) return;
+
+    boton.href = enlaceWhatsappProducto();
 }
 
 /* ── Selección ───────────────────────────────────────────────── */
@@ -358,8 +391,25 @@ function mostrarProductoNoDisponible(mensaje) {
         <div class="producto__panel">
             <h1 class="producto__nombre">Producto no disponible</h1>
             <p class="producto__descripcion">${escapar(mensaje)}</p>
-            <a class="btn-primario" href="/tienda#catalogo">Volver a la tienda</a>
+            <a class="btn-primario" href="${urlTienda()}#catalogo">Volver a la tienda</a>
         </div>`;
+}
+
+/* ── Metadatos para compartir el enlace ──────────────────────── */
+function actualizarMetaProducto() {
+    const poner = (selector, contenido) => {
+        const etiqueta = document.querySelector(selector);
+
+        if (etiqueta) etiqueta.setAttribute('content', contenido);
+    };
+
+    poner('meta[property="og:title"]', `${producto.nombre} · Tellez Nic Store`);
+    poner('meta[property="og:description"]', producto.descripcion || 'Producto disponible en Tellez Nic Store.');
+    poner('meta[name="description"]', producto.descripcion || 'Producto disponible en Tellez Nic Store.');
+
+    if (producto.imagen) {
+        poner('meta[property="og:image"]', new URL(producto.imagen, location.origin).href);
+    }
 }
 
 async function cargarProducto() {
@@ -400,6 +450,7 @@ async function cargarProducto() {
         const colorBuscado = new URLSearchParams(location.search).get('color') || '';
 
         document.title = `${producto.nombre} · Tellez Nic Store`;
+        actualizarMetaProducto();
         $('productoCategoria').textContent = producto.categoria;
         $('productoNombre').textContent = producto.nombre;
         $('productoDescripcion').textContent = producto.descripcion || 'Producto disponible en nuestra tienda.';
@@ -623,7 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!datos) return;
 
         Carrito.agregar(datos, 1);
-        window.location.href = '/tienda/carrito';
+        window.location.href = urlTienda('carrito');
     });
 
     $('btnFavorito')?.addEventListener('click', async () => {
@@ -633,7 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!sesion?.autenticado) {
             tiendaToast('Inicia sesión para guardar favoritos.', 'aviso');
-            window.location.href = '/tienda/perfil#perfil';
+            window.location.href = `${urlTienda('perfil')}#perfil`;
             return;
         }
 
