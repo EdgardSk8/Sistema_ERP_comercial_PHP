@@ -353,15 +353,45 @@ function seleccionarTalla(id) {
 }
 
 /* ── Datos ───────────────────────────────────────────────────── */
+function mostrarProductoNoDisponible(mensaje) {
+    document.getElementById('productoDetalle').innerHTML = `
+        <div class="producto__panel">
+            <h1 class="producto__nombre">Producto no disponible</h1>
+            <p class="producto__descripcion">${escapar(mensaje)}</p>
+            <a class="btn-primario" href="/tienda#catalogo">Volver a la tienda</a>
+        </div>`;
+}
+
 async function cargarProducto() {
-    const id = location.pathname.split('/').filter(Boolean).pop();
+    const parametros = new URLSearchParams(location.search);
+    const segmentos = location.pathname.split('/').filter(Boolean);
+    const ultimoSegmento = segmentos[segmentos.length - 1] || '';
+
+    /* El ID puede venir en la ruta o en ?p= (algunos hostings redirigen y pierden la ruta). */
+    const idQuery = parametros.get('p') || parametros.get('id') || '';
+    const id = /^\d+$/.test(idQuery) ? idQuery : (/^\d+$/.test(ultimoSegmento) ? ultimoSegmento : '');
+
+    /* Sin ID numérico no hay producto: evita pedir /tienda/api/productos/producto */
+    if (!id) {
+        document.title = 'Producto no disponible · Tellez Nic Store';
+        mostrarProductoNoDisponible('El enlace del producto está incompleto o el producto ya no existe.');
+        return;
+    }
 
     try {
         const respuesta = await fetch(`/tienda/api/productos/${id}`, { headers: { Accept: 'application/json' } });
-        const data = await respuesta.json();
+        const texto = await respuesta.text();
 
-        if (!respuesta.ok || !data.success) {
-            throw new Error(data.mensaje || 'Producto no encontrado.');
+        let data = null;
+
+        try {
+            data = texto ? JSON.parse(texto) : null;
+        } catch {
+            data = null;
+        }
+
+        if (!respuesta.ok || !data || !data.success) {
+            throw new Error(data?.mensaje || 'Producto no encontrado.');
         }
 
         producto = data.producto;
@@ -392,12 +422,7 @@ async function cargarProducto() {
         cargarRelacionados();
         actualizarBotonFavorito();
     } catch (error) {
-        document.getElementById('productoDetalle').innerHTML = `
-            <div class="producto__panel">
-                <h1 class="producto__nombre">Producto no disponible</h1>
-                <p class="producto__descripcion">${escapar(error.message)}</p>
-                <a class="btn-primario" href="/tienda">Volver a la tienda</a>
-            </div>`;
+        mostrarProductoNoDisponible(error.message || 'No se pudo cargar el producto.');
         console.error(error);
     }
 }
@@ -493,7 +518,7 @@ async function cargarRelacionados() {
 
         lista.innerHTML = tarjetas.map(item => `
             <li class="splide__slide">
-                <a class="card-compacta" href="/tienda/producto/${item.id}?color=${encodeURIComponent(item.color || '')}">
+                <a class="card-compacta" href="/producto?p=${encodeURIComponent(item.id)}&color=${encodeURIComponent(item.color || '')}">
                     <div class="card-compacta__media">
                         <img src="${escapar(item.imagen || IMAGEN_FALLBACK)}" alt="${escapar(item.nombre)}" loading="lazy"
                              onerror="this.src='${IMAGEN_FALLBACK}'">

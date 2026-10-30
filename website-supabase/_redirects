@@ -3,5 +3,7 @@
 /tienda/login          /login.html     200
 /tienda/carrito        /carrito.html   200
 /tienda/perfil         /perfil.html    200
+/producto              /producto.html  200
+/tienda/producto       /tienda         302
 /tienda/producto/*     /producto.html  200
 /tienda/recursos/*     /:splat         200

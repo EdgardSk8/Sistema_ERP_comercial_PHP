@@ -5,6 +5,7 @@
     { "source": "/tienda/login", "destination": "/login.html" },
     { "source": "/tienda/carrito", "destination": "/carrito.html" },
     { "source": "/tienda/perfil", "destination": "/perfil.html" },
+    { "source": "/producto", "destination": "/producto.html" },
     { "source": "/tienda/producto/:id", "destination": "/producto.html" },
     { "source": "/tienda/recursos/:path*", "destination": "/:path*" }
   ]

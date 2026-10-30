@@ -39,6 +39,7 @@ $rutas = [
     '/' => 'index.html',
     '/tienda' => 'index.html',
     '/tienda/' => 'index.html',
+    '/producto' => 'producto.html',
     '/tienda/login' => 'login.html',
     '/tienda/carrito' => 'carrito.html',
     '/tienda/perfil' => 'perfil.html',

@@ -940,6 +940,11 @@
 
                     return respuestaJson({ success: true, producto: data });
                 }
+
+                /* Ruta del API sin controlador: responde JSON en vez de ir a la red. */
+                if (url.pathname.startsWith('/tienda/api/')) {
+                    return respuestaJson({ success: false, mensaje: 'Ruta no disponible.' }, 404);
+                }
             }
         } catch (error) {
             console.error('Error de catálogo en Supabase:', error);

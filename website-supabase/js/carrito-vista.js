@@ -45,7 +45,7 @@ function itemHTML(item) {
                  onerror="this.src='${IMAGEN_FALLBACK}'">
 
             <div class="carrito-item__datos">
-                <a class="carrito-item__nombre" href="/tienda/producto/${escapar(item.productoId)}">${escapar(item.nombre)}</a>
+                <a class="carrito-item__nombre" href="/producto?p=${escapar(item.productoId)}">${escapar(item.nombre)}</a>
                 <span class="carrito-item__meta">${escapar(item.color || '')}${item.talla ? ' · Talla ' + escapar(item.talla) : ''}</span>
                 <span class="carrito-item__precio">${moneda(item.precio)}</span>
             </div>

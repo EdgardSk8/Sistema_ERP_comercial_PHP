@@ -111,7 +111,7 @@ function estrellasTarjeta(calificacion) {
 /* ── Render de tarjeta ───────────────────────────────────────── */
 function tarjetaProducto(variante, indice = 0) {
     const agotado = Number(variante.stock || 0) <= 0;
-    const enlace = `/tienda/producto/${variante.id}?color=${encodeURIComponent(variante.color || '')}`;
+    const enlace = `/producto?p=${encodeURIComponent(variante.id)}&color=${encodeURIComponent(variante.color || '')}`;
 
     return `
         <a class="card-producto" href="${escapar(enlace)}" style="--i:${indice}">

@@ -715,14 +715,14 @@ async function cargarFavoritos() {
 function favoritoHTML(favorito) {
     return `
         <article class="perfil-producto">
-            <a class="perfil-producto__media" href="/tienda/producto/${favorito.id_producto}">
+            <a class="perfil-producto__media" href="/producto?p=${escapar(favorito.id_producto)}">
                 <img src="${escapar(favorito.imagen || IMAGEN_FALLBACK)}" alt="${escapar(favorito.nombre_producto)}"
                     onerror="this.src='${IMAGEN_FALLBACK}'">
             </a>
 
             <div class="perfil-producto__info">
                 <span class="perfil-producto__categoria">${escapar(favorito.categoria)}</span>
-                <a class="perfil-producto__nombre" href="/tienda/producto/${favorito.id_producto}">${escapar(favorito.nombre_producto)}</a>
+                <a class="perfil-producto__nombre" href="/producto?p=${escapar(favorito.id_producto)}">${escapar(favorito.nombre_producto)}</a>
                 <span class="perfil-producto__precio">${moneda(favorito.precio)}</span>
             </div>
 
