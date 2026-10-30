@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es" class="tema-navidad">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5EEDE">
+  <link rel="icon" type="image/png" sizes="32x32" href="/tienda/recursos/img/favicon-navidad.png?v=20261030h">
+  <link rel="apple-touch-icon" sizes="180x180" href="/tienda/recursos/img/apple-touch-navidad.png?v=20261030h">
+  <title>Ayuda con mi cuenta · Tellez Nic Store</title>
+
+  <meta name="description" content="Cuéntanos qué necesitas (contraseña, acceso, correo o pedido) y te atendemos por WhatsApp.">
+  <link rel="canonical" href="https://tellezstorenic.pages.dev/ayuda">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Tellez Nic Store">
+  <meta property="og:locale" content="es_NI">
+  <meta property="og:title" content="Ayuda con mi cuenta · Tellez Nic Store">
+  <meta property="og:description" content="Cuéntanos qué necesitas y te atendemos por WhatsApp.">
+  <meta property="og:url" content="https://tellezstorenic.pages.dev/ayuda">
+  <meta property="og:image" content="https://tellezstorenic.pages.dev/img/logonavidad.jpg">
+  <meta property="og:image:alt" content="Tellez Nic Store">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261030l">
+  <link rel="stylesheet" href="/tienda/recursos/css/login.css">
+  <link rel="stylesheet" href="/tienda/recursos/css/navidad.css?v=20261029r">
+</head>
+<body class="pagina-login">
+
+  <header class="app-header">
+    <div class="contenedor">
+      <a class="icono-btn" href="/tienda" aria-label="Volver">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+
+      <a class="marca" href="/tienda">
+        <img class="marca__logo" src="/tienda/recursos/img/minilogo.png" alt="">
+        Tellez Nic Store
+      </a>
+
+      <div class="header-acciones">
+        <a class="icono-btn" href="/tienda/carrito" aria-label="Carrito">
+          <i class="bi bi-bag"></i>
+          <span class="icono-btn__badge" data-carrito-badge hidden>0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="acceso contenedor">
+    <section class="acceso__card">
+
+      <div class="acceso__marca">
+        <img class="acceso__logo" src="/tienda/recursos/img/minilogo.png" alt="Tellez Nic Store">
+        <h1 class="acceso__titulo">Ayuda con mi cuenta</h1>
+        <p class="acceso__texto">
+          Cuéntanos qué necesitas y te atendemos por WhatsApp.
+          Si olvidaste tu contraseña, te damos una temporal y la cambias en tu perfil.
+        </p>
+      </div>
+
+      <div class="acceso__contenido">
+
+        <form id="formAyuda" class="acceso__form" novalidate>
+
+          <fieldset class="ayuda__campo">
+            <legend class="form-label mb-2">¿Qué necesitas?</legend>
+
+            <div class="ayuda__opciones">
+              <label class="ayuda__opcion">
+                <input type="radio" name="motivo" value="Olvidé mi contraseña" required>
+                <span><i class="bi bi-key" aria-hidden="true"></i> Olvidé mi contraseña</span>
+              </label>
+
+              <label class="ayuda__opcion">
+                <input type="radio" name="motivo" value="No puedo entrar a mi cuenta">
+                <span><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> No puedo entrar</span>
+              </label>
+
+              <label class="ayuda__opcion">
+                <input type="radio" name="motivo" value="Quiero cambiar mi correo">
+                <span><i class="bi bi-envelope" aria-hidden="true"></i> Cambiar mi correo</span>
+              </label>
+
+              <label class="ayuda__opcion">
+                <input type="radio" name="motivo" value="Mi cuenta aparece desactivada">
+                <span><i class="bi bi-person-x" aria-hidden="true"></i> Cuenta desactivada</span>
+              </label>
+
+              <label class="ayuda__opcion">
+                <input type="radio" name="motivo" value="Problema con un pedido">
+                <span><i class="bi bi-bag-x" aria-hidden="true"></i> Problema con un pedido</span>
+              </label>
+
+              <label class="ayuda__opcion">
+                <input type="radio" name="motivo" value="Otro">
+                <span><i class="bi bi-question-circle" aria-hidden="true"></i> Otro</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="mb-2">
+            <label class="form-label" for="ayudaNombre">Nombre completo</label>
+            <input class="form-control" id="ayudaNombre" name="nombre" maxlength="150" autocomplete="name" required>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="ayudaCorreo">Correo de la cuenta</label>
+              <input class="form-control" id="ayudaCorreo" name="correo" type="email" maxlength="100" autocomplete="email" required>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="ayudaTelefono">Teléfono (opcional)</label>
+              <input class="form-control" id="ayudaTelefono" name="telefono" maxlength="20" autocomplete="tel">
+            </div>
+          </div>
+
+          <div class="mb-2 mt-2">
+            <label class="form-label" for="ayudaDetalle">Detalle (opcional)</label>
+            <textarea class="form-control" id="ayudaDetalle" name="detalle" rows="3" maxlength="500"
+              placeholder="Escribe aquí cualquier dato que nos ayude a encontrarte."></textarea>
+          </div>
+
+          <p class="ayuda__aviso" id="ayudaAviso">
+            Al enviar se abrirá WhatsApp con el mensaje listo para el negocio.
+          </p>
+
+          <button class="btn-primario w-100" type="submit">
+            <i class="bi bi-whatsapp me-2" aria-hidden="true"></i> Enviar por WhatsApp
+          </button>
+
+          <a class="acceso__social-btn mt-2" id="ayudaCorreoEnlace" href="mailto:tellezstorenic@gmail.com?subject=Ayuda%20con%20mi%20cuenta">
+            <i class="bi bi-envelope" aria-hidden="true"></i> Escribir por correo
+          </a>
+
+        </form>
+      </div>
+
+      <a class="acceso__volver" href="/tienda/login">
+        <i class="bi bi-arrow-left"></i> Volver a iniciar sesión
+      </a>
+
+    </section>
+  </main>
+
+  <a class="wa-flotante" href="https://wa.me/50584774288?text=Hola%2C%20necesito%20ayuda%20con%20mi%20cuenta."
+     target="_blank" rel="noopener" aria-label="Pedir por WhatsApp">
+    <i class="bi bi-whatsapp" aria-hidden="true"></i>
+    <span>Pedir por WhatsApp</span>
+  </a>
+
+  <script src="/tienda/recursos/js/carrito-store.js?v=20261030g"></script>
+  <script src="/tienda/recursos/js/ayuda.js?v=20261030l"></script>
+</body>
+</html>

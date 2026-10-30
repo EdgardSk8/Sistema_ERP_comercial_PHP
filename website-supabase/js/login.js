@@ -71,9 +71,32 @@ function iniciarAcceso() {
     }
 
     window.sesionTiendaPromise?.then((sesion) => {
-        if (sesion?.autenticado) {
-            window.location.href = destinoSeguro();
+        if (!sesion?.autenticado) return;
+
+        /* Cuenta de Google sin contraseña: se le invita a crearla. */
+        const sinPassword = typeof window.cuentaTienePassword === 'function'
+            && !window.cuentaTienePassword();
+        let yaSugerido = false;
+
+        try {
+            yaSugerido = localStorage.getItem('tienda_password_sugerida') === '1';
+        } catch {
+            yaSugerido = true;
         }
+
+        if (sinPassword && !yaSugerido) {
+            try {
+                localStorage.setItem('tienda_password_sugerida', '1');
+                sessionStorage.setItem('tienda_aviso_password', '1');
+            } catch {
+                /* sin almacenamiento: sigue el flujo normal */
+            }
+
+            window.location.href = `${urlTienda('perfil')}#configuracion`;
+            return;
+        }
+
+        window.location.href = destinoSeguro();
     });
 
     /* Confirmación de correo: Supabase devuelve #type=signup en el enlace. */

@@ -154,6 +154,23 @@ export default function initMostrarProductoVariaciones() {
     }
 
 
+    /* form.reset() no limpia el Select2 de producto: hay que vaciarlo y refrescar su vista. */
+    function limpiarFormularioVariacion() {
+        const formulario = document.getElementById('formCrearProductoVariacion');
+
+        if (formulario) formulario.reset();
+
+        $('#formCrearProductoVariacion').find('select').each(function () {
+            const $select = $(this);
+
+            $select.val('');
+
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.trigger('change.select2');
+            }
+        });
+    }
+
     // EVENTO DE GUARDAR VARIACION
     $('#formCrearProductoVariacion').off('submit').on('submit',function(e){
 
@@ -177,7 +194,7 @@ export default function initMostrarProductoVariaciones() {
 
             success:function(){
                 mostrarToast('Variación creada correctamente','success');
-                $('#formCrearProductoVariacion')[0].reset();
+                limpiarFormularioVariacion();
                 bootstrap.Modal.getInstance(document.getElementById('modalCrearProductoVariacion')).hide();
                 tabla.ajax.reload(null,false);
             },
@@ -204,6 +221,11 @@ export default function initMostrarProductoVariaciones() {
         });
 
     });
+
+    /* Al cerrar el modal también se limpia, aunque no se haya guardado. */
+    $('#modalCrearProductoVariacion')
+        .off('hidden.bs.modal.limpiarVariacion')
+        .on('hidden.bs.modal.limpiarVariacion', limpiarFormularioVariacion);
 
 
     // EVENTO DE EDITAR VARIACION

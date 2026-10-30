@@ -1998,3 +1998,88 @@ button { font-family: inherit; }
     display: none;
   }
 }
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  Ayuda con la cuenta                                          ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+.ayuda__campo {
+  border: 0;
+  margin: 0 0 12px;
+  padding: 0;
+  min-width: 0;
+}
+
+.ayuda__opciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ayuda__opcion {
+  position: relative;
+  display: block;
+  margin: 0;
+}
+
+.ayuda__opcion input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ayuda__opcion > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 0.76rem;
+  line-height: 1.3;
+  color: var(--secundario);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.ayuda__opcion > span i {
+  font-size: 0.95rem;
+  color: var(--texto-suave);
+}
+
+.ayuda__opcion input:checked + span {
+  border-color: var(--secundario);
+  background: var(--complementario);
+  font-weight: 600;
+}
+
+.ayuda__opcion input:checked + span i {
+  color: var(--secundario);
+}
+
+.ayuda__opcion input:focus-visible + span {
+  outline: 2px solid var(--secundario);
+  outline-offset: 2px;
+}
+
+.ayuda__aviso {
+  margin: 2px 0 10px;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: var(--texto-suave);
+}
+
+.ayuda__aviso--error {
+  color: #b42318;
+  font-weight: 500;
+}
+
+@media (max-width: 575.98px) {
+  .ayuda__opciones {
+    grid-template-columns: 1fr;
+  }
+}

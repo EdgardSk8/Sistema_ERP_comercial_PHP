@@ -130,7 +130,17 @@
         };
     }
 
-    const GENERADOR_USUARIO = () => 'u_' + crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+    const GENERADOR_USUARIO = (nombre) => {
+        const base = String(nombre || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .slice(0, 50);
+
+        return base || 'cliente';
+    };
 
     async function obtenerOCrearCliente(usuario) {
         const { data, error } = await supabase
@@ -145,7 +155,7 @@
 
         const meta = usuario.user_metadata || {};
         const nombre = texto(meta.nombre_cliente || meta.full_name || meta.name) || texto(usuario.email).split('@')[0] || 'Cliente';
-        const usuarioWeb = texto(meta.usuario_cliente).slice(0, 60) || GENERADOR_USUARIO();
+        const usuarioWeb = texto(meta.usuario_cliente).slice(0, 60) || GENERADOR_USUARIO(nombre);
 
         const { data: creado, error: errorCrear } = await supabase
             .from('clientes')
@@ -168,7 +178,7 @@
                         auth_id: usuario.id,
                         nombre_cliente: nombre,
                         correo_cliente: texto(usuario.email).toLowerCase() || null,
-                        usuario_cliente: GENERADOR_USUARIO(),
+                        usuario_cliente: `${GENERADOR_USUARIO(nombre)}_${Math.random().toString(36).slice(2, 6)}`,
                         telefono_cliente: texto(meta.telefono_cliente) || null,
                         estado_cliente: true,
                     })

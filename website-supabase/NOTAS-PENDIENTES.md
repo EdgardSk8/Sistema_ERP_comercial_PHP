@@ -17,6 +17,9 @@
 - [ ] **Descuento de primera compra al confirmar el correo** (futuro): al confirmar, asignar un descuento/cupón de bienvenida al cliente y mostrarlo en «Mi cuenta → Descuento».
 - [x] **Rutas adaptadas al hosting**: `urlTienda()` usa `/tienda/...` en local y la raíz en Cloudflare Pages; el login con Google y el registro ya apuntan al dominio actual.
 - [x] **Perfil del cliente ampliado**: historial de ventas, deudas por pagar, etc.
+- [x] **Centro de ayuda** (`/ayuda`): selectores de necesidad (contraseña, acceso, correo, cuenta desactivada, pedido, otro) y envío del caso por WhatsApp al +505 84774288 (también por correo).
+- [x] **Contraseña temporal para el ejecutivo**: `php artisan tienda:password-temporal correo@dominio.com --password=123456` asigna la temporal y el cliente la cambia en Mi cuenta → Configuración.
+- [x] **Usuario derivado del nombre**: `tellez_software` en lugar de `u_b745…` (trigger `web_crear_cliente` + migración `2026_10_30_000002`).
 - [x] **Estados del pedido**: el cliente compra y paga en línea **o** solicita en línea → el negocio acepta el pedido → la transacción se realiza más adelante.
 - [x] **Productos agotados**: se siguen mostrando, marcados como "Agotado", al final del listado.
 
@@ -138,3 +141,6 @@
 - [ ] Supabase → Providers → Google: Client ID y Client Secret.
 - [ ] Google Cloud → URI autorizado: `https://tnzuicefxwowpbjtjdnx.supabase.co/auth/v1/callback`
 - [ ] Cloudflare Pages: publicar `_redirects` corregido (sin destinos `.html`).
+- [ ] Supabase → Authentication → URL Configuration: Site URL cambiado a `https://tellezstorenic.pages.dev` (era `http://localhost:3000`).
+- [ ] SMTP en Supabase para los correos de confirmación de cuenta.
+- [ ] Enlace «¿Olvidaste tu contraseña?» con `resetPasswordForEmail` (requiere SMTP).

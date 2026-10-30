@@ -750,6 +750,25 @@ export default function initCompras() {
 
     /* ---------------------------------------------------------------------------------------------------- */
 
+        /* form.reset() no limpia los Select2: hay que vaciarlos y refrescar su vista. */
+        function limpiarModalCrearProducto() {
+            const formulario = document.getElementById('formCrearProducto');
+
+            if (formulario) formulario.reset();
+
+            $('#formCrearProducto').find('select').each(function () {
+                const $select = $(this);
+
+                $select.val('');
+
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.trigger('change.select2');
+                }
+            });
+
+            $('#preview_imagen_producto').attr('src', '').addClass('d-none');
+        }
+
         // EVENTO GUARDAR PRODUCTO
         $('#btnGuardarProducto').click(function() {
 
@@ -845,9 +864,8 @@ export default function initCompras() {
                 let newOption = new Option(producto.text, producto.id, true, true);
                 $('#producto_select').append(newOption).trigger('change');
 
-                // 🔥 limpiar modal
-                $('#formCrearProducto')[0].reset();
-                $('#preview_imagen_producto').attr('src','').addClass('d-none');
+                // 🔥 limpiar modal (incluye los Select2)
+                limpiarModalCrearProducto();
 
                 const modalElement = document.getElementById("modalCrearProducto");
                 const modalInstance = bootstrap.Modal.getInstance(modalElement);
@@ -880,8 +898,7 @@ export default function initCompras() {
 
         // LIMPIAR MODAL
         $('#modalCrearProducto').on('hidden.bs.modal', function () {
-            $('#formCrearProducto')[0].reset();
-            $('#preview_imagen_producto').attr('src', '').addClass('d-none');
+            limpiarModalCrearProducto();
         });
 
     }; crearcompra();

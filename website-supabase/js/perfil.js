@@ -360,8 +360,10 @@ function ajustarFormPassword() {
     const columna = porId('passwordActualCol');
     const titulo = porId('passwordTitulo');
     const ayuda = porId('passwordAyuda');
+    const aviso = porId('avisoPassword');
 
     if (columna) columna.hidden = !tiene;
+    if (aviso) aviso.hidden = tiene;
 
     if (titulo) titulo.textContent = tiene ? 'Cambiar contraseña' : 'Crear contraseña';
 
@@ -369,6 +371,21 @@ function ajustarFormPassword() {
         ayuda.textContent = tiene
             ? 'Usa una contraseña de al menos 6 caracteres.'
             : 'Tu cuenta entra con Google. Crea una contraseña para poder entrar también con tu correo.';
+    }
+
+    if (!tiene) {
+        let avisar = false;
+
+        try {
+            avisar = sessionStorage.getItem('tienda_aviso_password') === '1';
+            sessionStorage.removeItem('tienda_aviso_password');
+        } catch {
+            avisar = false;
+        }
+
+        if (avisar) {
+            tiendaToast('Crea una contraseña para entrar también con tu correo.', 'aviso');
+        }
     }
 }
 
