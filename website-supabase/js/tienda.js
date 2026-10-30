@@ -286,13 +286,17 @@ function iniciarCatalogo(productos, tallasReferencia) {
         if (!catGrid) return;
 
         const opciones = [
-            { nombre: 'Todos', valor: '', icono: 'bi-grid' },
-            { nombre: 'Favoritos', valor: CATEGORIA_FAVORITOS, icono: 'bi-heart-fill' },
-        ].concat(categorias.map(categoria => ({ nombre: categoria, valor: categoria, icono: 'bi-tag' })));
+            { nombre: 'Todos', valor: '', icono: 'bi bi-grid' },
+            { nombre: 'Favoritos', valor: CATEGORIA_FAVORITOS, icono: 'bi bi-heart-fill' },
+        ].concat(categorias.map(categoria => ({
+            nombre: categoria,
+            valor: categoria,
+            icono: typeof window.iconoCategoria === 'function' ? window.iconoCategoria(categoria) : 'bi bi-tag'
+        })));
 
         catGrid.innerHTML = opciones.map(opcion => `
             <button class="cat-item${opcion.valor === categoriaActual ? ' cat-item--activo' : ''}" type="button" data-categoria="${escapar(opcion.valor)}">
-                <span class="cat-item__circulo"><i class="bi ${opcion.icono}"></i></span>
+                <span class="cat-item__circulo"><i class="${opcion.icono}"></i></span>
                 ${escapar(opcion.nombre)}
             </button>
         `).join('');

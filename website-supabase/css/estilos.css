@@ -359,6 +359,26 @@ button { font-family: inherit; }
 .cat-item--activo { color: var(--secundario); }
 .cat-item--activo .cat-item__circulo { background: var(--complementario); border-color: var(--secundario); }
 
+/* En móvil las categorías van en una sola fila con scroll lateral. */
+@media (max-width: 767.98px) {
+  .cat-grid {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 12px;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .cat-grid::-webkit-scrollbar { display: none; }
+
+  .cat-item {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+}
+
 /* ── 4. Tarjetas de producto ─────────────────────────────────── */
 .grid-productos { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--e-3); }
 
