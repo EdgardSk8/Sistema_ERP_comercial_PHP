@@ -12,8 +12,10 @@
   - La ubicación del cliente es obligatoria para cotizar (por eso importan las coordenadas de `cliente_direcciones`).
 - [x] **Catálogo con paginación** (hallazgo 5: hoy se renderiza todo de una vez).
 - [x] **Verificación de correo con código** (hallazgo 6: hoy `web_autoconfirmar_correo` marca el correo como verificado sin comprobarlo).
+  - Flujo actual: el registro queda **pendiente de confirmar correo** y no inicia sesión hasta confirmarlo.
+  - Requiere quitar el trigger `web_autoconfirmar_correo` (ya eliminado en `supabase/website.sql`) y configurar SMTP.
+- [ ] **Descuento de primera compra al confirmar el correo** (futuro): al confirmar, asignar un descuento/cupón de bienvenida al cliente y mostrarlo en «Mi cuenta → Descuento».
 - [x] **Rutas adaptadas al hosting**: `urlTienda()` usa `/tienda/...` en local y la raíz en Cloudflare Pages; el login con Google y el registro ya apuntan al dominio actual.
-- [x] **Registro con entrada automática**: si Supabase no devuelve sesión, se intenta iniciar sesión de inmediato.
 - [x] **Perfil del cliente ampliado**: historial de ventas, deudas por pagar, etc.
 - [x] **Estados del pedido**: el cliente compra y paga en línea **o** solicita en línea → el negocio acepta el pedido → la transacción se realiza más adelante.
 - [x] **Productos agotados**: se siguen mostrando, marcados como "Agotado", al final del listado.

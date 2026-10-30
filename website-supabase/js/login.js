@@ -75,6 +75,14 @@ function iniciarAcceso() {
             window.location.href = destinoSeguro();
         }
     });
+
+    /* Confirmación de correo: Supabase devuelve #type=signup en el enlace. */
+    const confirmado = new URLSearchParams(window.location.search).get('confirmado') === '1'
+        || String(window.location.hash || '').includes('type=signup');
+
+    if (confirmado) {
+        tiendaToast('Correo confirmado. Ya puedes ingresar a tu cuenta.');
+    }
 }
 
 function iniciarSociales() {
@@ -232,8 +240,15 @@ function iniciarRegistro() {
             tiendaToast(datos.mensaje || 'Cuenta creada correctamente.');
 
             if (!datos.cliente) {
+                const correo = porId('registroCorreo')?.value.trim();
+
                 document.querySelector('[data-vista="login"]')?.click();
                 bloquearBoton(boton, false);
+
+                if (correo && porId('loginUsuario')) {
+                    porId('loginUsuario').value = correo;
+                }
+
                 return;
             }
 

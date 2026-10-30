@@ -51,25 +51,12 @@ create trigger web_crear_cliente
 after insert on auth.users
 for each row execute function public.web_crear_cliente();
 
--- 2.1) Modo prueba sin SMTP: marca el correo como confirmado al registrarse.
---      Elimina este trigger cuando configures un SMTP y quieras confirmar correos.
-create or replace function public.web_autoconfirmar_correo()
-returns trigger
-language plpgsql
-security definer
-set search_path = auth, public
-as $$
-begin
-    new.email_confirmed_at := coalesce(new.email_confirmed_at, now());
-    -- Ojo: confirmed_at es una columna generada; no se debe asignar.
-    return new;
-end;
-$$;
-
+-- 2.1) Confirmación de correo OBLIGATORIA.
+--      El cliente queda pendiente hasta confirmar su correo; recién ahí puede ingresar.
+--      Si en algún momento necesitas saltarte la confirmación (pruebas locales),
+--      ejecuta manualmente el bloque comentado del final de este archivo.
 drop trigger if exists web_autoconfirmar_correo on auth.users;
-create trigger web_autoconfirmar_correo
-before insert on auth.users
-for each row execute function public.web_autoconfirmar_correo();
+drop function if exists public.web_autoconfirmar_correo();
 
 -- 3) Políticas para la cuenta del cliente
 --    Además de RLS, los roles de Supabase necesitan permisos de tabla.
@@ -571,3 +558,25 @@ select jsonb_build_object(
     'puede_resenar', auth.uid() is not null
 );
 $$;
+
+-- ============================================================
+-- OPCIONAL · Solo para pruebas locales sin SMTP
+-- Marca el correo como confirmado al registrarse (desactiva la
+-- confirmación real). NO lo uses en producción.
+-- ============================================================
+-- create or replace function public.web_autoconfirmar_correo()
+-- returns trigger
+-- language plpgsql
+-- security definer
+-- set search_path = auth, public
+-- as $$
+-- begin
+--     new.email_confirmed_at := coalesce(new.email_confirmed_at, now());
+--     return new;
+-- end;
+-- $$;
+--
+-- drop trigger if exists web_autoconfirmar_correo on auth.users;
+-- create trigger web_autoconfirmar_correo
+-- before insert on auth.users
+-- for each row execute function public.web_autoconfirmar_correo();

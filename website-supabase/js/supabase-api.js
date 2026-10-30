@@ -384,25 +384,13 @@
         }
 
         if (!data.session) {
-            /* Si el correo ya está confirmado (o la confirmación está desactivada),
-               inicia sesión de inmediato para que el registro no obligue a un segundo paso. */
-            const { data: sesion } = await supabase.auth.signInWithPassword({ email: correo, password });
-
-            if (!sesion?.session) {
-                return {
-                    success: true,
-                    mensaje: 'Cuenta creada. Revisa tu correo para confirmarla y luego inicia sesión.',
-                    cliente: null,
-                };
-            }
-
-            usuarioActual = sesion.user;
-            clienteActual = await obtenerOCrearCliente(sesion.user);
-
+            /* La cuenta queda pendiente hasta que el cliente confirme el correo.
+               TODO: al confirmar, aplicar el descuento de primera compra. */
             return {
                 success: true,
-                mensaje: 'Cuenta creada. ¡Bienvenido!',
-                cliente: datosCliente(clienteActual),
+                pendiente_confirmacion: true,
+                mensaje: 'Cuenta creada. Te enviamos un correo: confírmalo para poder ingresar.',
+                cliente: null,
             };
         }
 
