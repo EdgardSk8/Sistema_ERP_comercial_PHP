@@ -4,6 +4,21 @@
 
 const API_PRODUCTOS = '/tienda/api/productos';
 const IMAGEN_FALLBACK = '/tienda/recursos/img/producto.png';
+const TALLAS_REFERENCIA = '/tienda/recursos/data/tallas.json';
+
+window.favoritosTienda = new Set();
+
+window.marcarFavoritosTienda = function marcarFavoritosTienda() {
+    document.querySelectorAll('.btn-favorito[data-producto]').forEach((boton) => {
+        const activo = window.favoritosTienda.has(String(boton.dataset.producto));
+
+        boton.classList.toggle('is-activo', activo);
+        boton.setAttribute('aria-label', activo ? 'Quitar de favoritos' : 'Agregar a favoritos');
+
+        const icono = boton.querySelector('i');
+        if (icono) icono.className = activo ? 'bi bi-heart-fill' : 'bi bi-heart';
+    });
+};
 
 const COLORES = {
     negro: '#22252A',
@@ -74,6 +89,25 @@ function escapar(valor) {
         .replace(/'/g, '&#39;');
 }
 
+/* ── Calificación compacta (estrellas + opiniones) ───────────── */
+function estrellasTarjeta(calificacion) {
+    const total = Number(calificacion?.total || 0);
+    if (total <= 0) return '';
+
+    const promedio = Math.max(0, Math.min(5, Number(calificacion?.promedio) || 0));
+    const icono = '<i class="bi bi-star-fill"></i>';
+    const capas = `<span class="estrellas__capa estrellas__capa--fondo" aria-hidden="true">${icono.repeat(5)}</span>`
+        + `<span class="estrellas__capa estrellas__capa--relleno" aria-hidden="true">${icono.repeat(5)}</span>`;
+
+    return `
+        <div class="card-producto__rating">
+            <span class="estrellas estrellas--xs" style="--pct:${(promedio / 5) * 100}%" role="img"
+                  aria-label="${promedio.toFixed(1)} de 5 estrellas">${capas}</span>
+            <span class="card-producto__rating-num">${promedio.toFixed(1)}</span>
+            <span class="card-producto__rating-total">(${total})</span>
+        </div>`;
+}
+
 /* ── Render de tarjeta ───────────────────────────────────────── */
 function tarjetaProducto(variante) {
     const agotado = Number(variante.stock || 0) <= 0;
@@ -85,12 +119,13 @@ function tarjetaProducto(variante) {
                 <img src="${escapar(variante.imagen || IMAGEN_FALLBACK)}" alt="${escapar(variante.nombre)}" loading="lazy"
                      onerror="this.src='${IMAGEN_FALLBACK}'">
                 ${agotado ? '<span class="badge-agotado">Agotado</span>' : ''}
-                <button class="btn-favorito" type="button" aria-label="Agregar a favoritos">
+                <button class="btn-favorito" type="button" data-producto="${variante.id}" aria-label="Agregar a favoritos">
                     <i class="bi bi-heart"></i>
                 </button>
             </div>
             <div class="card-producto__info">
                 <h3 class="card-producto__nombre">${escapar(variante.nombre)}</h3>
+                ${estrellasTarjeta(variante.calificacion)}
                 <span class="card-producto__categoria">${escapar(variante.categoria)}</span>
                 <span class="card-producto__color">${escapar(variante.color || 'Único')}</span>
                 <div class="card-producto__precios">
@@ -119,7 +154,7 @@ function desagruparPorColor(productos) {
 }
 
 /* ── Catálogo ────────────────────────────────────────────────── */
-function iniciarCatalogo(productos) {
+function iniciarCatalogo(productos, tallasReferencia) {
     const grid = document.getElementById('catalogoGrid');
     const contador = document.getElementById('catalogoContador');
     const catGrid = document.getElementById('catGrid');
@@ -152,10 +187,19 @@ function iniciarCatalogo(productos) {
         variantes.flatMap(variante => (variante.tallas || []).map(talla => String(talla)))
     );
 
+    const cmDeTalla = (talla) => {
+        const ref = tallasReferencia?.tallas?.find(t => Number(t.eu) === Number(talla));
+        return ref ? `${ref.cm} cm` : '';
+    };
+
     if (selectTallas) {
         selectTallas.innerHTML = TALLAS_FILTRO.map(talla => {
             const disponible = tallasCatalogo.has(talla);
-            return `<option value="${talla}"${disponible ? '' : ' disabled'}>${talla}${disponible ? '' : ' · sin productos'}</option>`;
+            const cm = cmDeTalla(talla);
+            const detalle = disponible
+                ? (cm ? ` · ${cm}` : '')
+                : ` · ${cm ? `${cm} · ` : ''}sin productos`;
+            return `<option value="${talla}"${disponible ? '' : ' disabled'}>${talla}${detalle}</option>`;
         }).join('');
 
         if (window.jQuery && window.jQuery.fn.select2) {
@@ -233,24 +277,42 @@ function iniciarCatalogo(productos) {
         pintar();
     };
 
-    // Círculos de categoría (con "Todos" para quitar el filtro)
-    if (catGrid) {
+    // Círculos de categoría (con "Todos" para quitar el filtro y "Favoritos"
+    // cuando el cliente tiene productos guardados).
+    const CATEGORIA_FAVORITOS = '__favoritos__';
+
+    const pintarCategorias = () => {
+        if (!catGrid) return;
+
+        if (categoriaActual === CATEGORIA_FAVORITOS && !window.favoritosTienda?.size) {
+            categoriaActual = '';
+        }
+
         const opciones = [{ nombre: 'Todos', valor: '', icono: 'bi-grid' }]
             .concat(categorias.map(categoria => ({ nombre: categoria, valor: categoria, icono: 'bi-tag' })));
 
+        if (window.favoritosTienda?.size) {
+            opciones.push({ nombre: 'Favoritos', valor: CATEGORIA_FAVORITOS, icono: 'bi-heart-fill' });
+        }
+
         catGrid.innerHTML = opciones.map(opcion => `
-            <button class="cat-item${opcion.valor === '' ? ' cat-item--activo' : ''}" type="button" data-categoria="${escapar(opcion.valor)}">
+            <button class="cat-item${opcion.valor === categoriaActual ? ' cat-item--activo' : ''}" type="button" data-categoria="${escapar(opcion.valor)}">
                 <span class="cat-item__circulo"><i class="bi ${opcion.icono}"></i></span>
                 ${escapar(opcion.nombre)}
             </button>
         `).join('');
-    }
+    };
+
+    pintarCategorias();
 
     const pintar = () => {
         const termino = normalizar(buscador ? buscador.value : '');
 
         const lista = variantes.filter(variante => {
-            const coincideCategoria = !categoriaActual || variante.categoria === categoriaActual;
+            const coincideCategoria = !categoriaActual
+                || (categoriaActual === CATEGORIA_FAVORITOS
+                    ? Boolean(window.favoritosTienda?.has(String(variante.id)))
+                    : variante.categoria === categoriaActual);
             const coincideTexto = !termino || normalizar(variante.nombre).includes(termino);
             const precio = Number(variante.precio) || 0;
             const coincidePrecio = (precioMin === null || precio >= precioMin)
@@ -269,6 +331,8 @@ function iniciarCatalogo(productos) {
             : `<p class="catalogo-vacio">${hayFiltro
                 ? 'No hay productos que coincidan con la búsqueda o el filtro.'
                 : 'No hay productos en esta categoría.'}</p>`;
+
+        window.marcarFavoritosTienda();
 
         if (contador) {
             contador.textContent = `${lista.length} ${lista.length === 1 ? 'producto' : 'productos'}`;
@@ -352,7 +416,33 @@ function iniciarCatalogo(productos) {
         }
     });
 
+    // Permite refrescar las categorías cuando cambian los favoritos.
+    window.refrescarCatalogo = () => {
+        pintarCategorias();
+        pintar();
+    };
+
+    // Cambio de favoritos: sin repintar todo el grid (evita parpadeos).
+    window.actualizarFavoritosCatalogo = () => {
+        pintarCategorias();
+
+        // Solo se repinta la lista si el filtro activo es "Favoritos".
+        if (categoriaActual === CATEGORIA_FAVORITOS) pintar();
+    };
+
     pintar();
+}
+
+async function cargarTallasReferencia() {
+    try {
+        const respuesta = await fetch(TALLAS_REFERENCIA, { headers: { Accept: 'application/json' } });
+        if (!respuesta.ok) return null;
+
+        return await respuesta.json();
+    } catch (error) {
+        console.warn('No se pudo cargar la referencia de tallas', error);
+        return null;
+    }
 }
 
 async function cargarCatalogo() {
@@ -370,7 +460,8 @@ async function cargarCatalogo() {
             return;
         }
 
-        iniciarCatalogo(productos);
+        const tallasReferencia = await cargarTallasReferencia();
+        iniciarCatalogo(productos, tallasReferencia);
     } catch (error) {
         if (grid) grid.innerHTML = '<p class="catalogo-vacio">No se pudo cargar el catálogo. Intenta más tarde.</p>';
         console.error(error);
@@ -387,4 +478,80 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     cargarCatalogo();
+
+    window.sesionTiendaPromise.then(async (sesion) => {
+        if (!sesion?.autenticado) return;
+
+        try {
+            const datos = await window.TiendaAPI.get('/tienda/api/favoritos');
+            window.favoritosTienda = new Set(
+                (datos.favoritos || []).map((favorito) => String(favorito.id_producto))
+            );
+            window.marcarFavoritosTienda();
+            window.refrescarCatalogo?.();
+        } catch (error) {
+            console.error('No se pudieron cargar los favoritos.', error);
+        }
+    });
+});
+
+document.addEventListener('click', async (evento) => {
+    const boton = evento.target.closest('.btn-favorito');
+    if (!boton) return;
+
+    evento.preventDefault();
+    evento.stopPropagation();
+
+    const idProducto = boton.dataset.producto;
+    if (!idProducto) return;
+
+    const sesion = await window.sesionTiendaPromise;
+
+    if (!sesion?.autenticado) {
+        tiendaToast('Inicia sesión para guardar tus favoritos.', 'aviso');
+        window.location.href = '/tienda/perfil#perfil';
+        return;
+    }
+
+    const activo = window.favoritosTienda.has(String(idProducto));
+
+    // Cambio visual inmediato (optimista) para evitar saltos al confirmar.
+    if (activo) {
+        window.favoritosTienda.delete(String(idProducto));
+    } else {
+        window.favoritosTienda.add(String(idProducto));
+    }
+
+    window.marcarFavoritosTienda();
+
+    boton.classList.remove('is-pulsado');
+    void boton.offsetWidth;
+    boton.classList.add('is-pulsado');
+
+    try {
+        if (activo) {
+            await window.TiendaAPI.delete(`/tienda/api/favoritos/${idProducto}`);
+        } else {
+            await window.TiendaAPI.post('/tienda/api/favoritos', { id_producto: Number(idProducto) });
+        }
+
+        window.actualizarFavoritosCatalogo?.();
+    } catch (error) {
+        // Revierte el cambio visual si el backend rechazó la acción.
+        if (activo) {
+            window.favoritosTienda.add(String(idProducto));
+        } else {
+            window.favoritosTienda.delete(String(idProducto));
+        }
+
+        window.marcarFavoritosTienda();
+        window.actualizarFavoritosCatalogo?.();
+
+        tiendaToast(
+            error?.message || (activo
+                ? 'No se pudo quitar de favoritos.'
+                : 'No se pudo agregar a favoritos.'),
+            'aviso'
+        );
+    }
 });

@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Cliente extends Model
 {
     protected $table = 'clientes';
+
     protected $primaryKey = 'id_cliente';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -15,9 +17,26 @@ class Cliente extends Model
         'cedula_cliente',
         'ruc_cliente',
         'telefono_cliente',
+        'fecha_nacimiento_cliente',
         'direccion_cliente',
         'correo_cliente',
-        'estado_cliente'
+        'usuario_cliente',
+        'password_hash_cliente',
+        'google_id',
+        'facebook_id',
+        'descuento_tipo_cliente',
+        'descuento_valor_cliente',
+        'estado_cliente',
+    ];
+
+    protected $hidden = [
+        'password_hash_cliente',
+    ];
+
+    protected $casts = [
+        'fecha_nacimiento_cliente' => 'date',
+        'descuento_valor_cliente' => 'float',
+        'estado_cliente' => 'boolean',
     ];
 
     public function ventas()
@@ -29,6 +48,20 @@ class Cliente extends Model
         );
     }
 
+    public function direcciones()
+    {
+        return $this->hasMany(ClienteDireccion::class, 'id_cliente', 'id_cliente');
+    }
+
+    public function favoritos()
+    {
+        return $this->hasMany(ClienteFavorito::class, 'id_cliente', 'id_cliente');
+    }
+
+    public function resenias()
+    {
+        return $this->hasMany(ReseniaProducto::class, 'id_cliente', 'id_cliente');
+    }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

@@ -20,6 +20,7 @@
 /storage/pail
 /vendor
 /storage/debugbar
+/.zvec-grep
 Homestead.json
 Homestead.yaml
 Thumbs.db

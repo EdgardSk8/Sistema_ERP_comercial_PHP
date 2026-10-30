@@ -12,7 +12,7 @@
             <div class="dropdown-menu p-3 dropdown-columns">
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="0" id="colIdentificador">
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="0" id="colIdentificador" checked>
                     <label class="form-check-label" for="colIdentificador">Identificador</label>
                 </div>
 
@@ -32,22 +32,47 @@
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="4" id="colTelefono" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="4" id="colFechaNacimiento" checked>
+                    <label class="form-check-label" for="colFechaNacimiento">Fecha nacimiento</label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="5" id="colTelefono" checked>
                     <label class="form-check-label" for="colTelefono">Teléfono</label>
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="5" id="colCorreo" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="6" id="colCorreo" checked>
                     <label class="form-check-label" for="colCorreo">Correo</label>
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="6" id="colEstado" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="7" id="colDireccion" checked>
+                    <label class="form-check-label" for="colDireccion">Dirección</label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="8" id="colUsuarioWeb" checked>
+                    <label class="form-check-label" for="colUsuarioWeb">Usuario web</label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="9" id="colDescuento" checked>
+                    <label class="form-check-label" for="colDescuento">Descuento</label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="10" id="colEstado" checked>
                     <label class="form-check-label" for="colEstado">Estado</label>
                 </div>
 
                 <div class="form-check">
-                    <input class="form-check-input toggle-col" type="checkbox" data-column="7" id="colAcciones" checked>
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="11" id="colFechaCreacion" checked>
+                    <label class="form-check-label" for="colFechaCreacion">Fecha creación</label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input toggle-col" type="checkbox" data-column="12" id="colAcciones" checked>
                     <label class="form-check-label" for="colAcciones">Acciones</label>
                 </div>
 

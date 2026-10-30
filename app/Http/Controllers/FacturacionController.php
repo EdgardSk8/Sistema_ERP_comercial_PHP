@@ -19,7 +19,9 @@ use App\Models\VariacionTalla;
 use App\Models\Venta;
 use App\Services\CosteoInventarioService;
 use App\Services\RegistrarPagoVenta;
+use App\Services\TicketEscPosService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -43,67 +45,79 @@ class FacturacionController extends Controller
                 ], 400);
             }
 
-            $query = Producto::with([
-                'impuesto',
-                'variaciones' => function ($variaciones) {
-                    $variaciones->where('estado_variacion', 1)
-                        ->with(['tallas.talla' => function ($tallas) {
-                            $tallas->where('estado_talla', 1);
-                        }]);
-                },
-            ])
-                ->where('estado_producto', 1);
+            $buscar = (string) $request->input('buscar', '');
 
-            // 🔍 Buscador
-            if ($request->filled('buscar')) {
-                $query->where('nombre_producto', 'like', '%'.$request->buscar.'%');
-            }
+            // Supabase responde cada consulta en ~230 ms: el catálogo se guarda
+            // unos segundos en caché para que el POS no espere en cada carga.
+            $clave = 'pos.productos.'.md5($buscar);
 
-            $productos = $query->select(
-                'id_producto',
-                'nombre_producto',
-                'precio_venta',
-                'stock_actual',
-                'imagen_producto',
-                'id_impuesto'
-            )
-                // ->limit(20)
-                ->get()
-                ->flatMap(function ($p) {
+            $productos = Cache::remember(
+                $clave,
+                now()->addSeconds((int) env('POS_CACHE_PRODUCTOS', 30)),
+                function () use ($request) {
+                    $query = Producto::with([
+                        'impuesto',
+                        'variaciones' => function ($variaciones) {
+                            $variaciones->where('estado_variacion', 1)
+                                ->with(['tallas.talla' => function ($tallas) {
+                                    $tallas->where('estado_talla', 1);
+                                }]);
+                        },
+                    ])
+                        ->where('estado_producto', 1);
 
-                    $iva = $p->impuesto->porcentaje_impuesto ?? 0;
+                    // 🔍 Buscador
+                    if ($request->filled('buscar')) {
+                        $query->where('nombre_producto', 'like', '%'.$request->buscar.'%');
+                    }
 
-                    $precioConIVA = $p->precio_venta + ($p->precio_venta * ($iva / 100));
+                    return $query->select(
+                        'id_producto',
+                        'nombre_producto',
+                        'precio_venta',
+                        'stock_actual',
+                        'imagen_producto',
+                        'id_impuesto'
+                    )
+                        ->get()
+                        ->flatMap(function ($p) {
 
-                    $producto = [
-                        'id_producto' => $p->id_producto,
-                        'nombre_producto' => $p->nombre_producto,
-                        'precio_venta' => $p->precio_venta,
-                        'precio_con_iva' => round($precioConIVA, 2),
-                        'iva' => $iva,
-                        'stock_actual' => $p->stock_actual,
-                        'imagen_producto' => $p->imagen_producto,
-                    ];
+                            $iva = $p->impuesto->porcentaje_impuesto ?? 0;
 
-                    $variantes = $p->variaciones->flatMap(function ($variacion) use ($p, $iva) {
-                        return $variacion->tallas->map(function ($variacionTalla) use ($p, $variacion, $iva) {
-                            return [
+                            $precioConIVA = $p->precio_venta + ($p->precio_venta * ($iva / 100));
+
+                            $producto = [
                                 'id_producto' => $p->id_producto,
-                                'id_variacion_talla' => $variacionTalla->id_variacion_talla,
-                                'nombre_producto' => $p->nombre_producto.' · '.$variacion->color.' · '.($variacionTalla->talla->talla ?? 'Sin talla'),
-                                'precio_venta' => $variacionTalla->precio_venta ?? $p->precio_venta,
-                                'precio_con_iva' => round(($variacionTalla->precio_venta ?? $p->precio_venta) * (1 + ($iva / 100)), 2),
+                                'nombre_producto' => $p->nombre_producto,
+                                'precio_venta' => $p->precio_venta,
+                                'precio_con_iva' => round($precioConIVA, 2),
                                 'iva' => $iva,
-                                'stock_actual' => $variacionTalla->stock,
+                                'stock_actual' => $p->stock_actual,
                                 'imagen_producto' => $p->imagen_producto,
-                                'es_variacion' => true,
-                                'sku' => $variacionTalla->sku,
                             ];
-                        })->all();
-                    });
 
-                    return $variantes->isNotEmpty() ? $variantes->values()->all() : [$producto];
-                });
+                            $variantes = $p->variaciones->flatMap(function ($variacion) use ($p, $iva) {
+                                return $variacion->tallas->map(function ($variacionTalla) use ($p, $variacion, $iva) {
+                                    return [
+                                        'id_producto' => $p->id_producto,
+                                        'id_variacion_talla' => $variacionTalla->id_variacion_talla,
+                                        'nombre_producto' => $p->nombre_producto.' · '.$variacion->color.' · '.($variacionTalla->talla->talla ?? 'Sin talla'),
+                                        'precio_venta' => $variacionTalla->precio_venta ?? $p->precio_venta,
+                                        'precio_con_iva' => round(($variacionTalla->precio_venta ?? $p->precio_venta) * (1 + ($iva / 100)), 2),
+                                        'iva' => $iva,
+                                        'stock_actual' => $variacionTalla->stock,
+                                        'imagen_producto' => $p->imagen_producto,
+                                        'es_variacion' => true,
+                                        'sku' => $variacionTalla->sku,
+                                    ];
+                                })->all();
+                            });
+
+                            return $variantes->isNotEmpty() ? $variantes->values()->all() : [$producto];
+                        })
+                        ->toArray();
+                }
+            );
 
             return response()->json([
                 'success' => true,
@@ -140,17 +154,15 @@ class FacturacionController extends Controller
             }
 
             // Consulta base
-            $query = Cliente::query();
+            $estado = $request->has('estado') ? (int) $request->estado : 1;
 
-            // Filtrar por estado si se envía
-            if ($request->has('estado')) {
-                $query->where('estado_cliente', $request->estado);
-            } else {
-                // Por defecto, solo clientes activos
-                $query->where('estado_cliente', 1);
-            }
-
-            $clientes = $query->orderBy('nombre_cliente', 'asc')->get();
+            $clientes = Cache::remember(
+                'pos.clientes.'.$estado,
+                now()->addSeconds(60),
+                fn () => Cliente::where('estado_cliente', $estado)
+                    ->orderBy('nombre_cliente', 'asc')
+                    ->get()
+            );
 
             return response()->json([
                 'success' => true,
@@ -530,6 +542,9 @@ class FacturacionController extends Controller
 
             DB::commit();
 
+            // El stock cambió: se invalida el catálogo cacheado del POS.
+            Cache::forget('pos.productos.'.md5(''));
+
             return response()->json([
                 'success' => true,
                 'numero_factura' => $venta->numero_factura,
@@ -583,52 +598,45 @@ class FacturacionController extends Controller
                 ], 400);
             }
 
-            $query = MetodoPago::leftJoin(
-                'metodo_pago_cuenta',
-                'metodos_pago.id_metodo_pago',
-                '=',
-                'metodo_pago_cuenta.id_metodo_pago'
-            )
-                ->leftJoin(
-                    'cuentas',
-                    'metodo_pago_cuenta.id_cuenta',
-                    '=',
-                    'cuentas.id_cuenta'
-                );
+            $estado = $request->has('estado') ? (int) $request->estado : 1;
 
-            if ($request->has('estado')) {
-                $query->where(
-                    'metodos_pago.estado_metodo_pago',
-                    $request->estado
-                );
-            } else {
-                $query->where(
-                    'metodos_pago.estado_metodo_pago',
-                    1
-                );
-            }
-
-            $query->where(function ($q) {
-
-                // Siempre mostrar efectivo
-                $q->where('metodos_pago.id_metodo_pago', 1)
-
-                // O métodos con cuentas activas
-                    ->orWhere(function ($sub) {
-                        $sub->where('metodo_pago_cuenta.estado', 1);
-                    });
-            });
-
-            $metodosPago = $query->select(
-                'metodos_pago.id_metodo_pago',
-                'metodos_pago.nombre_metodo_pago',
-                'metodo_pago_cuenta.id_metodo_pago_cuenta',
-                'cuentas.id_cuenta',
-                'cuentas.nombre_cuenta'
-            )
-                ->orderBy('metodos_pago.nombre_metodo_pago')
-                ->orderBy('cuentas.nombre_cuenta')
-                ->get();
+            $metodosPago = Cache::remember(
+                'pos.metodos.'.$estado,
+                now()->addMinutes(5),
+                function () use ($estado) {
+                    return MetodoPago::leftJoin(
+                        'metodo_pago_cuenta',
+                        'metodos_pago.id_metodo_pago',
+                        '=',
+                        'metodo_pago_cuenta.id_metodo_pago'
+                    )
+                        ->leftJoin(
+                            'cuentas',
+                            'metodo_pago_cuenta.id_cuenta',
+                            '=',
+                            'cuentas.id_cuenta'
+                        )
+                        ->where('metodos_pago.estado_metodo_pago', $estado)
+                        ->where(function ($q) {
+                            // Siempre mostrar efectivo
+                            $q->where('metodos_pago.id_metodo_pago', 1)
+                                // O métodos con cuentas activas
+                                ->orWhere(function ($sub) {
+                                    $sub->where('metodo_pago_cuenta.estado', 1);
+                                });
+                        })
+                        ->select(
+                            'metodos_pago.id_metodo_pago',
+                            'metodos_pago.nombre_metodo_pago',
+                            'metodo_pago_cuenta.id_metodo_pago_cuenta',
+                            'cuentas.id_cuenta',
+                            'cuentas.nombre_cuenta'
+                        )
+                        ->orderBy('metodos_pago.nombre_metodo_pago')
+                        ->orderBy('cuentas.nombre_cuenta')
+                        ->get();
+                }
+            );
 
             return response()->json([
                 'success' => true,
@@ -719,7 +727,7 @@ class FacturacionController extends Controller
     public function MostrarCredencialesPOS()
     {
         try {
-            $config = Credenciales::first();
+            $config = Cache::remember('pos.credenciales', now()->addMinutes(10), fn () => Credenciales::first());
 
             return response()->json([
                 'success' => true,
@@ -730,6 +738,97 @@ class FacturacionController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener configuración',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /*  ╔════════ Imprimir Ticket Termico ════════╗
+        ╚═════════════════════════════════════════╝ */
+
+    public function ImprimirTicketTermico(Request $request)
+    {
+        try {
+
+            $validator = Validator::make($request->all(), [
+                'numero_factura' => 'required|max:80',
+            ], [
+                'required' => 'El campo :attribute es obligatorio.',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            // El POS envía "productos" y el módulo de ventas "detalles".
+            $productos = $request->input('productos')
+                ?? $request->input('detalles')
+                ?? $request->input('detalle');
+
+            if (! is_array($productos) || $productos === []) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => ['productos' => ['El ticket debe tener al menos un producto.']],
+                ], 422);
+            }
+
+            $empresa = Credenciales::first();
+
+            // Se toman los datos reales de la venta guardada: así el ticket sale
+            // igual desde el POS y desde el historial (totales, fecha, cajero y
+            // forma de pago siempre coinciden con la factura emitida).
+            $datos = $request->all();
+
+            $venta = Venta::with(['cliente', 'usuario', 'metodoPago', 'detalles.producto'])
+                ->where('numero_factura', $datos['numero_factura'])
+                ->first();
+
+            if ($venta) {
+                // Se descartan los ítems que envía el navegador: el POS manda
+                // "productos" con el nombre ya mezclado (nombre · variación · SKU)
+                // y ese arreglo tiene prioridad sobre "detalles". Al quitarlo, el
+                // ticket usa siempre los detalles reales de la venta.
+                unset($datos['productos'], $datos['detalle']);
+
+                $datos = array_merge($datos, [
+                    'fecha_venta' => $venta->fecha_venta,
+                    'cliente' => $venta->cliente?->toArray(),
+                    'usuario' => $venta->usuario?->toArray(),
+                    'metodo_pago' => $venta->metodoPago?->toArray(),
+                    'subtotal_venta' => $venta->subtotal_venta,
+                    'impuesto_venta' => $venta->impuesto_venta,
+                    'descuento_venta' => $venta->descuento_venta,
+                    'total_venta' => $venta->total_venta,
+                    'monto_recibido' => $venta->monto_recibido,
+                    'vuelto' => $venta->vuelto,
+                    'detalles' => $venta->detalles->toArray(),
+                ]);
+            }
+
+            $enviado = app(TicketEscPosService::class)->imprimir(
+                $datos,
+                $empresa?->toArray()
+            );
+
+            if (! $enviado) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'La impresora no respondió. Verifique que esté encendida y conectada.',
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'mensaje' => 'Ticket enviado a la impresora.',
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
                 'error' => $e->getMessage(),
             ], 500);
         }

@@ -35,4 +35,26 @@ return [
         ],
     ],
 
+    /*
+    | Acceso con redes sociales para los clientes de la tienda.
+    | Las credenciales se crean en Google Cloud Console y Meta for Developers.
+    */
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        // Socialite exige la clave; el controlador la sobrescribe con la URL
+        // del host actual (local o túnel HTTPS).
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    /*
+    | Supabase (API pública: REST / Storage / Auth).
+    | La conexión a la base de datos va por config/database.php (pgsql).
+    | La publishable key es pública: solo sirve para el cliente JS.
+    */
+    'supabase' => [
+        'url' => env('SUPABASE_URL'),
+        'publishable_key' => env('SUPABASE_PUBLISHABLE_KEY'),
+    ],
+
 ];

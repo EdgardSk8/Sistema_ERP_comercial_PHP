@@ -3,16 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Credenciales;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\File;
+use App\Support\ImagenOptimizada;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Validator;
 
 class CredencialesController extends Controller
 {
-
-/*  ╔═════════════ Mostrar Credenciales ══════════════╗ 
-    ╚═════════════════════════════════════════════════╝ */
+    /*  ╔═════════════ Mostrar Credenciales ══════════════╗
+        ╚═════════════════════════════════════════════════╝ */
 
     public function MostrarCredenciales()
     {
@@ -21,60 +21,59 @@ class CredencialesController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $config
+                'data' => $config,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener configuración',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
-/*  ╔══════════════ Editar Credenciales ══════════════╗ 
-    ╚═════════════════════════════════════════════════╝ */
+    /*  ╔══════════════ Editar Credenciales ══════════════╗
+        ╚═════════════════════════════════════════════════╝ */
 
-    public function EditarCredencial($id)
+    public function EditarCredencial(int $id)
     {
         try {
             $credenciales = Credenciales::find($id);
 
-            if (!$credenciales) {
+            if (! $credenciales) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Credenciales no encontradas'
+                    'mensaje' => 'Credenciales no encontradas',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'credenciales' => $credenciales
+                'credenciales' => $credenciales,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener credenciales',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
+    /*  ╔═══════════ Actualizar Credenciales ═══════════╗
+        ╚═══════════════════════════════════════════════╝ */
 
-/*  ╔═══════════ Actualizar Credenciales ═══════════╗ 
-    ╚═══════════════════════════════════════════════╝ */
-
-    public function ActualizarCredenciales(Request $request, $id)
+    public function ActualizarCredenciales(Request $request, int $id)
     {
         try {
             $credenciales = Credenciales::find($id);
 
-            if (!$credenciales) {
+            if (! $credenciales) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Credenciales no encontradas'
+                    'mensaje' => 'Credenciales no encontradas',
                 ], 404);
             }
 
@@ -93,7 +92,7 @@ class CredencialesController extends Controller
                     'direccion_empresa' => ['nullable', 'max:255'],
                     'telefono_empresa' => ['nullable', 'max:20'],
                     'correo_empresa' => ['nullable', 'email', 'max:100'],
-                    'tipo_cambio' => ['required', 'numeric']
+                    'tipo_cambio' => ['required', 'numeric'],
                 ],
                 [
                     'nombre_empresa.' => 'El nombre de la empresa es obligatorio.',
@@ -101,14 +100,14 @@ class CredencialesController extends Controller
                     'direccion_empresa' => 'La dirección es obligatoria.',
                     'telefono_empresa' => 'El teléfono es obligatorio.',
                     'correo_empresa' => 'El correo es obligatorio.',
-                    'correo_empresa.email' => 'El correo no es válido.'
+                    'correo_empresa.email' => 'El correo no es válido.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -124,29 +123,29 @@ class CredencialesController extends Controller
             return response()->json([
                 'success' => true,
                 'mensaje' => 'Credenciales actualizadas correctamente',
-                'credenciales' => $credenciales
+                'credenciales' => $credenciales,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al actualizar credenciales',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-    public function GuardarLogo(Request $request, $id)
+    public function GuardarLogo(Request $request, int $id)
     {
         return $this->persistirLogo($request, $id);
     }
 
-    public function ActualizarLogo(Request $request, $id)
+    public function ActualizarLogo(Request $request, int $id)
     {
         return $this->persistirLogo($request, $id);
     }
 
-    private function persistirLogo(Request $request, $id)
+    private function persistirLogo(Request $request, int $id)
     {
         $validator = Validator::make($request->all(), [
             'logo_empresa' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
@@ -165,7 +164,7 @@ class CredencialesController extends Controller
         }
 
         $credenciales = Credenciales::find($id);
-        if (!$credenciales) {
+        if (! $credenciales) {
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Credenciales no encontradas',
@@ -177,16 +176,20 @@ class CredencialesController extends Controller
         $directorio = public_path('imagenes/logo');
         File::ensureDirectoryExists($directorio);
 
-        $nombreArchivo = $archivo->hashName();
-        $archivo->move($directorio, $nombreArchivo);
+        // Redimensiona (máx. 1200px) y comprime en WebP (< 300 KB) sin perder nitidez.
+        $nombreArchivo = ImagenOptimizada::guardar(
+            $archivo,
+            $directorio,
+            'Logo'
+        );
 
         $logoAnterior = $credenciales->logo_empresa;
-        $credenciales->logo_empresa = 'imagenes/logo/' . $nombreArchivo;
+        $credenciales->logo_empresa = 'imagenes/logo/'.$nombreArchivo;
 
         try {
             $credenciales->save();
         } catch (\Exception $e) {
-            File::delete($directorio . DIRECTORY_SEPARATOR . $nombreArchivo);
+            File::delete($directorio.DIRECTORY_SEPARATOR.$nombreArchivo);
             throw $e;
         }
 
@@ -199,10 +202,10 @@ class CredencialesController extends Controller
         ], 200);
     }
 
-    public function EliminarLogo($id)
+    public function EliminarLogo(int $id)
     {
         $credenciales = Credenciales::find($id);
-        if (!$credenciales) {
+        if (! $credenciales) {
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Credenciales no encontradas',
@@ -223,7 +226,7 @@ class CredencialesController extends Controller
 
     private function eliminarArchivoLogo(?string $ruta): void
     {
-        if (!$ruta || !str_starts_with($ruta, 'imagenes/logo/') || basename($ruta) !== substr($ruta, strlen('imagenes/logo/'))) {
+        if (! $ruta || ! str_starts_with($ruta, 'imagenes/logo/') || basename($ruta) !== substr($ruta, strlen('imagenes/logo/'))) {
             return;
         }
 

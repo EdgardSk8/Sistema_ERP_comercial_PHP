@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Producto extends Model
 {
     protected $table = 'productos';
+
     protected $primaryKey = 'id_producto';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -22,7 +24,7 @@ class Producto extends Model
         'precio_venta',
         'stock_actual',
         'estado_producto',
-        'fecha_creacion_producto'
+        'fecha_creacion_producto',
     ];
 
     // 🔗 Relaciones
@@ -36,24 +38,28 @@ class Producto extends Model
 
     public function getPorcentajeGananciaAttribute()
     {
-        if ($this->precio_compra <= 0) { return 0; }
-        return round( (($this->precio_venta - $this->precio_compra) / $this->precio_compra) * 100, 2 );
+        if ($this->precio_compra <= 0) {
+            return 0;
+        }
+
+        return round((($this->precio_venta - $this->precio_compra) / $this->precio_compra) * 100, 2);
     }
 
     public function getPrecioVentaFinalAttribute()
     {
         $porcentaje = $this->impuesto?->porcentaje_impuesto ?? 0;
-        return round( $this->precio_venta * (1 + ($porcentaje / 100)), 2 );
+
+        return round($this->precio_venta * (1 + ($porcentaje / 100)), 2);
     }
 
     public function categoria()
     {
-        return $this->belongsTo(Categoria::class,'id_categoria');
+        return $this->belongsTo(Categoria::class, 'id_categoria');
     }
 
     public function impuesto()
     {
-        return $this->belongsTo(Impuesto::class,'id_impuesto');
+        return $this->belongsTo(Impuesto::class, 'id_impuesto');
     }
 
     public function variaciones()
@@ -61,9 +67,14 @@ class Producto extends Model
         return $this->hasMany(ProductoVariacion::class, 'id_producto', 'id_producto');
     }
 
-    public function ubicacion() 
+    public function resenias()
     {
-        return $this->belongsTo(Ubicacion::class,'id_ubicacion');
+        return $this->hasMany(ReseniaProducto::class, 'id_producto', 'id_producto');
+    }
+
+    public function ubicacion()
+    {
+        return $this->belongsTo(Ubicacion::class, 'id_ubicacion');
     }
 
     public function impuestoProducto()
@@ -80,7 +91,6 @@ class Producto extends Model
     {
         return $this->medida?->nombre_medida;
     }
-    
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

@@ -6,7 +6,7 @@
 
     <div class="card">
 
-        <table id="tablaClientes" class="table  table-bordered">
+        <table id="tablaClientes" class="table table-bordered text-nowrap">
 
             <thead>
                 <tr>
@@ -14,9 +14,14 @@
                     <th>Nombre</th>
                     <th>Cédula</th>
                     <th>RUC</th>
+                    <th>Fecha nacimiento</th>
                     <th>Teléfono</th>
                     <th>Correo</th>
+                    <th>Dirección</th>
+                    <th>Usuario web</th>
+                    <th>Descuento</th>
                     <th>Estado</th>
+                    <th>Fecha creación</th>
                     <th>Acciones</th>
 
                 </tr>

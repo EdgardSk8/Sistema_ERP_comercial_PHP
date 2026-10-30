@@ -20,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'permiso' => \App\Http\Middleware\PermisoMiddleware::class,
+            'cliente.web' => \App\Http\Middleware\ClienteWebMiddleware::class,
+            'cache.dashboard' => \App\Http\Middleware\CachearDashboard::class,
         ]);
         
     })

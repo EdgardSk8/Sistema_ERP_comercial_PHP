@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "add-ui": {
+      "source": "aladicf/better-web-ui",
+      "sourceType": "github",
+      "skillPath": "skills/add-ui/SKILL.md",
+      "computedHash": "55c60e7ac983b151d241f12b299080a81a70b5c0e895462a72262c66d7c52a2c"
+    },
+    "critique": {
+      "source": "aladicf/better-web-ui",
+      "sourceType": "github",
+      "skillPath": "skills/critique/SKILL.md",
+      "computedHash": "328d3ddd8610003062946ed08c29ffd95b3f3cefc52c92993235112a8b1b8bff"
+    },
+    "frontend-design": {
+      "source": "aladicf/better-web-ui",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "c2cf87cdd07523f4b92d9bbc0b6f90dde57ac574f47a140ca477df4c47a639a9"
+    },
+    "polish": {
+      "source": "aladicf/better-web-ui",
+      "sourceType": "github",
+      "skillPath": "skills/polish/SKILL.md",
+      "computedHash": "220c204cb6e665641472db5b4a9e7d9382a6d561a76bb2d95a14850cc5206efb"
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import logoEmpresa from '../img/minilogo.PNG';
+
 function escaparHTML(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
         '&': '&amp;',
@@ -9,7 +11,19 @@ function escaparHTML(valor) {
 }
 
 function formatoMoneda(valor) {
-    return `C$ ${Number(valor || 0).toFixed(2)}`;
+    return `C$ ${monto(valor)}`;
+}
+
+function monto(valor) {
+    const numero = Number(valor || 0);
+    return Number.isInteger(numero) ? String(numero) : numero.toFixed(2);
+}
+
+const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const MESES_ANIO = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+function formatearFechaLarga(fecha) {
+    return `${DIAS_SEMANA[fecha.getDay()]} ${fecha.getDate()} de ${MESES_ANIO[fecha.getMonth()]} del ${fecha.getFullYear()}`;
 }
 
 function normalizarProducto(producto) {
@@ -52,9 +66,12 @@ export function imprimirFacturaTermica(data, empresa) {
     const total = Number(data.total_venta ?? data.total ?? subtotal + impuesto);
     const descuento = Number(data.descuento_venta ?? Math.max(0, subtotal + impuesto - total));
     const fechaOrigen = data.fecha_venta ?? data.fecha ?? new Date();
-    const fecha = window.formatearFechaDiaHora
-        ? window.formatearFechaDiaHora(fechaOrigen)
-        : new Date(fechaOrigen).toLocaleString('es-NI');
+    const fechaObj = fechaOrigen instanceof Date ? fechaOrigen : new Date(fechaOrigen);
+    const fechaValida = !Number.isNaN(fechaObj.getTime());
+    const fecha = fechaValida ? formatearFechaLarga(fechaObj) : String(fechaOrigen);
+    const hora = fechaValida
+        ? `${String(fechaObj.getHours() % 12 || 12).padStart(2, '0')}:${String(fechaObj.getMinutes()).padStart(2, '0')} ${fechaObj.getHours() < 12 ? 'AM' : 'PM'}`
+        : '';
     const cliente = data.cliente?.nombre_cliente ?? 'Consumidor final';
     const usuario = data.usuario?.nombre_usuario;
     const metodoPago = data.metodo_pago?.nombre_metodo_pago
@@ -65,16 +82,14 @@ export function imprimirFacturaTermica(data, empresa) {
     const vuelto = data.vuelto;
     const saldoPendiente = data.saldo_pendiente ?? Math.max(0, total - Number(recibido || 0));
     const numeroFactura = data.numero_factura ?? data.factura ?? 'FACTURA';
+    const urlLogo = new URL(logoEmpresa, window.location.href).href;
     const filas = productos.map(producto => `
-        <article class="producto">
-            <div class="producto-linea">
-                <strong>${escaparHTML(producto.nombre)}</strong>
-                <strong>${formatoMoneda(producto.total)}</strong>
-            </div>
-            <div class="producto-detalle">
-                ${producto.cantidad} × ${formatoMoneda(producto.precio)}
-            </div>
-        </article>
+        <div class="producto">
+            <span class="cant">${producto.cantidad}</span>
+            <span class="desc">${escaparHTML(producto.nombre)}</span>
+            <span class="importe">${monto(producto.total)}</span>
+            <span class="unitario">a ${monto(producto.precio)} c/u</span>
+        </div>
     `).join('');
 
     const ventana = window.open('', '_blank', 'width=420,height=720');
@@ -85,9 +100,9 @@ export function imprimirFacturaTermica(data, empresa) {
 
     const filasResumen = `
         <div class="resumen-linea"><span>Subtotal</span><span>${formatoMoneda(subtotal)}</span></div>
-        ${descuento > 0 ? `<div class="resumen-linea"><span>Descuento</span><span>- ${formatoMoneda(descuento)}</span></div>` : ''}
-        <div class="resumen-linea"><span>Impuesto</span><span>${formatoMoneda(impuesto)}</span></div>
-        <div class="resumen-linea resumen-total"><strong>TOTAL</strong><strong>${formatoMoneda(total)}</strong></div>
+        ${descuento > 0 ? `<div class="resumen-linea"><span>Descuento</span><span>-${formatoMoneda(descuento)}</span></div>` : ''}
+        ${impuesto > 0 ? `<div class="resumen-linea"><span>Impuesto</span><span>${formatoMoneda(impuesto)}</span></div>` : ''}
+        <div class="resumen-linea total"><span>TOTAL</span><span>${formatoMoneda(total)}</span></div>
     `;
 
     ventana.document.write(`
@@ -98,33 +113,69 @@ export function imprimirFacturaTermica(data, empresa) {
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <title>Factura ${escaparHTML(numeroFactura)}</title>
             <style>
-                @page { size: 80mm auto; margin: 0; }
+                /* ==== Configuracion base 58 mm (48 mm utiles de cabezal) ==== */
+                :root {
+                    --fuente: 'DejaVu Sans', 'Bitstream Vera Sans', Verdana, sans-serif;
+                    --cuerpo: 9pt;
+                    --datos: 7.5pt;
+                    --producto: 8.25pt;
+                    --direccion: 7.5pt;
+                    --encabezado: 13pt;
+                    --fiscal: 12pt;
+                    --totales: 12pt;
+                }
+                @page { size: 58mm 210mm; margin: 0 0 20mm; }
                 * { box-sizing: border-box; }
-                html, body { width: 80mm; margin: 0; padding: 0; }
-                body { color: #161616; background: #fff; font: 10px/1.4 Arial, Helvetica, sans-serif; }
-                .ticket { width: 80mm; margin: 0 auto; padding: 4mm; }
-                .encabezado { text-align: center; padding-bottom: 3mm; }
-                .empresa { font-size: 15px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
-                .datos-empresa { margin-top: 2mm; color: #444; font-size: 9px; }
-                .tipo-documento { margin-top: 3mm; font-size: 12px; font-weight: 700; letter-spacing: .08em; }
-                .numero { font-size: 11px; font-weight: 700; }
-                .separador { border: 0; border-top: 1px dashed #777; margin: 2.5mm 0; }
-                .datos-venta { display: grid; gap: 1mm; }
-                .dato { display: flex; justify-content: space-between; gap: 3mm; }
-                .dato span:last-child { text-align: right; overflow-wrap: anywhere; }
-                .seccion-titulo { margin: 2mm 0; font-size: 9px; font-weight: 700; }
-                .producto { padding: 2mm 0; border-bottom: 1px dotted #aaa; }
-                .producto-linea { display: flex; justify-content: space-between; align-items: flex-start; gap: 3mm; }
-                .producto-linea strong:first-child { max-width: 48mm; overflow-wrap: anywhere; }
-                .producto-linea strong:last-child { white-space: nowrap; }
-                .producto-detalle { margin-top: .5mm; color: #444; font-size: 9px; }
+                html, body {
+                    width: 58mm;
+                    margin: 0;
+                    padding: 0;
+                    color: #000;
+                    background: #fff;
+                    font-family: var(--fuente);
+                    font-size: var(--cuerpo);
+                    font-weight: 400;
+                    line-height: 1.35;
+                }
+                .ticket { width: 58mm; margin: 0; padding: 0; }
+
+                /* ==== 1. Encabezado centrado ==== */
+                .logo { text-align: center; }
+                .logo img { display: block; width: 16mm; height: auto; margin: 0 auto 1mm; }
+                .centro { text-align: center; }
+                .empresa { font-size: var(--encabezado); font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+                .fiscal { font-size: var(--fiscal); font-weight: 700; overflow-wrap: anywhere; }
+                .fiscal-chico { font-size: var(--direccion); font-weight: 400; }
+
+                /* ==== 2. Datos de la venta alineados a la izquierda ==== */
+                .datos { text-align: left; font-size: var(--datos); }
+                .datos div { overflow-wrap: anywhere; }
+
+                /* ==== 3. Tabla de productos con columnas fijas ==== */
+                .tabla-encabezado,
+                .producto { display: grid; grid-template-columns: 10mm minmax(0, 1fr) 12mm; column-gap: 1mm; }
+                .tabla-encabezado { font-size: 8pt; font-weight: 700; border-bottom: 1px solid #000; padding-bottom: 1mm; }
+                .producto { padding: 1.5mm 0; border-bottom: 1px dotted #000; font-size: var(--producto); }
+                .cant { text-align: left; white-space: nowrap; }
+                .desc { min-width: 0; overflow-wrap: anywhere; text-align: center; }
+                .importe { text-align: right; white-space: nowrap; }
+                .unitario { grid-column: 2; text-align: center; }
+
+                /* ==== 4. Totales destacados ==== */
                 .resumen { margin-top: 2mm; }
-                .resumen-linea { display: flex; justify-content: space-between; gap: 3mm; padding: .5mm 0; }
-                .resumen-total { margin-top: 1mm; padding-top: 1.5mm; border-top: 1px solid #333; font-size: 12px; }
-                .pago { margin-top: 2mm; }
-                .pie { padding-top: 4mm; text-align: center; color: #444; font-size: 9px; }
+                .resumen-linea { display: flex; justify-content: space-between; gap: 2mm; }
+                .resumen-linea span:last-child { text-align: right; white-space: nowrap; }
+                .total { margin-top: 1mm; padding-top: 1.5mm; border-top: 1px solid #000; font-size: var(--totales); font-weight: 700; }
+
+                /* ==== 5. Pie centrado y zona de corte ==== */
+                .pie { margin-top: 3.5mm; padding-bottom: 0; text-align: center; }
+                .guia { height: 12mm; font-size: 9pt; line-height: 12mm; text-align: center; }
+                .mensaje { margin-top: 1mm; font-size: 7.5pt; }
+                .corte { margin-top: 3mm; text-align: center; }
+                .linea-corte { border: 0; border-top: 1px dashed #000; margin: 2mm 0; height: 0; }
+
                 @media print {
-                    html, body { width: 80mm; }
+                    html, body { width: 58mm; }
                     .ticket { margin: 0; }
                     * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
                 }
@@ -132,34 +183,41 @@ export function imprimirFacturaTermica(data, empresa) {
         </head>
         <body>
             <main class="ticket">
-                <header class="encabezado">
-                    <div class="empresa">${escaparHTML(empresa?.nombre_empresa)}</div>
-                    ${empresa?.ruc_empresa ? `<div class="datos-empresa">RUC: ${escaparHTML(empresa.ruc_empresa)}</div>` : ''}
-                    ${empresa?.direccion_empresa ? `<div class="datos-empresa">${escaparHTML(empresa.direccion_empresa)}</div>` : ''}
-                    ${empresa?.telefono_empresa ? `<div class="datos-empresa">Tel: ${escaparHTML(empresa.telefono_empresa)}</div>` : ''}
-                    <div class="tipo-documento">FACTURA</div>
-                    <div class="numero">N.º ${escaparHTML(numeroFactura)}</div>
+                <div class="logo"><img src="${escaparHTML(urlLogo)}" alt=""></div>
+                <header class="centro">
+                    <div class="empresa">${escaparHTML(empresa?.nombre_empresa ?? 'MI NEGOCIO')}</div>
+                    ${empresa?.ruc_empresa ? `<div class="fiscal">RUC: ${escaparHTML(empresa.ruc_empresa)}</div>` : ''}
+                    ${empresa?.direccion_empresa ? `<div class="fiscal fiscal-chico">Dirección: ${escaparHTML(empresa.direccion_empresa)}</div>` : ''}
+                    ${empresa?.telefono_empresa ? `<div class="fiscal fiscal-chico">Teléfono: ${escaparHTML(empresa.telefono_empresa)}</div>` : ''}
                 </header>
-                <hr class="separador">
-                <section class="datos-venta">
-                    <div class="dato"><strong>Fecha</strong><span>${escaparHTML(fecha)}</span></div>
-                    <div class="dato"><strong>Cliente</strong><span>${escaparHTML(cliente)}</span></div>
-                    ${usuario ? `<div class="dato"><strong>Atendió</strong><span>${escaparHTML(usuario)}</span></div>` : ''}
+                <hr class="linea-corte">
+                <section class="datos">
+                    <div>Fecha: ${escaparHTML(fecha)} a las ${escaparHTML(hora)}</div>
+                    <div>Factura: ${escaparHTML(numeroFactura)}</div>
+                    <div>Cliente: ${escaparHTML(cliente)}</div>
+                    ${usuario ? `<div>Facturó: ${escaparHTML(usuario)}</div>` : ''}
+                    ${metodoPago ? `<div>Pago: ${escaparHTML(metodoPago)}</div>` : ''}
                 </section>
-                <hr class="separador">
-                <section>
-                    <div class="seccion-titulo">DETALLE</div>
-                    ${filas}
-                </section>
+                <hr class="linea-corte">
+                <div class="tabla-encabezado">
+                    <span>Nº</span>
+                    <span class="desc">INFO</span>
+                    <span class="importe">TOTAL</span>
+                </div>
+                <section>${filas}</section>
                 <section class="resumen">${filasResumen}</section>
-                <hr class="separador">
-                <section class="pago">
-                    ${metodoPago ? `<div class="dato"><strong>Forma de pago</strong><span>${escaparHTML(metodoPago)}</span></div>` : ''}
+                <hr class="linea-corte">
+                <section class="datos">
                     ${esPagoPlazos
-                        ? `<div class="dato"><span>Abono recibido</span><span>${formatoMoneda(recibido)}</span></div><div class="dato"><strong>Saldo pendiente</strong><strong>${formatoMoneda(saldoPendiente)}</strong></div>`
-                        : `${recibido !== undefined ? `<div class="dato"><span>Recibido</span><span>${formatoMoneda(recibido)}</span></div>` : ''}${vuelto !== undefined ? `<div class="dato"><span>Vuelto</span><span>${formatoMoneda(vuelto)}</span></div>` : ''}`}
+                        ? `<div class="resumen-linea"><span>Abono</span><span>${formatoMoneda(recibido)}</span></div><div class="resumen-linea"><span>Saldo</span><span>${formatoMoneda(saldoPendiente)}</span></div>`
+                        : `${recibido !== undefined ? `<div class="resumen-linea"><span>Recibido</span><span>${formatoMoneda(recibido)}</span></div>` : ''}${vuelto !== undefined ? `<div class="resumen-linea"><span>Vuelto</span><span>${formatoMoneda(vuelto)}</span></div>` : ''}`}
                 </section>
-                <footer class="pie">Gracias por su compra</footer>
+                <footer class="pie">
+                    <div>¡Gracias por su compra!</div>
+                    <div class="mensaje">Para nosotros, tu experiencia es lo más importante</div>
+                    <div class="guia">·</div>
+                    <div class="guia">·</div>
+                </footer>
             </main>
         </body>
         </html>
@@ -180,5 +238,38 @@ export function imprimirFacturaTermica(data, empresa) {
 
     ventana.onload = imprimirCuandoEsteLista;
     ventana.document.close();
-    setTimeout(imprimirCuandoEsteLista, 500);
+    setTimeout(imprimirCuandoEsteLista, 900);
+}
+
+/**
+ * Envía el ticket en ESC/POS crudo (32 columnas, avance y corte reales).
+ * Lanza un error si la impresora no responde, para que el llamador decida
+ * si usa window.print() como respaldo.
+ */
+export async function imprimirFacturaEscPos(data) {
+    const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+    const respuesta = await fetch('/facturar/ticket-termico', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': token,
+        },
+        body: JSON.stringify({ ...data, _token: token }),
+    });
+
+    let resultado = {};
+
+    try {
+        resultado = await respuesta.json();
+    } catch {
+        resultado = {};
+    }
+
+    if (!respuesta.ok || !resultado.success) {
+        throw new Error(resultado.error ?? 'La impresora no respondió.');
+    }
+
+    return resultado;
 }

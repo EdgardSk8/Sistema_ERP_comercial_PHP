@@ -35,7 +35,27 @@
           <span class="icono-btn__badge" data-carrito-badge hidden>0</span>
         </a>
 
-        <details class="perfil" id="menuPerfil">
+        <!-- Visitante: menú de invitado -->
+        <details class="perfil" id="menuInvitado">
+          <summary class="perfil__acceso perfil__boton" aria-label="Cuenta">
+            <i class="bi bi-person-plus"></i>
+          </summary>
+
+          <div class="perfil__menu">
+            <p class="perfil__cabecera">
+              <span class="perfil__nombre">Invitado</span>
+              <span class="perfil__detalle">Sin sesión iniciada</span>
+            </p>
+
+            <ul class="perfil__lista">
+              <li><a class="perfil__item" href="/tienda/login"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</a></li>
+              <li><a class="perfil__item" href="/tienda/login?vista=registro"><i class="bi bi-person-plus"></i> Crear cuenta</a></li>
+            </ul>
+          </div>
+        </details>
+
+        <!-- Cliente con sesión: menú de la cuenta -->
+        <details class="perfil" id="menuPerfil" hidden>
           <summary class="icono-btn perfil__boton" aria-label="Mi cuenta">
             <i class="bi bi-person"></i>
           </summary>
@@ -48,6 +68,7 @@
 
             <ul class="perfil__lista">
               <li><a class="perfil__item" href="/tienda/perfil#perfil"><i class="bi bi-person"></i> Perfil</a></li>
+              <li><a class="perfil__item" href="/tienda/perfil#direcciones"><i class="bi bi-geo-alt"></i> Direcciones</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#favoritos"><i class="bi bi-heart"></i> Favoritos</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#historial"><i class="bi bi-receipt"></i> Historial de compras</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#descuentos"><i class="bi bi-ticket-perforated"></i> Descuento</a></li>
@@ -236,6 +257,7 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   <script src="/tienda/recursos/js/carrito-store.js"></script>
+  <script src="/tienda/recursos/js/cliente-sesion.js"></script>
   <script src="/tienda/recursos/js/tienda.js" defer></script>
 </body>
 </html>

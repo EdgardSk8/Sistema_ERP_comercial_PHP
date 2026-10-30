@@ -30,7 +30,7 @@ class DashboardController extends Controller
             case 'dia':
 
                 $ventas = (clone $query)
-                    ->selectRaw('DAYOFWEEK(fecha_venta) as orden')
+                    ->selectRaw('(EXTRACT(DOW FROM fecha_venta)::int + 1) as orden')
                     ->selectRaw('COUNT(*) as cantidad')
                     ->selectRaw('SUM(total_venta) as total')
                     ->groupBy('orden')->orderBy('orden')->get();
@@ -48,7 +48,7 @@ class DashboardController extends Controller
             case 'mes':
 
                 $ventas = (clone $query)
-                    ->selectRaw('MONTH(fecha_venta) as mes')
+                    ->selectRaw('EXTRACT(MONTH FROM fecha_venta)::int as mes')
                     ->selectRaw('COUNT(*) as cantidad')
                     ->selectRaw('SUM(total_venta) as total')
                     ->groupBy('mes')->get()->keyBy('mes');
@@ -70,10 +70,10 @@ class DashboardController extends Controller
             case 'anio':
 
                 $grafica = (clone $query)
-                    ->selectRaw('YEAR(fecha_venta) as label')
+                    ->selectRaw('EXTRACT(YEAR FROM fecha_venta)::int as label')
                     ->selectRaw('COUNT(*) as cantidad')
                     ->selectRaw('SUM(total_venta) as total')
-                    ->groupBy(DB::raw('YEAR(fecha_venta)'))
+                    ->groupBy(DB::raw('EXTRACT(YEAR FROM fecha_venta)::int'))
                     ->orderBy('label')
                     ->get()
                     ->map(function ($item) {
@@ -99,7 +99,7 @@ class DashboardController extends Controller
 
         // GRAFICA 3 VENTAS POR HORA
         $respuesta['grafica_3'] = (clone $query)
-            ->selectRaw('HOUR(fecha_venta) as hora')
+            ->selectRaw('EXTRACT(HOUR FROM fecha_venta)::int as hora')
             ->selectRaw('COUNT(*) as cantidad')
             ->selectRaw('SUM(total_venta) as total')
             ->groupBy('hora')->orderBy('hora')->get()
@@ -236,7 +236,7 @@ class DashboardController extends Controller
             case 'dia':
 
                 $ganancias = (clone $graficaQuery)
-                    ->selectRaw('DAYOFWEEK(fecha_venta) as orden')
+                    ->selectRaw('(EXTRACT(DOW FROM fecha_venta)::int + 1) as orden')
                     ->selectRaw('COUNT(DISTINCT ventas.id_venta) as cantidad')
                     ->selectRaw("$gananciaSQL as ganancia")
                     ->groupBy('orden')
@@ -272,7 +272,7 @@ class DashboardController extends Controller
             case 'mes':
 
                 $ganancias = (clone $graficaQuery)
-                    ->selectRaw("MONTH(fecha_venta) as mes, COUNT(DISTINCT ventas.id_venta) as cantidad, $gananciaSQL as ganancia")
+                    ->selectRaw("EXTRACT(MONTH FROM fecha_venta)::int as mes, COUNT(DISTINCT ventas.id_venta) as cantidad, $gananciaSQL as ganancia")
                     ->groupBy('mes')
                     ->orderBy('mes')
                     ->get()
@@ -304,11 +304,11 @@ class DashboardController extends Controller
 
                 $grafica = (clone $graficaQuery)
 
-                    ->selectRaw('YEAR(fecha_venta) as label')
+                    ->selectRaw('EXTRACT(YEAR FROM fecha_venta)::int as label')
                     ->selectRaw('COUNT(DISTINCT ventas.id_venta) as cantidad')
                     ->selectRaw("$gananciaSQL as ganancia")
 
-                    ->groupBy(DB::raw('YEAR(fecha_venta)'))
+                    ->groupBy(DB::raw('EXTRACT(YEAR FROM fecha_venta)::int'))
                     ->orderBy('label')
 
                     ->get()
@@ -362,7 +362,7 @@ class DashboardController extends Controller
             ->join('productos', 'detalle_ventas.id_producto', '=', 'productos.id_producto')
             ->leftJoin('variacion_tallas', 'detalle_ventas.id_variacion_talla', '=', 'variacion_tallas.id_variacion_talla')
 
-            ->selectRaw('HOUR(fecha_venta) as hora')
+            ->selectRaw('EXTRACT(HOUR FROM fecha_venta)::int as hora')
             ->selectRaw('COUNT(DISTINCT ventas.id_venta) as cantidad')
             ->selectRaw("$gananciaSQL as ganancia")->groupBy('hora')->orderBy('hora')->get()
 
@@ -517,7 +517,7 @@ class DashboardController extends Controller
             case 'dia':
 
                 $grafica = (clone $query)
-                    ->selectRaw('DAYOFWEEK(fecha_compra) as orden')
+                    ->selectRaw('(EXTRACT(DOW FROM fecha_compra)::int + 1) as orden')
                     ->selectRaw('COUNT(*) as cantidad')
                     ->selectRaw('SUM(total_compra) as total')
                     ->groupBy('orden')
@@ -554,7 +554,7 @@ class DashboardController extends Controller
             case 'mes':
 
                 $compras = (clone $query)
-                    ->selectRaw('MONTH(fecha_compra) as mes')
+                    ->selectRaw('EXTRACT(MONTH FROM fecha_compra)::int as mes')
                     ->selectRaw('COUNT(*) as cantidad')
                     ->selectRaw('SUM(total_compra) as total')
                     ->groupBy('mes')
@@ -585,10 +585,10 @@ class DashboardController extends Controller
             case 'anio':
 
                 $grafica = (clone $query)
-                    ->selectRaw('YEAR(fecha_compra) as label')
+                    ->selectRaw('EXTRACT(YEAR FROM fecha_compra)::int as label')
                     ->selectRaw('COUNT(*) as cantidad')
                     ->selectRaw('SUM(total_compra) as total')
-                    ->groupBy(DB::raw('YEAR(fecha_compra)'))
+                    ->groupBy(DB::raw('EXTRACT(YEAR FROM fecha_compra)::int'))
                     ->orderBy('label')
                     ->get();
 
@@ -879,7 +879,7 @@ class DashboardController extends Controller
 
                     ->join('cajas', 'ventas.id_caja', '=', 'cajas.id_caja')
 
-                    ->selectRaw('DAYOFWEEK(ventas.fecha_venta) as orden')
+                    ->selectRaw('(EXTRACT(DOW FROM ventas.fecha_venta)::int + 1) as orden')
                     ->selectRaw('COUNT(DISTINCT cajas.id_caja) as cantidad')
                     ->selectRaw('SUM(ventas.total_venta) as total')
 
@@ -918,7 +918,7 @@ class DashboardController extends Controller
 
                     ->join('cajas', 'ventas.id_caja', '=', 'cajas.id_caja')
 
-                    ->selectRaw('MONTH(ventas.fecha_venta) as mes')
+                    ->selectRaw('EXTRACT(MONTH FROM ventas.fecha_venta)::int as mes')
                     ->selectRaw('COUNT(DISTINCT cajas.id_caja) as cantidad')
                     ->selectRaw('SUM(ventas.total_venta) as total')
 
@@ -962,11 +962,11 @@ class DashboardController extends Controller
 
                     ->join('cajas', 'ventas.id_caja', '=', 'cajas.id_caja')
 
-                    ->selectRaw('YEAR(ventas.fecha_venta) as label')
+                    ->selectRaw('EXTRACT(YEAR FROM ventas.fecha_venta)::int as label')
                     ->selectRaw('COUNT(DISTINCT cajas.id_caja) as cantidad')
                     ->selectRaw('SUM(ventas.total_venta) as total')
 
-                    ->groupBy(DB::raw('YEAR(ventas.fecha_venta)'))
+                    ->groupBy(DB::raw('EXTRACT(YEAR FROM ventas.fecha_venta)::int'))
                     ->orderBy('label')
 
                     ->get()
@@ -1288,7 +1288,7 @@ class DashboardController extends Controller
                     $grafica = (clone $baseQuery)
 
                         ->selectRaw(
-                            "DATE_FORMAT(fecha_movimiento,'%Y-%m-%d') as label"
+                            "to_char(fecha_movimiento, 'YYYY-MM-DD') as label"
                         )
 
                         ->selectRaw("
@@ -1313,7 +1313,7 @@ class DashboardController extends Controller
 
                         ->groupBy(
                             DB::raw(
-                                "DATE_FORMAT(fecha_movimiento,'%Y-%m-%d')"
+                                "to_char(fecha_movimiento, 'YYYY-MM-DD')"
                             )
                         )
 
@@ -1327,7 +1327,7 @@ class DashboardController extends Controller
                     $grafica = (clone $baseQuery)
 
                         ->selectRaw(
-                            "DATE_FORMAT(fecha_movimiento,'%Y-%m') as label"
+                            "to_char(fecha_movimiento, 'YYYY-MM') as label"
                         )
 
                         ->selectRaw("
@@ -1343,7 +1343,7 @@ class DashboardController extends Controller
 
                         ->groupBy(
                             DB::raw(
-                                "DATE_FORMAT(fecha_movimiento,'%Y-%m')"
+                                "to_char(fecha_movimiento, 'YYYY-MM')"
                             )
                         )
 
@@ -1357,7 +1357,7 @@ class DashboardController extends Controller
                     $grafica = (clone $baseQuery)
 
                         ->selectRaw(
-                            'YEAR(fecha_movimiento) as label'
+                            'EXTRACT(YEAR FROM fecha_movimiento)::int as label'
                         )
 
                         ->selectRaw("
@@ -1373,7 +1373,7 @@ class DashboardController extends Controller
 
                         ->groupBy(
                             DB::raw(
-                                'YEAR(fecha_movimiento)'
+                                'EXTRACT(YEAR FROM fecha_movimiento)::int'
                             )
                         )
 

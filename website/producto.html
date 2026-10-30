@@ -34,7 +34,27 @@
           <span class="icono-btn__badge" data-carrito-badge hidden>0</span>
         </a>
 
-        <details class="perfil" id="menuPerfil">
+        <!-- Visitante: menú de invitado -->
+        <details class="perfil" id="menuInvitado">
+          <summary class="perfil__acceso perfil__boton" aria-label="Cuenta">
+            <i class="bi bi-person-plus"></i>
+          </summary>
+
+          <div class="perfil__menu">
+            <p class="perfil__cabecera">
+              <span class="perfil__nombre">Invitado</span>
+              <span class="perfil__detalle">Sin sesión iniciada</span>
+            </p>
+
+            <ul class="perfil__lista">
+              <li><a class="perfil__item" href="/tienda/login"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</a></li>
+              <li><a class="perfil__item" href="/tienda/login?vista=registro"><i class="bi bi-person-plus"></i> Crear cuenta</a></li>
+            </ul>
+          </div>
+        </details>
+
+        <!-- Cliente con sesión: menú de la cuenta -->
+        <details class="perfil" id="menuPerfil" hidden>
           <summary class="icono-btn perfil__boton" aria-label="Mi cuenta">
             <i class="bi bi-person"></i>
           </summary>
@@ -47,6 +67,7 @@
 
             <ul class="perfil__lista">
               <li><a class="perfil__item" href="/tienda/perfil#perfil"><i class="bi bi-person"></i> Perfil</a></li>
+              <li><a class="perfil__item" href="/tienda/perfil#direcciones"><i class="bi bi-geo-alt"></i> Direcciones</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#favoritos"><i class="bi bi-heart"></i> Favoritos</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#historial"><i class="bi bi-receipt"></i> Historial de compras</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#descuentos"><i class="bi bi-ticket-perforated"></i> Descuento</a></li>
@@ -73,6 +94,14 @@
           <i class="bi bi-share"></i> Compartir
         </button>
       </div>
+
+      <!-- Calificación promedio (estilo Amazon) -->
+      <a class="producto__rating" id="productoRating" href="#resenias" hidden>
+        <span class="estrellas" id="productoRatingEstrellas" aria-hidden="true"></span>
+        <span class="producto__rating-num" id="productoRatingNum">0.0</span>
+        <span class="producto__rating-texto" id="productoRatingTexto">Sin opiniones</span>
+      </a>
+
       <p class="producto__descripcion" id="productoDescripcion"></p>
     </div>
 
@@ -138,10 +167,115 @@
         <button class="btn-secundario" type="button" id="btnAgregar">
           <i class="bi bi-bag-plus me-2"></i> Añadir al carrito
         </button>
+        <button class="btn-secundario" type="button" id="btnFavorito">
+          <i class="bi bi-heart me-2"></i> Favoritos
+        </button>
       </div>
 
     </div>
   </main>
+
+  <!-- ── Opiniones de clientes ───────────────────────────────── -->
+  <section class="resenias" id="resenias">
+    <div class="contenedor">
+
+      <div class="seccion__cabecera">
+        <h2 class="seccion__titulo">Opiniones de clientes</h2>
+      </div>
+
+      <div class="resenias__grid">
+
+        <!-- Resumen de calificaciones -->
+        <aside class="resenias__resumen" aria-label="Resumen de calificaciones">
+          <div class="resenias__global">
+            <span class="resenias__nota" id="reseniasPromedio">0.0</span>
+            <span class="resenias__de">de 5</span>
+          </div>
+          <span class="estrellas estrellas--lg" id="reseniasPromedioEstrellas" aria-hidden="true"></span>
+          <p class="resenias__total" id="reseniasTotal">Sin opiniones</p>
+          <div class="resenias__histograma" id="reseniasHistograma"></div>
+        </aside>
+
+        <!-- Formulario + lista -->
+        <div class="resenias__contenido">
+
+          <!-- Aviso para visitantes sin sesión -->
+          <div class="resenias__invitado" id="reseniasInvitado" hidden>
+            <p class="resenias__invitado-texto">
+              <strong>Inicia sesión</strong> para calificar y opinar sobre este producto.
+            </p>
+            <a class="btn-secundario" href="/tienda/login">Iniciar sesión</a>
+          </div>
+
+          <!-- Acciones de opiniones -->
+          <div class="resenias__acciones">
+            <button class="btn-primario resenias__abrir" type="button" id="btnAbrirResenia" hidden>
+              <i class="bi bi-pencil-square me-2"></i> Escribir una opinión
+            </button>
+
+            <button class="btn-secundario resenias__ver" type="button" id="btnVerResenias"
+                    aria-expanded="false" aria-controls="desplegarResenias">
+              <i class="bi bi-chat-square-text me-2"></i> Mostrar reseñas
+            </button>
+          </div>
+
+          <!-- Formulario (solo clientes registrados) -->
+          <div class="resenias__desplegable" id="desplegableResenia" hidden>
+            <form class="resenias__form" id="formResenia" novalidate>
+            <h3 class="resenias__form-titulo" id="reseniasFormTitulo">Escribe tu opinión</h3>
+
+            <div class="resenias__selector-fila">
+              <div class="resenias__estrellas" id="reseniasSelector" role="radiogroup" aria-label="Tu calificación">
+                <button class="resenias__estrella" type="button" data-valor="1" role="radio" aria-checked="false" aria-label="1 estrella"><i class="bi bi-star"></i></button>
+                <button class="resenias__estrella" type="button" data-valor="2" role="radio" aria-checked="false" aria-label="2 estrellas"><i class="bi bi-star"></i></button>
+                <button class="resenias__estrella" type="button" data-valor="3" role="radio" aria-checked="false" aria-label="3 estrellas"><i class="bi bi-star"></i></button>
+                <button class="resenias__estrella" type="button" data-valor="4" role="radio" aria-checked="false" aria-label="4 estrellas"><i class="bi bi-star"></i></button>
+                <button class="resenias__estrella" type="button" data-valor="5" role="radio" aria-checked="false" aria-label="5 estrellas"><i class="bi bi-star"></i></button>
+              </div>
+              <span class="resenias__valor" id="reseniasValorTexto">Selecciona una calificación</span>
+            </div>
+
+            <textarea class="resenias__campo" id="reseniasComentario" rows="1" maxlength="1000"
+                      placeholder="Cuéntanos qué te pareció el producto (opcional)"></textarea>
+
+            <div class="resenias__form-pie">
+              <span class="resenias__contador" id="reseniasContador">0/1000</span>
+              <div class="resenias__form-acciones">
+                <button class="btn-secundario" type="button" id="btnCancelarResenia" hidden>Cancelar</button>
+                <button class="btn-primario" type="submit" id="btnGuardarResenia">Publicar opinión</button>
+              </div>
+            </div>
+            </form>
+          </div>
+
+          <!-- Contenedor desplegable -->
+          <div class="resenias__desplegar" id="desplegarResenias">
+            <div class="resenias__desplegar-interior">
+
+              <!-- Barra de la lista -->
+              <div class="resenias__barra" id="reseniasBarra" hidden>
+                <button class="resenias__tab is-activo" type="button" id="btnMasRecientes">Más recientes</button>
+                <button class="resenias__tab" type="button" id="btnCargarTodos">Cargar todos</button>
+              </div>
+
+              <!-- Lista de opiniones con scroll interno -->
+              <div class="resenias__scroll">
+                <div class="resenias__lista" id="reseniasLista"></div>
+
+                <div class="resenias__vacio" id="reseniasVacio" hidden>
+                  <i class="bi bi-chat-square-text"></i>
+                  <p>Todavía no hay opiniones de este producto.</p>
+                  <span>Sé el primero en compartir tu experiencia.</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- ── Productos relacionados ─────────────────────────────── -->
   <section class="relacionados" id="relacionados" hidden>
@@ -222,6 +356,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
   <script src="/tienda/recursos/js/carrito-store.js"></script>
+  <script src="/tienda/recursos/js/cliente-sesion.js"></script>
   <script src="/tienda/recursos/js/producto.js" defer></script>
+  <script src="/tienda/recursos/js/resenias.js" defer></script>
 </body>
 </html>

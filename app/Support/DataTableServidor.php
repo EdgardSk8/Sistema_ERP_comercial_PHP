@@ -35,11 +35,15 @@ class DataTableServidor
         $columnas = $config['columnas'] ?? [];
         $total = (clone $consulta)->toBase()->getCountForPagination();
 
-        self::aplicarBusquedaGlobal($consulta, $columnas, trim((string) $request->input('search.value')));
-        self::aplicarFiltrosPorColumna($consulta, $columnas, (array) $request->input('columns', []));
+        $busco = self::aplicarBusquedaGlobal($consulta, $columnas, trim((string) $request->input('search.value')));
+        $filtro = self::aplicarFiltrosPorColumna($consulta, $columnas, (array) $request->input('columns', []));
         self::aplicarOrden($consulta, $columnas, $config, (array) $request->input('order', []));
 
-        $filtrado = (clone $consulta)->toBase()->getCountForPagination();
+        // Sin filtros el total y el filtrado son el mismo numero: un COUNT menos
+        // (con la base remota cada COUNT cuesta ~75 ms).
+        $filtrado = ($busco || $filtro)
+            ? (clone $consulta)->toBase()->getCountForPagination()
+            : $total;
 
         $inicio = max(0, (int) $request->input('start', 0));
         $largo = (int) $request->input('length', 50);
@@ -57,11 +61,12 @@ class DataTableServidor
 
     /**
      * @param  array<int, array<string, mixed>>  $columnas
+     * @return bool verdadero si aplico algun filtro
      */
-    protected static function aplicarBusquedaGlobal(Builder $consulta, array $columnas, string $valor): void
+    protected static function aplicarBusquedaGlobal(Builder $consulta, array $columnas, string $valor): bool
     {
         if ($valor === '') {
-            return;
+            return false;
         }
 
         $consulta->where(function (Builder $query) use ($columnas, $valor) {
@@ -83,14 +88,19 @@ class DataTableServidor
                 }
             }
         });
+
+        return true;
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $columnas
      * @param  array<int, array<string, mixed>>  $recibidas
+     * @return bool verdadero si aplico algun filtro
      */
-    protected static function aplicarFiltrosPorColumna(Builder $consulta, array $columnas, array $recibidas): void
+    protected static function aplicarFiltrosPorColumna(Builder $consulta, array $columnas, array $recibidas): bool
     {
+        $aplicado = false;
+
         foreach ($recibidas as $indice => $columna) {
             $valor = trim((string) ($columna['search']['value'] ?? ''));
 
@@ -101,10 +111,12 @@ class DataTableServidor
             $config = $columnas[(int) $indice];
 
             if (! empty($config['fecha'])) {
-                self::filtrarFecha($consulta, $config['fecha'], $valor);
+                $aplicado = self::filtrarFecha($consulta, $config['fecha'], $valor) || $aplicado;
 
                 continue;
             }
+
+            $aplicado = true;
 
             if (isset($config['callback'])) {
                 ($config['callback'])($consulta, $valor);
@@ -125,19 +137,23 @@ class DataTableServidor
                 $consulta->where($config['col'], 'like', $like);
             }
         }
+
+        return $aplicado;
     }
 
     /**
      * Interpreta el filtro de una columna de fecha. Acepta lo que escriba el
      * usuario (25/10/2026) y el patron que genera el buscador de DataTables.
+     *
+     * @return bool verdadero si aplico el filtro
      */
-    protected static function filtrarFecha(Builder $consulta, string $columna, string $valor): void
+    protected static function filtrarFecha(Builder $consulta, string $columna, string $valor): bool
     {
         $limpio = str_replace(['\\', '^', '$', '(', ')', '?', '.*', '\\s+', '+', '{', '}'], ' ', $valor);
         $limpio = str_replace('d', ' ', $limpio);
 
         if (! str_contains($limpio, '/')) {
-            return;
+            return false;
         }
 
         [$dia, $mes, $anio] = array_pad(explode('/', $limpio), 3, '');
@@ -149,24 +165,28 @@ class DataTableServidor
         if ($anio && $mes && $dia) {
             $consulta->whereDate($columna, "{$anio}-{$mes}-{$dia}");
 
-            return;
+            return true;
         }
 
         if ($anio && $mes) {
             $consulta->whereYear($columna, $anio)->whereMonth($columna, $mes);
 
-            return;
+            return true;
         }
 
         if ($anio) {
             $consulta->whereYear($columna, $anio);
 
-            return;
+            return true;
         }
 
         if ($mes) {
             $consulta->whereMonth($columna, $mes);
+
+            return true;
         }
+
+        return false;
     }
 
     protected static function limpiarValor(string $valor): string

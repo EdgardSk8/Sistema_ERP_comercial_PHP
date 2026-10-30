@@ -8,7 +8,7 @@ export default function initMostrarCliente() {
         function(settings, data, dataIndex) {
             const ocultar = $('#toggleInactivosClientes').is(':checked');
             if (!ocultar) return true;
-            const estado = data[6]; // columna estado_cliente
+            const estado = data[10]; // columna estado_cliente
             return estado.includes('Activo');
         }
         
@@ -21,17 +21,54 @@ export default function initMostrarCliente() {
 
         ajax: {url: '/clientes/mostrar', type: 'GET', dataSrc: 'clientes'},
 
+        scrollX: true,
+        autoWidth: false,
+
         columns: [
             { data: 'id_cliente' },
             { data: 'nombre_cliente', render: data => data ? data : '<span>—</span>' },
             { data: 'cedula_cliente', render: data => data ? data : '<span>—</span>' },
             { data: 'ruc_cliente', render: data => data ? data : '<span>—</span>' },
+            { data: 'fecha_nacimiento_cliente', render: function(data) {
+                    if (!data) return '<span>—</span>';
+
+                    const [anio, mes, dia] = String(data).substring(0, 10).split('-');
+                    return dia && mes && anio ? `${dia}/${mes}/${anio}` : String(data);
+                }
+            },
             { data: 'telefono_cliente', render: data => data ? data : '<span>—</span>' },
             { data: 'correo_cliente', render: data => data ? data : '<span>—</span>' },
+            { data: 'direccion_cliente', render: data => data ? data : '<span>—</span>' },
+            { data: 'usuario_cliente', render: data => data ? data : '<span>—</span>' },
+
+            { data: null, render: function(data, type, row) {
+                    const tipo = row.descuento_tipo_cliente;
+                    const valor = Number(row.descuento_valor_cliente) || 0;
+
+                    if (!tipo || valor <= 0) return '<span>—</span>';
+
+                    return tipo === 'porcentaje'
+                        ? `${valor}%`
+                        : `C$ ${valor.toFixed(2)}`;
+                }
+            },
 
             { data: 'estado_cliente', render: function(data) { return data == 1
                     ? '<span class="estado estado-activo">Activo</span>'
                     : '<span class="estado estado-inactivo">Inactivo</span>'; } },
+
+            { data: 'fecha_creacion_cliente', render: function(data) {
+                    if (!data) return '<span>—</span>';
+
+                    const fecha = String(data).replace('T', ' ').substring(0, 16);
+                    const [dia, hora] = fecha.split(' ');
+                    const [anio, mes, d] = dia.split('-');
+
+                    return d && mes && anio
+                        ? `${d}/${mes}/${anio} ${hora || ''}`.trim()
+                        : fecha;
+                }
+            },
 
             { data: 'id_cliente', orderable: false, searchable: false,
                 
@@ -88,6 +125,16 @@ export default function initMostrarCliente() {
             $('#editar_direccion_cliente').val(cliente.direccion_cliente);
             $('#editar_estado_cliente').val(cliente.estado_cliente);
 
+            const fechaNacimiento = cliente.fecha_nacimiento_cliente
+                ? String(cliente.fecha_nacimiento_cliente).substring(0, 10)
+                : '';
+
+            $('#editar_fecha_nacimiento_cliente').val(fechaNacimiento);
+            $('#editar_usuario_cliente').val(cliente.usuario_cliente || '');
+            $('#editar_password_cliente').val('');
+            $('#editar_descuento_tipo_cliente').val(cliente.descuento_tipo_cliente || '');
+            $('#editar_descuento_valor_cliente').val(cliente.descuento_valor_cliente || 0);
+
             // convertir fecha para datetime-local
             if(cliente.fecha_creacion_cliente){
                 let fecha = cliente.fecha_creacion_cliente.replace(' ', 'T').substring(0,16);
@@ -117,6 +164,12 @@ export default function initMostrarCliente() {
             correo_cliente: $('#editar_correo_cliente').val().trim(),
             direccion_cliente: $('#editar_direccion_cliente').val().trim(),
             estado_cliente: $('#editar_estado_cliente').val(),
+
+            fecha_nacimiento_cliente: $('#editar_fecha_nacimiento_cliente').val(),
+            usuario_cliente: $('#editar_usuario_cliente').val().trim(),
+            password_cliente: $('#editar_password_cliente').val(),
+            descuento_tipo_cliente: $('#editar_descuento_tipo_cliente').val(),
+            descuento_valor_cliente: $('#editar_descuento_valor_cliente').val(),
 
             _token: $('meta[name="csrf-token"]').attr('content')
 
@@ -191,6 +244,11 @@ function crearcliente() {
             telefono_cliente: telefono,
             correo_cliente: correo,
             direccion_cliente: direccion,
+            fecha_nacimiento_cliente: $('#crear_fecha_nacimiento_cliente').val(),
+            usuario_cliente: $('#crear_usuario_cliente').val().trim(),
+            password_cliente: $('#crear_password_cliente').val(),
+            descuento_tipo_cliente: $('#crear_descuento_tipo_cliente').val(),
+            descuento_valor_cliente: $('#crear_descuento_valor_cliente').val(),
             _token: $('meta[name="csrf-token"]').attr('content')
         };
 

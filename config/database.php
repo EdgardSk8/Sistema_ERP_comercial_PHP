@@ -83,19 +83,39 @@ return [
             ]) : [],
         ],
 
+        /*
+        | Supabase (PostgreSQL)
+        | - DB_SSLMODE=require es obligatorio contra Supabase.
+        | - DB_SCHEMA=public: ahí se ejecutó el esquema del ERP.
+        | - Si la red no tiene IPv6, usa la cadena del "Session Pooler":
+        |   host aws-0-<region>.pooler.supabase.com, puerto 5432 y
+        |   usuario postgres.<project_ref>.
+        */
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
+            'database' => env('DB_DATABASE', 'postgres'),
+            'username' => env('DB_USERNAME', 'postgres'),
             'password' => env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'prefer'),
+            'search_path' => env('DB_SCHEMA', 'public'),
+            'sslmode' => env('DB_SSLMODE', 'require'),
+            // Supabase está fuera de la red local: reutilizar la conexión evita
+            // pagar el handshake TLS (~500-1600 ms) en cada petición.
+            'options' => array_filter([
+                PDO::ATTR_PERSISTENT => filter_var(env('DB_PERSISTENT', false), FILTER_VALIDATE_BOOL),
+            ]),
+            // Los prepared statements nativos de PostgreSQL cuestan 3 viajes de
+            // red por consulta (~225 ms con Supabase). Al emularlos, PDO inserta
+            // los valores en el SQL y la consulta baja a 1 viaje (~74 ms).
+            // AppServiceProvider registra entonces App\Database\ConexionPostgresEmulada,
+            // que manda TODOS los parámetros como texto (necesario porque las
+            // columnas booleanas se comparan con 1/0 en el código).
+            'emula_preparaciones' => filter_var(env('DB_EMULA_PREPARACIONES', true), FILTER_VALIDATE_BOOL),
         ],
 
         'sqlsrv' => [

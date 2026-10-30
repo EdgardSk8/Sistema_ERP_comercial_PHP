@@ -4,6 +4,24 @@
 
 const IMAGEN_FALLBACK = '/tienda/recursos/img/producto.png';
 
+let descuentoCliente = null;
+
+function calcularDescuento(subtotal) {
+    if (!descuentoCliente) return 0;
+
+    const valor = Number(descuentoCliente.valor) || 0;
+
+    if (descuentoCliente.tipo === 'porcentaje') {
+        return Math.min(subtotal, (subtotal * valor) / 100);
+    }
+
+    if (descuentoCliente.tipo === 'monto') {
+        return Math.min(subtotal, valor);
+    }
+
+    return 0;
+}
+
 function moneda(valor) {
     return 'C$ ' + Number(valor || 0).toLocaleString('es-NI', {
         minimumFractionDigits: 2,
@@ -65,11 +83,23 @@ function pintarCarrito() {
     contenedor.innerHTML = items.map(itemHTML).join('');
 
     const unidades = Carrito.cantidadTotal();
-    const total = Carrito.subtotal();
+    const subtotal = Carrito.subtotal();
+    const descuento = calcularDescuento(subtotal);
+    const total = Math.max(0, subtotal - descuento);
 
     document.getElementById('carritoUnidades').textContent = `${unidades} ${unidades === 1 ? 'artículo' : 'artículos'}`;
-    document.getElementById('carritoSubtotal').textContent = moneda(total);
+    document.getElementById('carritoSubtotal').textContent = moneda(subtotal);
     document.getElementById('carritoTotal').textContent = moneda(total);
+
+    const filaDescuento = document.getElementById('carritoDescuentoFila');
+
+    if (filaDescuento) {
+        filaDescuento.hidden = descuento <= 0;
+        document.getElementById('carritoDescuento').textContent = `- ${moneda(descuento)}`;
+        document.getElementById('carritoDescuentoEtiqueta').textContent = descuentoCliente?.etiqueta
+            ? `(${descuentoCliente.etiqueta})`
+            : '';
+    }
 }
 
 function cambiar(clave, accion) {
@@ -110,6 +140,11 @@ document.addEventListener('click', (event) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     pintarCarrito();
+
+    window.sesionTiendaPromise.then((sesion) => {
+        descuentoCliente = sesion?.cliente?.descuento || null;
+        pintarCarrito();
+    });
 
     document.getElementById('btnVaciar')?.addEventListener('click', () => {
         Carrito.vaciar();

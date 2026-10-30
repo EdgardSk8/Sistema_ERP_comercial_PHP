@@ -76,6 +76,55 @@
                                 maxlength="200">
                         </div>
 
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha de nacimiento</label>
+                            <input
+                                id="crear_fecha_nacimiento_cliente"
+                                type="date"
+                                class="form-control form-control-sm">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Usuario web</label>
+                            <input
+                                id="crear_usuario_cliente"
+                                type="text"
+                                class="form-control form-control-sm"
+                                placeholder="Usuario para la tienda"
+                                maxlength="60"
+                                autocomplete="off">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Contraseña web</label>
+                            <input
+                                id="crear_password_cliente"
+                                type="password"
+                                class="form-control form-control-sm"
+                                placeholder="Mínimo 6 caracteres"
+                                autocomplete="new-password">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de descuento</label>
+                            <select id="crear_descuento_tipo_cliente" class="form-select form-select-sm">
+                                <option value="">Sin descuento</option>
+                                <option value="porcentaje">Porcentaje (%)</option>
+                                <option value="monto">Monto fijo (C$)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Valor del descuento</label>
+                            <input
+                                id="crear_descuento_valor_cliente"
+                                type="number"
+                                class="form-control form-control-sm"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00">
+                        </div>
+
                     </form>
 
                 </div>

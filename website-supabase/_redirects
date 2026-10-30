@@ -1,0 +1,7 @@
+/tienda                /index.html     200
+/tienda/               /index.html     200
+/tienda/login          /login.html     200
+/tienda/carrito        /carrito.html   200
+/tienda/perfil         /perfil.html    200
+/tienda/producto/*     /producto.html  200
+/tienda/recursos/*     /:splat         200

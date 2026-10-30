@@ -114,16 +114,133 @@ function tiendaToast(mensaje, tipo = 'exito') {
     toast._timer = setTimeout(() => toast.classList.remove('tienda-toast--visible'), 2600);
 }
 
+/* ── Indicador de carga global (spinner) ─────────────────────── */
+let cargasActivas = 0;
+let temporizadorCarga = null;
+let temporizadorOcultarCarga = null;
+
+function tiendaCargando(mostrar = true) {
+    let capa = document.querySelector('.tienda-cargando');
+
+    if (mostrar) {
+        cargasActivas++;
+        if (cargasActivas > 1) return;
+
+        clearTimeout(temporizadorOcultarCarga);
+
+        // Pequeña espera para evitar parpadeos en peticiones rápidas.
+        temporizadorCarga = setTimeout(() => {
+            if (!capa) {
+                capa = document.createElement('div');
+                capa.className = 'tienda-cargando';
+                capa.setAttribute('role', 'status');
+                capa.setAttribute('aria-live', 'polite');
+                capa.innerHTML = `
+                    <div class="tienda-cargando__caja">
+                        <span class="spinner-border tienda-cargando__spinner" aria-hidden="true"></span>
+                        <span class="tienda-cargando__texto">Cargando…</span>
+                    </div>
+                `;
+                document.body.appendChild(capa);
+            }
+
+            requestAnimationFrame(() => capa.classList.add('tienda-cargando--visible'));
+        }, 160);
+        return;
+    }
+
+    cargasActivas = Math.max(0, cargasActivas - 1);
+    if (cargasActivas > 0) return;
+
+    clearTimeout(temporizadorCarga);
+
+    if (capa) {
+        capa.classList.remove('tienda-cargando--visible');
+        temporizadorOcultarCarga = setTimeout(() => capa.remove(), 200);
+    }
+}
+
+window.tiendaCargando = tiendaCargando;
+
+/* ── Confirmación con modal (reemplaza window.confirm) ───────── */
+function tiendaConfirmar(opciones = {}) {
+    const {
+        titulo = '¿Estás seguro?',
+        mensaje = '',
+        textoAceptar = 'Aceptar',
+        textoCancelar = 'Cancelar',
+        peligro = false,
+    } = opciones;
+
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'tienda-modal';
+        modal.innerHTML = `
+            <div class="tienda-modal__fondo" data-modal-cancelar></div>
+            <div class="tienda-modal__caja" role="dialog" aria-modal="true" aria-labelledby="tiendaModalTitulo" aria-describedby="tiendaModalMensaje">
+                <span class="tienda-modal__icono" aria-hidden="true"><i class="bi ${peligro ? 'bi-exclamation-triangle' : 'bi-question-circle'}"></i></span>
+                <h3 class="tienda-modal__titulo" id="tiendaModalTitulo"></h3>
+                <p class="tienda-modal__mensaje" id="tiendaModalMensaje"></p>
+                <div class="tienda-modal__acciones">
+                    <button type="button" class="tienda-modal__boton tienda-modal__boton--cancelar" data-modal-cancelar></button>
+                    <button type="button" class="tienda-modal__boton tienda-modal__boton--aceptar"></button>
+                </div>
+            </div>
+        `;
+
+        modal.querySelector('.tienda-modal__titulo').textContent = titulo;
+        modal.querySelector('.tienda-modal__mensaje').textContent = mensaje;
+
+        const botonCancelar = modal.querySelector('.tienda-modal__boton--cancelar');
+        const botonAceptar = modal.querySelector('.tienda-modal__boton--aceptar');
+        const focoAnterior = document.activeElement;
+
+        botonCancelar.textContent = textoCancelar;
+        botonAceptar.textContent = textoAceptar;
+        botonAceptar.classList.toggle('tienda-modal__boton--peligro', peligro);
+
+        function cerrar(resultado) {
+            document.removeEventListener('keydown', alPresionarTecla);
+            modal.classList.remove('tienda-modal--visible');
+
+            setTimeout(() => {
+                modal.remove();
+                if (focoAnterior instanceof HTMLElement) focoAnterior.focus();
+                resolve(resultado);
+            }, 180);
+        }
+
+        function alPresionarTecla(evento) {
+            if (evento.key === 'Escape') {
+                evento.preventDefault();
+                cerrar(false);
+            } else if (evento.key === 'Enter') {
+                evento.preventDefault();
+                cerrar(true);
+            }
+        }
+
+        modal.addEventListener('click', (evento) => {
+            if (evento.target.closest('[data-modal-cancelar]')) cerrar(false);
+            else if (evento.target.closest('.tienda-modal__boton--aceptar')) cerrar(true);
+        });
+
+        document.addEventListener('keydown', alPresionarTecla);
+        document.body.appendChild(modal);
+        requestAnimationFrame(() => modal.classList.add('tienda-modal--visible'));
+        botonAceptar.focus();
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => Carrito.actualizarBadges());
 window.addEventListener('storage', (event) => {
     if (event.key === 'tienda_carrito_v1') Carrito.actualizarBadges();
 });
 
-/* ── Menú de perfil: abre y cierra con animación ────────────── */
-const menuPerfil = () => document.querySelector('.perfil');
+/* ── Menús del header (invitado / cuenta) ───────────────────── */
+const menusHeader = () => Array.from(document.querySelectorAll('details.perfil'));
 
-function cerrarMenuPerfil() {
-    const menu = menuPerfil();
+function cerrarMenuPerfil(menu) {
     if (!menu || !menu.open) return;
 
     const panel = menu.querySelector('.perfil__menu');
@@ -142,31 +259,37 @@ function cerrarMenuPerfil() {
     }, 180);
 }
 
-document.addEventListener('click', (event) => {
-    const menu = menuPerfil();
-    if (!menu) return;
+function cerrarMenusHeader(excepto = null) {
+    menusHeader().forEach((menu) => {
+        if (menu !== excepto) cerrarMenuPerfil(menu);
+    });
+}
 
-    if (event.target.closest('.perfil__boton')) {
+document.addEventListener('click', (event) => {
+    const menu = event.target.closest('details.perfil');
+
+    if (event.target.closest('.perfil__boton') && menu) {
         // Controlamos la apertura y el cierre para poder animar ambos.
         event.preventDefault();
 
         if (menu.open) {
-            cerrarMenuPerfil();
+            cerrarMenuPerfil(menu);
         } else {
+            cerrarMenusHeader(menu);
             menu.open = true;
         }
         return;
     }
 
-    if (event.target.closest('.perfil__item')) {
-        event.preventDefault();
-        cerrarMenuPerfil();
+    // Al elegir una opción del menú se cierra, pero se deja navegar.
+    if (event.target.closest('.perfil__menu .perfil__item')) {
+        cerrarMenusHeader();
         return;
     }
 
-    if (menu.open && !menu.contains(event.target)) cerrarMenuPerfil();
+    if (!menu) cerrarMenusHeader();
 });
 
 document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') cerrarMenuPerfil();
+    if (event.key === 'Escape') cerrarMenusHeader();
 });

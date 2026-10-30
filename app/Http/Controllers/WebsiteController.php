@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cliente;
 use App\Models\Producto;
+use App\Models\ReseniaProducto;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class WebsiteController extends Controller
@@ -35,12 +38,47 @@ class WebsiteController extends Controller
         ]);
     }
 
-    public function perfilVista(): BinaryFileResponse
+    public function perfilVista(): BinaryFileResponse|RedirectResponse
     {
+        if (! $this->clienteWebAutenticado()) {
+            return redirect()->route('tienda.login');
+        }
+
         return response()->file(base_path('website/perfil.html'), [
             'Content-Type' => 'text/html; charset=UTF-8',
             'Cache-Control' => 'no-cache',
         ]);
+    }
+
+    public function loginVista(): BinaryFileResponse|RedirectResponse
+    {
+        if ($this->clienteWebAutenticado()) {
+            return redirect()->route('tienda.perfil');
+        }
+
+        return response()->file(base_path('website/login.html'), [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'no-cache',
+        ]);
+    }
+
+    private function clienteWebAutenticado(): bool
+    {
+        $idCliente = session('cliente_web.id_cliente');
+
+        if (! $idCliente) {
+            return false;
+        }
+
+        $activo = Cliente::where('id_cliente', $idCliente)
+            ->where('estado_cliente', 1)
+            ->exists();
+
+        if (! $activo) {
+            session()->forget('cliente_web');
+        }
+
+        return $activo;
     }
 
     /** Sirve css, js e imágenes de la carpeta website/. */
@@ -88,9 +126,13 @@ class WebsiteController extends Controller
             ->orderBy('nombre_producto')
             ->get();
 
+        $calificaciones = $this->calificacionesProductos($productos->pluck('id_producto')->all());
+
         return response()->json([
             'success' => true,
-            'productos' => $productos->map(fn (Producto $producto) => $this->resumenProducto($producto))->values(),
+            'productos' => $productos
+                ->map(fn (Producto $producto) => $this->resumenProducto($producto, $calificaciones->get($producto->id_producto)))
+                ->values(),
         ]);
     }
 
@@ -105,9 +147,11 @@ class WebsiteController extends Controller
             ], 404);
         }
 
+        $calificacion = $this->calificacionesProductos([$producto->id_producto])->get($producto->id_producto);
+
         return response()->json([
             'success' => true,
-            'producto' => $this->detalleProducto($producto),
+            'producto' => $this->detalleProducto($producto, $calificacion),
         ]);
     }
 
@@ -125,7 +169,7 @@ class WebsiteController extends Controller
         ])->where('estado_producto', 1);
     }
 
-    private function resumenProducto(Producto $producto): array
+    private function resumenProducto(Producto $producto, $calificacion = null): array
     {
         $impuesto = (float) ($producto->impuesto->porcentaje_impuesto ?? 0);
         $precioBase = (float) $producto->precio_venta;
@@ -154,11 +198,12 @@ class WebsiteController extends Controller
             'impuesto' => $impuesto,
             'imagen' => $colores->first()['imagen'] ?? $this->urlImagenProducto($producto),
             'colores' => $colores,
+            'calificacion' => $this->datosCalificacion($calificacion),
             'stock' => (int) $variaciones->flatMap->tallas->sum('stock'),
         ];
     }
 
-    private function detalleProducto(Producto $producto): array
+    private function detalleProducto(Producto $producto, $calificacion = null): array
     {
         $impuesto = (float) ($producto->impuesto->porcentaje_impuesto ?? 0);
         $precioBase = (float) $producto->precio_venta;
@@ -208,7 +253,32 @@ class WebsiteController extends Controller
             'precio_base' => $precioBase,
             'impuesto' => $impuesto,
             'imagen' => $primera['imagenes'][0] ?? $this->urlImagenProducto($producto),
+            'calificacion' => $this->datosCalificacion($calificacion),
             'variaciones' => $variaciones,
+        ];
+    }
+
+    /** Calificaciones agrupadas de varios productos en una sola consulta. */
+    private function calificacionesProductos(array $idsProductos)
+    {
+        if ($idsProductos === []) {
+            return collect();
+        }
+
+        return ReseniaProducto::select('id_producto')
+            ->selectRaw('count(*) as total, coalesce(avg(calificacion_resenia), 0) as promedio')
+            ->whereIn('id_producto', $idsProductos)
+            ->where('estado_resenia', 1)
+            ->groupBy('id_producto')
+            ->get()
+            ->keyBy('id_producto');
+    }
+
+    private function datosCalificacion($fila): array
+    {
+        return [
+            'promedio' => $fila ? round((float) $fila->promedio, 2) : 0,
+            'total' => $fila ? (int) $fila->total : 0,
         ];
     }
 

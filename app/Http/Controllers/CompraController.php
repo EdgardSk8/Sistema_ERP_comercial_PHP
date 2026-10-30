@@ -509,19 +509,25 @@ class CompraController extends Controller
         $idUsuario = session('usuario.id');
         $totalCompra = $request->total ?? 0; // opcional para validar si hay suficiente saldo
 
-        $cajas = Caja::where('estado_caja', 1)
+        $cajas = Caja::with('usuario')
+            ->where('estado_caja', 1)
             ->get(); // podemos filtrar por usuario si quieres
 
-        $data = $cajas->map(function ($caja) {
+        // Una sola consulta con los totales de todas las cajas (antes: 2 por caja).
+        $totales = MovimientoCaja::whereIn('id_caja', $cajas->pluck('id_caja'))
+            ->selectRaw("id_caja,
+                SUM(CASE WHEN tipo_movimiento_caja = 'INGRESO' THEN monto_movimiento_caja ELSE 0 END) AS ingresos,
+                SUM(CASE WHEN tipo_movimiento_caja = 'SALIDA' THEN monto_movimiento_caja ELSE 0 END) AS salidas")
+            ->groupBy('id_caja')
+            ->get()
+            ->keyBy('id_caja');
 
-            // calcular saldo en tiempo real
-            $ingresos = MovimientoCaja::where('id_caja', $caja->id_caja)
-                ->where('tipo_movimiento_caja', 'INGRESO')
-                ->sum('monto_movimiento_caja');
+        $data = $cajas->map(function ($caja) use ($totales): array {
 
-            $salidas = MovimientoCaja::where('id_caja', $caja->id_caja)
-                ->where('tipo_movimiento_caja', 'SALIDA')
-                ->sum('monto_movimiento_caja');
+            $total = $totales->get($caja->id_caja);
+
+            $ingresos = (float) ($total->ingresos ?? 0);
+            $salidas  = (float) ($total->salidas ?? 0);
 
             $saldoActual = $caja->monto_inicial + $ingresos - $salidas;
 

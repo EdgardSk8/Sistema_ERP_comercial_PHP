@@ -1,4 +1,4 @@
-import { imprimirFacturaTermica } from './ImprimirFacturaTermica';
+import { imprimirFacturaTermica, imprimirFacturaEscPos } from './ImprimirFacturaTermica';
 
 let tablaProductosPOSActiva = null;
 
@@ -705,6 +705,14 @@ export default function initFacturacion() {
 /* IMPRIMIR FACTURA */
 
 async function imprimirFactura(data) {
+    try {
+        await imprimirFacturaEscPos(data);
+        return;
+    } catch (e) {
+        console.error('Impresión ESC/POS falló:', e);
+        mostrarToast('No se pudo imprimir en la térmica. Se abrirá el diálogo del navegador.', 'warning');
+    }
+
     try {
         const empresa = await obtenerCredencialesEmpresa();
         imprimirFacturaTermica(data, empresa);

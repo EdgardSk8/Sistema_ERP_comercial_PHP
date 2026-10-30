@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/tienda", "destination": "/index.html" },
+    { "source": "/tienda/", "destination": "/index.html" },
+    { "source": "/tienda/login", "destination": "/login.html" },
+    { "source": "/tienda/carrito", "destination": "/carrito.html" },
+    { "source": "/tienda/perfil", "destination": "/perfil.html" },
+    { "source": "/tienda/producto/:id", "destination": "/producto.html" },
+    { "source": "/tienda/recursos/:path*", "destination": "/:path*" }
+  ]
+}

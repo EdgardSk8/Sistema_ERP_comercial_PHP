@@ -6,6 +6,8 @@ const IMAGEN_FALLBACK = '/tienda/recursos/img/producto.png';
 const API_PRODUCTOS = '/tienda/api/productos';
 const TALLAS_REFERENCIA = '/tienda/recursos/data/tallas.json';
 
+window.favoritosTienda = window.favoritosTienda || new Set();
+
 let tallasReferencia = null;
 
 const COLORES = {
@@ -111,6 +113,29 @@ let carrusel = null;
 
 const $ = (id) => document.getElementById(id);
 
+function actualizarBotonFavorito() {
+    const boton = $('btnFavorito');
+    if (!boton) return;
+
+    const activo = producto && window.favoritosTienda.has(String(producto.id));
+
+    boton.classList.toggle('is-activo', Boolean(activo));
+    boton.innerHTML = activo
+        ? '<i class="bi bi-heart-fill me-2"></i> Favoritos'
+        : '<i class="bi bi-heart me-2"></i> Favoritos';
+}
+
+function animarPulsacionFavorito() {
+    const boton = $('btnFavorito');
+    if (!boton) return;
+
+    boton.classList.remove('is-pulsado');
+    void boton.offsetWidth;
+    boton.classList.add('is-pulsado');
+
+    setTimeout(() => boton.classList.remove('is-pulsado'), 430);
+}
+
 /* ── Carrusel de la imagen grande (Splide) ───────────────────── */
 function marcarMini(indice) {
     document.querySelectorAll('.galeria__mini').forEach((boton, posicion) => {
@@ -131,11 +156,12 @@ function montarCarrusel() {
         perPage: 1,
         pagination: false,
         arrows: false,
-        drag: true,
+        drag: 'free',
+        snap: true,
         speed: 350,
     });
 
-    carrusel.on('move', indice => marcarMini(indice));
+    carrusel.on('move', indice => marcarMini(Math.round(indice)));
     carrusel.mount();
 }
 
@@ -354,6 +380,7 @@ async function cargarProducto() {
             pintarGaleria([producto.imagen]);
             pintarPrecio();
             cargarRelacionados();
+            actualizarBotonFavorito();
             return;
         }
 
@@ -363,6 +390,7 @@ async function cargarProducto() {
         );
 
         cargarRelacionados();
+        actualizarBotonFavorito();
     } catch (error) {
         document.getElementById('productoDetalle').innerHTML = `
             <div class="producto__panel">
@@ -396,7 +424,8 @@ function montarCarruselRelacionados() {
         gap: '12px',
         arrows: total > 2,
         pagination: false,
-        drag: true,
+        drag: 'free',
+        snap: true,
         breakpoints: {
             1200: { perPage: 4 },
             992: { perPage: 3 },
@@ -555,6 +584,51 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/tienda/carrito';
     });
 
+    $('btnFavorito')?.addEventListener('click', async () => {
+        if (!producto) return;
+
+        const sesion = await window.sesionTiendaPromise;
+
+        if (!sesion?.autenticado) {
+            tiendaToast('Inicia sesión para guardar favoritos.', 'aviso');
+            window.location.href = '/tienda/perfil#perfil';
+            return;
+        }
+
+        const idProducto = String(producto.id);
+        const activo = window.favoritosTienda.has(idProducto);
+
+        animarPulsacionFavorito();
+
+        try {
+            if (activo) {
+                await window.TiendaAPI.delete(`/tienda/api/favoritos/${idProducto}`);
+                window.favoritosTienda.delete(idProducto);
+            } else {
+                await window.TiendaAPI.post('/tienda/api/favoritos', { id_producto: Number(idProducto) });
+                window.favoritosTienda.add(idProducto);
+            }
+
+            actualizarBotonFavorito();
+        } catch (error) {
+            tiendaToast(error.message, 'aviso');
+        }
+    });
+
     cargarTallasReferencia();
     cargarProducto();
+
+    window.sesionTiendaPromise.then(async (sesion) => {
+        if (!sesion?.autenticado) return;
+
+        try {
+            const datos = await window.TiendaAPI.get('/tienda/api/favoritos');
+            window.favoritosTienda = new Set(
+                (datos.favoritos || []).map((favorito) => String(favorito.id_producto))
+            );
+            actualizarBotonFavorito();
+        } catch (error) {
+            console.error('No se pudieron cargar los favoritos.', error);
+        }
+    });
 });

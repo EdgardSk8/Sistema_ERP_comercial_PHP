@@ -2,24 +2,16 @@
 
 namespace App\Exports;
 
-use Illuminate\Support\Facades\DB;
+use App\Support\EsquemaBaseDatos;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
 class BackupExcelExport implements WithMultipleSheets
 {
     public function sheets(): array
     {
-        $tablas = DB::select('SHOW TABLES');
-
-        $db = DB::connection()->getDatabaseName();
-        $key = "Tables_in_{$db}";
-
         $sheets = [];
 
-        foreach ($tablas as $tabla) {
-
-            $nombre = $tabla->$key;
-
+        foreach (EsquemaBaseDatos::tablas() as $nombre) {
             $sheets[] = new TablaSheetExport($nombre);
         }
 
