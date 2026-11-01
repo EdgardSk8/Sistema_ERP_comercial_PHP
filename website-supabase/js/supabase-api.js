@@ -52,6 +52,10 @@
     let usuarioActual = null;
     let clienteActual = null;
 
+    /* Marco de ventas del avatar (se calcula desde la base). */
+    window.marcoTienda = null;
+    window.marcoTiendaPromise = null;
+
     /* ── Utilidades ─────────────────────────────────────────── */
 
     function errorApi(mensaje, status = 400, errors = null) {
@@ -94,7 +98,7 @@
         const valor = Number(fila?.descuento_valor_cliente || 0);
 
         if (!['porcentaje', 'monto'].includes(tipo) || valor <= 0) {
-            return null;
+            return descuentoPrimeraCompra();
         }
 
         return {
@@ -106,9 +110,29 @@
         };
     }
 
+    /* Descuento de primera compra: 10% guardado en metadatos de Auth. */
+    function descuentoPrimeraCompra() {
+        const meta = usuarioActual?.user_metadata || {};
+        const activo = meta.descuento_primera_compra === true
+            || texto(meta.descuento_primera_compra) === 'true';
+
+        if (!activo) return null;
+
+        return {
+            tipo: 'porcentaje',
+            valor: 10,
+            etiqueta: '10%',
+            primera_compra: true,
+        };
+    }
+
     /* ¿La cuenta tiene contraseña? Las creadas con Google no la tienen. */
     function cuentaTienePassword() {
         if (!usuarioActual) return false;
+
+        const proveedores = usuarioActual.app_metadata?.providers || [];
+
+        if (proveedores.includes('email')) return true;
 
         return (usuarioActual.identities || []).some((identidad) => identidad.provider === 'email');
     }
@@ -127,8 +151,136 @@
             fecha_nacimiento_cliente: fila.fecha_nacimiento_cliente,
             cedula_cliente: fila.cedula_cliente,
             descuento: descuentoCliente(fila),
+            ...datosAvatar(),
         };
     }
+
+    /* ── Avatar: color de fondo + ilustración opcional ────────
+       Se guarda en los metadatos de Auth, así no hace falta
+       tocar la tabla clientes ni pedir migración en Supabase. */
+
+    function datosAvatar() {
+        const meta = usuarioActual?.user_metadata || {};
+        const color = texto(meta.avatar_color).toLowerCase();
+
+        return {
+            avatar_color: /^#[0-9a-f]{6}$/.test(color) ? color : null,
+            avatar_imagen: texto(meta.avatar_imagen) || null,
+            avatar_fondo: texto(meta.avatar_fondo) || null,
+            marco_avatar: !(meta.marco_avatar === false || texto(meta.marco_avatar) === 'false'),
+            marco_estilo: /^[a-z0-9_-]{1,20}$/i.test(texto(meta.marco_avatar_estilo))
+                ? texto(meta.marco_avatar_estilo).toLowerCase()
+                : null,
+        };
+    }
+
+    /* Niveles de marco según ventas completadas. */
+    const MARCOS_AVATAR = [
+        { ventas: 5, clave: 'bronce', nombre: 'Bronce' },
+        { ventas: 10, clave: 'plata', nombre: 'Plata' },
+        { ventas: 20, clave: 'oro', nombre: 'Oro' },
+        { ventas: 50, clave: 'esmeralda', nombre: 'Esmeralda' },
+        { ventas: 100, clave: 'rubi', nombre: 'Rubí' },
+    ];
+
+    function inicialesCliente(nombre) {
+        const partes = texto(nombre).split(/\s+/).filter(Boolean);
+
+        if (!partes.length) return '?';
+
+        return (partes[0][0] + (partes[1] ? partes[1][0] : '')).toUpperCase();
+    }
+
+    function esColorClaro(color) {
+        const limpio = String(color || '').replace('#', '');
+
+        if (limpio.length !== 6) return false;
+
+        const r = parseInt(limpio.slice(0, 2), 16);
+        const g = parseInt(limpio.slice(2, 4), 16);
+        const b = parseInt(limpio.slice(4, 6), 16);
+
+        return (0.299 * r + 0.587 * g + 0.114 * b) > 186;
+    }
+
+    function aplicarAvatar(elemento, cliente) {
+        if (!elemento) return;
+
+        const color = cliente?.avatar_color || '#d9f2e4';
+        const fondo = cliente?.avatar_fondo || '';
+        const imagen = elemento.querySelector('[data-avatar-img]');
+        const iniciales = elemento.querySelector('[data-avatar-iniciales]');
+
+        elemento.style.setProperty('--avatar-color', color);
+        elemento.classList.toggle('avatar--claro', esColorClaro(color));
+        elemento.classList.toggle('avatar--foto', Boolean(fondo));
+
+        const marco = cliente?.marco_avatar === false
+            ? null
+            : (cliente?.marco_estilo || window.marcoTienda?.marco?.clave || null);
+
+        MARCOS_AVATAR.forEach((nivel) => {
+            elemento.classList.toggle(`marco--${nivel.clave}`, nivel.clave === marco);
+        });
+
+        if (fondo) {
+            elemento.style.setProperty('--avatar-foto', `url('/tienda/recursos/imagenes/avatares/fondos/${fondo}')`);
+        } else {
+            elemento.style.removeProperty('--avatar-foto');
+        }
+
+        if (imagen) {
+            if (cliente?.avatar_imagen) {
+                imagen.src = `/tienda/recursos/imagenes/avatares/${cliente.avatar_imagen}.png`;
+                imagen.alt = `Foto de perfil de ${cliente.nombre_cliente || 'cliente'}`;
+                imagen.hidden = false;
+            } else {
+                imagen.hidden = true;
+                imagen.removeAttribute('src');
+                imagen.alt = '';
+            }
+        }
+
+        if (iniciales) {
+            iniciales.textContent = inicialesCliente(cliente?.nombre_cliente);
+            iniciales.hidden = Boolean(cliente?.avatar_imagen || fondo);
+        }
+    }
+
+    function pintarAvatares(cliente) {
+        document.querySelectorAll('[data-avatar]').forEach((elemento) => {
+            aplicarAvatar(elemento, cliente);
+        });
+    }
+
+    function previsualizarAvatar(color) {
+        document.querySelectorAll('[data-avatar]').forEach((elemento) => {
+            elemento.style.setProperty('--avatar-color', color || '#d9f2e4');
+            elemento.classList.toggle('avatar--claro', esColorClaro(color));
+        });
+    }
+
+    function previsualizarAvatarFondo(fondo) {
+        document.querySelectorAll('[data-avatar]').forEach((elemento) => {
+            elemento.classList.toggle('avatar--foto', Boolean(fondo));
+
+            if (fondo) {
+                elemento.style.setProperty('--avatar-foto', `url('/tienda/recursos/imagenes/avatares/fondos/${fondo}')`);
+            } else {
+                elemento.style.removeProperty('--avatar-foto');
+            }
+
+            const iniciales = elemento.querySelector('[data-avatar-iniciales]');
+
+            if (iniciales) {
+                iniciales.hidden = Boolean(fondo) || Boolean(window.clienteTienda?.avatar_imagen);
+            }
+        });
+    }
+
+    window.pintarAvatares = pintarAvatares;
+    window.previsualizarAvatar = previsualizarAvatar;
+    window.previsualizarAvatarFondo = previsualizarAvatarFondo;
 
     const GENERADOR_USUARIO = (nombre) => {
         const base = String(nombre || '')
@@ -217,6 +369,8 @@
             elemento.hidden = !cliente;
         });
 
+        pintarAvatares(cliente ? datosCliente(cliente) : null);
+
         const menuInvitado = document.getElementById('menuInvitado');
         const menuCuenta = document.getElementById('menuPerfil');
 
@@ -243,7 +397,17 @@
         }
 
         usuarioActual = session.user;
-        clienteActual = await obtenerOCrearCliente(session.user);
+
+        /* Trae los metadatos frescos: el marco forzado se cambia desde SQL/panel. */
+        try {
+            const { data: { user: usuarioFresco } } = await supabase.auth.getUser();
+
+            if (usuarioFresco) usuarioActual = usuarioFresco;
+        } catch {
+            /* Sin red: se usa el usuario de la sesión. */
+        }
+
+        clienteActual = await obtenerOCrearCliente(usuarioActual);
 
         if (!clienteActual.estado_cliente) {
             await supabase.auth.signOut();
@@ -259,6 +423,8 @@
         .then((datos) => {
             window.clienteTienda = datos.cliente || null;
             actualizarHeader(clienteActual);
+
+            if (datos.autenticado) cargarMarcoCliente();
             document.dispatchEvent(new CustomEvent('tienda:sesion', { detail: { cliente: datos.cliente } }));
             return datos;
         })
@@ -294,34 +460,36 @@
 
     /* ── Acceso con Google ──────────────────────────────────── */
 
-    document.querySelector('.acceso__social-btn--google')?.addEventListener('click', async (evento) => {
-        evento.preventDefault();
+    document.querySelectorAll('.acceso__social-btn--google').forEach((botonGoogle) => {
+        botonGoogle.addEventListener('click', async (evento) => {
+            evento.preventDefault();
 
-        /* Guarda el destino para recuperarlo cuando Supabase devuelva el control. */
-        try {
-            const volver = new URLSearchParams(window.location.search).get('redirect');
+            /* Guarda el destino para recuperarlo cuando Supabase devuelva el control. */
+            try {
+                const volver = new URLSearchParams(window.location.search).get('redirect');
 
-            if (volver) sessionStorage.setItem('tienda_redirect', volver);
-            else sessionStorage.removeItem('tienda_redirect');
-        } catch {
-            /* sessionStorage no disponible: continúa sin destino. */
-        }
-
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}${urlTienda('login')}`,
-                queryParams: { prompt: 'select_account' },
-            },
-        });
-
-        if (error) {
-            console.error('Error de Google OAuth:', error.message, error);
-
-            if (window.tiendaToast) {
-                window.tiendaToast(error.message || 'No se pudo abrir Google. Intenta de nuevo.', 'aviso');
+                if (volver) sessionStorage.setItem('tienda_redirect', volver);
+                else sessionStorage.removeItem('tienda_redirect');
+            } catch {
+                /* sessionStorage no disponible: continúa sin destino. */
             }
-        }
+
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}${urlTienda('login')}`,
+                    queryParams: { prompt: 'select_account' },
+                },
+            });
+
+            if (error) {
+                console.error('Error de Google OAuth:', error.message, error);
+
+                if (window.tiendaToast) {
+                    window.tiendaToast(error.message || 'No se pudo abrir Google. Intenta de nuevo.', 'aviso');
+                }
+            }
+        });
     });
 
     /* ── Autenticación ──────────────────────────────────────── */
@@ -371,7 +539,8 @@
         const errores = {};
 
         if (!nombre) errores.nombre_cliente = ['El nombre es obligatorio.'];
-        if (!usuario || usuario.length < 4) errores.usuario_cliente = ['El usuario debe tener al menos 4 caracteres.'];
+        /* El usuario es opcional: si no viene, la base lo genera del nombre. */
+        if (usuario && usuario.length < 4) errores.usuario_cliente = ['El usuario debe tener al menos 4 caracteres.'];
         if (!correo) errores.correo_cliente = ['El correo es obligatorio.'];
         if (!password || password.length < 6) errores.password = ['La contraseña debe tener al menos 6 caracteres.'];
         if (password !== confirmacion) errores.password_confirmation = ['Las contraseñas no coinciden.'];
@@ -380,16 +549,19 @@
             throw errorApi('Revisa los datos del formulario.', 422, errores);
         }
 
+        const datosCuenta = {
+            nombre_cliente: nombre,
+            telefono_cliente: texto(cuerpo.telefono_cliente) || null,
+        };
+
+        if (usuario) datosCuenta.usuario_cliente = usuario;
+
         const { data, error } = await supabase.auth.signUp({
             email: correo,
             password,
             options: {
                 emailRedirectTo: `${window.location.origin}${urlTienda('login')}`,
-                data: {
-                    nombre_cliente: nombre,
-                    usuario_cliente: usuario,
-                    telefono_cliente: texto(cuerpo.telefono_cliente) || null,
-                },
+                data: datosCuenta,
             },
         });
 
@@ -460,6 +632,211 @@
         };
     }
 
+    async function avatarApi(cuerpo) {
+        if (!usuarioActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const meta = usuarioActual.user_metadata || {};
+        const color = texto(cuerpo.avatar_color || meta.avatar_color).toLowerCase();
+        const imagen = 'avatar_imagen' in cuerpo
+            ? texto(cuerpo.avatar_imagen)
+            : texto(meta.avatar_imagen);
+        const fondo = 'avatar_fondo' in cuerpo
+            ? texto(cuerpo.avatar_fondo)
+            : texto(meta.avatar_fondo);
+
+        if (!/^#[0-9a-f]{6}$/.test(color)) {
+            throw errorApi('Elige un color válido para tu avatar.', 422, {
+                avatar_color: ['Elige un color válido para tu avatar.'],
+            });
+        }
+
+        if (imagen && !/^[a-z0-9_-]{1,40}$/i.test(imagen)) {
+            throw errorApi('La ilustración del avatar no es válida.', 422);
+        }
+
+        if (fondo && !/^[a-z0-9._-]{1,80}$/i.test(fondo)) {
+            throw errorApi('La foto de fondo del avatar no es válida.', 422);
+        }
+
+        const { data, error } = await supabase.auth.updateUser({
+            data: {
+                avatar_color: color,
+                avatar_imagen: imagen || null,
+                avatar_fondo: fondo || null,
+            },
+        });
+
+        if (error) throw errorDeSupabase(error, 'No se pudo guardar tu avatar.');
+
+        usuarioActual = data.user;
+        pintarAvatares(clienteActual ? datosCliente(clienteActual) : null);
+
+        return {
+            success: true,
+            mensaje: 'Avatar actualizado correctamente.',
+            cliente: clienteActual ? datosCliente(clienteActual) : null,
+        };
+    }
+
+    async function marcosApi() {
+        if (!usuarioActual || !clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_ventas_cliente');
+
+        /* Marco forzado: 'rubi' fuerza uno, 'todos' desbloquea todos. */
+        const forzado = texto(usuarioActual?.user_metadata?.marco_avatar_forzado).toLowerCase();
+        const todosDesbloqueados = ['todos', 'todos_los_marcos', 'all'].includes(forzado);
+        const marcoForzado = MARCOS_AVATAR.find((nivel) => nivel.clave === forzado) || null;
+
+        if (error && !marcoForzado && !todosDesbloqueados) {
+            throw errorDeSupabase(error, 'No se pudo cargar tu nivel de compras.');
+        }
+
+        const total = error ? 0 : (Number(data?.total ?? data ?? 0) || 0);
+
+        const niveles = MARCOS_AVATAR.map((nivel) => ({
+            ...nivel,
+            desbloqueado: todosDesbloqueados
+                || (marcoForzado ? nivel.ventas <= marcoForzado.ventas : false)
+                || total >= nivel.ventas,
+        }));
+
+        const desbloqueados = niveles.filter((nivel) => nivel.desbloqueado);
+        const siguiente = niveles.find((nivel) => !nivel.desbloqueado) || null;
+
+        const estiloGuardado = texto(usuarioActual?.user_metadata?.marco_avatar_estilo).toLowerCase();
+        const marco = desbloqueados.find((nivel) => nivel.clave === estiloGuardado)
+            || (desbloqueados.length ? desbloqueados[desbloqueados.length - 1] : null);
+
+        const previo = desbloqueados.length ? desbloqueados[desbloqueados.length - 1].ventas : 0;
+        const hasta = siguiente ? siguiente.ventas : (marco ? marco.ventas : 5);
+        const avance = siguiente
+            ? Math.max(0, Math.min(100, Math.round(((total - previo) / Math.max(1, hasta - previo)) * 100)))
+            : 100;
+
+        return {
+            success: true,
+            ventas: total,
+            marco,
+            marco_estilo: marco ? marco.clave : null,
+            forzado: Boolean(marcoForzado),
+            siguiente,
+            desbloqueados,
+            niveles,
+            desde: previo,
+            hasta,
+            avance,
+            faltan: siguiente ? siguiente.ventas - total : 0,
+            visible: datosAvatar().marco_avatar,
+        };
+    }
+
+    async function marcoVisibilidadApi(cuerpo) {
+        if (!usuarioActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const cambios = {};
+
+        if ('mostrar' in (cuerpo || {})) {
+            cambios.marco_avatar = !(cuerpo.mostrar === false || texto(cuerpo.mostrar) === 'false');
+        }
+
+        if ('estilo' in (cuerpo || {})) {
+            const estilo = texto(cuerpo.estilo).toLowerCase();
+
+            if (estilo) {
+                const nivel = MARCOS_AVATAR.find((item) => item.clave === estilo);
+
+                if (!nivel) throw errorApi('Ese marco no existe.', 422);
+
+                const forzado = texto(usuarioActual?.user_metadata?.marco_avatar_forzado).toLowerCase();
+                const todos = ['todos', 'todos_los_marcos', 'all'].includes(forzado);
+                const nivelForzado = MARCOS_AVATAR.find((item) => item.clave === forzado) || null;
+                let total = 0;
+
+                try {
+                    const { data } = await supabase.rpc('web_ventas_cliente');
+                    total = Number(data?.total ?? data ?? 0) || 0;
+                } catch {
+                    total = 0;
+                }
+
+                if (!todos && !(nivelForzado && nivel.ventas <= nivelForzado.ventas) && total < nivel.ventas) {
+                    throw errorApi('Ese marco todavía no está desbloqueado.', 422);
+                }
+            }
+
+            cambios.marco_avatar_estilo = estilo || null;
+            cambios.marco_avatar = true;
+        }
+
+        const { data, error } = await supabase.auth.updateUser({ data: cambios });
+
+        if (error) throw errorDeSupabase(error, 'No se pudo guardar la preferencia del marco.');
+
+        usuarioActual = data.user;
+        pintarAvatares(clienteActual ? datosCliente(clienteActual) : null);
+
+        return {
+            success: true,
+            mensaje: cambios.marco_avatar === false ? 'Marco oculto.' : 'Marco actualizado.',
+            cliente: clienteActual ? datosCliente(clienteActual) : null,
+        };
+    }
+
+    function cargarMarcoCliente() {
+        window.marcoTiendaPromise = marcosApi()
+            .then((datos) => {
+                window.marcoTienda = datos;
+                pintarAvatares(clienteActual ? datosCliente(clienteActual) : null);
+                return datos;
+            })
+            .catch((error) => {
+                console.warn('No se pudo cargar el marco de ventas.', error);
+                window.marcoTienda = null;
+                return null;
+            });
+
+        return window.marcoTiendaPromise;
+    }
+
+    async function descuentoPrimeraCompraApi() {
+        if (!usuarioActual || !clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const faltantes = [];
+
+        if (!texto(clienteActual.telefono_cliente)) faltantes.push('teléfono');
+        if (!texto(clienteActual.fecha_nacimiento_cliente)) faltantes.push('fecha de nacimiento');
+        if (!cuentaTienePassword()) faltantes.push('contraseña');
+
+        const { count, error } = await supabase
+            .from('cliente_direcciones')
+            .select('id_direccion_cliente', { count: 'exact', head: true })
+            .eq('id_cliente', clienteActual.id_cliente)
+            .eq('estado_direccion', true);
+
+        if (error) throw errorDeSupabase(error, 'No se pudieron revisar tus direcciones.');
+
+        if (!count) faltantes.push('dirección');
+
+        if (faltantes.length) {
+            throw errorApi(`Completa: ${faltantes.join(', ')}.`, 422);
+        }
+
+        const { data, error: errorUpdate } = await supabase.auth.updateUser({
+            data: { descuento_primera_compra: true },
+        });
+
+        if (errorUpdate) throw errorDeSupabase(errorUpdate, 'No se pudo aplicar el descuento.');
+
+        usuarioActual = data.user;
+
+        return {
+            success: true,
+            mensaje: 'Descuento de primera compra aplicado: 10% en cualquier producto.',
+            cliente: datosCliente(clienteActual),
+        };
+    }
+
     async function passwordApi(cuerpo) {
         if (!usuarioActual) throw errorApi('Inicia sesión para continuar.', 401);
 
@@ -494,15 +871,37 @@
             });
 
             if (verificacion) {
-                throw errorApi('La contraseña actual no es correcta.', 422, {
-                    password_actual: ['La contraseña actual no es correcta.'],
-                });
+                const mensaje = /rate|too many/i.test(String(verificacion.message))
+                    ? 'Demasiados intentos. Espera un momento y vuelve a probar.'
+                    : 'La contraseña actual no es correcta.';
+
+                throw errorApi(mensaje, 422, { password_actual: [mensaje] });
             }
         }
 
-        const { error } = await supabase.auth.updateUser({ password: nueva });
+        let { error } = await supabase.auth.updateUser({ password: nueva });
 
-        if (error) throw errorApi('No se pudo actualizar la contraseña.', 400);
+        /* Supabase exige autenticación reciente: se reintenta tras reautenticar. */
+        if (error && /reauthentication|reauthenticate|recent/i.test(String(error.message))) {
+            if (actual && usuarioActual.email) {
+                const { error: reautenticado } = await supabase.auth.signInWithPassword({
+                    email: usuarioActual.email,
+                    password: actual,
+                });
+
+                if (!reautenticado) {
+                    ({ error } = await supabase.auth.updateUser({ password: nueva }));
+                }
+            }
+        }
+
+        if (error) {
+            const mensaje = /reauthentication|reauthenticate|recent/i.test(String(error.message))
+                ? 'Por seguridad, cierra sesión y vuelve a entrar antes de cambiar la contraseña.'
+                : (error.message || 'No se pudo actualizar la contraseña.');
+
+            throw errorApi(mensaje, 400);
+        }
 
         /* Refresca el usuario: ahora incluye la identidad de correo. */
         const { data } = await supabase.auth.getUser();
@@ -775,37 +1174,53 @@
         return `${partes.year}-${partes.month}-${partes.day} ${partes.hour}:${partes.minute}`;
     }
 
-    function datosResenia(fila) {
-        const relacion = fila.clientes;
-        const nombre = (Array.isArray(relacion) ? relacion[0]?.nombre_cliente : relacion?.nombre_cliente) || 'Cliente';
-        const primerNombre = nombre.trim().split(/\s+/)[0] || 'Cliente';
-
-        return {
-            id_resenia: fila.id_resenia,
-            id_producto: fila.id_producto,
-            cliente: primerNombre,
-            inicial: primerNombre.charAt(0).toUpperCase(),
-            calificacion: Number(fila.calificacion_resenia || 0),
-            comentario: fila.comentario_resenia,
-            fecha: fechaResenia(fila.fecha_creacion_resenia),
-            editada: Boolean(fila.fecha_actualizacion_resenia),
-            es_mia: Boolean(clienteActual && Number(fila.id_cliente) === Number(clienteActual.id_cliente)),
-        };
-    }
-
     async function reseniasApi(idProducto, limite = 0) {
         const { data, error } = await supabase.rpc('web_resenias', { p_id: Number(idProducto) });
 
         if (error) throw errorDeSupabase(error, 'No se pudieron cargar las opiniones.');
 
         const datos = data || {};
-        const resenias = datos.resenias || [];
+        const mi = datos.mi_resenia || null;
+
+        const marcoDeResenia = (fila) => {
+            if (fila.marco_avatar === false) return null;
+
+            const forzado = texto(fila.marco_forzado).toLowerCase();
+            const forzadoNivel = MARCOS_AVATAR.find((nivel) => nivel.clave === forzado);
+
+            if (forzadoNivel) return forzadoNivel.clave;
+
+            const ventas = Number(fila.ventas_total || 0);
+            const alcanzado = [...MARCOS_AVATAR].reverse().find((nivel) => ventas >= nivel.ventas);
+
+            return alcanzado ? alcanzado.clave : null;
+        };
+
+        const avatarDeResenia = (fila) => ({
+            color: /^#[0-9a-f]{6}$/i.test(String(fila.avatar_color || ''))
+                ? String(fila.avatar_color).toLowerCase()
+                : null,
+            fondo: /^[a-z0-9._-]{1,80}$/i.test(String(fila.avatar_fondo || ''))
+                ? String(fila.avatar_fondo)
+                : null,
+            imagen: /^[a-z0-9_-]{1,40}$/i.test(String(fila.avatar_imagen || ''))
+                ? String(fila.avatar_imagen)
+                : null,
+            marco: marcoDeResenia(fila),
+        });
+
+        /* El SQL no expone id_cliente: se marca la propia por id_resenia. */
+        const lista = (datos.resenias || []).map((resenia) => ({
+            ...resenia,
+            es_mia: Boolean(mi && Number(resenia.id_resenia) === Number(mi.id_resenia)),
+            avatar: avatarDeResenia(resenia),
+        }));
 
         return {
             success: true,
             resumen: datos.resumen || { promedio: 0, total: 0, distribucion: [] },
-            resenias: limite > 0 ? resenias.slice(0, limite) : resenias,
-            mi_resenia: datos.mi_resenia || null,
+            resenias: limite > 0 ? lista.slice(0, limite) : lista,
+            mi_resenia: mi ? { ...mi, avatar: avatarDeResenia(mi) } : null,
             puede_resenar: Boolean(datos.puede_resenar),
         };
     }
@@ -892,7 +1307,15 @@
 
             'PUT /tienda/api/perfil': () => perfilApi(cuerpo),
 
+            'PUT /tienda/api/perfil/avatar': () => avatarApi(cuerpo),
+
+            'GET /tienda/api/perfil/marco': () => marcosApi(),
+
+            'PUT /tienda/api/perfil/marco': () => marcoVisibilidadApi(cuerpo),
+
             'PUT /tienda/api/perfil/password': () => passwordApi(cuerpo),
+
+            'POST /tienda/api/descuento/primera-compra': () => descuentoPrimeraCompraApi(),
 
             'GET /tienda/api/direcciones': () => listarDireccionesApi(),
 

@@ -253,7 +253,6 @@ function iniciarRegistro() {
         try {
             const datos = await window.TiendaAPI.post('/tienda/api/auth/registro', {
                 nombre_cliente: porId('registroNombre').value.trim(),
-                usuario_cliente: porId('registroUsuario').value.trim(),
                 correo_cliente: porId('registroCorreo').value.trim(),
                 telefono_cliente: porId('registroTelefono').value.trim(),
                 password: porId('registroPassword').value,

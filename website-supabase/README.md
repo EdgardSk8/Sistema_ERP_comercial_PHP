@@ -54,3 +54,27 @@ En el panel de Supabase:
 - Los clientes creados antes en Laravel no tienen usuario de Supabase Auth; deben registrarse de nuevo o migrarse.
 - Si el ERP agrega productos/imágenes nuevos, vuelve a copiar `public/imagenes` o migra a Supabase Storage.
 - El catálogo y los precios se calculan en las funciones SQL, igual que la API anterior.
+
+## 6. Avatar del cliente (colores e ilustraciones)
+
+- El cliente elige un **color de fondo** en Perfil → Foto de perfil.
+- El color y la ilustración se guardan en los **metadatos de Supabase Auth** (`avatar_color`, `avatar_imagen`, `avatar_fondo`), sin migrar la tabla `clientes`.
+- **Fotos de fondo:** van en `imagenes/avatares/fondos/` con nombres `fondo-1.jpg`, `fondo-2.jpg`, … (hasta `fondo-8`, también `.png`/`.webp`). Se detectan solas y aparecen como opciones; si no hay ninguna, el cliente queda con **solo iniciales** sobre el color elegido.
+- Las ilustraciones son PNG **sin fondo** en `imagenes/avatares/`; el nombre del archivo (sin `.png`) es el valor de `avatar_imagen`.
+  - Ejemplo: `imagenes/avatares/copo.png` → `avatar_imagen = "copo"` → se pinta `/tienda/recursos/imagenes/avatares/copo.png` encima del círculo de color.
+- Mientras no haya ilustraciones, se muestran las **iniciales** del cliente sobre el color elegido.
+
+## 7. Descuento de primera compra (10%)
+
+- En Perfil → Descuento el cliente ve los requisitos: **teléfono**, **fecha de nacimiento**, **una dirección guardada** y **contraseña creada**.
+- El botón **Aplicar descuento** se habilita cuando todo está completo.
+- Al aplicarlo se guarda `descuento_primera_compra: true` en los metadatos de Auth y el descuento del **10%** se aplica al subtotal del carrito (cualquier producto) vía `carrito-vista.js`.
+
+## 8. Marcos de avatar por ventas
+
+- Marcos automáticos por ventas vigentes: **5** Bronce, **10** Plata, **20** Oro, **50** Esmeralda y **100** Rubí.
+- El total se obtiene con `web_ventas_cliente()` (al final de `supabase/website.sql`). Ejecuta esa función en el SQL Editor de Supabase si aún no existe.
+- El cliente puede mostrar u ocultar el marco desde Perfil → Marco de ventas; la preferencia se guarda en `marco_avatar` (metadatos de Auth).
+- **Marco manual/demostración:** `marco_avatar_forzado` en los metadatos de Auth (`bronce`, `plata`, `oro`, `esmeralda`, `rubi` o `todos` para desbloquearlos todos). Ejemplo listo en `supabase/marco-edgard.sql`.
+- **Reseñas con avatar:** `web_resenias()` devuelve el avatar y marco de cada autor. Si actualizas desde una versión anterior, vuelve a ejecutar la función con `supabase/resenias-avatar.sql`.
+

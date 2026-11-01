@@ -1,0 +1,3 @@
+# Carpeta para las ilustraciones de avatar (PNG con fondo transparente).
+# Ejemplo: copo.png  ->  se guarda como avatar_imagen = "copo"
+# Se muestran dentro del círculo de color que elige el cliente.

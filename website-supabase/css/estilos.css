@@ -575,6 +575,51 @@ button { font-family: inherit; }
 .pie__mapa iframe { display: block; width: 100%; height: 190px; border: 0; filter: grayscale(.15); }
 .pie__legal { margin: var(--e-5) 0 0; padding-top: var(--e-4); border-top: 1px solid rgba(245, 238, 222, .16); font-size: .72rem; text-align: center; opacity: .6; }
 
+/* Firma del desarrollador (crédito del pie) */
+.pie__firma {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  margin: var(--e-4) auto 0;
+  padding: 8px 14px;
+  border: 1px solid rgba(245, 238, 222, .22);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, .04);
+  font-size: .74rem;
+  line-height: 1.25;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.pie__firma:hover { background: rgba(255, 255, 255, .10); border-color: rgba(245, 238, 222, .42); transform: translateY(-1px); }
+
+.pie__firma-logo {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--complementario);
+  color: var(--secundario);
+  font-size: .95rem;
+  overflow: hidden;
+}
+
+.pie__firma-logo img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  transform: scale(2);
+  mix-blend-mode: multiply;
+}
+.pie__firma-copy { display: grid; gap: 1px; text-align: left; }
+.pie__firma-copy strong { font-size: .78rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.pie__firma-copy small { font-size: .68rem; opacity: .72; }
+.pie__firma > .bi { font-size: .8rem; opacity: .6; }
+
 /* ── 6. Producto: galería y ficha (móvil) ────────────────────── */
 .producto { padding: var(--e-3) var(--e-4) var(--e-4); }
 .producto__cabecera { margin-bottom: var(--e-2); }
@@ -1366,6 +1411,64 @@ button { font-family: inherit; }
 .perfil__acceso:hover,
 .perfil[open] .perfil__acceso { background: rgba(34, 37, 42, .06); }
 .perfil__acceso i { font-size: 1.05rem; }
+
+/* Avatar del cliente en el header */
+.perfil__boton--avatar { padding: 0; align-items: center; justify-content: center; }
+
+.perfil__avatar-mini {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--avatar-color, #d9f2e4);
+  color: #ffffff;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  transition: background-color .5s ease, color .5s ease, box-shadow .25s ease;
+}
+
+.perfil__avatar-mini img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.avatar--claro .perfil__avatar-mini { color: var(--secundario); }
+
+[data-avatar].avatar--foto .perfil__avatar-mini {
+  background-image: var(--avatar-foto);
+  background-size: cover;
+  background-position: center;
+}
+
+/* Marcos automáticos por ventas (5, 10, 20, 50, 100) */
+.perfil-avatar__circulo.marco--bronce,
+.resenia__avatar.marco--bronce,
+[data-avatar].marco--bronce .perfil__avatar-mini {
+  box-shadow: 0 0 0 3px #cd7f32, 0 0 0 5px #f6e3cc;
+}
+
+.perfil-avatar__circulo.marco--plata,
+.resenia__avatar.marco--plata,
+[data-avatar].marco--plata .perfil__avatar-mini {
+  box-shadow: 0 0 0 3px #b9c2cc, 0 0 0 5px #eef2f6;
+}
+
+.perfil-avatar__circulo.marco--oro,
+.resenia__avatar.marco--oro,
+[data-avatar].marco--oro .perfil__avatar-mini {
+  box-shadow: 0 0 0 3px #e3b341, 0 0 0 5px #fbeecb;
+}
+
+.perfil-avatar__circulo.marco--esmeralda,
+.resenia__avatar.marco--esmeralda,
+[data-avatar].marco--esmeralda .perfil__avatar-mini {
+  box-shadow: 0 0 0 3px #177a47, 0 0 0 5px #e3b341, 0 0 16px rgba(23, 122, 71, .35);
+}
+
+.perfil-avatar__circulo.marco--rubi,
+.resenia__avatar.marco--rubi,
+[data-avatar].marco--rubi .perfil__avatar-mini {
+  box-shadow: 0 0 0 3px #c1121f, 0 0 0 5px #e3b341, 0 0 18px rgba(193, 18, 31, .40);
+}
 .perfil__boton::-webkit-details-marker { display: none; }
 .perfil__boton::marker { content: ""; }
 .perfil__boton i { transition: transform .24s cubic-bezier(.22, 1.35, .36, 1); }
@@ -1761,12 +1864,38 @@ button { font-family: inherit; }
   flex: 0 0 38px;
   width: 38px;
   height: 38px;
+  overflow: hidden;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primario-medio) 0%, var(--complementario) 100%);
+  background: var(--avatar-color, linear-gradient(135deg, var(--primario-medio) 0%, var(--complementario) 100%));
   font-size: .85rem;
   font-weight: 600;
   color: var(--secundario);
+  transition: box-shadow .25s ease;
 }
+
+.resenia__avatar.avatar--claro { color: var(--secundario); }
+
+.resenia__avatar.avatar--foto {
+  background-image: var(--avatar-foto);
+  background-size: cover;
+  background-position: center;
+}
+
+.resenia__avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Autor de la opinión (formulario) */
+.resenias__autor {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  margin-bottom: var(--e-3);
+  padding-bottom: var(--e-3);
+  border-bottom: 1px solid var(--borde);
+}
+
+.resenias__autor-texto { display: grid; gap: 1px; }
+.resenias__autor-texto strong { font-size: .84rem; font-weight: 600; color: var(--secundario); }
+.resenias__autor-texto small { font-size: .7rem; color: var(--texto-suave); }
 
 .resenia__cuerpo { display: grid; gap: 4px; min-width: 0; }
 .resenia__cabecera { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

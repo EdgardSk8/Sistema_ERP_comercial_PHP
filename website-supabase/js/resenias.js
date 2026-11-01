@@ -48,6 +48,67 @@
             .replace(/'/g, '&#39;');
     }
 
+    function esClaroAvatar(color) {
+        const limpio = String(color || '').replace('#', '');
+
+        if (limpio.length !== 6) return true;
+
+        const r = parseInt(limpio.slice(0, 2), 16);
+        const g = parseInt(limpio.slice(2, 4), 16);
+        const b = parseInt(limpio.slice(4, 6), 16);
+
+        return (0.299 * r + 0.587 * g + 0.114 * b) > 186;
+    }
+
+    function avatarDeResenia(resenia) {
+        const avatar = resenia.avatar || {};
+
+        /* Si la opinión es del cliente actual, se usa su avatar local
+           aunque la función SQL todavía no devuelva esos campos. */
+        if (!resenia.es_mia || !window.clienteTienda) return avatar;
+
+        const tieneDatos = Boolean(avatar.color || avatar.fondo || avatar.imagen || avatar.marco);
+
+        if (tieneDatos) return avatar;
+
+        const cliente = window.clienteTienda;
+
+        return {
+            color: cliente.avatar_color || null,
+            fondo: cliente.avatar_fondo || null,
+            imagen: cliente.avatar_imagen || null,
+            marco: cliente.marco_avatar === false
+                ? null
+                : (window.marcoTienda?.marco?.clave || null),
+        };
+    }
+
+    function avatarResenia(resenia) {
+        const avatar = avatarDeResenia(resenia);
+        const color = avatar.color || '#d9f2e4';
+        const fondo = avatar.fondo || '';
+        const imagen = avatar.imagen || '';
+        const estilos = [`--avatar-color:${color}`];
+
+        if (fondo) estilos.push(`--avatar-foto:url('/tienda/recursos/imagenes/avatares/fondos/${fondo}')`);
+
+        const clases = ['resenia__avatar'];
+
+        if (fondo) clases.push('avatar--foto');
+        if (esClaroAvatar(color)) clases.push('avatar--claro');
+        if (avatar.marco) clases.push(`marco--${avatar.marco}`);
+
+        let contenido = '';
+
+        if (imagen) {
+            contenido = `<img src="/tienda/recursos/imagenes/avatares/${imagen}.png" alt="">`;
+        } else if (!fondo) {
+            contenido = escapar(resenia.inicial || '?');
+        }
+
+        return `<span class="${clases.join(' ')}" style="${estilos.join(';')}" aria-hidden="true">${contenido}</span>`;
+    }
+
     function capasEstrellas() {
         return `<span class="estrellas__capa estrellas__capa--fondo" aria-hidden="true">${ICONO.repeat(5)}</span>`
             + `<span class="estrellas__capa estrellas__capa--relleno" aria-hidden="true">${ICONO.repeat(5)}</span>`;
@@ -156,7 +217,7 @@
             : '';
 
         return `<article class="resenia">
-                    <div class="resenia__avatar" aria-hidden="true">${escapar(resenia.inicial || '?')}</div>
+                    ${avatarResenia(resenia)}
                     <div class="resenia__cuerpo">
                         <div class="resenia__cabecera">
                             <span class="resenia__nombre">${escapar(resenia.cliente)}</span>
@@ -251,6 +312,20 @@
         const tieneResenia = Boolean(miResenia);
 
         invitado.hidden = puedeResenar;
+
+        const autor = $('reseniasAutor');
+
+        if (autor) {
+            autor.hidden = !(puedeResenar && window.clienteTienda);
+
+            const nombreAutor = $('reseniasAutorNombre');
+
+            if (nombreAutor && window.clienteTienda) {
+                nombreAutor.textContent = window.clienteTienda.nombre_cliente || 'Cliente';
+            }
+
+            window.pintarAvatares?.(window.clienteTienda || null);
+        }
 
         if (abrir) {
             abrir.hidden = !puedeResenar || tieneResenia || formularioAbierto;

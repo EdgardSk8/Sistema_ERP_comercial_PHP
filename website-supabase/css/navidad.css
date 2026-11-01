@@ -232,6 +232,149 @@ html.tema-navidad .acceso__card::before {
     pointer-events: none;
 }
 
+/* ── Acceso: login y crear cuenta (elemento por elemento) ───── */
+
+html.tema-navidad body.pagina-login {
+    --acceso-muted: #4f6f5d;
+    --acceso-enlace: var(--nav-rojo);
+}
+
+html.tema-navidad body.pagina-login .acceso__card {
+    background: #fffdf8;
+    border-color: rgba(212, 175, 55, .55);
+    box-shadow:
+        0 0 0 1px rgba(212, 175, 55, .18),
+        0 18px 38px rgba(12, 61, 36, .14);
+}
+
+/* Título y texto introductorio */
+
+html.tema-navidad .acceso__titulo {
+    color: var(--nav-verde);
+}
+
+html.tema-navidad .acceso__texto {
+    color: var(--texto-suave);
+}
+
+/* Pestañas Iniciar sesión / Crear cuenta */
+
+html.tema-navidad .acceso__tabs {
+    background: rgba(193, 18, 31, .06);
+    border-color: rgba(193, 18, 31, .22);
+}
+
+html.tema-navidad .acceso__tab {
+    color: var(--nav-rojo);
+}
+
+html.tema-navidad .acceso__tab:hover {
+    background: rgba(193, 18, 31, .10);
+    color: var(--nav-rojo);
+}
+
+html.tema-navidad .acceso__tab:active {
+    background: rgba(193, 18, 31, .18);
+    color: var(--nav-rojo);
+}
+
+html.tema-navidad .acceso__tab.is-activo {
+    background: var(--nav-rojo);
+    color: var(--nav-crema);
+    box-shadow: 0 0 0 1px rgba(227, 179, 65, .45), var(--sombra-suave);
+}
+
+/* Etiquetas y campos */
+
+html.tema-navidad .acceso__form .form-label {
+    color: var(--nav-verde);
+}
+
+html.tema-navidad .acceso__form .form-control {
+    border-color: rgba(12, 61, 36, .22);
+    background-color: #fffdf9;
+    color: var(--secundario);
+}
+
+html.tema-navidad .acceso__form .form-control::placeholder {
+    color: rgba(12, 61, 36, .45);
+    opacity: 1;
+}
+
+html.tema-navidad .acceso__form .form-control:focus {
+    border-color: var(--nav-dorado);
+    box-shadow: 0 0 0 .15rem rgba(227, 179, 65, .35);
+}
+
+html.tema-navidad .acceso__form .form-control:-webkit-autofill,
+html.tema-navidad .acceso__form .form-control:-webkit-autofill:hover,
+html.tema-navidad .acceso__form .form-control:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--secundario);
+    -webkit-box-shadow: 0 0 0 1000px #fffdf9 inset;
+    caret-color: var(--secundario);
+}
+
+/* Enlace ¿Olvidaste tu contraseña? */
+
+html.tema-navidad .acceso__form a.small {
+    color: var(--nav-rojo);
+}
+
+html.tema-navidad .acceso__form a.small:hover {
+    color: var(--nav-verde);
+}
+
+/* Botón Entrar / Crear cuenta */
+
+html.tema-navidad .acceso__form .btn-primario:focus-visible {
+    outline: 2px solid var(--nav-dorado);
+    outline-offset: 2px;
+}
+
+/* Continuar con Google (se conserva el rojo de marca del icono) */
+
+html.tema-navidad .acceso__social-btn {
+    border-color: rgba(12, 61, 36, .18);
+    background: #fffdf9;
+    color: var(--nav-verde);
+}
+
+html.tema-navidad .acceso__social-btn:hover {
+    border-color: var(--nav-dorado);
+    color: var(--nav-verde);
+}
+
+html.tema-navidad .acceso__social-btn:active {
+    background: var(--nav-crema);
+}
+
+/* Separador «o continúa con» */
+
+html.tema-navidad .acceso__separador {
+    color: var(--texto-suave);
+}
+
+html.tema-navidad .acceso__separador::before,
+html.tema-navidad .acceso__separador::after {
+    background: rgba(12, 61, 36, .14);
+}
+
+/* Enlace Volver a la tienda */
+
+html.tema-navidad .acceso__volver {
+    color: var(--nav-rojo);
+}
+
+html.tema-navidad .acceso__volver:hover {
+    color: var(--nav-verde);
+}
+
+/* Logo con anillo dorado */
+
+html.tema-navidad .acceso__logo {
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, .50);
+}
+
 /* ── Precios y acentos ──────────────────────────────────────── */
 
 html.tema-navidad .producto__descuento,
@@ -259,6 +402,48 @@ html.tema-navidad .pie__titulo {
 
 html.tema-navidad .pie__legal {
     border-top-color: rgba(255, 248, 236, .18);
+}
+
+html.tema-navidad .pie__legal a {
+    color: var(--nav-dorado);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+html.tema-navidad .pie__legal a:hover {
+    color: var(--nav-crema);
+}
+
+/* Firma del desarrollador */
+
+html.tema-navidad .pie__firma {
+    border-color: rgba(227, 179, 65, .45);
+    background: rgba(255, 248, 236, .06);
+}
+
+html.tema-navidad .pie__firma:hover {
+    border-color: var(--nav-dorado);
+    background: rgba(227, 179, 65, .14);
+}
+
+html.tema-navidad .pie__firma-logo {
+    background: var(--nav-crema);
+    color: var(--nav-verde);
+    box-shadow: 0 0 0 2px rgba(227, 179, 65, .35);
+}
+
+html.tema-navidad .pie__firma-copy strong {
+    color: var(--nav-dorado);
+}
+
+html.tema-navidad .pie__firma-copy small {
+    color: var(--nav-crema);
+    opacity: .78;
+}
+
+html.tema-navidad .pie__firma > .bi {
+    color: var(--nav-dorado);
+    opacity: .8;
 }
 
 /* ── Detalles navideños ─────────────────────────────────────── */
@@ -315,6 +500,133 @@ html.tema-navidad .perfil[open] .perfil__boton {
     border-color: var(--nav-verde);
     background: var(--nav-verde);
     color: var(--nav-crema);
+}
+
+/* ── Menú de cuenta del header (invitado y cliente) ─────────── */
+
+html.tema-navidad .app-header .perfil__acceso,
+html.tema-navidad .app-header .icono-btn {
+    color: var(--nav-crema);
+}
+
+html.tema-navidad .app-header .perfil__acceso:hover,
+html.tema-navidad .app-header .icono-btn:hover {
+    background: rgba(255, 248, 236, .16);
+}
+
+/* Mismo botón circular para invitado y sesión */
+html.tema-navidad #menuInvitado .perfil__acceso {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    border-radius: var(--r-pill);
+}
+
+html.tema-navidad .perfil[open] .perfil__boton {
+    border-color: var(--nav-dorado);
+    background: var(--nav-crema);
+    color: var(--nav-verde);
+    box-shadow: 0 0 0 2px rgba(227, 179, 65, .55);
+}
+
+html.tema-navidad .perfil__menu {
+    border-color: rgba(212, 175, 55, .45);
+    background: #fffdf8;
+    box-shadow: 0 0 0 1px rgba(212, 175, 55, .16), 0 18px 40px rgba(12, 61, 36, .22);
+}
+
+html.tema-navidad .perfil__menu::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: var(--r-md) var(--r-md) 0 0;
+    background: linear-gradient(90deg, var(--nav-rojo), var(--nav-dorado), var(--nav-verde));
+    pointer-events: none;
+}
+
+html.tema-navidad .perfil__cabecera {
+    border-bottom-color: rgba(212, 175, 55, .35);
+    background: linear-gradient(135deg, rgba(193, 18, 31, .10) 0%, rgba(227, 179, 65, .18) 50%, rgba(14, 90, 52, .12) 100%);
+}
+
+html.tema-navidad .perfil__nombre {
+    color: var(--nav-verde);
+}
+
+html.tema-navidad .perfil__detalle {
+    color: var(--texto-suave);
+}
+
+/* Ítems del menú en oscuro; solo "Cerrar sesión" queda en rojo */
+
+html.tema-navidad .perfil__item {
+    color: var(--secundario);
+}
+
+html.tema-navidad .perfil__item:hover {
+    background: var(--primario-medio);
+    color: var(--secundario);
+}
+
+html.tema-navidad .perfil__item:active {
+    background: var(--primario-medio);
+    color: var(--secundario);
+}
+
+html.tema-navidad .perfil__item--salir {
+    border-top-color: rgba(212, 175, 55, .35);
+}
+
+html.tema-navidad .perfil__item--salir,
+html.tema-navidad .perfil__item--salir i {
+    color: var(--nav-rojo);
+}
+
+html.tema-navidad .perfil__item--salir:hover {
+    background: rgba(193, 18, 31, .10);
+}
+
+/* Avatar: anillo dorado en el color elegido */
+
+html.tema-navidad .perfil-avatar__color.is-activo {
+    border-color: var(--nav-dorado);
+    box-shadow: 0 0 0 2px var(--superficie), 0 0 0 4px rgba(227, 179, 65, .40);
+}
+
+html.tema-navidad .perfil-avatar__fondo.is-activo {
+    border-color: var(--nav-dorado);
+    box-shadow: 0 0 0 2px var(--superficie), 0 0 0 4px rgba(227, 179, 65, .40);
+}
+
+html.tema-navidad .perfil-switch input:checked + .perfil-switch__pista {
+    border-color: var(--nav-dorado);
+    background: linear-gradient(180deg, var(--nav-verde-claro) 0%, var(--nav-verde) 100%);
+    box-shadow: 0 0 0 2px rgba(227, 179, 65, .30);
+}
+
+/* Descuento de primera compra */
+
+html.tema-navidad .perfil-descuento--pendiente {
+    border-color: rgba(212, 175, 55, .45);
+    box-shadow: 0 0 0 1px rgba(212, 175, 55, .16), var(--sombra-suave);
+}
+
+html.tema-navidad .perfil-descuento__sello {
+    background: var(--nav-rojo);
+    color: var(--nav-crema);
+    box-shadow: 0 0 0 3px rgba(227, 179, 65, .35);
+}
+
+html.tema-navidad .perfil-descuento__requisito.is-listo i {
+    color: var(--nav-verde);
+}
+
+html.tema-navidad .perfil-descuento__requisito a {
+    color: var(--nav-rojo);
 }
 
 /* Categorías en rojo navideño */

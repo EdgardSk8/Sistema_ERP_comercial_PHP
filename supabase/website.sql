@@ -510,18 +510,34 @@ with visibles as (
     select r.id_resenia, r.id_producto, r.id_cliente,
            r.calificacion_resenia, r.comentario_resenia,
            r.fecha_creacion_resenia, r.fecha_actualizacion_resenia,
-           coalesce(nullif(trim(c.nombre_cliente), ''), 'Cliente') as nombre
+           coalesce(nullif(trim(c.nombre_cliente), ''), 'Cliente') as nombre,
+           nullif(trim(u.raw_user_meta_data->>'avatar_color'), '') as avatar_color,
+           nullif(trim(u.raw_user_meta_data->>'avatar_fondo'), '') as avatar_fondo,
+           nullif(trim(u.raw_user_meta_data->>'avatar_imagen'), '') as avatar_imagen,
+           nullif(trim(u.raw_user_meta_data->>'marco_avatar_forzado'), '') as marco_forzado,
+           coalesce(nullif(lower(trim(u.raw_user_meta_data->>'marco_avatar')), '')::boolean, true) as marco_avatar,
+           (select count(*)::int from public.ventas v
+             where v.id_cliente = c.id_cliente and v.estado_venta = true) as ventas_total
     from public.resenias_productos r
     left join public.clientes c on c.id_cliente = r.id_cliente
+    left join auth.users u on u.id = c.auth_id
     where r.id_producto = p_id and r.estado_resenia = true
 ),
 mia as (
     select r.id_resenia, r.id_producto, r.id_cliente,
            r.calificacion_resenia, r.comentario_resenia,
            r.fecha_creacion_resenia, r.fecha_actualizacion_resenia,
-           coalesce(nullif(trim(c.nombre_cliente), ''), 'Cliente') as nombre
+           coalesce(nullif(trim(c.nombre_cliente), ''), 'Cliente') as nombre,
+           nullif(trim(u.raw_user_meta_data->>'avatar_color'), '') as avatar_color,
+           nullif(trim(u.raw_user_meta_data->>'avatar_fondo'), '') as avatar_fondo,
+           nullif(trim(u.raw_user_meta_data->>'avatar_imagen'), '') as avatar_imagen,
+           nullif(trim(u.raw_user_meta_data->>'marco_avatar_forzado'), '') as marco_forzado,
+           coalesce(nullif(lower(trim(u.raw_user_meta_data->>'marco_avatar')), '')::boolean, true) as marco_avatar,
+           (select count(*)::int from public.ventas v
+             where v.id_cliente = c.id_cliente and v.estado_venta = true) as ventas_total
     from public.resenias_productos r
     join public.clientes c on c.id_cliente = r.id_cliente
+    left join auth.users u on u.id = c.auth_id
     where r.id_producto = p_id and c.auth_id = auth.uid()
     limit 1
 ),
@@ -559,6 +575,12 @@ select jsonb_build_object(
             'id_producto', v.id_producto,
             'cliente', split_part(v.nombre, ' ', 1),
             'inicial', upper(left(split_part(v.nombre, ' ', 1), 1)),
+            'avatar_color', v.avatar_color,
+            'avatar_fondo', v.avatar_fondo,
+            'avatar_imagen', v.avatar_imagen,
+            'marco_avatar', v.marco_avatar,
+            'marco_forzado', v.marco_forzado,
+            'ventas_total', v.ventas_total,
             'calificacion', v.calificacion_resenia,
             'comentario', v.comentario_resenia,
             'fecha', to_char(v.fecha_creacion_resenia, 'YYYY-MM-DD HH24:MI'),
@@ -573,6 +595,12 @@ select jsonb_build_object(
             'id_producto', m.id_producto,
             'cliente', split_part(m.nombre, ' ', 1),
             'inicial', upper(left(split_part(m.nombre, ' ', 1), 1)),
+            'avatar_color', m.avatar_color,
+            'avatar_fondo', m.avatar_fondo,
+            'avatar_imagen', m.avatar_imagen,
+            'marco_avatar', m.marco_avatar,
+            'marco_forzado', m.marco_forzado,
+            'ventas_total', m.ventas_total,
             'calificacion', m.calificacion_resenia,
             'comentario', m.comentario_resenia,
             'fecha', to_char(m.fecha_creacion_resenia, 'YYYY-MM-DD HH24:MI'),
@@ -606,3 +634,22 @@ $$;
 -- create trigger web_autoconfirmar_correo
 -- before insert on auth.users
 -- for each row execute function public.web_autoconfirmar_correo();
+-- ============================================================
+-- 8) Marco del avatar por ventas
+--    Cuenta las ventas vigentes (no anuladas) del cliente.
+-- ============================================================
+create or replace function public.web_ventas_cliente()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select jsonb_build_object(
+        'total', count(*)::int
+    )
+    from public.ventas v
+    join public.clientes c on c.id_cliente = v.id_cliente
+    where c.auth_id = auth.uid()
+      and v.estado_venta = true;
+$$;

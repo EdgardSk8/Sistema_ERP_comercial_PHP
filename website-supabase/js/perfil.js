@@ -174,6 +174,10 @@ function iniciarCuenta() {
     iniciarFechaNacimientoPerfil();
     iniciarCedulaPerfil();
     conectarFormularios();
+    conectarAvatar();
+    conectarFondosAvatar();
+    conectarMarco();
+    conectarDescuento();
     conectarDirecciones();
     conectarFavoritos();
     conectarSesion();
@@ -231,14 +235,18 @@ async function cargarCuenta() {
 
     alternarCuenta(true);
     llenarPerfil(cliente);
-    mostrarDescuento(cliente.descuento);
     ajustarFormPassword();
+    avisarDatosFaltantes(cliente);
+    cargarFondosAvatar(cliente);
 
     await Promise.allSettled([
         cargarDirecciones(),
         cargarFavoritos(),
         cargarHistorial(),
     ]);
+
+    mostrarDescuento(cliente);
+    pintarMarcoPerfil();
 }
 
 function alternarCuenta(autenticado) {
@@ -271,12 +279,37 @@ function alternarCuenta(autenticado) {
     if (listaHistorial) listaHistorial.hidden = true;
 }
 
+/* Google no comparte teléfono ni fecha de nacimiento: se piden en Perfil. */
+function avisarDatosFaltantes(cliente) {
+    const faltan = !String(cliente?.telefono_cliente || '').trim()
+        || !String(cliente?.fecha_nacimiento_cliente || '').trim();
+
+    if (!faltan) return;
+
+    let avisar = true;
+
+    try {
+        avisar = sessionStorage.getItem('tienda_aviso_datos') !== '0';
+        sessionStorage.setItem('tienda_aviso_datos', '0');
+    } catch {
+        avisar = true;
+    }
+
+    if (avisar && typeof window.tiendaToast === 'function') {
+        window.tiendaToast('Completa tu teléfono y fecha de nacimiento para tu descuento de primera compra.', 'aviso');
+    }
+}
+
 function llenarPerfil(cliente) {
     porId('perfilNombre').value = cliente.nombre_cliente || '';
     porId('perfilUsuario').value = cliente.usuario_cliente || '';
     porId('perfilCorreo').value = cliente.correo_cliente || '';
     porId('perfilTelefono').value = cliente.telefono_cliente || '';
     porId('perfilCedula').value = cliente.cedula_cliente || '';
+
+    marcarColorAvatar(cliente.avatar_color || '');
+    marcarFondoAvatar(cliente.avatar_fondo || '');
+    actualizarInicialesFondo(cliente.nombre_cliente);
 
     const fecha = porId('perfilFechaNacimiento');
     const valorFecha = cliente.fecha_nacimiento_cliente || '';
@@ -290,6 +323,306 @@ function llenarPerfil(cliente) {
     } else if (fecha) {
         fecha.value = valorFecha;
     }
+}
+
+/* ── Avatar del cliente ─────────────────────────────────────── */
+
+function inicialesFondo(nombre) {
+    const partes = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+
+    if (!partes.length) return '?';
+
+    return (partes[0][0] + (partes[1] ? partes[1][0] : '')).toUpperCase();
+}
+
+function actualizarInicialesFondo(nombre) {
+    const objetivo = document.querySelector('[data-avatar-fondo-iniciales]');
+
+    if (objetivo) objetivo.textContent = inicialesFondo(nombre);
+}
+
+function marcarColorAvatar(color) {
+    const grupo = porId('avatarColores');
+    if (!grupo) return;
+
+    grupo.querySelectorAll('.perfil-avatar__color').forEach((boton) => {
+        const activo = boton.dataset.color === color;
+
+        boton.classList.toggle('is-activo', activo);
+        boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
+    });
+}
+
+function conectarAvatar() {
+    const grupo = porId('avatarColores');
+    if (!grupo) return;
+
+    grupo.addEventListener('click', async (evento) => {
+        const boton = evento.target.closest('.perfil-avatar__color');
+        if (!boton || boton.classList.contains('is-activo')) return;
+
+        const color = boton.dataset.color;
+        const anterior = grupo.querySelector('.is-activo')?.dataset.color
+            || window.clienteTienda?.avatar_color
+            || '';
+
+        marcarColorAvatar(color);
+        window.previsualizarAvatar?.(color);
+
+        try {
+            const datos = await window.TiendaAPI.put('/tienda/api/perfil/avatar', {
+                avatar_color: color,
+            });
+
+            if (datos?.cliente) {
+                window.clienteTienda = datos.cliente;
+                window.pintarAvatares?.(datos.cliente);
+                marcarColorAvatar(datos.cliente.avatar_color || '');
+            }
+        } catch (error) {
+            marcarColorAvatar(anterior);
+            window.previsualizarAvatar?.(anterior);
+            window.tiendaToast?.(error?.message || 'No se pudo guardar el color.', 'aviso');
+        }
+    });
+}
+
+/* ── Fotos de fondo del avatar ───────────────────────────────
+   Los archivos van en imagenes/avatares/fondos/ con nombres
+   fondo-1.jpg, fondo-2.jpg, ... (hasta fondo-8). */
+
+const AVATAR_FONDOS_SLOTS = 8;
+const AVATAR_FONDOS_EXTENSIONES = ['jpg', 'png', 'webp'];
+
+function existeImagenAvatar(url) {
+    return new Promise((resolve) => {
+        const imagen = new Image();
+        imagen.onload = () => resolve(true);
+        imagen.onerror = () => resolve(false);
+        imagen.src = url;
+    });
+}
+
+function marcarFondoAvatar(fondo) {
+    const grupo = porId('avatarFondos');
+    if (!grupo) return;
+
+    grupo.querySelectorAll('.perfil-avatar__fondo').forEach((boton) => {
+        const activo = (boton.dataset.fondo || '') === (fondo || '');
+
+        boton.classList.toggle('is-activo', activo);
+        boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
+    });
+}
+
+async function cargarFondosAvatar(cliente) {
+    const grupo = porId('avatarFondos');
+    if (!grupo) return;
+
+    const inicialesBoton = grupo.querySelector('[data-avatar-fondo-iniciales]');
+    const nombre = cliente?.nombre_cliente || '';
+
+    if (inicialesBoton) inicialesBoton.textContent = inicialesFondo(nombre);
+
+    const detectados = [];
+
+    for (let numero = 1; numero <= AVATAR_FONDOS_SLOTS; numero += 1) {
+        for (const extension of AVATAR_FONDOS_EXTENSIONES) {
+            const archivo = `fondo-${numero}.${extension}`;
+            const url = `/tienda/recursos/imagenes/avatares/fondos/${archivo}`;
+
+            if (await existeImagenAvatar(url)) {
+                detectados.push(archivo);
+                break;
+            }
+        }
+    }
+
+    const activo = cliente?.avatar_fondo || '';
+
+    grupo.innerHTML = `
+        <button type="button" class="perfil-avatar__fondo ${activo ? '' : 'is-activo'}" data-fondo="" aria-pressed="${activo ? 'false' : 'true'}" aria-label="Solo iniciales">
+            <span data-avatar-fondo-iniciales>${inicialesBoton?.textContent || '?'}</span>
+        </button>
+        ${detectados.map((archivo) => `
+            <button type="button" class="perfil-avatar__fondo ${archivo === activo ? 'is-activo' : ''}" data-fondo="${escapar(archivo)}" aria-pressed="${archivo === activo}" aria-label="Foto de fondo" style="background-image:url('/tienda/recursos/imagenes/avatares/fondos/${escapar(archivo)}')"></button>`).join('')}`;
+}
+
+function conectarFondosAvatar() {
+    const grupo = porId('avatarFondos');
+    if (!grupo) return;
+
+    grupo.addEventListener('click', async (evento) => {
+        const boton = evento.target.closest('.perfil-avatar__fondo');
+        if (!boton || boton.classList.contains('is-activo')) return;
+
+        const fondo = boton.dataset.fondo || '';
+        const anterior = window.clienteTienda?.avatar_fondo || '';
+
+        marcarFondoAvatar(fondo);
+        window.previsualizarAvatarFondo?.(fondo);
+
+        try {
+            const datos = await window.TiendaAPI.put('/tienda/api/perfil/avatar', {
+                avatar_fondo: fondo,
+            });
+
+            if (datos?.cliente) {
+                window.clienteTienda = datos.cliente;
+                window.pintarAvatares?.(datos.cliente);
+                marcarFondoAvatar(datos.cliente.avatar_fondo || '');
+            }
+        } catch (error) {
+            marcarFondoAvatar(anterior);
+            window.previsualizarAvatarFondo?.(anterior);
+            window.tiendaToast?.(error?.message || 'No se pudo guardar la foto de fondo.', 'aviso');
+        }
+    });
+}
+
+/* ── Marco de ventas ─────────────────────────────────────────── */
+
+function marcarMarcoOpcion(clave) {
+    const grupo = porId('marcoOpciones');
+    if (!grupo) return;
+
+    grupo.querySelectorAll('.perfil-marco__opcion').forEach((boton) => {
+        const activo = boton.dataset.marco === clave;
+
+        boton.classList.toggle('is-activo', activo);
+        boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
+    });
+}
+
+function pintarMarcoPerfil() {
+    const nivel = porId('marcoNivel');
+    const progreso = porId('marcoProgreso');
+    const casilla = porId('marcoVisible');
+    const relleno = porId('marcoRelleno');
+    const barra = porId('marcoBarra');
+    const desde = porId('marcoDesde');
+    const hasta = porId('marcoHasta');
+    const opciones = porId('marcoOpciones');
+
+    if (!nivel || !progreso || !casilla) return;
+
+    const aplicar = (datos) => {
+        const ventas = Number(datos?.ventas || 0);
+        const marco = datos?.marco || null;
+        const siguiente = datos?.siguiente || null;
+        const niveles = datos?.niveles || [];
+        const seleccionado = datos?.marco_estilo || (marco ? marco.clave : '');
+
+        if (datos?.forzado && marco) {
+            nivel.textContent = `Nivel ${marco.nombre}`;
+            progreso.textContent = '';
+            progreso.hidden = true;
+        } else {
+            progreso.hidden = false;
+
+            nivel.textContent = marco
+                ? `Nivel ${marco.nombre} · ${ventas} ${ventas === 1 ? 'venta' : 'ventas'}`
+                : 'Aún sin marco';
+
+            if (siguiente) {
+                progreso.textContent = marco
+                    ? `Te faltan ${datos.faltan} ${datos.faltan === 1 ? 'venta' : 'ventas'} para ${siguiente.nombre}.`
+                    : `Necesitas ${datos.faltan} ventas para ${siguiente.nombre}.`;
+            } else if (marco) {
+                progreso.textContent = '¡Tienes el marco máximo!';
+            } else {
+                progreso.textContent = 'Necesitas 5 ventas para tu primer marco.';
+            }
+        }
+
+        const avance = Math.max(0, Math.min(100, Number(datos?.avance || 0)));
+
+        if (relleno) relleno.style.width = `${avance}%`;
+        if (barra) barra.setAttribute('aria-valuenow', String(avance));
+        if (desde) desde.textContent = `${Number(datos?.desde || 0)} ventas`;
+        if (hasta) hasta.textContent = siguiente ? `${datos.hasta} ventas` : 'Máximo';
+
+        if (opciones) {
+            opciones.innerHTML = niveles.map((item) => {
+                const activo = item.clave === seleccionado;
+                const bloqueado = !item.desbloqueado;
+
+                return `<button type="button" class="perfil-marco__opcion ${activo ? 'is-activo' : ''} ${bloqueado ? 'is-bloqueado' : ''}"
+                            data-marco="${item.clave}" ${bloqueado ? 'disabled' : ''} aria-pressed="${activo}"
+                            title="${item.nombre} · ${item.ventas} ventas">
+                            <span class="perfil-marco__muestra marco--${item.clave}" aria-hidden="true"></span>
+                            <span class="perfil-marco__nombre">${item.nombre}</span>
+                            ${bloqueado ? '<i class="bi bi-lock-fill" aria-hidden="true"></i>' : ''}
+                        </button>`;
+            }).join('');
+        }
+
+        casilla.checked = window.clienteTienda?.marco_avatar !== false;
+        casilla.disabled = !marco;
+    };
+
+    if (window.marcoTienda) {
+        aplicar(window.marcoTienda);
+        return;
+    }
+
+    if (window.marcoTiendaPromise) {
+        window.marcoTiendaPromise.then(aplicar).catch(() => aplicar(null));
+        return;
+    }
+
+    aplicar(null);
+}
+
+function conectarMarco() {
+    porId('marcoVisible')?.addEventListener('change', async (evento) => {
+        const casilla = evento.target;
+        const mostrar = casilla.checked;
+        casilla.disabled = true;
+
+        try {
+            const datos = await window.TiendaAPI.put('/tienda/api/perfil/marco', { mostrar });
+
+            window.clienteTienda = datos.cliente || window.clienteTienda;
+            window.pintarAvatares?.(window.clienteTienda);
+        } catch (error) {
+            casilla.checked = !mostrar;
+            window.tiendaToast?.(error?.message || 'No se pudo guardar la preferencia.', 'aviso');
+        } finally {
+            casilla.disabled = false;
+        }
+    });
+
+    porId('marcoOpciones')?.addEventListener('click', async (evento) => {
+        const boton = evento.target.closest('.perfil-marco__opcion');
+        if (!boton || boton.disabled || boton.classList.contains('is-activo')) return;
+
+        const estilo = boton.dataset.marco;
+        const anterior = window.marcoTienda?.marco_estilo || '';
+
+        marcarMarcoOpcion(estilo);
+
+        try {
+            const datos = await window.TiendaAPI.put('/tienda/api/perfil/marco', { estilo });
+
+            window.clienteTienda = datos.cliente || window.clienteTienda;
+
+            if (window.marcoTienda) {
+                const nivel = (window.marcoTienda.niveles || []).find((item) => item.clave === estilo) || null;
+
+                window.marcoTienda.marco = nivel;
+                window.marcoTienda.marco_estilo = estilo;
+            }
+
+            const casilla = porId('marcoVisible');
+            if (casilla) casilla.checked = true;
+
+            window.pintarAvatares?.(window.clienteTienda);
+        } catch (error) {
+            marcarMarcoOpcion(anterior);
+            window.tiendaToast?.(error?.message || 'No se pudo cambiar el marco.', 'aviso');
+        }
+    });
 }
 
 function conectarFormularios() {
@@ -314,12 +647,13 @@ function conectarFormularios() {
 
             document.querySelectorAll('.perfil__nombre').forEach((elemento) => {
                 elemento.textContent = datos.cliente.nombre_cliente;
-            });
-            document.querySelectorAll('.perfil__detalle').forEach((elemento) => {
+            });            document.querySelectorAll('.perfil__detalle').forEach((elemento) => {
                 elemento.textContent = `@${datos.cliente.usuario_cliente}`;
             });
 
+            actualizarInicialesFondo(datos.cliente.nombre_cliente);
             tiendaToast('Perfil actualizado correctamente.');
+            refrescarDescuento();
         } catch (error) {
             mostrarError(error);
         } finally {
@@ -345,6 +679,7 @@ function conectarFormularios() {
             evento.currentTarget.reset();
             tiendaToast(datos?.mensaje || 'Contraseña actualizada correctamente.');
             ajustarFormPassword();
+            refrescarDescuento();
         } catch (error) {
             mostrarError(error);
         } finally {
@@ -417,10 +752,12 @@ async function cargarDirecciones() {
                     <i class="bi bi-geo-alt"></i>
                     <p>Todavía no tienes direcciones guardadas.</p>
                 </div>`;
+            refrescarDescuento();
             return;
         }
 
         lista.innerHTML = direccionesCache.map(direccionHTML).join('');
+        refrescarDescuento();
     } catch (error) {
         mostrarError(error);
     }
@@ -826,31 +1163,110 @@ function compraHTML(compra) {
 
 /* ── Descuento ───────────────────────────────────────────────── */
 
-function mostrarDescuento(descuento) {
+function requisitosDescuento(cliente) {
+    return [
+        {
+            texto: 'Teléfono registrado',
+            cumple: Boolean(String(cliente?.telefono_cliente || '').trim()),
+            enlace: '#perfil',
+            accion: 'Completar',
+        },
+        {
+            texto: 'Fecha de nacimiento',
+            cumple: Boolean(String(cliente?.fecha_nacimiento_cliente || '').trim()),
+            enlace: '#perfil',
+            accion: 'Completar',
+        },
+        {
+            texto: 'Una dirección guardada',
+            cumple: direccionesCache.length > 0,
+            enlace: '#direcciones',
+            accion: 'Agregar',
+        },
+        {
+            texto: 'Contraseña de la cuenta',
+            cumple: Boolean(window.cuentaTienePassword?.()),
+            enlace: '#configuracion',
+            accion: 'Crear',
+        },
+    ];
+}
+
+function mostrarDescuento(cliente) {
     const contenedor = porId('contenidoDescuento');
     if (!contenedor) return;
 
-    if (!descuento) {
-        contenedor.classList.add('perfil-vacio');
+    const descuento = cliente?.descuento || null;
+
+    if (descuento) {
+        contenedor.classList.remove('perfil-vacio');
         contenedor.innerHTML = `
-            <i class="bi bi-ticket-perforated"></i>
-            <p>No tienes un descuento asignado por ahora.</p>`;
+            <div class="perfil-descuento">
+                <i class="bi bi-ticket-perforated"></i>
+                <div>
+                    <span class="perfil-descuento__valor">${escapar(descuento.etiqueta)}</span>
+                    <p class="perfil-descuento__texto">
+                        ${descuento.primera_compra
+                            ? 'Descuento de primera compra activo: se aplica a cualquier producto.'
+                            : 'Se aplica al subtotal de tu carrito.'}
+                    </p>
+                </div>
+            </div>`;
         return;
     }
 
+    const requisitos = requisitosDescuento(cliente);
+    const listo = requisitos.every((requisito) => requisito.cumple);
+
     contenedor.classList.remove('perfil-vacio');
     contenedor.innerHTML = `
-        <div class="perfil-descuento">
-            <i class="bi bi-ticket-perforated"></i>
-            <div>
-                <span class="perfil-descuento__valor">${escapar(descuento.etiqueta)}</span>
-                <p class="perfil-descuento__texto">
-                    ${descuento.tipo === 'porcentaje'
-                        ? 'Se aplica al subtotal de tu carrito.'
-                        : 'Se descuenta del total de tu carrito.'}
-                </p>
+        <div class="perfil-descuento perfil-descuento--pendiente">
+            <div class="perfil-descuento__cabecera">
+                <span class="perfil-descuento__sello">10%</span>
+                <div>
+                    <p class="perfil-descuento__titulo">Aplicar descuento de primera compra</p>
+                    <p class="perfil-descuento__texto">Completa estos datos para aplicarlo a cualquier producto.</p>
+                </div>
             </div>
+
+            <ul class="perfil-descuento__requisitos">
+                ${requisitos.map((requisito) => `
+                    <li class="perfil-descuento__requisito ${requisito.cumple ? 'is-listo' : ''}">
+                        <i class="bi ${requisito.cumple ? 'bi-check-circle-fill' : 'bi-circle'}" aria-hidden="true"></i>
+                        <span>${requisito.texto}</span>
+                        ${requisito.cumple ? '' : `<a href="${requisito.enlace}">${requisito.accion}</a>`}
+                    </li>`).join('')}
+            </ul>
+
+            <button type="button" class="btn-primario w-100" id="btnAplicarDescuento" ${listo ? '' : 'disabled'}>
+                Aplicar descuento
+            </button>
         </div>`;
+}
+
+function refrescarDescuento() {
+    if (window.clienteTienda) mostrarDescuento(window.clienteTienda);
+}
+
+function conectarDescuento() {
+    porId('contenidoDescuento')?.addEventListener('click', async (evento) => {
+        const boton = evento.target.closest('#btnAplicarDescuento');
+        if (!boton || boton.disabled) return;
+
+        bloquearBoton(boton, true);
+
+        try {
+            const datos = await window.TiendaAPI.post('/tienda/api/descuento/primera-compra');
+
+            window.clienteTienda = datos.cliente || window.clienteTienda;
+            mostrarDescuento(window.clienteTienda);
+            tiendaToast(datos.mensaje || 'Descuento aplicado.');
+        } catch (error) {
+            mostrarError(error);
+        } finally {
+            bloquearBoton(boton, false);
+        }
+    });
 }
 
 /* ── Sesión ──────────────────────────────────────────────────── */

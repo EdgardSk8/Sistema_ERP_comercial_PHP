@@ -26,9 +26,9 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261030m">
-  <link rel="stylesheet" href="/tienda/recursos/css/perfil.css">
-  <link rel="stylesheet" href="/tienda/recursos/css/navidad.css?v=20261029r">
+  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261101h">
+  <link rel="stylesheet" href="/tienda/recursos/css/perfil.css?v=20261101i">
+  <link rel="stylesheet" href="/tienda/recursos/css/navidad.css?v=20261101k">
 </head>
 <body>
 
@@ -71,8 +71,11 @@
 
         <!-- Cliente con sesión: menú de la cuenta -->
         <details class="perfil" id="menuPerfil" hidden>
-          <summary class="icono-btn perfil__boton" aria-label="Mi cuenta">
-            <i class="bi bi-person"></i>
+          <summary class="icono-btn perfil__boton perfil__boton--avatar" aria-label="Mi cuenta" data-avatar>
+            <span class="perfil__avatar-mini" aria-hidden="true">
+              <img data-avatar-img alt="" hidden>
+              <span data-avatar-iniciales>?</span>
+            </span>
           </summary>
 
           <div class="perfil__menu">
@@ -155,6 +158,68 @@
           <!-- Cliente autenticado -->
           <div id="perfilLogueado" hidden>
             <form id="formPerfil" class="perfil-card">
+              <div class="perfil-avatar">
+                <span class="perfil-avatar__circulo" data-avatar aria-hidden="true">
+                  <img data-avatar-img alt="" hidden>
+                  <span data-avatar-iniciales>?</span>
+                </span>
+
+                <div class="perfil-avatar__editor">
+                  <p class="perfil-avatar__titulo">Foto de perfil</p>
+                  <p class="perfil-avatar__texto">Elige un color o una foto de fondo, o deja solo tus iniciales.</p>
+
+                  <p class="perfil-avatar__etiqueta">Color de fondo</p>
+                  <div class="perfil-avatar__colores" id="avatarColores" role="group" aria-label="Color de fondo del avatar">
+                    <button type="button" class="perfil-avatar__color" data-color="#ffffff" style="--avatar:#ffffff" aria-label="Blanco" aria-pressed="false"></button>
+                    <button type="button" class="perfil-avatar__color" data-color="#fff8ec" style="--avatar:#fff8ec" aria-label="Crema" aria-pressed="false"></button>
+                    <button type="button" class="perfil-avatar__color" data-color="#fbe7b6" style="--avatar:#fbe7b6" aria-label="Dorado claro" aria-pressed="false"></button>
+                    <button type="button" class="perfil-avatar__color" data-color="#f9dadf" style="--avatar:#f9dadf" aria-label="Rosa suave" aria-pressed="false"></button>
+                    <button type="button" class="perfil-avatar__color" data-color="#f6c9c6" style="--avatar:#f6c9c6" aria-label="Rojo suave" aria-pressed="false"></button>
+                    <button type="button" class="perfil-avatar__color" data-color="#d9f2e4" style="--avatar:#d9f2e4" aria-label="Verde menta" aria-pressed="false"></button>
+                    <button type="button" class="perfil-avatar__color" data-color="#cfe8d5" style="--avatar:#cfe8d5" aria-label="Verde salvia" aria-pressed="false"></button>
+                    <button type="button" class="perfil-avatar__color" data-color="#dce9f7" style="--avatar:#dce9f7" aria-label="Celeste invierno" aria-pressed="false"></button>
+                  </div>
+
+                  <p class="perfil-avatar__etiqueta">Foto de fondo</p>
+                  <div class="perfil-avatar__fondos" id="avatarFondos" role="group" aria-label="Foto de fondo del avatar">
+                    <button type="button" class="perfil-avatar__fondo is-activo" data-fondo="" aria-pressed="true" aria-label="Solo iniciales">
+                      <span data-avatar-fondo-iniciales>ET</span>
+                    </button>
+                  </div>
+
+                  <p class="perfil-avatar__etiqueta">Marco de ventas</p>
+                  <div class="perfil-marco">
+                    <div class="perfil-marco__cabecera">
+                      <div class="perfil-marco__texto">
+                        <strong id="marcoNivel">Aún sin marco</strong>
+                        <small id="marcoProgreso">Necesitas 5 ventas para tu primer marco.</small>
+                      </div>
+
+                      <label class="perfil-switch">
+                        <input type="checkbox" id="marcoVisible" role="switch" aria-label="Mostrar marco">
+                        <span class="perfil-switch__pista" aria-hidden="true">
+                          <span class="perfil-switch__bola"></span>
+                        </span>
+                        <span class="perfil-switch__texto">Mostrar</span>
+                      </label>
+                    </div>
+
+                    <div class="perfil-marco__barra" id="marcoBarra" role="progressbar"
+                         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+                         aria-label="Progreso de ventas para el siguiente marco">
+                      <span class="perfil-marco__relleno" id="marcoRelleno"></span>
+                    </div>
+
+                    <div class="perfil-marco__etiquetas">
+                      <span id="marcoDesde">0 ventas</span>
+                      <span id="marcoHasta">5 ventas</span>
+                    </div>
+
+                    <div class="perfil-marco__opciones" id="marcoOpciones" role="group" aria-label="Marcos disponibles"></div>
+                  </div>
+                </div>
+              </div>
+
               <h2 class="perfil-card__titulo">Datos personales</h2>
               <p class="perfil-card__texto">Actualiza tu información de contacto.</p>
 
@@ -182,7 +247,7 @@
                 <div class="col-md-6">
                   <label class="form-label" for="perfilFechaNacimiento">Fecha de nacimiento</label>
                   <input class="form-control" id="perfilFechaNacimiento" name="fecha_nacimiento_cliente" type="text"
-                         placeholder="Día de mes de año" autocomplete="bday" inputmode="numeric">
+                         placeholder="Ej.: 15 de marzo de 1998" autocomplete="bday" inputmode="numeric">
                 </div>
 
                 <div class="col-md-6">
@@ -337,7 +402,7 @@
         <header class="perfil-seccion__cabecera">
           <span class="perfil-seccion__etiqueta">Mi cuenta</span>
           <h2 class="perfil-seccion__titulo">Descuento</h2>
-          <p class="perfil-seccion__texto">Beneficio asignado a tu cuenta.</p>
+          <p class="perfil-seccion__texto">Descuento de primera compra con requisitos.</p>
         </header>
 
         <div class="perfil-seccion__cuerpo">
@@ -407,10 +472,10 @@
   <script src="/tienda/recursos/js/carrito-store.js?v=20261030g"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/tienda/recursos/js/supabase-config.js"></script>
-  <script src="/tienda/recursos/js/supabase-api.js?v=20261030l"></script>
+  <script src="/tienda/recursos/js/supabase-api.js?v=20261101o"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
   <script src="/tienda/recursos/js/cedula-nicaragua.js"></script>
-  <script src="/tienda/recursos/js/perfil.js?v=20261030l" defer></script>
+  <script src="/tienda/recursos/js/perfil.js?v=20261101h" defer></script>
 </body>
 </html>

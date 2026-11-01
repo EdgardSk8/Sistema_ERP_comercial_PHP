@@ -27,8 +27,8 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261030m">
-  <link rel="stylesheet" href="/tienda/recursos/css/navidad.css?v=20261029r">
+  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261101h">
+  <link rel="stylesheet" href="/tienda/recursos/css/navidad.css?v=20261101k">
 </head>
 <body>
 
@@ -72,8 +72,11 @@
 
         <!-- Cliente con sesión: menú de la cuenta -->
         <details class="perfil" id="menuPerfil" hidden>
-          <summary class="icono-btn perfil__boton" aria-label="Mi cuenta">
-            <i class="bi bi-person"></i>
+          <summary class="icono-btn perfil__boton perfil__boton--avatar" aria-label="Mi cuenta" data-avatar>
+            <span class="perfil__avatar-mini" aria-hidden="true">
+              <img data-avatar-img alt="" hidden>
+              <span data-avatar-iniciales>?</span>
+            </span>
           </summary>
 
           <div class="perfil__menu">
@@ -265,7 +268,21 @@
 
       </div>
 
-      <p class="pie__legal">© 2026 Tellez Nic Store · Todos los derechos reservados</p>
+      <p class="pie__legal">
+        © 2026 Tellez Software · Todos los derechos reservados ·
+        <a href="mailto:tellezsoftware@gmail.com">tellezsoftware@gmail.com</a>
+      </p>
+
+      <a class="pie__firma" href="mailto:tellezsoftware@gmail.com?subject=Quiero%20una%20p%C3%A1gina%20web%20como%20esta">
+        <span class="pie__firma-logo">
+          <img src="/tienda/recursos/imagenes/logo/tellezsoftware.png" alt="Tellez Software" loading="lazy">
+        </span>
+        <span class="pie__firma-copy">
+          <strong>Tellez Software</strong>
+          <small>Diseño y desarrollo web · ¿Quieres una página como esta?</small>
+        </span>
+        <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+      </a>
     </div>
   </footer>
 
@@ -275,7 +292,7 @@
   <script src="/tienda/recursos/js/carrito-store.js?v=20261030g"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/tienda/recursos/js/supabase-config.js"></script>
-  <script src="/tienda/recursos/js/supabase-api.js?v=20261030l"></script>
+  <script src="/tienda/recursos/js/supabase-api.js?v=20261101o"></script>
   <script src="/tienda/recursos/js/categorias.js?v=20261030o"></script>
   <script src="/tienda/recursos/js/tienda.js?v=20261030o" defer></script>
 </body>

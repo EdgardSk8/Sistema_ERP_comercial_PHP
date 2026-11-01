@@ -1,0 +1,16 @@
+# Fotos de fondo para el avatar del cliente
+
+Coloca aquí las fotos con estos nombres:
+
+    fondo-1.png
+    fondo-2.png
+    fondo-3.png
+    ...
+
+- Se detectan automáticamente hasta `fondo-8`.
+- Extensiones válidas: `.png`, `.jpg`, `.webp`.
+- Las actuales están a 384×384 px, recortadas y centradas con el mismo margen.
+- Conviene que el dibujo/foto esté centrado y con fondo transparente (PNG).
+- Si reemplazas una foto y no se actualiza en la web, renómbrala a un número libre.
+- La opción "Solo iniciales" del perfil usa únicamente el color de fondo elegido.
+- No hace falta tocar código: si el archivo existe, aparece como opción.
