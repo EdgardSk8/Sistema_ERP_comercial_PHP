@@ -9,7 +9,7 @@
     }
 
     if (window.TEMA_NAVIDAD !== false) {
-        const logoMini = '/tienda/recursos/img/logonavidad-mini.png?v=20261030h';
+        const logoMini = '/tienda/recursos/img/logonavidad-mini.png?v=20261102d';
         const favicon = '/tienda/recursos/img/favicon-navidad.png?v=20261030h';
         const touchIcon = '/tienda/recursos/img/apple-touch-navidad.png?v=20261030h';
 
@@ -130,11 +130,34 @@
     function cuentaTienePassword() {
         if (!usuarioActual) return false;
 
+        /* Bandera persistente para cuentas que crearon contraseña desde el perfil. */
+        if (usuarioActual.user_metadata?.password_set === true) return true;
+
         const proveedores = usuarioActual.app_metadata?.providers || [];
 
         if (proveedores.includes('email')) return true;
 
         return (usuarioActual.identities || []).some((identidad) => identidad.provider === 'email');
+    }
+
+    function marcarPasswordLocal() {
+        if (!usuarioActual) return;
+
+        usuarioActual.user_metadata = {
+            ...(usuarioActual.user_metadata || {}),
+            password_set: true,
+        };
+
+        usuarioActual.app_metadata = {
+            ...(usuarioActual.app_metadata || {}),
+            providers: [...new Set([...(usuarioActual.app_metadata?.providers || []), 'email'])],
+        };
+
+        const identities = Array.isArray(usuarioActual.identities) ? usuarioActual.identities : [];
+
+        if (!identities.some((identidad) => identidad.provider === 'email')) {
+            usuarioActual.identities = [...identities, { provider: 'email' }];
+        }
     }
 
     window.cuentaTienePassword = cuentaTienePassword;
@@ -879,10 +902,18 @@
             }
         }
 
-        let { error } = await supabase.auth.updateUser({ password: nueva });
+        const metadata = {
+            ...(usuarioActual.user_metadata || {}),
+            password_set: true,
+        };
+
+        let { data: actualizado, error } = await supabase.auth.updateUser({
+            password: nueva,
+            data: metadata,
+        });
 
         /* Supabase exige autenticación reciente: se reintenta tras reautenticar. */
-        if (error && /reauthentication|reauthenticate|recent/i.test(String(error.message))) {
+        if (error && /reauthentication|reauthenticate|recent|current password/i.test(String(error.message))) {
             if (actual && usuarioActual.email) {
                 const { error: reautenticado } = await supabase.auth.signInWithPassword({
                     email: usuarioActual.email,
@@ -890,23 +921,39 @@
                 });
 
                 if (!reautenticado) {
-                    ({ error } = await supabase.auth.updateUser({ password: nueva }));
+                    ({ data: actualizado, error } = await supabase.auth.updateUser({
+                        password: nueva,
+                        data: metadata,
+                    }));
                 }
             }
         }
 
         if (error) {
-            const mensaje = /reauthentication|reauthenticate|recent/i.test(String(error.message))
-                ? 'Por seguridad, cierra sesión y vuelve a entrar antes de cambiar la contraseña.'
-                : (error.message || 'No se pudo actualizar la contraseña.');
+            const crudo = String(error.message || '');
+            let mensaje = crudo || 'No se pudo actualizar la contraseña.';
 
-            throw errorApi(mensaje, 400);
+            if (/different|same password/i.test(crudo)) {
+                mensaje = 'La nueva contraseña debe ser diferente a la actual.';
+                marcarPasswordLocal();
+            } else if (/already has a password|already set/i.test(crudo)) {
+                mensaje = 'Tu cuenta ya tiene contraseña. Ingresa la contraseña actual para cambiarla.';
+                marcarPasswordLocal();
+            } else if (/reauthentication|reauthenticate|recent|current password/i.test(crudo)) {
+                mensaje = 'Por seguridad, ingresa tu contraseña actual para cambiar la contraseña.';
+                marcarPasswordLocal();
+            }
+
+            throw errorApi(mensaje, 422);
         }
 
-        /* Refresca el usuario: ahora incluye la identidad de correo. */
-        const { data } = await supabase.auth.getUser();
+        if (actualizado?.user) {
+            usuarioActual = actualizado.user;
+        }
 
-        if (data?.user) usuarioActual = data.user;
+        /* La cuenta ya tiene contraseña: el formulario debe pedir la actual
+           en el próximo cambio. */
+        marcarPasswordLocal();
 
         return {
             success: true,
@@ -1290,7 +1337,12 @@
 
     /* ── Enrutador compatible con la API anterior ───────────── */
 
-    async function solicitar(url, metodo, cuerpo) {
+    async function solicitar(url, metodo, cuerpo, opciones = {}) {
+        const mostrarCarga = Boolean(opciones?.cargando);
+
+        if (mostrarCarga) window.tiendaCargando?.(true, true);
+
+        try {
         const rutas = {
             'GET /tienda/api/auth/sesion': () => cargarSesion(),
 
@@ -1382,13 +1434,16 @@
         }
 
         throw errorApi(`Ruta no disponible: ${clave}`, 404);
+        } finally {
+            if (mostrarCarga) window.tiendaCargando?.(false);
+        }
     }
 
     window.TiendaAPI = {
-        get: (url) => solicitar(url, 'GET'),
-        post: (url, cuerpo) => solicitar(url, 'POST', cuerpo),
-        put: (url, cuerpo) => solicitar(url, 'PUT', cuerpo),
-        delete: (url) => solicitar(url, 'DELETE'),
+        get: (url, opciones = {}) => solicitar(url, 'GET', undefined, opciones),
+        post: (url, cuerpo, opciones = {}) => solicitar(url, 'POST', cuerpo, opciones),
+        put: (url, cuerpo, opciones = {}) => solicitar(url, 'PUT', cuerpo, opciones),
+        delete: (url, opciones = {}) => solicitar(url, 'DELETE', undefined, opciones),
         csrf: () => '',
     };
 

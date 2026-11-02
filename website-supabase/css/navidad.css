@@ -158,6 +158,21 @@ html.tema-navidad .btn-secundario {
     color: var(--nav-verde);
 }
 
+/* Cancelar en opiniones (formulario y confirmación de borrado) */
+html.tema-navidad .resenias__form-acciones .btn-secundario,
+html.tema-navidad .tienda-modal__boton--cancelar {
+    border-color: rgba(227, 179, 65, .65);
+    background: linear-gradient(180deg, #f7e2a8, var(--nav-dorado));
+    color: #4a3200;
+}
+
+html.tema-navidad .resenias__form-acciones .btn-secundario:hover,
+html.tema-navidad .tienda-modal__boton--cancelar:hover {
+    opacity: 1;
+    background: var(--nav-dorado);
+    color: #3f2b00;
+}
+
 /* ── Tarjetas: borde dorado sin mover nada ──────────────────── */
 
 html.tema-navidad .card-producto,
@@ -756,6 +771,74 @@ html.tema-navidad .perfil-badge {
 
 html.tema-navidad .pie {
     border-top: 3px solid var(--nav-dorado);
+}
+
+/* ── Opiniones estilo App Store ─────────────────────────────── */
+
+html.tema-navidad .resenias__resumen {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+html.tema-navidad .resenias .seccion__titulo::after {
+    display: none;
+}
+
+html.tema-navidad .resenias__nota {
+    color: var(--secundario);
+}
+
+html.tema-navidad .resenias__fila-pista {
+    background: rgba(12, 61, 36, .12);
+}
+
+html.tema-navidad .resenias__fila-relleno {
+    background: var(--nav-verde);
+}
+
+html.tema-navidad .resenias .estrellas__capa--relleno,
+html.tema-navidad .resenia .estrellas__capa--relleno {
+    color: var(--nav-verde);
+}
+
+html.tema-navidad .resenias .estrellas__capa--fondo,
+html.tema-navidad .resenia .estrellas__capa--fondo {
+    color: rgba(12, 61, 36, .16);
+}
+
+html.tema-navidad .resenia {
+    border: 0;
+    background: rgba(12, 61, 36, .05);
+}
+
+html.tema-navidad .resenia:hover {
+    background: rgba(12, 61, 36, .08);
+}
+
+html.tema-navidad .resenias__form {
+    border: 0;
+    background: rgba(12, 61, 36, .05);
+    box-shadow: none;
+}
+
+html.tema-navidad .resenias__invitado {
+    border: 0;
+    background: rgba(12, 61, 36, .05);
+}
+
+html.tema-navidad .resenias__abrir {
+    border-color: transparent;
+    background: var(--nav-verde);
+    color: #ffffff;
+}
+
+html.tema-navidad .resenias__abrir:hover {
+    background: var(--nav-verde-claro);
+}
+
+html.tema-navidad .resenias__estrella.is-activa {
+    color: var(--nav-verde);
 }
 
 /* ── Móvil: mismos detalles, ajustados ──────────────────────── */

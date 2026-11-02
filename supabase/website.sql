@@ -515,6 +515,7 @@ with visibles as (
            nullif(trim(u.raw_user_meta_data->>'avatar_fondo'), '') as avatar_fondo,
            nullif(trim(u.raw_user_meta_data->>'avatar_imagen'), '') as avatar_imagen,
            nullif(trim(u.raw_user_meta_data->>'marco_avatar_forzado'), '') as marco_forzado,
+           nullif(trim(u.raw_user_meta_data->>'marco_avatar_estilo'), '') as marco_estilo,
            coalesce(nullif(lower(trim(u.raw_user_meta_data->>'marco_avatar')), '')::boolean, true) as marco_avatar,
            (select count(*)::int from public.ventas v
              where v.id_cliente = c.id_cliente and v.estado_venta = true) as ventas_total
@@ -532,6 +533,7 @@ mia as (
            nullif(trim(u.raw_user_meta_data->>'avatar_fondo'), '') as avatar_fondo,
            nullif(trim(u.raw_user_meta_data->>'avatar_imagen'), '') as avatar_imagen,
            nullif(trim(u.raw_user_meta_data->>'marco_avatar_forzado'), '') as marco_forzado,
+           nullif(trim(u.raw_user_meta_data->>'marco_avatar_estilo'), '') as marco_estilo,
            coalesce(nullif(lower(trim(u.raw_user_meta_data->>'marco_avatar')), '')::boolean, true) as marco_avatar,
            (select count(*)::int from public.ventas v
              where v.id_cliente = c.id_cliente and v.estado_venta = true) as ventas_total
@@ -580,6 +582,7 @@ select jsonb_build_object(
             'avatar_imagen', v.avatar_imagen,
             'marco_avatar', v.marco_avatar,
             'marco_forzado', v.marco_forzado,
+            'marco_estilo', v.marco_estilo,
             'ventas_total', v.ventas_total,
             'calificacion', v.calificacion_resenia,
             'comentario', v.comentario_resenia,
@@ -600,6 +603,7 @@ select jsonb_build_object(
             'avatar_imagen', m.avatar_imagen,
             'marco_avatar', m.marco_avatar,
             'marco_forzado', m.marco_forzado,
+            'marco_estilo', m.marco_estilo,
             'ventas_total', m.ventas_total,
             'calificacion', m.calificacion_resenia,
             'comentario', m.comentario_resenia,

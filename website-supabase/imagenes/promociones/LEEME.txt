@@ -1,0 +1,24 @@
+Fotos de productos y descuentos
+==============================
+
+1. Sube aquí las imágenes (JPG, PNG o WebP). Ejemplo:
+   descuento-navidad.jpg
+   combo-zapatos.jpg
+
+2. Agrégalas en data/promociones.json:
+
+[
+  {
+    "imagen": "/tienda/recursos/imagenes/promociones/descuento-navidad.jpg",
+    "titulo": "Descuento de temporada",
+    "enlace": "/tienda#catalogo"
+  },
+  {
+    "imagen": "/tienda/recursos/imagenes/promociones/combo-zapatos.jpg",
+    "titulo": "Combos de zapatos"
+  }
+]
+
+- "titulo" y "enlace" son opcionales.
+- Si el enlace es externo (https://...), se abre en otra pestaña.
+- Mientras el arreglo esté vacío ([]), la sección no se muestra.

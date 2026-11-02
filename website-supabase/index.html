@@ -22,13 +22,14 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="/tienda/recursos/css/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
   <link href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261101h">
-  <link rel="stylesheet" href="/tienda/recursos/css/navidad.css?v=20261101k">
+  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261102u">
+  <link rel="stylesheet" href="/tienda/recursos/css/navidad.css?v=20261102d">
 </head>
 <body>
 
@@ -36,7 +37,7 @@
   <header class="app-header">
     <div class="contenedor">
       <a class="marca" href="/tienda">
-        <img class="marca__logo" src="/tienda/recursos/img/minilogo.png" alt="">
+        <img class="marca__logo" src="/tienda/recursos/img/minilogo.png?v=20261102d" alt="">
         Tellez Nic Store
       </a>
 
@@ -210,6 +211,17 @@
     </section>
   </main>
 
+  <!-- ── Fotos de productos y descuentos ────────────────────── -->
+  <section class="promos" id="promos" hidden>
+    <div class="contenedor">
+      <div class="seccion__cabecera">
+        <h2 class="seccion__titulo">Promociones</h2>
+      </div>
+
+      <div class="promos__grid" id="promosGrid"></div>
+    </div>
+  </section>
+
   <footer class="pie">
     <div class="contenedor">
       <div class="pie__grid">
@@ -257,12 +269,11 @@
         <div class="pie__bloque pie__bloque--mapa">
           <h3 class="pie__titulo">Ubicación</h3>
           <div class="pie__mapa">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d487.0490881321431!2d-86.84733917589323!3d12.423534455595828!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTLCsDI1JzI0LjciTiA4NsKwNTAnNTAuMSJX!5e0!3m2!1ses-419!2sni!4v1792555478726!5m2!1ses-419!2sni"
-              title="Ubicación de Tellez Nic Store"
-              loading="lazy"
-              allowfullscreen=""
-              referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            <button class="pie__mapa-cargar" type="button" data-mapa-cargar
+                    data-mapa-src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d487.0490881321431!2d-86.84733917589323!3d12.423534455595828!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTLCsDI1JzI0LjciTiA4NsKwNTAnNTAuMSJX!5e0!3m2!1ses-419!2sni!4v1792555478726!5m2!1ses-419!2sni">
+              <i class="bi bi-geo-alt" aria-hidden="true"></i>
+              <span>Ver mapa de ubicación</span>
+            </button>
           </div>
         </div>
 
@@ -275,7 +286,7 @@
 
       <a class="pie__firma" href="mailto:tellezsoftware@gmail.com?subject=Quiero%20una%20p%C3%A1gina%20web%20como%20esta">
         <span class="pie__firma-logo">
-          <img src="/tienda/recursos/imagenes/logo/tellezsoftware.png" alt="Tellez Software" loading="lazy">
+          <img src="/tienda/recursos/imagenes/logo/tellezsoftware.png?v=20261102d" alt="Tellez Software" loading="lazy" decoding="async">
         </span>
         <span class="pie__firma-copy">
           <strong>Tellez Software</strong>
@@ -287,13 +298,15 @@
   </footer>
 
   <!-- ── Scripts ────────────────────────────────────────────── -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-  <script src="/tienda/recursos/js/carrito-store.js?v=20261030g"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/tienda/recursos/js/supabase-config.js"></script>
-  <script src="/tienda/recursos/js/supabase-api.js?v=20261101o"></script>
-  <script src="/tienda/recursos/js/categorias.js?v=20261030o"></script>
-  <script src="/tienda/recursos/js/tienda.js?v=20261030o" defer></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
+  <script src="/tienda/recursos/js/carrito-store.js?v=20261102h" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="/tienda/recursos/js/supabase-config.js?v=20261102b" defer></script>
+  <script src="/tienda/recursos/js/supabase-api.js?v=20261102f" defer></script>
+  <script src="/tienda/recursos/js/categorias.js?v=20261030o" defer></script>
+  <script src="/tienda/recursos/js/tienda.js?v=20261102f" defer></script>
+  <script src="/tienda/recursos/js/promos.js?v=20261102e" defer></script>
+  <script src="/tienda/recursos/js/mapa.js?v=20261102d" defer></script>
 </body>
 </html>

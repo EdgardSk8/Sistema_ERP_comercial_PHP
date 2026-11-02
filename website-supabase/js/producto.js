@@ -162,6 +162,16 @@ function montarCarrusel() {
     });
 
     carrusel.on('move', indice => marcarMini(Math.round(indice)));
+
+    // Con arrastre en móvil (drag: 'free') Splide no dispara 'move'/'moved':
+    // 'scrolled' llega al terminar el snap y sincroniza la miniatura activa.
+    const sincronizarMini = (indice) => {
+        if (!carrusel) return;
+        marcarMini(Number.isInteger(indice) ? indice : carrusel.index);
+    };
+
+    carrusel.on('moved', sincronizarMini);
+    carrusel.on('scrolled', sincronizarMini);
     carrusel.mount();
 }
 
@@ -173,14 +183,15 @@ function pintarGaleria(imagenes) {
 
     slides.innerHTML = lista.map((imagen, indice) => `
         <li class="splide__slide">
-            <img class="galeria__imagen" src="${escapar(imagen)}" alt="Imagen ${indice + 1}" onerror="this.src='${IMAGEN_FALLBACK}'">
+            <img class="galeria__imagen" src="${escapar(imagen)}" alt="Imagen ${indice + 1}" draggable="false"
+                 ${indice === 0 ? 'fetchpriority="high"' : 'fetchpriority="low"'} decoding="async" onerror="this.src='${IMAGEN_FALLBACK}'">
         </li>
     `).join('');
 
     minis.innerHTML = lista.map((imagen, indice) => `
         <button type="button" class="galeria__mini${indice === 0 ? ' galeria__mini--activo' : ''}"
             data-indice="${indice}" data-imagen="${escapar(imagen)}" aria-label="Ver imagen ${indice + 1}">
-            <img src="${escapar(imagen)}" alt="Miniatura ${indice + 1}" onerror="this.src='${IMAGEN_FALLBACK}'">
+            <img src="${escapar(imagen)}" alt="Miniatura ${indice + 1}" draggable="false" decoding="async" fetchpriority="low" onerror="this.src='${IMAGEN_FALLBACK}'">
         </button>
     `).join('');
 
@@ -322,8 +333,22 @@ function pintarEquivalencias() {
 }
 
 function pintarPrecio() {
-    const precio = tallaActual?.precio ?? variacionActual?.tallas?.[0]?.precio ?? producto.precio;
-    $('productoPrecio').textContent = moneda(precio);
+    const precioBase = Number(tallaActual?.precio ?? variacionActual?.tallas?.[0]?.precio ?? producto.precio) || 0;
+    const descuento = window.descuentoClienteActivo?.();
+    const precioFinal = window.precioConDescuento?.(precioBase) ?? precioBase;
+    const nodo = $('productoPrecio');
+
+    if (!nodo) return;
+
+    if (descuento && precioFinal < precioBase) {
+        nodo.innerHTML = `
+            <span class="producto__precio--antes">${moneda(precioBase)}</span>
+            <span class="producto__precio--dto">${moneda(precioFinal)}</span>
+            <span class="producto__descuento">${descuento.etiqueta} dto.</span>
+        `;
+    } else {
+        nodo.textContent = moneda(precioBase);
+    }
 
     const impuesto = Number(producto.impuesto || 0);
     $('productoImpuesto').textContent = impuesto > 0 ? `IVA ${impuesto}% incluido` : '';
@@ -342,9 +367,12 @@ function enlaceWhatsappProducto() {
     if (variacionActual?.color) lineas.push(`Color: ${variacionActual.color}`);
     if (tallaActual?.nombre) lineas.push(`Talla: ${tallaActual.nombre}`);
 
-    const precio = tallaActual?.precio ?? producto.precio;
+    const precioBase = Number(tallaActual?.precio ?? producto.precio) || 0;
+    const descuento = window.descuentoClienteActivo?.();
+    const precioFinal = window.precioConDescuento?.(precioBase) ?? precioBase;
 
-    if (precio) lineas.push(`Precio: ${moneda(precio)}`);
+    if (precioBase) lineas.push(`Precio: ${moneda(precioFinal)}`);
+    if (descuento && precioFinal < precioBase) lineas.push(`Descuento ${descuento.etiqueta} aplicado.`);
 
     lineas.push(
         `${location.origin}${urlTienda('producto')}?p=${producto.id}`
@@ -445,6 +473,9 @@ async function cargarProducto() {
         }
 
         producto = data.producto;
+
+        // Espera la sesión para mostrar el descuento del cliente desde el primer render.
+        await (window.sesionTiendaPromise || Promise.resolve()).catch(() => null);
 
         // El catálogo enlaza cada color con ?color=Nombre.
         const colorBuscado = new URLSearchParams(location.search).get('color') || '';
@@ -567,21 +598,31 @@ async function cargarRelacionados() {
         const tarjetas = [...mismaCategoria, ...otras].slice(0, 12);
         if (!tarjetas.length) return;
 
-        lista.innerHTML = tarjetas.map(item => `
-            <li class="splide__slide">
-                <a class="card-compacta" href="/producto?p=${encodeURIComponent(item.id)}&color=${encodeURIComponent(item.color || '')}">
-                    <div class="card-compacta__media">
-                        <img src="${escapar(item.imagen || IMAGEN_FALLBACK)}" alt="${escapar(item.nombre)}" loading="lazy"
-                             onerror="this.src='${IMAGEN_FALLBACK}'">
-                    </div>
-                    <div class="card-compacta__info">
-                        <span class="card-compacta__nombre">${escapar(item.nombre)}</span>
-                        ${ratingRelacionado(item)}
-                        <span class="card-compacta__precio">${moneda(item.precio)}</span>
-                    </div>
-                </a>
-            </li>
-        `).join('');
+        lista.innerHTML = tarjetas.map(item => {
+            const precioBase = Number(item.precio) || 0;
+            const descuento = window.descuentoClienteActivo?.();
+            const precioFinal = window.precioConDescuento?.(precioBase) ?? precioBase;
+            const tieneDescuento = Boolean(descuento && precioFinal < precioBase);
+
+            return `
+                <li class="splide__slide">
+                    <a class="card-compacta" href="/producto?p=${encodeURIComponent(item.id)}&color=${encodeURIComponent(item.color || '')}">
+                        <div class="card-compacta__media">
+                            <img src="${escapar(item.imagen || IMAGEN_FALLBACK)}" alt="${escapar(item.nombre)}" loading="lazy" decoding="async" fetchpriority="low"
+                                 onerror="this.src='${IMAGEN_FALLBACK}'">
+                        </div>
+                        <div class="card-compacta__info">
+                            <span class="card-compacta__nombre">${escapar(item.nombre)}</span>
+                            ${ratingRelacionado(item)}
+                            <span class="card-compacta__precio">
+                                ${tieneDescuento ? `<span class="precio--antes">${moneda(precioBase)}</span> ` : ''}
+                                <span class="${tieneDescuento ? 'precio--dto' : ''}">${moneda(precioFinal)}</span>
+                            </span>
+                        </div>
+                    </a>
+                </li>
+            `;
+        }).join('');
 
         seccion.hidden = false;
         montarCarruselRelacionados();

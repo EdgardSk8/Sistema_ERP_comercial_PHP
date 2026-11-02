@@ -112,13 +112,19 @@ function estrellasTarjeta(calificacion) {
 function tarjetaProducto(variante, indice = 0) {
     const agotado = Number(variante.stock || 0) <= 0;
     const enlace = `/producto?p=${encodeURIComponent(variante.id)}&color=${encodeURIComponent(variante.color || '')}`;
+    const precioBase = Number(variante.precio) || 0;
+    const descuento = window.descuentoClienteActivo?.();
+    const precioFinal = window.precioConDescuento?.(precioBase) ?? precioBase;
+    const tieneDescuento = Boolean(descuento && precioFinal < precioBase);
 
     return `
         <a class="card-producto" href="${escapar(enlace)}" style="--i:${indice}">
             <div class="card-producto__media">
-                <img src="${escapar(variante.imagen || IMAGEN_FALLBACK)}" alt="${escapar(variante.nombre)}" loading="lazy"
+                <img src="${escapar(variante.imagen || IMAGEN_FALLBACK)}" alt="${escapar(variante.nombre)}"
+                     ${indice === 0 ? 'fetchpriority="high"' : 'loading="lazy" fetchpriority="low"'} decoding="async"
                      onerror="this.src='${IMAGEN_FALLBACK}'">
                 ${agotado ? '<span class="badge-agotado">Agotado</span>' : ''}
+                ${tieneDescuento && !agotado ? `<span class="badge-descuento">${escapar(descuento.etiqueta)} descuento</span>` : ''}
                 <button class="btn-favorito" type="button" data-producto="${variante.id}" aria-label="Agregar a favoritos">
                     <i class="bi bi-heart"></i>
                 </button>
@@ -129,7 +135,10 @@ function tarjetaProducto(variante, indice = 0) {
                 <span class="card-producto__categoria">${escapar(variante.categoria)}</span>
                 <span class="card-producto__color">${escapar(variante.color || 'Único')}</span>
                 <div class="card-producto__precios">
-                    <span class="precio">${moneda(variante.precio)}</span>
+                    ${tieneDescuento
+                        ? `<span class="precio precio--antes">${moneda(precioBase)}</span>
+                           <span class="precio precio--dto">${moneda(precioFinal)}</span>`
+                        : `<span class="precio">${moneda(precioBase)}</span>`}
                 </div>
             </div>
         </a>
@@ -469,7 +478,11 @@ async function cargarCatalogo() {
     const grid = document.getElementById('catalogoGrid');
 
     try {
-        const respuesta = await fetch(API_PRODUCTOS, { headers: { Accept: 'application/json' } });
+        const [respuesta] = await Promise.all([
+            fetch(API_PRODUCTOS, { headers: { Accept: 'application/json' } }),
+            (window.sesionTiendaPromise || Promise.resolve()).catch(() => null),
+        ]);
+
         if (!respuesta.ok) throw new Error('No se pudo cargar el catálogo.');
 
         const data = await respuesta.json();

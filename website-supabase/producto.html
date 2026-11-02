@@ -22,12 +22,13 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="/tienda/recursos/css/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261101h">
-  <link rel="stylesheet" href="/tienda/recursos/css/navidad.css?v=20261101k">
+  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261102u">
+  <link rel="stylesheet" href="/tienda/recursos/css/navidad.css?v=20261102d">
 </head>
 <body class="pagina-producto">
 
@@ -39,7 +40,7 @@
       </a>
 
       <a class="marca" href="/tienda">
-        <img class="marca__logo" src="/tienda/recursos/img/minilogo.png" alt="">
+        <img class="marca__logo" src="/tienda/recursos/img/minilogo.png?v=20261102d" alt="">
         Tellez Nic Store
       </a>
 
@@ -200,21 +201,31 @@
   <section class="resenias" id="resenias">
     <div class="contenedor">
 
-      <div class="seccion__cabecera">
-        <h2 class="seccion__titulo">Opiniones de clientes</h2>
+      <div class="seccion__cabecera resenias__cabecera">
+        <h2 class="seccion__titulo">Calificaciones y opiniones</h2>
+
+        <button class="resenias__ver" type="button" id="btnVerResenias"
+                aria-expanded="false" aria-controls="desplegarResenias" hidden>
+          <i class="bi bi-chevron-down"></i> Ver reseñas
+        </button>
       </div>
 
       <div class="resenias__grid">
 
         <!-- Resumen de calificaciones -->
         <aside class="resenias__resumen" aria-label="Resumen de calificaciones">
-          <div class="resenias__global">
-            <span class="resenias__nota" id="reseniasPromedio">0.0</span>
-            <span class="resenias__de">de 5</span>
+          <div class="resenias__stats">
+            <div class="resenias__global">
+              <span class="resenias__nota" id="reseniasPromedio">0.0</span>
+              <span class="resenias__de">de 5</span>
+            </div>
+            <span class="estrellas estrellas--lg" id="reseniasPromedioEstrellas" aria-hidden="true"></span>
           </div>
-          <span class="estrellas estrellas--lg" id="reseniasPromedioEstrellas" aria-hidden="true"></span>
-          <p class="resenias__total" id="reseniasTotal">Sin opiniones</p>
-          <div class="resenias__histograma" id="reseniasHistograma"></div>
+
+          <div class="resenias__barras">
+            <div class="resenias__histograma" id="reseniasHistograma"></div>
+            <p class="resenias__total" id="reseniasTotal">Sin opiniones</p>
+          </div>
         </aside>
 
         <!-- Formulario + lista -->
@@ -232,11 +243,6 @@
           <div class="resenias__acciones">
             <button class="btn-primario resenias__abrir" type="button" id="btnAbrirResenia" hidden>
               <i class="bi bi-pencil-square me-2"></i> Escribir una opinión
-            </button>
-
-            <button class="btn-secundario resenias__ver" type="button" id="btnVerResenias"
-                    aria-expanded="false" aria-controls="desplegarResenias">
-              <i class="bi bi-chat-square-text me-2"></i> Mostrar reseñas
             </button>
           </div>
 
@@ -286,19 +292,32 @@
 
               <!-- Barra de la lista -->
               <div class="resenias__barra" id="reseniasBarra" hidden>
-                <button class="resenias__tab is-activo" type="button" id="btnMasRecientes">Más recientes</button>
-                <button class="resenias__tab" type="button" id="btnCargarTodos">Cargar todos</button>
+                <div class="resenias__tabs">
+                  <button class="resenias__tab is-activo" type="button" id="btnMasRecientes">Más recientes</button>
+                  <button class="resenias__tab" type="button" id="btnCargarTodos">Cargar todos</button>
+                </div>
+
+                <div class="resenias__flechas">
+                  <button class="resenias__flecha" type="button" id="btnReseniasPrev" aria-label="Comentarios anteriores" hidden>
+                    <i class="bi bi-arrow-left"></i>
+                  </button>
+                  <button class="resenias__flecha" type="button" id="btnReseniasNext" aria-label="Comentarios siguientes" hidden>
+                    <i class="bi bi-arrow-right"></i>
+                  </button>
+                </div>
               </div>
 
-              <!-- Lista de opiniones con scroll interno -->
-              <div class="resenias__scroll">
-                <div class="resenias__lista" id="reseniasLista"></div>
-
-                <div class="resenias__vacio" id="reseniasVacio" hidden>
-                  <i class="bi bi-chat-square-text"></i>
-                  <p>Todavía no hay opiniones de este producto.</p>
-                  <span>Sé el primero en compartir tu experiencia.</span>
+              <!-- Carrusel de opiniones -->
+              <div class="resenias__splide splide" id="reseniasSplide" tabindex="0" aria-label="Comentarios de clientes">
+                <div class="splide__track">
+                  <ul class="splide__list" id="reseniasLista"></ul>
                 </div>
+              </div>
+
+              <div class="resenias__vacio" id="reseniasVacio" hidden>
+                <i class="bi bi-chat-square-text"></i>
+                <p>Todavía no hay opiniones de este producto.</p>
+                <span>Sé el primero en compartir tu experiencia.</span>
               </div>
 
             </div>
@@ -321,6 +340,17 @@
           <ul class="splide__list" id="relacionadosGrid"></ul>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ── Fotos de productos y descuentos ────────────────────── -->
+  <section class="promos" id="promos" hidden>
+    <div class="contenedor">
+      <div class="seccion__cabecera">
+        <h2 class="seccion__titulo">Promociones</h2>
+      </div>
+
+      <div class="promos__grid" id="promosGrid"></div>
     </div>
   </section>
 
@@ -371,12 +401,11 @@
         <div class="pie__bloque pie__bloque--mapa">
           <h3 class="pie__titulo">Ubicación</h3>
           <div class="pie__mapa">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d487.0490881321431!2d-86.84733917589323!3d12.423534455595828!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTLCsDI1JzI0LjciTiA4NsKwNTAnNTAuMSJX!5e0!3m2!1ses-419!2sni!4v1792555478726!5m2!1ses-419!2sni"
-              title="Ubicación de Tellez Nic Store"
-              loading="lazy"
-              allowfullscreen=""
-              referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            <button class="pie__mapa-cargar" type="button" data-mapa-cargar
+                    data-mapa-src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d487.0490881321431!2d-86.84733917589323!3d12.423534455595828!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTLCsDI1JzI0LjciTiA4NsKwNTAnNTAuMSJX!5e0!3m2!1ses-419!2sni!4v1792555478726!5m2!1ses-419!2sni">
+              <i class="bi bi-geo-alt" aria-hidden="true"></i>
+              <span>Ver mapa de ubicación</span>
+            </button>
           </div>
         </div>
 
@@ -389,7 +418,7 @@
 
       <a class="pie__firma" href="mailto:tellezsoftware@gmail.com?subject=Quiero%20una%20p%C3%A1gina%20web%20como%20esta">
         <span class="pie__firma-logo">
-          <img src="/tienda/recursos/imagenes/logo/tellezsoftware.png" alt="Tellez Software" loading="lazy">
+          <img src="/tienda/recursos/imagenes/logo/tellezsoftware.png?v=20261102d" alt="Tellez Software" loading="lazy" decoding="async">
         </span>
         <span class="pie__firma-copy">
           <strong>Tellez Software</strong>
@@ -400,12 +429,14 @@
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
-  <script src="/tienda/recursos/js/carrito-store.js?v=20261030g"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/tienda/recursos/js/supabase-config.js"></script>
-  <script src="/tienda/recursos/js/supabase-api.js?v=20261101o"></script>
-  <script src="/tienda/recursos/js/producto.js?v=20261030h" defer></script>
-  <script src="/tienda/recursos/js/resenias.js?v=20261101b" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js" defer></script>
+  <script src="/tienda/recursos/js/carrito-store.js?v=20261102h" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="/tienda/recursos/js/supabase-config.js?v=20261102b" defer></script>
+  <script src="/tienda/recursos/js/supabase-api.js?v=20261102f" defer></script>
+  <script src="/tienda/recursos/js/producto.js?v=20261102g" defer></script>
+  <script src="/tienda/recursos/js/resenias.js?v=20261102h" defer></script>
+  <script src="/tienda/recursos/js/promos.js?v=20261102e" defer></script>
+  <script src="/tienda/recursos/js/mapa.js?v=20261102d" defer></script>
 </body>
 </html>

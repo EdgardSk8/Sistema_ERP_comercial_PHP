@@ -6,3 +6,14 @@ window.SUPABASE_CONFIG = {
 
 /* Tema navideño: pon false para apagarlo sin tocar el HTML ni reconstruir. */
 window.TEMA_NAVIDAD = true;
+
+/* Delivery de la tienda: precio por km, redondeo a la baja y tarifa mínima. */
+window.TIENDA_DELIVERY = {
+    precioPorKm: 15,
+    redondeo: 5,
+    minimo: 30,
+    origen: {
+        lat: 12.423534455595828,
+        lng: -86.84733917589323,
+    },
+};

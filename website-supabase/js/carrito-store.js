@@ -88,8 +88,16 @@ const Carrito = (() => {
         const item = items.find(fila => fila.clave === clave);
         if (!item) return;
 
+        const nueva = Number(cantidad);
+
+        // Bajar de 1 elimina el artículo del carrito.
+        if (!Number.isFinite(nueva) || nueva <= 0) {
+            guardar(items.filter(fila => fila.clave !== clave));
+            return;
+        }
+
         const stock = Number(item.stock || 0) || 999;
-        item.cantidad = Math.max(1, Math.min(Number(cantidad), stock));
+        item.cantidad = Math.min(nueva, stock);
         guardar(items);
     }
 
@@ -119,7 +127,26 @@ const ICONOS_TOAST = {
     info: 'bi-info-circle'
 };
 
+function mensajeToastSeguro(mensaje, tipo = 'exito') {
+    const texto = String(mensaje ?? '').trim();
+
+    if (!texto) {
+        return tipo === 'aviso'
+            ? 'No se pudo completar la operación. Intenta de nuevo.'
+            : 'Operación completada.';
+    }
+
+    const tecnico = /cannot (read|set) propert|cannot convert|is not a function|is not defined|null is not an object|undefined is not an object|typeerror|referenceerror|syntaxerror|failed to fetch|networkerror|network request failed|authapierror|gotrue|pgrst|jwt|auth session missing/i.test(texto);
+
+    if (!tecnico) return texto;
+
+    return /fetch|network|conect/i.test(texto)
+        ? 'No se pudo conectar. Revisa tu conexión e intenta de nuevo.'
+        : 'Ocurrió un error inesperado. Intenta de nuevo.';
+}
+
 function tiendaToast(mensaje, tipo = 'exito') {
+    const texto = mensajeToastSeguro(mensaje, tipo);
     let toast = document.querySelector('.tienda-toast');
 
     if (!toast) {
@@ -136,7 +163,7 @@ function tiendaToast(mensaje, tipo = 'exito') {
     }
 
     toast.classList.toggle('tienda-toast--aviso', tipo === 'aviso');
-    toast.querySelector('.tienda-toast__texto').textContent = mensaje;
+    toast.querySelector('.tienda-toast__texto').textContent = texto;
     toast.querySelector('.tienda-toast__icono i').className = `bi ${ICONOS_TOAST[tipo] || ICONOS_TOAST.info}`;
 
     // Reinicia las animaciones aunque el aviso ya esté visible.
@@ -148,22 +175,49 @@ function tiendaToast(mensaje, tipo = 'exito') {
     toast._timer = setTimeout(() => toast.classList.remove('tienda-toast--visible'), 2600);
 }
 
+/* ── Descuento del cliente para precios mostrados ───────────── */
+function descuentoClienteActivo() {
+    const descuento = window.clienteTienda?.descuento;
+
+    if (!descuento || !['porcentaje', 'monto'].includes(descuento.tipo) || Number(descuento.valor) <= 0) {
+        return null;
+    }
+
+    return descuento;
+}
+
+function precioConDescuento(precio) {
+    const base = Number(precio) || 0;
+    const descuento = descuentoClienteActivo();
+
+    if (!descuento || base <= 0) return base;
+
+    const valor = Number(descuento.valor) || 0;
+    const final = descuento.tipo === 'porcentaje'
+        ? base * (1 - valor / 100)
+        : base - valor;
+
+    return Math.max(0, Math.round(final * 100) / 100);
+}
+
+window.descuentoClienteActivo = descuentoClienteActivo;
+window.precioConDescuento = precioConDescuento;
+
 /* ── Indicador de carga global (spinner) ─────────────────────── */
 let cargasActivas = 0;
 let temporizadorCarga = null;
 let temporizadorOcultarCarga = null;
+let cargaVisibleDesde = 0;
+const CARGA_MINIMA = 450;
 
-function tiendaCargando(mostrar = true) {
+function tiendaCargando(mostrar = true, inmediato = false) {
     let capa = document.querySelector('.tienda-cargando');
 
     if (mostrar) {
         cargasActivas++;
-        if (cargasActivas > 1) return;
-
         clearTimeout(temporizadorOcultarCarga);
 
-        // Pequeña espera para evitar parpadeos en peticiones rápidas.
-        temporizadorCarga = setTimeout(() => {
+        const mostrarCapa = () => {
             if (!capa) {
                 capa = document.createElement('div');
                 capa.className = 'tienda-cargando';
@@ -178,8 +232,20 @@ function tiendaCargando(mostrar = true) {
                 document.body.appendChild(capa);
             }
 
-            requestAnimationFrame(() => capa.classList.add('tienda-cargando--visible'));
-        }, 160);
+            // Fuerza el reflow y muestra de inmediato.
+            void capa.offsetWidth;
+            capa.classList.add('tienda-cargando--visible');
+            cargaVisibleDesde = performance.now();
+        };
+
+        if (inmediato) {
+            clearTimeout(temporizadorCarga);
+            mostrarCapa();
+        } else if (cargasActivas === 1) {
+            // Pequeña espera solo para cargas automáticas.
+            temporizadorCarga = setTimeout(mostrarCapa, 160);
+        }
+
         return;
     }
 
@@ -189,8 +255,13 @@ function tiendaCargando(mostrar = true) {
     clearTimeout(temporizadorCarga);
 
     if (capa) {
-        capa.classList.remove('tienda-cargando--visible');
-        temporizadorOcultarCarga = setTimeout(() => capa.remove(), 200);
+        const transcurrido = cargaVisibleDesde ? performance.now() - cargaVisibleDesde : CARGA_MINIMA;
+        const restante = Math.max(0, CARGA_MINIMA - transcurrido);
+
+        temporizadorOcultarCarga = setTimeout(() => {
+            capa.classList.remove('tienda-cargando--visible');
+            temporizadorOcultarCarga = setTimeout(() => capa.remove(), 200);
+        }, restante);
     }
 }
 

@@ -372,7 +372,7 @@ function conectarAvatar() {
         try {
             const datos = await window.TiendaAPI.put('/tienda/api/perfil/avatar', {
                 avatar_color: color,
-            });
+            }, { cargando: true });
 
             if (datos?.cliente) {
                 window.clienteTienda = datos.cliente;
@@ -388,20 +388,18 @@ function conectarAvatar() {
 }
 
 /* ── Fotos de fondo del avatar ───────────────────────────────
-   Los archivos van en imagenes/avatares/fondos/ con nombres
-   fondo-1.jpg, fondo-2.jpg, ... (hasta fondo-8). */
+   Archivos reales en imagenes/avatares/fondos/. Si agregas uno
+   nuevo, añade su nombre a esta lista. */
 
-const AVATAR_FONDOS_SLOTS = 8;
-const AVATAR_FONDOS_EXTENSIONES = ['jpg', 'png', 'webp'];
-
-function existeImagenAvatar(url) {
-    return new Promise((resolve) => {
-        const imagen = new Image();
-        imagen.onload = () => resolve(true);
-        imagen.onerror = () => resolve(false);
-        imagen.src = url;
-    });
-}
+const AVATAR_FONDOS = [
+    'fondo-1.png',
+    'fondo-2.png',
+    'fondo-3.png',
+    'fondo-4.png',
+    'fondo-5.png',
+    'fondo-6.png',
+    'fondo-7.png',
+];
 
 function marcarFondoAvatar(fondo) {
     const grupo = porId('avatarFondos');
@@ -424,20 +422,7 @@ async function cargarFondosAvatar(cliente) {
 
     if (inicialesBoton) inicialesBoton.textContent = inicialesFondo(nombre);
 
-    const detectados = [];
-
-    for (let numero = 1; numero <= AVATAR_FONDOS_SLOTS; numero += 1) {
-        for (const extension of AVATAR_FONDOS_EXTENSIONES) {
-            const archivo = `fondo-${numero}.${extension}`;
-            const url = `/tienda/recursos/imagenes/avatares/fondos/${archivo}`;
-
-            if (await existeImagenAvatar(url)) {
-                detectados.push(archivo);
-                break;
-            }
-        }
-    }
-
+    const detectados = AVATAR_FONDOS;
     const activo = cliente?.avatar_fondo || '';
 
     grupo.innerHTML = `
@@ -465,7 +450,7 @@ function conectarFondosAvatar() {
         try {
             const datos = await window.TiendaAPI.put('/tienda/api/perfil/avatar', {
                 avatar_fondo: fondo,
-            });
+            }, { cargando: true });
 
             if (datos?.cliente) {
                 window.clienteTienda = datos.cliente;
@@ -581,7 +566,7 @@ function conectarMarco() {
         casilla.disabled = true;
 
         try {
-            const datos = await window.TiendaAPI.put('/tienda/api/perfil/marco', { mostrar });
+            const datos = await window.TiendaAPI.put('/tienda/api/perfil/marco', { mostrar }, { cargando: true });
 
             window.clienteTienda = datos.cliente || window.clienteTienda;
             window.pintarAvatares?.(window.clienteTienda);
@@ -603,7 +588,7 @@ function conectarMarco() {
         marcarMarcoOpcion(estilo);
 
         try {
-            const datos = await window.TiendaAPI.put('/tienda/api/perfil/marco', { estilo });
+            const datos = await window.TiendaAPI.put('/tienda/api/perfil/marco', { estilo }, { cargando: true });
 
             window.clienteTienda = datos.cliente || window.clienteTienda;
 
@@ -641,17 +626,24 @@ function conectarFormularios() {
                 telefono_cliente: porId('perfilTelefono').value.trim(),
                 fecha_nacimiento_cliente: porId('perfilFechaNacimiento').value,
                 cedula_cliente: porId('perfilCedula').value.trim(),
-            });
+            }, { cargando: true });
+
+            if (!datos?.cliente) {
+                tiendaToast('No se pudo actualizar el perfil. Intenta de nuevo.', 'aviso');
+                return;
+            }
 
             window.clienteTienda = datos.cliente;
 
             document.querySelectorAll('.perfil__nombre').forEach((elemento) => {
-                elemento.textContent = datos.cliente.nombre_cliente;
-            });            document.querySelectorAll('.perfil__detalle').forEach((elemento) => {
-                elemento.textContent = `@${datos.cliente.usuario_cliente}`;
+                elemento.textContent = datos.cliente.nombre_cliente || '';
             });
 
-            actualizarInicialesFondo(datos.cliente.nombre_cliente);
+            document.querySelectorAll('.perfil__detalle').forEach((elemento) => {
+                elemento.textContent = `@${datos.cliente.usuario_cliente || ''}`;
+            });
+
+            actualizarInicialesFondo(datos.cliente.nombre_cliente || '');
             tiendaToast('Perfil actualizado correctamente.');
             refrescarDescuento();
         } catch (error) {
@@ -674,7 +666,7 @@ function conectarFormularios() {
                 password_actual: porId('passwordActual')?.value || '',
                 password_nueva: porId('passwordNueva').value,
                 password_nueva_confirmation: porId('passwordNuevaConfirm').value,
-            });
+            }, { cargando: true });
 
             evento.currentTarget.reset();
             tiendaToast(datos?.mensaje || 'Contraseña actualizada correctamente.');
@@ -682,6 +674,7 @@ function conectarFormularios() {
             refrescarDescuento();
         } catch (error) {
             mostrarError(error);
+            ajustarFormPassword();
         } finally {
             bloquearBoton(boton, false);
             if (texto) boton.textContent = texto;
@@ -853,10 +846,10 @@ async function guardarDireccion(evento) {
 
     try {
         if (id) {
-            await window.TiendaAPI.put(`/tienda/api/direcciones/${id}`, datos);
+            await window.TiendaAPI.put(`/tienda/api/direcciones/${id}`, datos, { cargando: true });
             tiendaToast('Dirección actualizada correctamente.');
         } else {
-            await window.TiendaAPI.post('/tienda/api/direcciones', datos);
+            await window.TiendaAPI.post('/tienda/api/direcciones', datos, { cargando: true });
             tiendaToast('Dirección agregada correctamente.');
         }
 

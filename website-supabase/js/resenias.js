@@ -10,8 +10,16 @@
     if (!seccion) return;
 
     const $ = (id) => document.getElementById(id);
+    const contenedorResenias = document.getElementById('reseniasSplide');
     const ICONO = '<i class="bi bi-star-fill"></i>';
     const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const MARCOS_RESENIA = [
+        { ventas: 5, clave: 'bronce' },
+        { ventas: 10, clave: 'plata' },
+        { ventas: 20, clave: 'oro' },
+        { ventas: 50, clave: 'esmeralda' },
+        { ventas: 100, clave: 'rubi' },
+    ];
 
     let resumen = { promedio: 0, total: 0, distribucion: [] };
     let resenias = [];
@@ -24,6 +32,7 @@
     let formularioEditando = false;
     let limiteLista = 10;
     let reseniasVisibles = false;
+    let carruselResenias = null;
 
     /* ── Utilidades ──────────────────────────────────────────── */
 
@@ -80,6 +89,53 @@
             marco: cliente.marco_avatar === false
                 ? null
                 : (window.marcoTienda?.marco?.clave || null),
+        };
+    }
+
+    function marcoDeResenia(resenia) {
+        if (resenia?.marco_avatar === false) return null;
+
+        const ventas = Number(resenia?.ventas_total || 0);
+        const forzado = String(resenia?.marco_forzado || '').trim().toLowerCase();
+        const seleccionado = String(resenia?.marco_estilo || '').trim().toLowerCase();
+        const claves = MARCOS_RESENIA.map((nivel) => nivel.clave);
+
+        const porVentas = MARCOS_RESENIA.reduce(
+            (actual, nivel) => (ventas >= nivel.ventas ? nivel.clave : actual),
+            null
+        );
+
+        if (['todos', 'todos_los_marcos', 'all'].includes(forzado)) {
+            return claves.includes(seleccionado) ? seleccionado : (porVentas || 'rubi');
+        }
+
+        if (claves.includes(forzado)) return forzado;
+
+        if (claves.includes(seleccionado)) {
+            const indiceSeleccionado = claves.indexOf(seleccionado);
+            const indiceVentas = porVentas ? claves.indexOf(porVentas) : -1;
+
+            if (indiceSeleccionado <= indiceVentas) return seleccionado;
+        }
+
+        return porVentas;
+    }
+
+    function normalizarResenia(resenia) {
+        if (!resenia) return resenia;
+
+        const avatar = resenia.avatar && typeof resenia.avatar === 'object' ? resenia.avatar : {};
+
+        return {
+            ...resenia,
+            avatar: {
+                color: avatar.color || resenia.avatar_color || null,
+                fondo: avatar.fondo || resenia.avatar_fondo || null,
+                imagen: avatar.imagen || resenia.avatar_imagen || null,
+                marco: resenia.marco_avatar === false
+                    ? null
+                    : (avatar.marco || marcoDeResenia(resenia)),
+            },
         };
     }
 
@@ -184,11 +240,10 @@
 
                 return `<button class="resenias__fila${filtro === fila.estrellas ? ' is-activo' : ''}"
                             type="button" data-filtro="${fila.estrellas}" ${deshabilitado ? 'disabled' : ''}
-                            aria-label="Ver opiniones de ${fila.estrellas} estrellas">
-                            <span class="resenias__fila-num">${fila.estrellas}</span>
-                            <i class="bi bi-star-fill"></i>
+                            aria-label="Ver opiniones de ${fila.estrellas} estrellas (${totalFila})">
+                            <span class="resenias__fila-estrellas" aria-hidden="true">${ICONO.repeat(Number(fila.estrellas))}</span>
                             <span class="resenias__fila-pista"><span class="resenias__fila-relleno" style="width:${porcentaje}%"></span></span>
-                            <span class="resenias__fila-total">${totalFila}</span>
+                            <span class="resenias__fila-total" aria-hidden="true">${totalFila}</span>
                         </button>`;
             })
             .join('');
@@ -197,8 +252,12 @@
     /* ── Lista de opiniones ──────────────────────────────────── */
 
     function htmlResenia(resenia) {
-        const comentario = resenia.comentario
-            ? `<p class="resenia__texto">${escapar(resenia.comentario)}</p>`
+        const textoCompleto = String(resenia.comentario || '').trim();
+        const esLargo = textoCompleto.length > 220;
+
+        const comentario = textoCompleto
+            ? `<p class="resenia__texto${esLargo ? ' resenia__texto--clamp' : ''}">${escapar(textoCompleto)}</p>`
+                + (esLargo ? '<button class="resenia__mas" type="button" data-mas>Más</button>' : '')
             : '<p class="resenia__texto resenia__texto--vacio">Sin comentario.</p>';
 
         const acciones = resenia.es_mia
@@ -217,15 +276,17 @@
             : '';
 
         return `<article class="resenia">
-                    ${avatarResenia(resenia)}
                     <div class="resenia__cuerpo">
                         <div class="resenia__cabecera">
-                            <span class="resenia__nombre">${escapar(resenia.cliente)}</span>
-                            ${insignia}
+                            <span class="resenia__autor-chip">
+                                ${avatarResenia(resenia)}
+                                <span class="resenia__nombre">${escapar(resenia.cliente)}</span>
+                                ${insignia}
+                            </span>
+                            <span class="resenia__fecha">${formatearFecha(resenia.fecha)}${resenia.editada ? ' · editada' : ''}</span>
                         </div>
                         <div class="resenia__meta">
                             ${estrellasHtml(resenia.calificacion)}
-                            <span class="resenia__fecha">${formatearFecha(resenia.fecha)}${resenia.editada ? ' · editada' : ''}</span>
                         </div>
                         ${comentario}
                         ${acciones}
@@ -242,9 +303,15 @@
             ? resenias.filter((resenia) => Number(resenia.calificacion) === filtro)
             : resenias;
 
-        lista.innerHTML = visibles.map(htmlResenia).join('');
+        const splide = $('reseniasSplide');
+
+        lista.innerHTML = visibles
+            .map((resenia) => `<li class="splide__slide">${htmlResenia(resenia)}</li>`)
+            .join('');
 
         vacio.hidden = visibles.length > 0;
+
+        if (splide) splide.hidden = visibles.length === 0;
 
         if (visibles.length === 0) {
             vacio.innerHTML = resenias.length === 0
@@ -255,6 +322,91 @@
                    <p>No hay opiniones de ${filtro} ${filtro === 1 ? 'estrella' : 'estrellas'}.</p>
                    <span><button class="resenias__limpiar" type="button" data-filtro="0">Ver todas las opiniones</button></span>`;
         }
+
+        montarCarruselResenias();
+    }
+
+    function actualizarFlechasResenias() {
+        const prev = $('btnReseniasPrev');
+        const next = $('btnReseniasNext');
+
+        if (!prev || !next) return;
+
+        if (!carruselResenias) {
+            prev.hidden = true;
+            next.hidden = true;
+            return;
+        }
+
+        const track = contenedorResenias?.querySelector('.splide__track');
+        const slides = Array.from($('reseniasLista')?.children || []);
+
+        if (!track || !slides.length) {
+            prev.hidden = true;
+            next.hidden = true;
+            return;
+        }
+
+        const gap = parseFloat(carruselResenias.options.gap) || 20;
+        const anchoTrack = track.clientWidth;
+        let acumulado = 0;
+        let visibles = 0;
+
+        slides.forEach((slide) => {
+            const ancho = slide.getBoundingClientRect().width;
+            const siguiente = acumulado + ancho + (visibles ? gap : 0);
+
+            if (siguiente <= anchoTrack + 1) {
+                acumulado = siguiente;
+                visibles++;
+            }
+        });
+
+        visibles = Math.max(1, visibles);
+
+        const ultimoIndice = Math.max(0, slides.length - visibles);
+        const hayOverflow = slides.length > visibles;
+
+        prev.hidden = !hayOverflow;
+        next.hidden = !hayOverflow;
+        prev.disabled = carruselResenias.index <= 0;
+        next.disabled = carruselResenias.index >= ultimoIndice;
+    }
+
+    function desplazarResenias(direccion) {
+        if (!carruselResenias) return;
+        carruselResenias.go(direccion > 0 ? '>' : '<');
+    }
+
+    function montarCarruselResenias() {
+        if (!contenedorResenias || typeof Splide === 'undefined') return;
+
+        if (carruselResenias) {
+            carruselResenias.destroy(true);
+            carruselResenias = null;
+        }
+
+        if (!contenedorResenias.querySelector('.splide__slide')) {
+            actualizarFlechasResenias();
+            return;
+        }
+
+        carruselResenias = new Splide(contenedorResenias, {
+            autoWidth: true,
+            gap: '20px',
+            pagination: false,
+            arrows: false,
+            drag: true,
+            perMove: 1,
+            speed: 400,
+            focus: 0,
+            omitEnd: true,
+        });
+
+        carruselResenias.on('moved', actualizarFlechasResenias);
+        carruselResenias.on('scrolled', actualizarFlechasResenias);
+        carruselResenias.mount();
+        actualizarFlechasResenias();
     }
 
     /* ── Formulario ──────────────────────────────────────────── */
@@ -352,6 +504,9 @@
     }
 
     function abrirFormulario(editar = false) {
+        // Mantiene abierto el cuadro de reseñas mientras se escribe o edita.
+        alternarResenias(true);
+
         formularioAbierto = true;
         formularioEditando = Boolean(editar) && Boolean(miResenia);
 
@@ -380,8 +535,8 @@
         boton.hidden = total === 0;
         boton.setAttribute('aria-expanded', String(reseniasVisibles));
         boton.innerHTML = reseniasVisibles
-            ? '<i class="bi bi-chevron-up me-2"></i> Ocultar reseñas'
-            : `<i class="bi bi-chat-square-text me-2"></i> Mostrar reseñas (${total})`;
+            ? '<i class="bi bi-chevron-up"></i> Ocultar reseñas'
+            : `<i class="bi bi-chevron-down"></i> Ver reseñas (${total})`;
     }
 
     function alternarResenias(mostrar = !reseniasVisibles) {
@@ -394,20 +549,30 @@
         contenedor.inert = !reseniasVisibles;
 
         pintarBotonVerResenias();
+        requestAnimationFrame(actualizarFlechasResenias);
     }
 
     function mostrarCargandoLista() {
         const lista = $('reseniasLista');
         const vacio = $('reseniasVacio');
+        const splide = $('reseniasSplide');
+
+        if (carruselResenias) {
+            carruselResenias.destroy(true);
+            carruselResenias = null;
+        }
 
         if (vacio) vacio.hidden = true;
+        if (splide) splide.hidden = false;
 
         if (lista) {
             lista.innerHTML = `
-                <div class="resenias__cargando" role="status" aria-live="polite">
-                    <span class="spinner-border" aria-hidden="true"></span>
-                    <span>Cargando opiniones…</span>
-                </div>
+                <li class="splide__slide">
+                    <div class="resenias__cargando" role="status" aria-live="polite">
+                        <span class="spinner-border" aria-hidden="true"></span>
+                        <span>Cargando opiniones…</span>
+                    </div>
+                </li>
             `;
         }
     }
@@ -440,11 +605,11 @@
 
         try {
             const consulta = limiteLista ? `?limite=${limiteLista}` : '';
-            const datos = await window.TiendaAPI.get(`/tienda/api/productos/${id}/resenias${consulta}`);
+            const datos = await window.TiendaAPI.get(`/tienda/api/productos/${id}/resenias${consulta}`, { cargando: true });
 
             resumen = datos.resumen || { promedio: 0, total: 0, distribucion: [] };
-            resenias = datos.resenias || [];
-            miResenia = datos.mi_resenia || null;
+            resenias = (datos.resenias || []).map(normalizarResenia);
+            miResenia = datos.mi_resenia ? normalizarResenia(datos.mi_resenia) : null;
             puedeResenar = Boolean(datos.puede_resenar);
 
             if (filtro && !resenias.some((resenia) => Number(resenia.calificacion) === filtro)) {
@@ -462,7 +627,7 @@
 
             const lista = $('reseniasLista');
             if (lista) {
-                lista.innerHTML = '<div class="resenias__cargando">No se pudieron cargar las opiniones.</div>';
+                lista.innerHTML = '<li class="splide__slide"><div class="resenias__cargando">No se pudieron cargar las opiniones.</div></li>';
             }
         }
     }
@@ -497,6 +662,9 @@
 
             await cargar();
 
+            // Al publicar, deja el cuadro de reseñas abierto para ver la opinión.
+            alternarResenias(true);
+
             // Deja el formulario limpio para una nueva opinión.
             calificacion = 0;
             $('reseniasComentario').value = '';
@@ -529,6 +697,7 @@
             filtro = 0;
             tiendaToast(datos.mensaje || 'Opinión eliminada.', 'info');
             await cargar();
+            alternarResenias(true);
         } catch (error) {
             tiendaToast(error.message, 'aviso');
         }
@@ -539,8 +708,8 @@
     document.addEventListener('DOMContentLoaded', () => {
         const selector = $('reseniasSelector');
 
-        // La lista de reseñas arranca cerrada.
-        alternarResenias(false);
+        // La lista de reseñas arranca abierta, como en la App Store.
+        alternarResenias(true);
 
         selector?.addEventListener('click', (evento) => {
             const estrella = evento.target.closest('.resenias__estrella');
@@ -568,6 +737,17 @@
 
         $('btnVerResenias')?.addEventListener('click', () => alternarResenias());
 
+        $('btnReseniasPrev')?.addEventListener('click', () => desplazarResenias(-1));
+        $('btnReseniasNext')?.addEventListener('click', () => desplazarResenias(1));
+
+        contenedorResenias?.addEventListener('keydown', (evento) => {
+            if (evento.key !== 'ArrowLeft' && evento.key !== 'ArrowRight') return;
+            evento.preventDefault();
+            desplazarResenias(evento.key === 'ArrowLeft' ? -1 : 1);
+        });
+
+        window.addEventListener('resize', actualizarFlechasResenias);
+
         $('btnMasRecientes')?.addEventListener('click', () => {
             if (limiteLista === 10) return;
 
@@ -582,8 +762,18 @@
             cargar({ spinner: true });
         });
 
-        // Delegación: editar / eliminar / filtrar.
+        // Delegación: expandir texto / editar / eliminar / filtrar.
         seccion.addEventListener('click', (evento) => {
+            const mas = evento.target.closest('[data-mas]');
+            if (mas) {
+                const texto = mas.closest('.resenia__cuerpo')?.querySelector('.resenia__texto');
+                if (texto) {
+                    const expandido = !texto.classList.toggle('resenia__texto--clamp');
+                    mas.textContent = expandido ? 'Menos' : 'Más';
+                }
+                return;
+            }
+
             const editar = evento.target.closest('[data-editar]');
             if (editar) {
                 abrirFormulario(true);

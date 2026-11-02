@@ -207,7 +207,7 @@ html { scroll-behavior: smooth; }
     flex: 0 0 auto;
     width: 86px;
     height: 86px;
-    overflow: hidden;
+    overflow: visible;
     border-radius: 50%;
     background: var(--avatar-color, #d9f2e4);
     color: #ffffff;
@@ -376,17 +376,15 @@ html { scroll-behavior: smooth; }
 .perfil-marco__opcion i { font-size: .68rem; opacity: .8; }
 
 .perfil-marco__muestra {
+    position: relative;
     width: 26px;
     height: 26px;
+    overflow: visible;
     border-radius: 50%;
     background: var(--primario-medio);
 }
 
-.perfil-marco__muestra.marco--bronce { box-shadow: 0 0 0 2px #cd7f32, 0 0 0 4px #f6e3cc; }
-.perfil-marco__muestra.marco--plata { box-shadow: 0 0 0 2px #b9c2cc, 0 0 0 4px #eef2f6; }
-.perfil-marco__muestra.marco--oro { box-shadow: 0 0 0 2px #e3b341, 0 0 0 4px #fbeecb; }
-.perfil-marco__muestra.marco--esmeralda { box-shadow: 0 0 0 2px #177a47, 0 0 0 4px #e3b341; }
-.perfil-marco__muestra.marco--rubi { box-shadow: 0 0 0 2px #c1121f, 0 0 0 4px #e3b341; }
+/* El anillo y la gema de la muestra se dibujan con el sistema global de marcos. */
 
 .perfil-switch {
     position: relative;

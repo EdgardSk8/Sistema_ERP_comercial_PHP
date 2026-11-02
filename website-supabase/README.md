@@ -77,4 +77,19 @@ En el panel de Supabase:
 - El cliente puede mostrar u ocultar el marco desde Perfil → Marco de ventas; la preferencia se guarda en `marco_avatar` (metadatos de Auth).
 - **Marco manual/demostración:** `marco_avatar_forzado` en los metadatos de Auth (`bronce`, `plata`, `oro`, `esmeralda`, `rubi` o `todos` para desbloquearlos todos). Ejemplo listo en `supabase/marco-edgard.sql`.
 - **Reseñas con avatar:** `web_resenias()` devuelve el avatar y marco de cada autor. Si actualizas desde una versión anterior, vuelve a ejecutar la función con `supabase/resenias-avatar.sql`.
+- **Estilo de los marcos:** anillo metálico cónico fino + gema inferior + halo, con paletas propias para Bronce, Plata, Oro, Esmeralda y Rubí. Los marcos son estáticos (sin animación). El CSS está al final de `css/estilos.css`; no requiere cambios en el HTML/JS.
+- **Indicador de carga global:** `.tienda-cargando` muestra un spinner centrado y difumina el fondo (`backdrop-filter`). `TiendaAPI` acepta `{ cargando: true }` en `get/post/put/delete`; se usa al cargar reseñas y al guardar perfil, avatar, marco, contraseña y direcciones.
+- **Fondos de avatar:** lista fija `AVATAR_FONDOS` en `js/perfil.js` (`fondo-1.png` a `fondo-7.png`). Si agregas una imagen, añádela a esa lista y al `LEEME.txt`; así se evitan sondeos de archivos inexistentes.
+- **Cambio de contraseña:** al crear o cambiar la contraseña se guarda `password_set` en `user_metadata`; en el siguiente cambio el formulario pide la contraseña actual.
+- **Errores al usuario:** `tiendaToast` filtra mensajes técnicos (TypeError, `Cannot read properties`, fallos de red, AuthApiError, etc.) y muestra un aviso genérico en su lugar.
+- **Precios con descuento:** `descuentoClienteActivo()` y `precioConDescuento()` en `carrito-store.js`. El catálogo y la ficha muestran precio original tachado, precio final y badge con el descuento. El carrito y los estados de venta (online, billetera móvil, efectivo) se manejan aparte.
+- **Delivery en el carrito:** configuración en `js/supabase-config.js` (`window.TIENDA_DELIVERY`): C$15 por km, redondeo a la baja a múltiplo de C$5 y **tarifa mínima de C$30**. El carrito usa un selector Select2 con las direcciones del cliente, calcula la distancia desde la tienda y muestra el cálculo, el redondeo y la tarifa mínima. La dirección y sus coordenadas se recuerdan en `localStorage`.
+
+## 9. Optimización de carga
+
+- **Imágenes:** `scripts/optimizar_imagenes_tienda.py` reduce logos, productos, variaciones y fondos de avatar sin cambiar nombres ni rutas. Resultado aplicado: **14.09 MB → 5.44 MB (-61%)**.
+- **Iconos:** `scripts/generar_iconos_tienda.py` genera `css/bootstrap-icons-subset.css` y `fonts/bootstrap-icons-subset.woff2` con solo los iconos `bi-*` usados. Si agregas un icono nuevo, vuelve a ejecutar el script.
+- **Bootstrap CSS:** `index`, `producto` y `carrito` ya no lo cargan; solo usan el CSS propio y el subconjunto de iconos. `login`, `perfil` y `ayuda` sí lo necesitan.
+- **Mapa:** el iframe de Google Maps se carga al pulsar «Ver mapa de ubicación» (`js/mapa.js`); no bloquea la carga inicial.
+- **Caché:** al modificar CSS/JS, sube el parámetro `?v=` en los HTML para invalidar la caché del navegador.
 

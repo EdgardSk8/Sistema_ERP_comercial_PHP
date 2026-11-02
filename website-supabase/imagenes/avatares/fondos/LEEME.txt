@@ -7,10 +7,11 @@ Coloca aquí las fotos con estos nombres:
     fondo-3.png
     ...
 
-- Se detectan automáticamente hasta `fondo-8`.
+- Actualmente hay 7 fondos: `fondo-1.png` a `fondo-7.png`.
+- Están listados en `AVATAR_FONDOS` dentro de `js/perfil.js`.
 - Extensiones válidas: `.png`, `.jpg`, `.webp`.
 - Las actuales están a 384×384 px, recortadas y centradas con el mismo margen.
 - Conviene que el dibujo/foto esté centrado y con fondo transparente (PNG).
 - Si reemplazas una foto y no se actualiza en la web, renómbrala a un número libre.
 - La opción "Solo iniciales" del perfil usa únicamente el color de fondo elegido.
-- No hace falta tocar código: si el archivo existe, aparece como opción.
+- Si agregas un fondo nuevo, añade su nombre a `AVATAR_FONDOS` para que aparezca.
