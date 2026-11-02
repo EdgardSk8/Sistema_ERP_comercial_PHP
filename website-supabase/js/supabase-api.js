@@ -93,6 +93,20 @@
         return String(valor ?? '').trim();
     }
 
+    function coordenadasValidas(lat, lng) {
+        const latTexto = texto(lat);
+        const lngTexto = texto(lng);
+
+        if (!latTexto || !lngTexto) return false;
+
+        const latNum = Number(latTexto);
+        const lngNum = Number(lngTexto);
+
+        return Number.isFinite(latNum)
+            && Number.isFinite(lngNum)
+            && !(latNum === 0 && lngNum === 0);
+    }
+
     function descuentoCliente(fila) {
         const tipo = fila?.descuento_tipo_cliente;
         const valor = Number(fila?.descuento_valor_cliente || 0);
@@ -831,15 +845,19 @@
         if (!texto(clienteActual.fecha_nacimiento_cliente)) faltantes.push('fecha de nacimiento');
         if (!cuentaTienePassword()) faltantes.push('contraseña');
 
-        const { count, error } = await supabase
+        const { data: direcciones, error } = await supabase
             .from('cliente_direcciones')
-            .select('id_direccion_cliente', { count: 'exact', head: true })
+            .select('id_direccion_cliente, latitud_direccion, longitud_direccion')
             .eq('id_cliente', clienteActual.id_cliente)
             .eq('estado_direccion', true);
 
         if (error) throw errorDeSupabase(error, 'No se pudieron revisar tus direcciones.');
 
-        if (!count) faltantes.push('dirección');
+        const tieneDireccionValida = (direcciones || []).some((direccion) =>
+            coordenadasValidas(direccion.latitud_direccion, direccion.longitud_direccion)
+        );
+
+        if (!tieneDireccionValida) faltantes.push('dirección con ubicación');
 
         if (faltantes.length) {
             throw errorApi(`Completa: ${faltantes.join(', ')}.`, 422);
@@ -966,14 +984,16 @@
     /* ── Direcciones ────────────────────────────────────────── */
 
     function direccionDatos(fila) {
+        const tieneUbicacion = coordenadasValidas(fila.latitud_direccion, fila.longitud_direccion);
+
         return {
             id_direccion_cliente: fila.id_direccion_cliente,
             nombre_direccion: fila.nombre_direccion,
             ubicacion_maps: fila.ubicacion_maps,
             referencia_direccion: fila.referencia_direccion,
             direccion_manual: fila.direccion_manual,
-            latitud_direccion: fila.latitud_direccion !== null ? Number(fila.latitud_direccion) : null,
-            longitud_direccion: fila.longitud_direccion !== null ? Number(fila.longitud_direccion) : null,
+            latitud_direccion: tieneUbicacion ? Number(fila.latitud_direccion) : null,
+            longitud_direccion: tieneUbicacion ? Number(fila.longitud_direccion) : null,
             predeterminada_direccion: Boolean(fila.predeterminada_direccion),
         };
     }
@@ -982,10 +1002,10 @@
         const enlace = texto(cuerpo.ubicacion_maps);
         if (enlace) return enlace;
 
+        if (!coordenadasValidas(cuerpo.latitud_direccion, cuerpo.longitud_direccion)) return null;
+
         const lat = Number(cuerpo.latitud_direccion);
         const lng = Number(cuerpo.longitud_direccion);
-
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
         return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     }
@@ -1038,13 +1058,15 @@
                 .eq('id_cliente', clienteActual.id_cliente);
         }
 
+        const tieneUbicacion = coordenadasValidas(cuerpo.latitud_direccion, cuerpo.longitud_direccion);
+
         const datos = {
             nombre_direccion: texto(cuerpo.nombre_direccion),
             ubicacion_maps: enlaceMaps(cuerpo),
             referencia_direccion: texto(cuerpo.referencia_direccion) || null,
             direccion_manual: texto(cuerpo.direccion_manual) || null,
-            latitud_direccion: Number.isFinite(Number(cuerpo.latitud_direccion)) ? Number(cuerpo.latitud_direccion) : null,
-            longitud_direccion: Number.isFinite(Number(cuerpo.longitud_direccion)) ? Number(cuerpo.longitud_direccion) : null,
+            latitud_direccion: tieneUbicacion ? Number(cuerpo.latitud_direccion) : null,
+            longitud_direccion: tieneUbicacion ? Number(cuerpo.longitud_direccion) : null,
             predeterminada_direccion: predeterminada,
         };
 

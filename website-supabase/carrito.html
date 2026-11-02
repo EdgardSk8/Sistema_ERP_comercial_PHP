@@ -27,7 +27,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
   <link href="/tienda/recursos/css/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261102u">
+  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261102x">
   <link rel="stylesheet" href="/tienda/recursos/css/navidad.css?v=20261102d">
 </head>
 <body>
@@ -129,6 +129,111 @@
       <p><a href="/tienda/login">Inicia sesión</a> para usar tus direcciones y calcular el delivery.</p>
     </div>
 
+    <!-- Pago -->
+    <section class="carrito-pago" id="carritoPago" hidden aria-labelledby="carritoPagoTitulo">
+      <div class="carrito-pago__cabecera">
+        <h2 class="carrito-pago__titulo" id="carritoPagoTitulo">Método de pago</h2>
+      </div>
+
+      <div class="carrito-pago__opciones" role="radiogroup" aria-labelledby="carritoPagoTitulo">
+        <label class="pago-opcion">
+          <input class="pago-opcion__radio" type="radio" name="metodo_pago" value="efectivo" checked>
+          <span class="pago-opcion__icono" aria-hidden="true"><i class="bi bi-cash-coin"></i></span>
+          <span class="pago-opcion__texto">
+            <strong>Efectivo</strong>
+            <small>Contra entrega, al recibir tu pedido.</small>
+          </span>
+          <i class="bi bi-check-circle-fill pago-opcion__check" aria-hidden="true"></i>
+        </label>
+
+        <label class="pago-opcion">
+          <input class="pago-opcion__radio" type="radio" name="metodo_pago" value="billetera_movil">
+          <span class="pago-opcion__icono" aria-hidden="true"><i class="bi bi-phone"></i></span>
+          <span class="pago-opcion__texto">
+            <strong>Billetera móvil</strong>
+            <small>Envía al 8477 4288 y comparte el comprobante.</small>
+          </span>
+          <i class="bi bi-check-circle-fill pago-opcion__check" aria-hidden="true"></i>
+        </label>
+
+        <label class="pago-opcion">
+          <input class="pago-opcion__radio" type="radio" name="metodo_pago" value="lafise">
+          <span class="pago-opcion__icono" aria-hidden="true"><i class="bi bi-receipt"></i></span>
+          <span class="pago-opcion__texto">
+            <strong>Cuenta Lafise</strong>
+            <small>Transferencia o depósito; datos abajo.</small>
+          </span>
+          <i class="bi bi-check-circle-fill pago-opcion__check" aria-hidden="true"></i>
+        </label>
+      </div>
+
+      <div class="pago-detalle" data-pago-detalle="billetera_movil" hidden>
+        <h3 class="pago-detalle__titulo">Paga con billetera móvil</h3>
+
+        <div class="pago-dato">
+          <span class="pago-dato__label">Número</span>
+          <strong class="pago-dato__valor">8477 4288</strong>
+          <button type="button" class="pago-dato__copiar" data-copiar="84774288" aria-label="Copiar número de billetera móvil">Copiar</button>
+        </div>
+
+        <p class="pago-detalle__texto">Envía el pago a este número. Abre Billetera Móvil Banpro; si usas otra billetera, busca el número en tu app.</p>
+
+        <div class="pago-detalle__acciones">
+          <a class="pago-detalle__btn" id="btnAbrirBilletera" href="https://www.banprogrupopromerica.com.ni/canales-de-atencion/billetera-movil/" target="_blank" rel="noopener noreferrer" aria-label="Abrir Billetera Móvil Banpro" title="Abrir Billetera Móvil Banpro">
+            <i class="bi bi-phone"></i> Abrir app
+          </a>
+          <a class="pago-detalle__btn pago-detalle__btn--secundario" href="https://wa.me/50584774288?text=Hola%2C%20env%C3%ADo%20mi%20comprobante%20de%20pago." target="_blank" rel="noopener noreferrer">
+            <i class="bi bi-whatsapp"></i> Enviar comprobante
+          </a>
+        </div>
+      </div>
+
+      <div class="pago-detalle" data-pago-detalle="lafise" hidden>
+        <h3 class="pago-detalle__titulo">Datos para transferencia Lafise</h3>
+
+        <div class="pago-dato">
+          <span class="pago-dato__label">Titular</span>
+          <strong class="pago-dato__valor">Edgard Jose Tellez Munguia</strong>
+          <button type="button" class="pago-dato__copiar" data-copiar="Edgard Jose Tellez Munguia" aria-label="Copiar nombre del titular">Copiar</button>
+        </div>
+
+        <div class="pago-dato">
+          <span class="pago-dato__label">Amigo Córdobas</span>
+          <strong class="pago-dato__valor">140074484</strong>
+          <button type="button" class="pago-dato__copiar" data-copiar="140074484" aria-label="Copiar número de cuenta Lafise">Copiar</button>
+        </div>
+
+        <div class="pago-dato">
+          <span class="pago-dato__label">IBAN (International Bank Account Number)</span>
+          <strong class="pago-dato__valor pago-dato__valor--mono">NI08BCCE00000000000140074484</strong>
+          <button type="button" class="pago-dato__copiar" data-copiar="NI08BCCE00000000000140074484" aria-label="Copiar IBAN Lafise">Copiar</button>
+        </div>
+
+        <div class="pago-motivo">
+          <label class="pago-dato__label pago-motivo__label" for="motivoTransferencia">Motivo</label>
+          <textarea class="pago-motivo__campo" id="motivoTransferencia" rows="3" readonly aria-describedby="motivoTransferenciaAyuda"></textarea>
+          <button type="button" class="pago-dato__copiar pago-motivo__copiar" data-copiar-campo="#motivoTransferencia" aria-label="Copiar motivo de transferencia">Copiar motivo</button>
+          <p class="pago-motivo__ayuda" id="motivoTransferenciaAyuda">Úsalo si transfieres desde otro banco, para identificar tu pago.</p>
+        </div>
+
+        <p class="pago-detalle__texto">Realiza la transferencia y comparte el comprobante.</p>
+
+        <div class="pago-detalle__acciones">
+          <a class="pago-detalle__btn" href="https://digital.lafise.com/" target="_blank" rel="noopener noreferrer">
+            <i class="bi bi-arrow-up-right"></i> Abrir Lafise Digital
+          </a>
+          <a class="pago-detalle__btn pago-detalle__btn--secundario" href="https://wa.me/50584774288?text=Hola%2C%20env%C3%ADo%20mi%20comprobante%20de%20pago." target="_blank" rel="noopener noreferrer">
+            <i class="bi bi-whatsapp"></i> Enviar comprobante
+          </a>
+        </div>
+      </div>
+
+      <p class="carrito-pago__nota">
+        <i class="bi bi-info-circle"></i>
+        El pago con tarjeta aún no está habilitado en la tienda.
+      </p>
+    </section>
+
     <!-- Estado vacío -->
     <div class="carrito-vacio" id="carritoVacio" hidden>
       <i class="bi bi-bag"></i>
@@ -172,9 +277,9 @@
   <script src="/tienda/recursos/js/carrito-store.js?v=20261102h" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/supabase-config.js?v=20261102b" defer></script>
-  <script src="/tienda/recursos/js/supabase-api.js?v=20261102f" defer></script>
+  <script src="/tienda/recursos/js/supabase-api.js?v=20261102g" defer></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
-  <script src="/tienda/recursos/js/carrito-vista.js?v=20261102e" defer></script>
+  <script src="/tienda/recursos/js/carrito-vista.js?v=20261102j" defer></script>
 </body>
 </html>

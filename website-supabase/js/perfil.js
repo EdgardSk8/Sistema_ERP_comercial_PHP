@@ -783,6 +783,7 @@ function direccionHTML(direccion) {
 
             ${direccion.direccion_manual ? `<p class="perfil-item-card__texto"><i class="bi bi-house"></i> ${escapar(direccion.direccion_manual)}</p>` : ''}
             ${direccion.referencia_direccion ? `<p class="perfil-item-card__texto"><i class="bi bi-info-circle"></i> ${escapar(direccion.referencia_direccion)}</p>` : ''}
+            ${!direccionTieneUbicacion(direccion) ? '<p class="perfil-item-card__texto"><i class="bi bi-exclamation-triangle"></i> Marca la ubicación para calcular el delivery.</p>' : ''}
             ${maps ? `<a class="perfil-item-card__enlace" href="${escapar(maps)}" target="_blank" rel="noopener noreferrer"><i class="bi bi-geo"></i> Ver en Google Maps</a>` : ''}
         </article>`;
 }
@@ -802,7 +803,7 @@ function abrirFormDireccion(direccion = null) {
     const lat = direccion?.latitud_direccion != null ? Number(direccion.latitud_direccion) : null;
     const lng = direccion?.longitud_direccion != null ? Number(direccion.longitud_direccion) : null;
 
-    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    if (Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0)) {
         aplicarUbicacion(lat, lng, { conservarEnlace: true });
     } else {
         limpiarUbicacion();
@@ -1156,7 +1157,23 @@ function compraHTML(compra) {
 
 /* ── Descuento ───────────────────────────────────────────────── */
 
+function direccionTieneUbicacion(direccion) {
+    const latTexto = String(direccion?.latitud_direccion ?? '').trim();
+    const lngTexto = String(direccion?.longitud_direccion ?? '').trim();
+
+    if (!latTexto || !lngTexto) return false;
+
+    const lat = Number(latTexto);
+    const lng = Number(lngTexto);
+
+    return Number.isFinite(lat)
+        && Number.isFinite(lng)
+        && !(lat === 0 && lng === 0);
+}
+
 function requisitosDescuento(cliente) {
+    const tieneDireccion = direccionesCache.some(direccionTieneUbicacion);
+
     return [
         {
             texto: 'Teléfono registrado',
@@ -1171,10 +1188,10 @@ function requisitosDescuento(cliente) {
             accion: 'Completar',
         },
         {
-            texto: 'Una dirección guardada',
-            cumple: direccionesCache.length > 0,
+            texto: 'Dirección con ubicación',
+            cumple: tieneDireccion,
             enlace: '#direcciones',
-            accion: 'Agregar',
+            accion: direccionesCache.length ? 'Completar' : 'Agregar',
         },
         {
             texto: 'Contraseña de la cuenta',

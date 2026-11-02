@@ -5,6 +5,7 @@
 const IMAGEN_FALLBACK = '/tienda/recursos/img/producto.png';
 
 let descuentoCliente = null;
+let clienteTienda = null;
 
 const DELIVERY_CONFIG = window.TIENDA_DELIVERY || {
     precioPorKm: 15,
@@ -17,6 +18,22 @@ const DELIVERY_CONFIG = window.TIENDA_DELIVERY || {
 
 const CLAVE_DIRECCION_ENTREGA = 'tienda_delivery_direccion';
 const CLAVE_UBICACION_ENTREGA = 'tienda_delivery_ubicacion';
+const CLAVE_METODO_PAGO = 'tienda_metodo_pago';
+
+const METODOS_PAGO = {
+    efectivo: 'Efectivo',
+    billetera_movil: 'Billetera móvil',
+    lafise: 'Cuenta Lafise (transferencia)',
+};
+
+const BILLETERA_APP = {
+    android: 'https://play.google.com/store/apps/details?id=ni.com.banprogrupopromerica.billeteramovil',
+    ios: 'https://apps.apple.com/app/id1614485126',
+    web: 'https://www.banprogrupopromerica.com.ni/canales-de-atencion/billetera-movil/',
+};
+
+const BILLETERA_NUMERO = '84774288';
+const CUENTA_LAFISE_CORDOBAS = '140074484';
 
 let direccionesEntrega = [];
 let direccionEntrega = null;
@@ -62,7 +79,7 @@ function calcularEnvio(direccion) {
     const lat = Number(direccion?.latitud_direccion);
     const lng = Number(direccion?.longitud_direccion);
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) return null;
     if (!Number.isFinite(Number(origen.lat)) || !Number.isFinite(Number(origen.lng))) return null;
 
     const km = distanciaKm(Number(origen.lat), Number(origen.lng), lat, lng);
@@ -145,6 +162,151 @@ function pintarEntregaInfo(mensaje = '') {
             ? `Se aplica la tarifa mínima de ${moneda(minimo)}.`
             : `Redondeo a la baja al múltiplo de ${moneda(paso)} más cercano.`}</p>
     `;
+}
+
+function actualizarDetallePago(valor) {
+    document.querySelectorAll('[data-pago-detalle]').forEach((detalle) => {
+        detalle.hidden = detalle.dataset.pagoDetalle !== valor;
+    });
+}
+
+function marcarMetodoPago(valor) {
+    document.querySelectorAll('.pago-opcion').forEach((opcion) => {
+        const input = opcion.querySelector('input[name="metodo_pago"]');
+        if (!input) return;
+
+        const activo = input.value === valor;
+        input.checked = activo;
+        opcion.classList.toggle('is-activo', activo);
+    });
+
+    actualizarDetallePago(valor);
+}
+
+function configurarEnlaceBilletera() {
+    const enlace = document.getElementById('btnAbrirBilletera');
+    if (!enlace) return;
+
+    const navegador = navigator.userAgent || '';
+
+    if (/android/i.test(navegador)) {
+        enlace.href = BILLETERA_APP.android;
+    } else if (/iphone|ipad|ipod/i.test(navegador)) {
+        enlace.href = BILLETERA_APP.ios;
+    } else {
+        enlace.href = BILLETERA_APP.web;
+    }
+}
+
+function copiarTextoFallback(valor) {
+    const area = document.createElement('textarea');
+    area.value = valor;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+
+    try {
+        return document.execCommand('copy');
+    } finally {
+        area.remove();
+    }
+}
+
+async function copiarTexto(valor) {
+    if (!valor) return false;
+
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(valor);
+            return true;
+        }
+    } catch {
+        // Intenta el método clásico si el navegador bloquea la API moderna.
+    }
+
+    try {
+        return copiarTextoFallback(valor);
+    } catch {
+        return false;
+    }
+}
+
+function actualizarMotivoTransferencia() {
+    const campo = document.getElementById('motivoTransferencia');
+    if (!campo) return;
+
+    const nombre = String(clienteTienda?.nombre_cliente || '').trim() || 'Cliente sin identificar';
+    const telefono = String(clienteTienda?.telefono_cliente || '').trim() || 'Sin teléfono';
+
+    const productos = Carrito.items().map((item) => {
+        const variantes = [item.color, item.talla ? `Talla ${item.talla}` : '']
+            .filter(Boolean)
+            .join(', ');
+        const cantidad = Number(item.cantidad) || 1;
+
+        return `${item.nombre || 'Producto'}${variantes ? ` (${variantes})` : ''} x${cantidad}`;
+    }).join('; ');
+
+    campo.value = `Pago Tellez Nic Store | Cliente: ${nombre} | Teléfono: ${telefono} | Productos: ${productos || 'Sin productos'}`;
+}
+
+async function copiarDato(boton) {
+    const valor = boton.dataset.copiarCampo
+        ? document.querySelector(boton.dataset.copiarCampo)?.value || ''
+        : boton.dataset.copiar || '';
+
+    if (!valor) return;
+
+    const copiado = await copiarTexto(valor);
+
+    if (!copiado) {
+        tiendaToast('No se pudo copiar. Selecciona el dato manualmente.', 'aviso');
+        return;
+    }
+
+    const textoOriginal = boton.textContent;
+    boton.textContent = 'Copiado';
+    setTimeout(() => {
+        boton.textContent = textoOriginal;
+    }, 1600);
+
+    tiendaToast('Dato copiado.', 'exito');
+}
+
+function inicializarMetodoPago() {
+    const opciones = [...document.querySelectorAll('input[name="metodo_pago"]')];
+    if (!opciones.length) return;
+
+    let guardado = '';
+
+    try {
+        guardado = localStorage.getItem(CLAVE_METODO_PAGO) || '';
+    } catch {
+        guardado = '';
+    }
+
+    const elegido = opciones.find((opcion) => opcion.value === guardado)?.value || 'efectivo';
+    marcarMetodoPago(elegido);
+
+    opciones.forEach((opcion) => {
+        opcion.addEventListener('change', () => {
+            if (!opcion.checked) return;
+
+            marcarMetodoPago(opcion.value);
+
+            try {
+                localStorage.setItem(CLAVE_METODO_PAGO, opcion.value);
+            } catch {
+                // Sin localStorage: la elección queda solo para esta visita.
+            }
+        });
+    });
+}
+
+function metodoPagoSeleccionado() {
+    return document.querySelector('input[name="metodo_pago"]:checked')?.value || 'efectivo';
 }
 
 function seleccionarDireccion(id) {
@@ -326,16 +488,24 @@ function actualizarResumen(items = Carrito.items()) {
     const resumen = document.getElementById('carritoResumen');
     const vacio = document.getElementById('carritoVacio');
 
+    actualizarMotivoTransferencia();
+
     if (!items.length) {
         if (contenedor) contenedor.innerHTML = '';
         if (vacio) vacio.hidden = false;
         if (resumen) resumen.hidden = true;
         document.getElementById('carritoUnidades').textContent = '';
+
+        const pago = document.getElementById('carritoPago');
+        if (pago) pago.hidden = true;
         return;
     }
 
     if (vacio) vacio.hidden = true;
     if (resumen) resumen.hidden = false;
+
+    const pago = document.getElementById('carritoPago');
+    if (pago) pago.hidden = false;
 
     const unidades = items.reduce((total, item) => total + Number(item.cantidad || 0), 0);
     const subtotal = items.reduce((total, item) => total + Number(item.precio || 0) * Number(item.cantidad || 0), 0);
@@ -373,13 +543,18 @@ function pintarCarrito() {
 
         const entrega = document.getElementById('carritoEntrega');
         const avisoEntrega = document.getElementById('carritoEntregaAviso');
+        const pago = document.getElementById('carritoPago');
         if (entrega) entrega.hidden = true;
         if (avisoEntrega) avisoEntrega.hidden = true;
+        if (pago) pago.hidden = true;
         return;
     }
 
     vacio.hidden = true;
     resumen.hidden = false;
+
+    const pago = document.getElementById('carritoPago');
+    if (pago) pago.hidden = false;
 
     contenedor.innerHTML = items.map(itemHTML).join('');
     actualizarResumen(items);
@@ -467,9 +642,18 @@ document.addEventListener('click', (event) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    configurarEnlaceBilletera();
+    inicializarMetodoPago();
     pintarCarrito();
 
+    document.querySelectorAll('[data-copiar], [data-copiar-campo]').forEach((boton) => {
+        boton.addEventListener('click', () => copiarDato(boton));
+    });
+
     window.sesionTiendaPromise.then(async (sesion) => {
+        clienteTienda = sesion?.cliente || null;
+        actualizarMotivoTransferencia();
+
         const descuento = sesion?.cliente?.descuento || null;
 
         // Solo actualiza totales: repintar la lista completa causaba parpadeo.
@@ -491,7 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tiendaToast('Carrito vaciado.', 'info');
     });
 
-    document.getElementById('btnFinalizar')?.addEventListener('click', () => {
+    document.getElementById('btnFinalizar')?.addEventListener('click', async () => {
         if (!direccionEntrega) {
             tiendaToast('Selecciona una dirección para calcular el envío.', 'aviso');
             return;
@@ -502,6 +686,33 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        tiendaToast('El pago en línea estará disponible pronto.', 'info');
+        const metodo = metodoPagoSeleccionado();
+
+        if (metodo === 'billetera_movil') {
+            const copiado = await copiarTexto(BILLETERA_NUMERO);
+
+            tiendaToast(
+                copiado
+                    ? 'Número de billetera copiado: 8477 4288. El checkout estará disponible pronto.'
+                    : 'No se pudo copiar. Copia manualmente el número 8477 4288.',
+                copiado ? 'exito' : 'aviso'
+            );
+            return;
+        }
+
+        if (metodo === 'lafise') {
+            const copiado = await copiarTexto(CUENTA_LAFISE_CORDOBAS);
+
+            tiendaToast(
+                copiado
+                    ? 'Cuenta Lafise en córdobas copiada: 140074484. El checkout estará disponible pronto.'
+                    : 'No se pudo copiar. Copia manualmente la cuenta 140074484.',
+                copiado ? 'exito' : 'aviso'
+            );
+            return;
+        }
+
+        const etiqueta = METODOS_PAGO[metodo] || 'Efectivo';
+        tiendaToast(`Método elegido: ${etiqueta}. El checkout estará disponible pronto.`, 'info');
     });
 });
