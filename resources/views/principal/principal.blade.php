@@ -91,6 +91,15 @@
                 </a>
             @endif
 
+            @if(in_array('vista_pedidos_web', session('permisos', [])))
+                <a href="{{ route('pedidos-web') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-shopping-bag text-info"></i>
+                    Pedidos web
+                </a>
+            @endif
+
             @if(in_array('vista_clientes', session('permisos', [])))
                 <a href="{{ route('clientes') }}"
                 class="sidebar-link"
@@ -251,6 +260,15 @@
                 data-turbo-frame="contenido-dinamico">
                     <i class="ph ph-package text-primary"></i>
                     Productos
+                </a>
+            @endif
+
+            @if(in_array('vista_promociones', session('permisos', [])))
+                <a href="{{ route('promociones') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-megaphone text-warning"></i>
+                    Promociones
                 </a>
             @endif
 

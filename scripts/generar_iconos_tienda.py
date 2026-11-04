@@ -3,7 +3,7 @@
 - Descarga el CSS y la fuente oficial de Bootstrap Icons.
 - Detecta los iconos `bi-*` usados en HTML y JS de la tienda.
 - Crea `website-supabase/fonts/bootstrap-icons-subset.woff2`.
-- Crea `website-supabase/css/bootstrap-icons-subset.css`.
+- Crea `website-supabase/css/base/bootstrap-icons-subset.css`.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from fontTools import subset
 
 RAIZ = Path(__file__).resolve().parent.parent
 TIENDA = RAIZ / "website-supabase"
-CSS_DESTINO = TIENDA / "css" / "bootstrap-icons-subset.css"
+CSS_DESTINO = TIENDA / "css" / "base" / "bootstrap-icons-subset.css"
 FUENTE_DESTINO = TIENDA / "fonts" / "bootstrap-icons-subset.woff2"
 
 CSS_URL = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
@@ -104,11 +104,13 @@ def main() -> None:
         for icono in disponibles
     )
 
+    CSS_DESTINO.parent.mkdir(parents=True, exist_ok=True)
+
     CSS_DESTINO.write_text(
         "/* Bootstrap Icons v1.11.3 · subconjunto generado solo con los iconos usados.\n"
         "   Copyright 2019-2024 The Bootstrap Authors · Licencia MIT. */\n"
         "@font-face{font-display:block;font-family:bootstrap-icons;"
-        "src:url('../fonts/bootstrap-icons-subset.woff2') format('woff2')}\n"
+        "src:url('../../fonts/bootstrap-icons-subset.woff2') format('woff2')}\n"
         f"{BASE}{reglas}\n",
         encoding="utf-8",
     )

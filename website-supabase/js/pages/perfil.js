@@ -127,6 +127,36 @@ function formatearFecha(fecha) {
     });
 }
 
+function formatearFechaHora(fecha) {
+    if (!fecha) return '—';
+
+    const valor = new Date(String(fecha).replace(' ', 'T'));
+
+    if (Number.isNaN(valor.getTime())) return fecha;
+
+    return valor.toLocaleString('es-NI', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+    });
+}
+
+function formatearHora(hora) {
+    if (!hora) return '';
+
+    const [horas, minutos] = String(hora).split(':').map(Number);
+
+    if (!Number.isFinite(horas) || !Number.isFinite(minutos)) return String(hora);
+
+    const periodo = horas >= 12 ? 'PM' : 'AM';
+    const hora12 = horas % 12 || 12;
+
+    return `${String(hora12).padStart(2, '0')}:${String(minutos).padStart(2, '0')} ${periodo}`;
+}
+
 function urlSegura(valor) {
     const url = String(valor || '').trim();
     return /^https?:\/\//i.test(url) ? url : '';
@@ -180,6 +210,8 @@ function iniciarCuenta() {
     conectarDescuento();
     conectarDirecciones();
     conectarFavoritos();
+    conectarDeseos();
+    conectarPedidos();
     conectarSesion();
     cargarCuenta();
 }
@@ -242,6 +274,8 @@ async function cargarCuenta() {
     await Promise.allSettled([
         cargarDirecciones(),
         cargarFavoritos(),
+        cargarDeseos(),
+        cargarPedidos(),
         cargarHistorial(),
     ]);
 
@@ -256,6 +290,9 @@ function alternarCuenta(autenticado) {
         direccionesInvitado: !autenticado,
         direccionesContenido: autenticado,
         favoritosInvitado: !autenticado,
+        deseosInvitado: !autenticado,
+        deseosContenido: autenticado,
+        pedidosInvitado: !autenticado,
         historialInvitado: !autenticado,
         descuentoInvitado: !autenticado,
         contenidoDescuento: autenticado,
@@ -270,11 +307,19 @@ function alternarCuenta(autenticado) {
 
     const favoritosVacio = porId('favoritosVacio');
     const listaFavoritos = porId('listaFavoritos');
+    const deseosVacio = porId('deseosVacio');
+    const listaDeseos = porId('listaDeseos');
+    const pedidosVacio = porId('pedidosVacio');
+    const listaPedidos = porId('listaPedidos');
     const historialVacio = porId('historialVacio');
     const listaHistorial = porId('listaHistorial');
 
     if (favoritosVacio) favoritosVacio.hidden = true;
     if (listaFavoritos) listaFavoritos.hidden = true;
+    if (deseosVacio) deseosVacio.hidden = true;
+    if (listaDeseos) listaDeseos.hidden = true;
+    if (pedidosVacio) pedidosVacio.hidden = true;
+    if (listaPedidos) listaPedidos.hidden = true;
     if (historialVacio) historialVacio.hidden = true;
     if (listaHistorial) listaHistorial.hidden = true;
 }
@@ -1100,6 +1145,530 @@ function favoritoHTML(favorito) {
         </article>`;
 }
 
+/* ── Pedidos web ─────────────────────────────────────────────── */
+
+const ESTADOS_PEDIDO = {
+    solicitado: { texto: 'Solicitado', clase: 'celeste', icono: 'bi-hourglass-split' },
+    aceptado: { texto: 'Aceptado', clase: 'ok', icono: 'bi-check2-circle' },
+    preparando: { texto: 'Preparando', clase: 'proceso', icono: 'bi-box-seam' },
+    listo_retiro: { texto: 'Listo para retiro', clase: 'proceso', icono: 'bi-shop' },
+    enviado: { texto: 'En camino', clase: 'proceso', icono: 'bi-truck' },
+    entregado: { texto: 'Entregado', clase: 'ok', icono: 'bi-check2-circle' },
+    rechazado: { texto: 'Rechazado', clase: 'peligro', icono: 'bi-x-circle' },
+    cancelado: { texto: 'Cancelado', clase: 'peligro', icono: 'bi-slash-circle' },
+    devuelto: { texto: 'Devuelto', clase: 'peligro', icono: 'bi-arrow-counterclockwise' },
+};
+
+const ESTADOS_PAGO = {
+    pendiente: { texto: 'Pago pendiente', clase: 'aviso' },
+    en_revision: { texto: 'Pago en revisión', clase: 'proceso' },
+    pagado: { texto: 'Pagado', clase: 'ok' },
+    parcial: { texto: 'Pago parcial', clase: 'aviso' },
+    reembolsado: { texto: 'Reembolsado', clase: 'peligro' },
+};
+
+const METODOS_PAGO_WEB = {
+    efectivo: 'Efectivo (contra entrega)',
+    billetera_movil: 'Billetera móvil',
+    lafise: 'Transferencia Lafise',
+};
+
+const WHATSAPP_TIENDA = '50584774288';
+
+const ESTADOS_PEDIDO_CANCELADOS = ['cancelado', 'rechazado', 'devuelto'];
+let pedidosWeb = [];
+let filtroPedidosWeb = 'activos';
+
+async function cargarPedidos() {
+    const lista = porId('listaPedidos');
+    const vacio = porId('pedidosVacio');
+    if (!lista || !vacio) return;
+
+    try {
+        const datos = await window.TiendaAPI.get('/tienda/api/pedidos');
+        pedidosWeb = datos.pedidos || [];
+        renderPedidos();
+    } catch (error) {
+        mostrarError(error);
+    }
+}
+
+function renderPedidos() {
+    const lista = porId('listaPedidos');
+    const vacio = porId('pedidosVacio');
+    if (!lista || !vacio) return;
+
+    const mensajes = {
+        todos: 'Aún no tienes pedidos registrados.',
+        activos: 'No tienes pedidos activos.',
+        cancelados: 'No tienes pedidos cancelados.',
+    };
+
+    const pedidos = pedidosWeb.filter((pedido) => {
+        if (filtroPedidosWeb === 'cancelados') {
+            return ESTADOS_PEDIDO_CANCELADOS.includes(pedido.estado_pedido);
+        }
+
+        if (filtroPedidosWeb === 'activos') {
+            return !ESTADOS_PEDIDO_CANCELADOS.includes(pedido.estado_pedido);
+        }
+
+        return true;
+    });
+
+    const mensaje = vacio.querySelector('p');
+    if (mensaje) mensaje.textContent = mensajes[filtroPedidosWeb] || mensajes.todos;
+
+    if (!pedidos.length) {
+        lista.hidden = true;
+        lista.innerHTML = '';
+        vacio.hidden = false;
+        return;
+    }
+
+    vacio.hidden = true;
+    lista.hidden = false;
+    lista.innerHTML = pedidos.map(pedidoHTML).join('');
+
+    lista.classList.remove('perfil-lista--animar');
+    void lista.offsetWidth;
+    lista.classList.add('perfil-lista--animar');
+}
+
+function estadoPedido(estado) {
+    return ESTADOS_PEDIDO[estado] || { texto: estado || '—', clase: '', icono: 'bi-info-circle' };
+}
+
+function estadoPago(estado) {
+    return ESTADOS_PAGO[estado] || { texto: estado || '—', clase: '' };
+}
+
+function pedidoHTML(pedido) {
+    const estado = estadoPedido(pedido.estado_pedido);
+    const pago = estadoPago(pedido.estado_pago);
+    const numero = pedido.numero_pedido || `VTA-${String(pedido.id_pedido).padStart(5, '0')}`;
+
+    const articulos = (pedido.items || []).map((item) => {
+        const variantes = [item.color, item.talla ? `Talla ${item.talla}` : ''].filter(Boolean).join(' · ');
+
+        return `
+        <li class="perfil-compra__item">
+            <span>${escapar(item.producto)}${variantes ? ` (${escapar(variantes)})` : ''} × ${Number(item.cantidad)}</span>
+            <span>${moneda(item.subtotal)}</span>
+        </li>`;
+    }).join('');
+
+    const entrega = pedido.fecha_entrega_estimada
+        ? `<span>Entrega estimada: <strong>${formatearFechaHora(pedido.fecha_entrega_estimada)}</strong></span>`
+        : '';
+
+    const aceptado = pedido.fecha_aceptado
+        ? `<span>Aceptado: <strong>${formatearFechaHora(pedido.fecha_aceptado)}</strong></span>`
+        : '';
+
+    const horaPreferida = pedido.hora_entrega_preferida
+        ? `<span>Tu hora preferida: <strong>${formatearHora(pedido.hora_entrega_preferida)}</strong></span>`
+        : '';
+
+    const fechas = [aceptado, entrega, horaPreferida].filter(Boolean).join('');
+
+    const estaCancelado = ['cancelado', 'rechazado'].includes(pedido.estado_pedido);
+    const pagoPendienteDigital = pedido.estado_pago === 'pendiente'
+        && ['billetera_movil', 'lafise'].includes(pedido.metodo_pago_web);
+
+    const motivo = (estaCancelado && pedido.nota_negocio)
+        ? `<p class="perfil-pedido__motivo">Motivo de cancelación de pedido: <strong>${escapar(pedido.nota_negocio)}</strong></p>`
+        : '';
+
+    const nota = (!estaCancelado && pedido.nota_negocio)
+        ? `<p class="perfil-pedido__nota">${escapar(pedido.nota_negocio)}</p>`
+        : '';
+
+    const comprobante = (pedido.estado_pago === 'pendiente' && pedido.metodo_pago_web !== 'efectivo')
+        ? `<a class="perfil-pedido__wa" target="_blank" rel="noopener noreferrer"
+              href="https://wa.me/${WHATSAPP_TIENDA}?text=${encodeURIComponent(`Hola, envío el comprobante del pedido ${numero}.`)}">
+              <i class="bi bi-whatsapp"></i> Enviar comprobante
+           </a>`
+        : '';
+
+    const cancelar = pedido.puede_cancelar
+        ? `<button class="perfil-pedido__cancelar" type="button" data-cancelar-pedido="${pedido.id_pedido}">Cancelar pedido</button>`
+        : '';
+
+    return `
+        <article class="perfil-compra perfil-pedido perfil-pedido--${escapar(pedido.estado_pedido)}${pagoPendienteDigital ? ' perfil-pedido--pago-pendiente' : ''}">
+            <header class="perfil-compra__cabecera">
+                <div>
+                    <strong class="perfil-compra__factura">${escapar(numero)}</strong>
+                    <span class="perfil-compra__fecha">${formatearFecha(pedido.fecha_pedido)}</span>
+                </div>
+                <div class="perfil-pedido__estados">
+                    <span class="perfil-badge perfil-badge--${estado.clase}">
+                        <i class="bi ${estado.icono}" aria-hidden="true"></i> ${escapar(estado.texto)}
+                    </span>
+                    <span class="perfil-badge perfil-badge--${pago.clase}">${escapar(pago.texto)}</span>
+                </div>
+            </header>
+
+            <ul class="perfil-compra__items">${articulos}</ul>
+            ${motivo}
+            ${nota}
+            ${fechas ? `<div class="perfil-pedido__fechas">${fechas}</div>` : ''}
+
+            <footer class="perfil-compra__pie">
+                <span>${escapar(METODOS_PAGO_WEB[pedido.metodo_pago_web] || pedido.metodo_pago_web || '—')}</span>
+                <strong>Total: ${moneda(pedido.total_pedido)}</strong>
+            </footer>
+
+            ${(comprobante || cancelar)
+                ? `<div class="perfil-pedido__acciones">${comprobante}${cancelar}</div>`
+                : ''}
+        </article>`;
+}
+
+function conectarPedidos() {
+    const lista = porId('listaPedidos');
+    if (!lista) return;
+
+    document.querySelectorAll('input[name="filtroPedidosWeb"]').forEach((radio) => {
+        radio.addEventListener('change', () => {
+            if (!radio.checked) return;
+
+            filtroPedidosWeb = radio.value;
+            renderPedidos();
+        });
+    });
+
+    lista.addEventListener('click', async (evento) => {
+        const boton = evento.target.closest('[data-cancelar-pedido]');
+        if (!boton) return;
+
+        if (!window.confirm('¿Cancelar este pedido?')) return;
+
+        boton.disabled = true;
+        boton.textContent = 'Cancelando…';
+
+        try {
+            const datos = await window.TiendaAPI.post(`/tienda/api/pedidos/${boton.dataset.cancelarPedido}/cancelar`);
+            tiendaToast(datos?.mensaje || 'Pedido cancelado.', 'exito');
+            await cargarPedidos();
+        } catch (error) {
+            boton.disabled = false;
+            boton.textContent = 'Cancelar pedido';
+            mostrarError(error);
+        }
+    });
+}
+
+/* ── Lista de deseos ─────────────────────────────────────────── */
+
+async function cargarDeseos() {
+    const catalogo = porId('deseoCatalogo');
+    const lista = porId('listaDeseos');
+    const vacio = porId('deseosVacio');
+    if (!catalogo || !lista || !vacio) return;
+
+    try {
+        const [opciones, deseos] = await Promise.all([
+            window.TiendaAPI.get('/tienda/api/deseos/opciones'),
+            window.TiendaAPI.get('/tienda/api/deseos'),
+            cargarEquivalenciasCmDeseo(),
+        ]);
+
+        const solicitados = new Set(
+            (deseos.deseos || [])
+                .filter((deseo) => deseo.estado === 'pendiente')
+                .map((deseo) => `${Number(deseo.id_variacion)}-${String(deseo.talla).trim()}`)
+        );
+
+        pintarOpcionesDeseos(opciones.opciones || [], solicitados);
+        pintarDeseos(deseos.deseos || []);
+    } catch (error) {
+        mostrarError(error);
+    }
+}
+
+const TALLAS_DESEO = Array.from({ length: 9 }, (_, indice) => String(36 + indice));
+let deseoSeleccionado = null;
+let equivalenciasCmDeseo = null;
+
+async function cargarEquivalenciasCmDeseo() {
+    if (equivalenciasCmDeseo) return equivalenciasCmDeseo;
+
+    try {
+        const respuesta = await fetch('/tienda/recursos/data/tallas.json', {
+            headers: { Accept: 'application/json' },
+        });
+        const datos = await respuesta.json();
+
+        equivalenciasCmDeseo = new Map(
+            (datos.tallas || []).map((talla) => [String(talla.eu), talla.cm])
+        );
+    } catch (error) {
+        equivalenciasCmDeseo = new Map();
+    }
+
+    return equivalenciasCmDeseo;
+}
+
+function cmDeTallaDeseo(talla) {
+    const cm = equivalenciasCmDeseo?.get(String(talla));
+
+    return cm ? `${cm} cm` : '';
+}
+
+let deseosVariantes = [];
+let deseosSolicitados = new Set();
+let filtroColorDeseo = '';
+let filtroDeseosListo = false;
+
+function inicializarFiltroDeseos() {
+    const select = porId('filtroColoresDeseos');
+    if (!select || filtroDeseosListo) return;
+
+    const colores = [...new Set(
+        deseosVariantes
+            .map((variante) => String(variante.color || 'Único').trim())
+            .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, 'es'));
+
+    select.innerHTML = `<option value="">Todos los colores</option>${
+        colores.map((color) => `<option value="${escapar(color)}">${escapar(color)}</option>`).join('')
+    }`;
+
+    const alCambiar = () => {
+        filtroColorDeseo = select.value || '';
+        renderDeseosCatalogo();
+    };
+
+    if (window.jQuery && window.jQuery.fn.select2) {
+        window.jQuery(select).select2({
+            placeholder: 'Todos los colores',
+            width: '100%',
+            allowClear: true,
+            closeOnSelect: true,
+        });
+
+        window.jQuery(select).on('change', alCambiar);
+    } else {
+        select.addEventListener('change', alCambiar);
+    }
+
+    filtroDeseosListo = true;
+}
+
+function pintarOpcionesDeseos(variantes, solicitados = new Set()) {
+    deseosVariantes = variantes || [];
+    deseosSolicitados = solicitados;
+
+    inicializarFiltroDeseos();
+    renderDeseosCatalogo();
+}
+
+function renderDeseosCatalogo() {
+    const catalogo = porId('deseoCatalogo');
+    if (!catalogo) return;
+
+    deseoSeleccionado = null;
+
+    const seleccion = porId('deseoSeleccion');
+    const solicitar = porId('btnSolicitarDeseo');
+    if (seleccion) seleccion.hidden = true;
+    if (solicitar) solicitar.disabled = true;
+
+    const imagen = porId('deseoSeleccionImagen');
+    if (imagen) imagen.src = '';
+    if (porId('deseoSeleccionProducto')) porId('deseoSeleccionProducto').textContent = '—';
+    if (porId('deseoSeleccionTalla')) porId('deseoSeleccionTalla').textContent = '—';
+    if (porId('deseoSeleccionColor')) porId('deseoSeleccionColor').textContent = '—';
+
+    const variantes = filtroColorDeseo
+        ? deseosVariantes.filter((variante) => String(variante.color || 'Único').trim() === filtroColorDeseo)
+        : deseosVariantes;
+
+    if (!variantes.length) {
+        catalogo.innerHTML = '<p class="tallas__vacio">No hay zapatos de ese color.</p>';
+        return;
+    }
+
+    catalogo.innerHTML = variantes.map((variante) => {
+        const porNumero = new Map(
+            (variante.tallas || []).map((talla) => [String(talla.talla).trim(), talla])
+        );
+
+        const botones = TALLAS_DESEO.map((numero) => {
+            const talla = porNumero.get(numero);
+            const clave = `${Number(variante.id_variacion)}-${numero}`;
+
+            if (talla && Number(talla.stock) > 0) {
+                return `<span class="deseo-talla is-disponible" title="Disponible">${numero}</span>`;
+            }
+
+            if (deseosSolicitados.has(clave)) {
+                return `<span class="deseo-talla is-solicitada" title="Ya solicitado">${numero}</span>`;
+            }
+
+            const clase = talla ? 'is-agotada' : 'is-sin-registro';
+            const idTalla = talla ? `data-deseo-talla="${Number(talla.id_variacion_talla)}"` : '';
+
+            return `<button type="button" class="deseo-talla ${clase}"
+                        ${idTalla}
+                        data-producto-id="${Number(variante.id_producto)}"
+                        data-variacion="${Number(variante.id_variacion)}"
+                        data-producto="${escapar(variante.nombre)}"
+                        data-color="${escapar(variante.color || '')}"
+                        data-imagen="${escapar(variante.imagen || '')}"
+                        data-talla="${escapar(numero)}"
+                        title="Solicitar talla ${escapar(numero)}">${numero}</button>`;
+        }).join('');
+
+        return `
+            <article class="perfil-deseo-card">
+                <img class="perfil-deseo-card__media" src="${escapar(variante.imagen || IMAGEN_FALLBACK)}"
+                    alt="${escapar(variante.nombre)}" loading="lazy"
+                    onerror="this.src='${IMAGEN_FALLBACK}'">
+                <div class="perfil-deseo-card__info">
+                    <strong class="perfil-deseo-card__nombre">${escapar(variante.nombre)}</strong>
+                    <span class="perfil-deseo-card__color">${escapar(variante.color || 'Único')}</span>
+                </div>
+                <div class="perfil-deseo-tallas">${botones}</div>
+            </article>`;
+    }).join('');
+}
+
+function pintarDeseos(deseos) {
+    const lista = porId('listaDeseos');
+    const vacio = porId('deseosVacio');
+    if (!lista || !vacio) return;
+
+    if (!deseos.length) {
+        lista.hidden = true;
+        lista.innerHTML = '';
+        vacio.hidden = false;
+        return;
+    }
+
+    vacio.hidden = true;
+    lista.hidden = false;
+    lista.innerHTML = deseos.map((deseo) => `
+        <article class="perfil-deseo-item">
+            <img class="perfil-deseo-item__img" src="${escapar(deseo.imagen || IMAGEN_FALLBACK)}"
+                alt="${escapar(deseo.producto)}" loading="lazy"
+                onerror="this.src='${IMAGEN_FALLBACK}'">
+
+            <div class="perfil-deseo-item__info">
+                <strong class="perfil-deseo-item__nombre">${escapar(deseo.producto)}</strong>
+                <span class="perfil-deseo-item__meta">
+                    Talla ${escapar(deseo.talla)}${cmDeTallaDeseo(deseo.talla) ? ` · ${escapar(cmDeTallaDeseo(deseo.talla))}` : ''} · ${escapar(deseo.color || 'Único')}
+                </span>
+                ${deseo.nota ? `<span class="perfil-deseo-item__nota">${escapar(deseo.nota)}</span>` : ''}
+            </div>
+
+            <div class="perfil-deseo-item__lado">
+                <span class="perfil-badge perfil-badge--${deseo.estado === 'atendido' ? 'ok' : 'celeste'}">
+                    ${deseo.estado === 'atendido' ? 'Disponible' : 'Solicitado'}
+                </span>
+                <span class="perfil-deseo-item__fecha">${formatearFecha(deseo.fecha_solicitud)}</span>
+                <button type="button" class="perfil-btn-icono perfil-btn-icono--peligro perfil-deseo-item__eliminar"
+                    data-eliminar-deseo="${Number(deseo.id_deseo)}" title="Quitar de la lista">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </article>`).join('');
+}
+
+async function solicitarDeseo() {
+    const nota = porId('deseoNota');
+    const boton = porId('btnSolicitarDeseo');
+
+    if (!deseoSeleccionado) {
+        tiendaToast('Selecciona una talla agotada.', 'aviso');
+        return;
+    }
+
+    const texto = boton.innerHTML;
+    boton.disabled = true;
+    boton.textContent = 'Enviando…';
+
+    try {
+        const datos = await window.TiendaAPI.post('/tienda/api/deseos', {
+            id_producto: deseoSeleccionado.id_producto,
+            id_variacion: deseoSeleccionado.id_variacion,
+            id_variacion_talla: deseoSeleccionado.id_variacion_talla,
+            talla: deseoSeleccionado.talla,
+            nota: nota?.value.trim() || '',
+        });
+
+        tiendaToast(datos.mensaje || 'Solicitud enviada.', 'exito');
+        if (nota) nota.value = '';
+        await cargarDeseos();
+    } catch (error) {
+        mostrarError(error);
+    } finally {
+        boton.disabled = false;
+        boton.innerHTML = texto;
+    }
+}
+
+function conectarDeseos() {
+    porId('btnSolicitarDeseo')?.addEventListener('click', solicitarDeseo);
+
+    porId('deseoCatalogo')?.addEventListener('click', (evento) => {
+        const boton = evento.target.closest('.deseo-talla.is-agotada, .deseo-talla.is-sin-registro');
+        if (!boton) return;
+
+        document.querySelectorAll('.deseo-talla.is-activa').forEach((elemento) => {
+            elemento.classList.remove('is-activa');
+        });
+
+        boton.classList.add('is-activa');
+
+        deseoSeleccionado = {
+            id_producto: Number(boton.dataset.productoId),
+            id_variacion: Number(boton.dataset.variacion),
+            id_variacion_talla: boton.dataset.deseoTalla ? Number(boton.dataset.deseoTalla) : null,
+            producto: boton.dataset.producto,
+            color: boton.dataset.color,
+            imagen: boton.dataset.imagen,
+            talla: boton.dataset.talla,
+        };
+
+        const seleccion = porId('deseoSeleccion');
+        const solicitar = porId('btnSolicitarDeseo');
+        const imagen = porId('deseoSeleccionImagen');
+
+        if (seleccion) seleccion.hidden = false;
+        if (imagen) {
+            imagen.src = deseoSeleccionado.imagen || IMAGEN_FALLBACK;
+            imagen.alt = deseoSeleccionado.producto;
+            imagen.onerror = () => { imagen.src = IMAGEN_FALLBACK; };
+        }
+        if (porId('deseoSeleccionProducto')) porId('deseoSeleccionProducto').textContent = deseoSeleccionado.producto;
+        if (porId('deseoSeleccionTalla')) {
+            const cm = cmDeTallaDeseo(deseoSeleccionado.talla);
+            porId('deseoSeleccionTalla').textContent = `${deseoSeleccionado.talla}${cm ? ` · ${cm}` : ''}`;
+        }
+        if (porId('deseoSeleccionColor')) porId('deseoSeleccionColor').textContent = deseoSeleccionado.color || 'Único';
+        if (solicitar) solicitar.disabled = false;
+    });
+
+    porId('listaDeseos')?.addEventListener('click', async (evento) => {
+        const boton = evento.target.closest('[data-eliminar-deseo]');
+        if (!boton) return;
+
+        boton.disabled = true;
+
+        try {
+            await window.TiendaAPI.delete(`/tienda/api/deseos/${boton.dataset.eliminarDeseo}`);
+            tiendaToast('Solicitud eliminada.', 'exito');
+            await cargarDeseos();
+        } catch (error) {
+            boton.disabled = false;
+            mostrarError(error);
+        }
+    });
+}
+
 /* ── Historial de compras ────────────────────────────────────── */
 
 async function cargarHistorial() {
@@ -1214,12 +1783,28 @@ function mostrarDescuento(cliente) {
             <div class="perfil-descuento">
                 <i class="bi bi-ticket-perforated"></i>
                 <div>
+                    <span class="perfil-descuento__titulo">${escapar(descuento.titulo || 'Descuento')}</span>
                     <span class="perfil-descuento__valor">${escapar(descuento.etiqueta)}</span>
                     <p class="perfil-descuento__texto">
-                        ${descuento.primera_compra
-                            ? 'Descuento de primera compra activo: se aplica a cualquier producto.'
-                            : 'Se aplica al subtotal de tu carrito.'}
+                        ${escapar(descuento.motivo || (descuento.primera_compra
+                            ? 'Descuento de bienvenida activo: se aplica a cualquier producto.'
+                            : 'Se aplica al subtotal de tu carrito.'))}
                     </p>
+                </div>
+            </div>`;
+        return;
+    }
+
+    if (cliente?.descuento_primera_compra_usado) {
+        contenedor.classList.remove('perfil-vacio');
+        contenedor.innerHTML = `
+            <div class="perfil-descuento perfil-descuento--pendiente">
+                <div class="perfil-descuento__cabecera">
+                    <span class="perfil-descuento__sello">10%</span>
+                    <div>
+                        <p class="perfil-descuento__titulo">Descuento de bienvenida</p>
+                        <p class="perfil-descuento__texto">Ya usaste tu descuento de bienvenida en una compra.</p>
+                    </div>
                 </div>
             </div>`;
         return;
@@ -1234,8 +1819,8 @@ function mostrarDescuento(cliente) {
             <div class="perfil-descuento__cabecera">
                 <span class="perfil-descuento__sello">10%</span>
                 <div>
-                    <p class="perfil-descuento__titulo">Aplicar descuento de primera compra</p>
-                    <p class="perfil-descuento__texto">Completa estos datos para aplicarlo a cualquier producto.</p>
+                    <p class="perfil-descuento__titulo">Descuento de bienvenida</p>
+                    <p class="perfil-descuento__texto">10% en tu primera compra. Completa estos datos para aplicarlo a cualquier producto.</p>
                 </div>
             </div>
 

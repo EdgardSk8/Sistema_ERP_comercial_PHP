@@ -6,7 +6,9 @@
 /tienda/               /             301
 /tienda/login          /login        301
 /tienda/carrito        /carrito      301
-/tienda/perfil         /perfil       301/tienda/ayuda          /ayuda        301/tienda/producto       /             301
+/tienda/perfil         /perfil       301
+/tienda/ayuda          /ayuda        301
+/tienda/producto       /             301
 /tienda/producto/*     /producto?p=:splat  301
 /tienda/recursos/*     /:splat       200
 
@@ -16,3 +18,4 @@
 /NOTAS-PENDIENTES.md   /             301
 /TEMA-NAVIDAD.md       /             301
 /vercel.json           /             301
+/_backup/*             /             301

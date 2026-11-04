@@ -769,6 +769,31 @@ html.tema-navidad .perfil-badge {
     color: #6b4e00;
 }
 
+html.tema-navidad .perfil-badge--celeste {
+    background: rgba(13, 202, 240, .18);
+    color: #0a7f99;
+}
+
+html.tema-navidad .perfil-badge--ok {
+    background: rgba(25, 135, 84, .16);
+    color: #157347;
+}
+
+html.tema-navidad .perfil-badge--aviso {
+    background: rgba(212, 175, 55, .32);
+    color: #6b4e00;
+}
+
+html.tema-navidad .perfil-badge--peligro {
+    background: rgba(193, 18, 31, .14);
+    color: #c1121f;
+}
+
+html.tema-navidad .perfil-badge--proceso {
+    background: rgba(13, 110, 253, .14);
+    color: #0a58ca;
+}
+
 html.tema-navidad .pie {
     border-top: 3px solid var(--nav-dorado);
 }

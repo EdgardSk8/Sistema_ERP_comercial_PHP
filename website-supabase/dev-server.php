@@ -47,6 +47,7 @@ $rutas = [
     '/tienda/login' => 'login.html',
     '/tienda/carrito' => 'carrito.html',
     '/tienda/perfil' => 'perfil.html',
+    '/tienda/ayuda' => 'ayuda.html',
 ];
 
 if (isset($rutas[$uri])) {

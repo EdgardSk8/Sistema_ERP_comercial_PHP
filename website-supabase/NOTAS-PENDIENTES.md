@@ -1,7 +1,7 @@
 # Notas · Tienda web (decisiones y pendientes)
 
 > Documento de trabajo. `[x]` = ya tocado/decidido en conversación · `[ ]` = pendiente de decidir o implementar.
-> Última actualización: 2026-10-30
+> Última actualización: 2026-11-03
 
 ---
 
@@ -57,14 +57,36 @@
 - [ ] Mostrar el costo estimado en el carrito antes del checkout.
 
 ### 3.2 Estados del pedido
-- [ ] Lista definitiva de estados y transiciones permitidas.
-  - Propuesta: `solicitado` → `aceptado` / `rechazado` → `preparando` → `enviado` / `listo_retiro` → `entregado`; más `cancelado` y `devuelto`.
-- [ ] Estado de **pago** separado del estado de **pedido** (pendiente, en revisión, pagado, parcial, reembolsado).
-- [ ] Quién cambia cada estado y con qué permiso.
-- [ ] Qué estado descuenta stock y en qué momento (al aceptar, al pagar o al enviar).
-- [ ] Qué pasa si el pedido se rechaza o se cancela (liberar stock, avisar al cliente).
-- [ ] Numeración legible del pedido (ej. `WEB-000123`).
-- [ ] Tiempo de expiración de una solicitud sin aceptar.
+- [x] **Estados y transiciones**
+  - `solicitado` → `aceptado` / `rechazado` / `cancelado`
+  - `aceptado` → `enviado` / `listo_retiro` / `cancelado`
+  - `enviado` / `listo_retiro` → `entregado`
+  - `entregado` → `devuelto`
+  - `preparando` queda solo para pedidos antiguos (no se ofrece en el selector).
+- [x] **Estado de pago separado**: `pendiente` → `en_revision` → `pagado`; también `parcial` y `reembolsado`.
+  - El cliente paga por billetera/transferencia y envía el comprobante por WhatsApp.
+  - El negocio solo pasa el pedido a `aceptado` cuando el pago está `pagado` (regla del negocio).
+- [x] **Quién cambia cada estado**
+  - Cliente: crea el pedido (`solicitado` + pago `pendiente`) y solo puede cancelar mientras siga `solicitado` y sin pago confirmado.
+  - ERP: acepta/rechaza, prepara, envía, entrega y devuelve. Se hará desde la interfaz de facturación automática del inventario (pendiente de UI/lógica).
+  - Cada cambio queda en `pedido_web_estados` con origen (`web` / `erp` / `sistema`).
+- [x] **Stock**: se descuenta al **aceptar** (cuando se factura), no al solicitar. Si se rechaza o cancela antes de aceptar, no hay stock que liberar.
+- [x] **Rechazo/cancelación**: el pedido queda cerrado, se avisa al cliente y no se prepara. Si ya había pago, el negocio gestiona el reembolso (`estado_pago = reembolsado`).
+- [x] **Numeración legible**: `VTA-20261103-00001` (secuencia `pedidos_web_numero_seq`, trigger `web_numero_pedido`).
+- [x] **Expiración**: una solicitud sin pago se rechaza a las **48 horas** (revisión manual por ahora).
+- [x] **Horas**: el cliente elige una hora preferida al finalizar la compra; al aceptar, el ERP guarda la hora de aceptación y la entrega estimada. El cliente ve las tres horas en «Mis pedidos».
+- [x] **Pago contra entrega**: en pedidos con método `efectivo` no se pide confirmar el pago al aceptar; se marca `pagado` automáticamente al pasar a `entregado`.
+- [x] **Implementado**
+  - Migración: `database/migrations/2026_11_03_000001_create_pedidos_web_tables.php` (`pedidos_web`, `detalle_pedidos_web`, `pedido_web_estados`).
+  - Supabase: `supabase/pedidos-web.sql` (triggers, RLS y RPC `web_crear_pedido`, `web_pedidos`, `web_pedido`, `web_cancelar_pedido`).
+  - Tienda: el botón «Finalizar compra» crea el pedido real; «Mi cuenta → Mis pedidos» muestra estado del pedido, estado del pago, total y opción de cancelar mientras esté `solicitado`.
+  - ERP: vista **Pedidos web** (`/pedidos-web`) con filtros por estado y pago, detalle, aceptar/rechazar, confirmar pago, preparar, enviar, listo para retiro, entregado y devuelto.
+  - Mientras no exista la interfaz del ERP, el estado se puede cambiar desde SQL:
+    ```sql
+    update pedidos_web
+       set estado_pago = 'pagado', estado_pedido = 'aceptado'
+     where numero_pedido = 'VTA-20261103-00001';
+    ```
 
 ### 3.3 Comprar y pagar en línea vs. solicitar
 - [ ] ¿"Solicitar en línea" es sin pago (solo intención) y "comprar" es con pago?
@@ -110,8 +132,8 @@
 - [ ] Envío gratis por umbral (se cruza con 3.1).
 
 ### 3.9 Administración
-- [ ] Bandeja de pedidos con filtros por estado, pago y zona.
-- [ ] Aceptar/rechazar pedido desde el ERP.
+- [x] Bandeja de pedidos con filtros por estado y pago (la zona queda pendiente).
+- [x] Aceptar/rechazar pedido desde el ERP.
 - [ ] Moderación de reseñas (`estado_resenia` ya existe, sin interfaz).
 - [ ] Gestión de tarifas de envío y cupones sin tocar SQL.
 - [ ] Reportes: conversión, ticket promedio, top productos, costo de envío.
@@ -130,6 +152,7 @@
 - `cliente_direcciones`: `nombre_direccion`, `ubicacion_maps`, `referencia_direccion`, `direccion_manual`, `predeterminada_direccion`, + coordenadas (`2026_10_29_000002`).
 - Catálogo: RPC `web_productos()` / `web_producto(id)`; hoy devuelve productos con `estado_producto = true` sin importar el stock y ordena por nombre.
 - Historial: RPC `web_historial()` lee `ventas` + `detalle_ventas` (solo lectura, últimos 50).
+- Pedidos: `pedidos_web` + `detalle_pedidos_web` + `pedido_web_estados`; RPC `web_pedidos()` y `web_pedido(id)`; el pago se maneja aparte del estado del pedido.
 - Reseñas: RPC `web_resenias(id)`, `estado_resenia` para moderación.
 - Cuotas/deudas: tablas de planes de pago del ERP (`2026_10_10_000002_create_payment_plans_tables`).
 - Anti-patrones detectados: `stock || 999` en el carrito, email autoconfirmado por trigger, envío "Gratis" fijo.

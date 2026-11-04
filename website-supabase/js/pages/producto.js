@@ -289,7 +289,7 @@ async function cargarTallasReferencia() {
 
 function pintarTallas() {
     const contenedor = $('productoTallas');
-    const tallas = variacionActual?.tallas || [];
+    const tallas = (variacionActual?.tallas || []).filter(talla => Number(talla.stock) > 0);
 
     if (!tallas.length) {
         contenedor.innerHTML = '<span class="tallas__vacio">Sin tallas disponibles para este color.</span>';
@@ -297,13 +297,12 @@ function pintarTallas() {
     }
 
     contenedor.innerHTML = tallas.map(talla => {
-        const agotada = Number(talla.stock) <= 0;
         const activa = tallaActual && talla.id === tallaActual.id;
         const equiv = equivalenciaCorta(talla.nombre);
 
         return `
-            <div class="talla-opcion${activa ? ' talla-opcion--activo' : ''}${agotada ? ' talla-opcion--agotada' : ''}"
-                 data-talla="${talla.id}" title="${agotada ? 'Agotada' : `Stock: ${talla.stock}`}">
+            <div class="talla-opcion${activa ? ' talla-opcion--activo' : ''}"
+                 data-talla="${talla.id}" title="Stock: ${talla.stock}">
                 <span class="talla-opcion__base">${escapar(talla.nombre)}</span>
                 <span class="talla-opcion__equiv">${equiv || '&nbsp;'}</span>
             </div>
@@ -344,7 +343,7 @@ function pintarPrecio() {
         nodo.innerHTML = `
             <span class="producto__precio--antes">${moneda(precioBase)}</span>
             <span class="producto__precio--dto">${moneda(precioFinal)}</span>
-            <span class="producto__descuento">${descuento.etiqueta} dto.</span>
+            <span class="producto__descuento">${descuento.etiqueta} DESCUENTO</span>
         `;
     } else {
         nodo.textContent = moneda(precioBase);

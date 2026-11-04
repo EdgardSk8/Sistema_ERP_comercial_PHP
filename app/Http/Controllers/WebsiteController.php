@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Cliente;
 use App\Models\Producto;
 use App\Models\ReseniaProducto;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class WebsiteController extends Controller
@@ -16,7 +14,7 @@ class WebsiteController extends Controller
 
     public function inicio(): BinaryFileResponse
     {
-        return response()->file(base_path('website/index.html'), [
+        return response()->file(base_path('website-supabase/index.html'), [
             'Content-Type' => 'text/html; charset=UTF-8',
             'Cache-Control' => 'no-cache',
         ]);
@@ -24,7 +22,7 @@ class WebsiteController extends Controller
 
     public function productoVista(): BinaryFileResponse
     {
-        return response()->file(base_path('website/producto.html'), [
+        return response()->file(base_path('website-supabase/producto.html'), [
             'Content-Type' => 'text/html; charset=UTF-8',
             'Cache-Control' => 'no-cache',
         ]);
@@ -32,59 +30,40 @@ class WebsiteController extends Controller
 
     public function carritoVista(): BinaryFileResponse
     {
-        return response()->file(base_path('website/carrito.html'), [
+        return response()->file(base_path('website-supabase/carrito.html'), [
             'Content-Type' => 'text/html; charset=UTF-8',
             'Cache-Control' => 'no-cache',
         ]);
     }
 
-    public function perfilVista(): BinaryFileResponse|RedirectResponse
+    public function perfilVista(): BinaryFileResponse
     {
-        if (! $this->clienteWebAutenticado()) {
-            return redirect()->route('tienda.login');
-        }
-
-        return response()->file(base_path('website/perfil.html'), [
+        return response()->file(base_path('website-supabase/perfil.html'), [
             'Content-Type' => 'text/html; charset=UTF-8',
             'Cache-Control' => 'no-cache',
         ]);
     }
 
-    public function loginVista(): BinaryFileResponse|RedirectResponse
+    public function loginVista(): BinaryFileResponse
     {
-        if ($this->clienteWebAutenticado()) {
-            return redirect()->route('tienda.perfil');
-        }
-
-        return response()->file(base_path('website/login.html'), [
+        return response()->file(base_path('website-supabase/login.html'), [
             'Content-Type' => 'text/html; charset=UTF-8',
             'Cache-Control' => 'no-cache',
         ]);
     }
 
-    private function clienteWebAutenticado(): bool
+    public function ayudaVista(): BinaryFileResponse
     {
-        $idCliente = session('cliente_web.id_cliente');
-
-        if (! $idCliente) {
-            return false;
-        }
-
-        $activo = Cliente::where('id_cliente', $idCliente)
-            ->where('estado_cliente', 1)
-            ->exists();
-
-        if (! $activo) {
-            session()->forget('cliente_web');
-        }
-
-        return $activo;
+        return response()->file(base_path('website-supabase/ayuda.html'), [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'no-cache',
+        ]);
     }
 
-    /** Sirve css, js e imágenes de la carpeta website/. */
+    /** Sirve css, js e imágenes de la carpeta website-supabase/. */
     public function archivo(string $archivo): BinaryFileResponse
     {
-        $base = realpath(base_path('website'));
+        $base = realpath(base_path('website-supabase'));
         $ruta = realpath($base.DIRECTORY_SEPARATOR.$archivo);
 
         abort_if(! $ruta || ! str_starts_with($ruta, $base) || ! is_file($ruta), 404);
@@ -182,6 +161,7 @@ class WebsiteController extends Controller
                     ?: $this->urlImagenProducto($producto),
                 'stock' => (int) $variacion->tallas->sum('stock'),
                 'tallas' => $variacion->tallas
+                    ->filter(fn ($variacionTalla) => (int) $variacionTalla->stock > 0)
                     ->map(fn ($variacionTalla) => $variacionTalla->talla->talla ?? 'Única')
                     ->unique()
                     ->values(),

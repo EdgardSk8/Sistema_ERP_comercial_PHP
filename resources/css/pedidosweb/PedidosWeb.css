@@ -1,0 +1,98 @@
+.pedidos-page{display:flex;flex-direction:column;gap:14px;min-height:calc(100vh - 120px);color:var(--text)}
+.pedidos-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;padding:12px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface);box-shadow:var(--shadow)}
+.pedidos-toolbar-info{display:flex;flex-direction:column;min-width:0}
+.pedidos-toolbar-titulo{margin:0;font-size:15px;font-weight:700;color:var(--text)}
+.pedidos-toolbar-sub{font-size:12px;color:var(--text-soft)}
+.pedidos-toolbar-resumen{display:flex;flex-wrap:wrap;gap:6px;flex:0 1 auto}
+.pedidos-chip{display:flex;flex-direction:column;align-items:center;gap:0;min-width:72px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface-muted);text-align:center;font-family:inherit;line-height:1.2;cursor:pointer;transition:background .15s ease,border-color .15s ease,box-shadow .15s ease}
+.pedidos-chip:hover{background:var(--surface-hover);border-color:color-mix(in srgb, var(--verde) 35%, var(--border))}
+.pedidos-chip.is-activo{border-color:var(--verde);background:var(--verde-soft);box-shadow:inset 0 0 0 1px var(--verde)}
+.pedidos-chip>span{font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--text-soft)}
+.pedidos-chip>strong{font-size:13px;color:var(--text)}
+.pedidos-chip-total>strong{color:var(--text)}
+.pedidos-chip-solicitado>strong{color:#0a95b0}
+.pedidos-chip-aceptado>strong{color:var(--azul)}
+.pedidos-chip-cancelado>strong{color:var(--danger-text)}
+.pedidos-toolbar-filtros{display:flex;flex-wrap:wrap;align-items:start;justify-content:flex-start;gap:6px;flex:1 1 100%;margin-left:0}
+.pedidos-toolbar-filtros .form-select{width:auto;min-width:170px}
+.pedidos-toolbar-filtros .form-control{width:auto;min-width:220px}
+.pedidos-toolbar-filtros .dropdown-toggle{min-width:130px;height:31px;margin-bottom:0;padding:0 10px;justify-content:center;gap:6px;font-size:12px}
+.pedidos-toolbar-filtros .dropdown-columns{min-width:190px}
+.pedidos-toolbar-busqueda{display:flex;align-items:center;gap:6px;margin-left:auto}
+
+.pedidos-tabla-wrap{border:1px solid var(--border);border-radius:6px;background:var(--surface)}
+.pedidos-page .table{color:var(--text);--bs-table-bg:transparent;--bs-table-color:var(--text);--bs-table-hover-color:var(--text);--bs-table-hover-bg:var(--surface-hover)}
+.pedidos-page thead th{background:var(--surface-muted);border-bottom-color:var(--border);white-space:nowrap;font-size:12px}
+.pedidos-page td{border-color:var(--border);font-size:12px;vertical-align:middle}
+.pedidos-page .table th,.pedidos-page .table td{word-break:normal!important;overflow-wrap:normal!important;padding-left:4px!important;padding-right:4px!important}
+.pedidos-page .pedidos-numero{font-weight:600;white-space:nowrap}
+.pedidos-page .pedidos-fecha{white-space:normal!important;line-height:1.2}
+.pedidos-page .pedidos-cliente{min-width:110px}
+.pedidos-page .pedidos-items{max-width:220px;overflow:hidden;color:var(--text-soft)}
+.pedidos-page .pedidos-items-texto{display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;line-height:1.25;min-width:105px}
+.pedidos-page .pedidos-acciones{white-space:nowrap;text-align:right}
+.pedidos-page thead th:last-child,.pedidos-page tbody td:last-child{position:sticky;right:0;background:var(--surface);box-shadow:-8px 0 8px -8px rgba(0,0,0,.18)}
+.pedidos-page thead th:last-child{background:var(--surface-muted)}
+.pedidos-btn-enviar{display:inline-flex;align-items:center;gap:var(--e-1, 4px);height:30px;padding:0 10px;border:1px solid var(--azul);border-radius:6px;background:var(--azul-soft);color:var(--azul);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .18s ease,color .18s ease}
+.pedidos-btn-enviar:hover{background:var(--azul);color:#fff}
+.pedidos-btn-enviar:disabled{opacity:.6;cursor:progress}
+
+.pedidos-estado,.pedidos-pago{display:inline-block;padding:2px 7px;border:1px solid currentColor;border-radius:4px;font-size:11px;font-weight:600;line-height:1.35;white-space:nowrap}
+.pedidos-estado.is-solicitado{color:#0a95b0;background:rgba(13,202,240,.14)}
+.pedidos-estado.is-aceptado{color:var(--azul);background:var(--azul-soft)}
+.pedidos-estado.is-preparando{color:var(--warning-strong);background:var(--warning-soft, rgba(255,193,7,.12))}
+.pedidos-estado.is-enviado,.pedidos-estado.is-listo_retiro{color:var(--azul);background:var(--azul-soft)}
+.pedidos-estado.is-entregado{color:var(--success-text);background:var(--verde-soft)}
+.pedidos-estado.is-rechazado,.pedidos-estado.is-cancelado{color:var(--danger-text);background:var(--danger-soft, rgba(220,53,69,.1))}
+.pedidos-estado.is-devuelto{color:var(--text-soft);background:var(--surface-muted)}
+.pedidos-pago.is-pendiente{color:var(--warning-strong);background:var(--warning-soft, rgba(255,193,7,.12))}
+.pedidos-pago.is-en_revision{color:var(--azul);background:var(--azul-soft)}
+.pedidos-pago.is-pagado{color:var(--success-text);background:var(--verde-soft)}
+.pedidos-pago.is-parcial{color:var(--warning-strong);background:var(--warning-soft, rgba(255,193,7,.12))}
+.pedidos-pago.is-reembolsado{color:var(--text-soft);background:var(--surface-muted)}
+
+
+
+#modalDetallePedidoWeb .modal-dialog{max-width:min(800px, calc(100vw - 1rem))}
+#modalDetallePedidoWeb .modal-body{font-size:13px}
+#modalDetallePedidoWeb .table th,#modalDetallePedidoWeb .table td{font-size:12.5px}
+.pedidos-subtitulo{margin:10px 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-soft)}
+.pedidos-historial-tabla th,.pedidos-historial-tabla td{white-space:normal!important;word-break:normal!important;overflow-wrap:anywhere!important;padding:5px 6px!important;font-size:12.5px}
+.pedidos-historial-tabla td small{font-size:11.5px;line-height:1.3}
+.pedidos-form-estado .btn-group>.btn{font-size:12px;padding:.28rem .6rem}
+.pedidos-producto-variante{display:block;font-size:11px;color:var(--text-soft)}
+
+.pedidos-form-estado .form-label{margin-bottom:2px;font-size:12px}
+.pedidos-form-estado .form-control-sm,.pedidos-form-estado .form-select-sm{min-height:31px;font-size:12.5px;padding-top:3px;padding-bottom:3px}
+.pedidos-form-estado .text-secondary{font-size:11.5px}
+.pedidos-acciones-estado{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:9px;border-top:1px solid var(--border)}
+.pedidos-btn-aceptar,.pedidos-btn-rechazar,.pedidos-btn-guardar,.pedidos-btn-imprimir{font-size:12px;padding:.28rem .6rem;border-radius:4px;line-height:1.35}
+.pedidos-btn-imprimir{border:1px solid var(--azul);background:var(--azul-soft);color:var(--azul)}
+.pedidos-btn-imprimir:hover{background:var(--azul);border-color:var(--azul);color:#fff}
+.pedidos-btn-aceptar{border:1px solid var(--verde);background:var(--verde);color:#fff}
+.pedidos-btn-aceptar:hover{background:var(--verde-hover);border-color:var(--verde-hover);color:#fff}
+.pedidos-btn-aceptar:disabled{background:var(--surface-muted);border-color:var(--border);color:var(--text-soft);opacity:1;cursor:not-allowed}
+.pedidos-btn-rechazar{border:1px solid var(--danger-text);background:transparent;color:var(--danger-text)}
+.pedidos-btn-rechazar:hover{background:var(--danger-soft, rgba(220,53,69,.1))}
+.pedidos-btn-rechazar:disabled{background:transparent;border-color:var(--border);color:var(--text-soft);opacity:1;cursor:not-allowed}
+.pedidos-btn-guardar{margin-left:auto;border:1px solid var(--verde);background:var(--verde);color:var(--text-on-accent)}
+.pedidos-btn-guardar:hover{background:var(--verde-hover);border-color:var(--verde-hover);color:var(--text-on-accent)}
+
+@media(max-width:1100px){
+  .pedidos-toolbar-busqueda{flex:1 1 100%;margin-left:0}
+  .pedidos-toolbar-busqueda .form-control{flex:1 1 auto;min-width:0}
+}
+
+@media(max-width:900px){
+  .pedidos-toolbar-filtros{width:100%;margin-left:0}
+  .pedidos-toolbar-filtros .form-control,.pedidos-toolbar-filtros .form-select{flex:1 1 160px;min-width:0;width:auto}
+}
+
+@media(max-width:700px){
+  .pedidos-page{padding:10px}
+  .pedidos-toolbar{padding:10px}
+  .pedidos-toolbar-resumen{flex:1 1 100%}
+  .pedidos-chip{flex:1 1 44%}
+  .pedidos-page .table{font-size:12px}
+  .pedidos-btn-guardar{margin-left:0}
+}

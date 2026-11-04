@@ -26,11 +26,12 @@
   <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="/tienda/recursos/css/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
+  <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-  <link rel="stylesheet" href="/tienda/recursos/css/estilos.css?v=20261102x">
-  <link rel="stylesheet" href="/tienda/recursos/css/perfil.css?v=20261102a">
-  <link rel="stylesheet" href="/tienda/recursos/css/navidad.css?v=20261102d">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261103e">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261103m">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261103e">
 </head>
 <body>
 
@@ -90,6 +91,8 @@
               <li><a class="perfil__item" href="/tienda/perfil#perfil"><i class="bi bi-person"></i> Perfil</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#direcciones"><i class="bi bi-geo-alt"></i> Direcciones</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#favoritos"><i class="bi bi-heart"></i> Favoritos</a></li>
+              <li><a class="perfil__item" href="/tienda/perfil#deseos"><i class="bi bi-star"></i> Lista de Deseos</a></li>
+              <li><a class="perfil__item" href="/tienda/perfil#pedidos"><i class="bi bi-bag"></i> Mis pedidos</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#historial"><i class="bi bi-receipt"></i> Historial de compras</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#descuentos"><i class="bi bi-ticket-perforated"></i> Descuento</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#configuracion"><i class="bi bi-gear"></i> Configuración</a></li>
@@ -119,6 +122,12 @@
         </a>
         <a class="perfil-nav__item" href="#favoritos" data-seccion="favoritos">
           <i class="bi bi-heart"></i> Favoritos
+        </a>
+        <a class="perfil-nav__item" href="#deseos" data-seccion="deseos">
+          <i class="bi bi-star"></i> Lista de Deseos
+        </a>
+        <a class="perfil-nav__item" href="#pedidos" data-seccion="pedidos">
+          <i class="bi bi-bag"></i> Mis pedidos
         </a>
         <a class="perfil-nav__item" href="#historial" data-seccion="historial">
           <i class="bi bi-receipt"></i> Historial de compras
@@ -376,6 +385,95 @@
         </div>
       </section>
 
+      <!-- Sección: Lista de Deseos -->
+      <section class="perfil-seccion" id="deseos">
+        <header class="perfil-seccion__cabecera">
+          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
+          <h2 class="perfil-seccion__titulo">Lista de Deseos</h2>
+          <p class="perfil-seccion__texto">Pares de Zapatos que aún no tenemos disponibles. Dinos cuál quieres y te avisaremos cuando llegue.</p>
+        </header>
+
+        <div class="perfil-seccion__cuerpo">
+          <div id="deseosInvitado" class="perfil-vacio">
+            <i class="bi bi-star"></i>
+            <p>Inicia sesión para ver tu lista de deseos.</p>
+          </div>
+
+          <div id="deseosContenido" hidden>
+            <div class="perfil-card perfil-deseo-catalogo-card">
+              <div class="perfil-deseo-filtro">
+                <label for="filtroColoresDeseos" class="visually-hidden">Filtrar por color</label>
+                <select id="filtroColoresDeseos" class="form-select form-select-sm"></select>
+              </div>
+
+              <div id="deseoCatalogo" class="perfil-deseo-catalogo"></div>
+            </div>
+
+            <div id="deseoSeleccion" class="perfil-card perfil-deseo-seleccion" hidden>
+              <div class="perfil-deseo-seleccion__par">
+                <img id="deseoSeleccionImagen" class="perfil-deseo-seleccion__img" src="" alt="">
+                <div class="perfil-deseo-seleccion__datos">
+                  <strong class="perfil-deseo-seleccion__producto" id="deseoSeleccionProducto">—</strong>
+                  <span class="perfil-deseo-seleccion__dato">Talla: <strong id="deseoSeleccionTalla">—</strong></span>
+                  <span class="perfil-deseo-seleccion__dato">Color: <strong id="deseoSeleccionColor">—</strong></span>
+                </div>
+              </div>
+
+              <label class="form-label mt-2" for="deseoNota">Nota (opcional)</label>
+              <input type="text" id="deseoNota" class="form-control form-control-sm" maxlength="300"
+                placeholder="Ej.: color negro, talla 37">
+
+              <button type="button" class="btn-primario w-100 mt-3" id="btnSolicitarDeseo">
+                <i class="bi bi-bag-plus"></i> Solicitar par
+              </button>
+            </div>
+
+            <h3 class="perfil-deseo-lista__titulo">Pares solicitados</h3>
+
+            <div id="deseosVacio" class="perfil-vacio" hidden>
+              <i class="bi bi-star"></i>
+              <p>Aún no has solicitado ningún par.</p>
+            </div>
+
+            <div id="listaDeseos" class="perfil-deseo-lista" hidden></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sección: Pedidos web -->
+      <section class="perfil-seccion" id="pedidos">
+        <header class="perfil-seccion__cabecera">
+          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
+          <h2 class="perfil-seccion__titulo">Mis pedidos</h2>
+          <p class="perfil-seccion__texto">Sigue el estado de tus solicitudes: si fueron aceptadas o canceladas.</p>
+        </header>
+
+        <div class="perfil-seccion__cuerpo">
+          <div class="perfil-pedidos-filtro" role="radiogroup" aria-label="Clasificar pedidos">
+            <input type="radio" name="filtroPedidosWeb" id="pedidosTodos" value="todos">
+            <label for="pedidosTodos">Todos</label>
+
+            <input type="radio" name="filtroPedidosWeb" id="pedidosActivos" value="activos" checked>
+            <label for="pedidosActivos">Activos</label>
+
+            <input type="radio" name="filtroPedidosWeb" id="pedidosCancelados" value="cancelados">
+            <label for="pedidosCancelados">Cancelados</label>
+          </div>
+
+          <div id="pedidosInvitado" class="perfil-vacio">
+            <i class="bi bi-bag"></i>
+            <p>Inicia sesión para ver tus pedidos.</p>
+          </div>
+
+          <div id="pedidosVacio" class="perfil-vacio" hidden>
+            <i class="bi bi-bag"></i>
+            <p>Aún no tienes pedidos registrados.</p>
+          </div>
+
+          <div id="listaPedidos" class="perfil-lista" hidden></div>
+        </div>
+      </section>
+
       <!-- Sección: Historial de compras -->
       <section class="perfil-seccion" id="historial">
         <header class="perfil-seccion__cabecera">
@@ -471,13 +569,15 @@
     </div>
   </main>
 
-  <script src="/tienda/recursos/js/carrito-store.js?v=20261102h" defer></script>
+  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261102h" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="/tienda/recursos/js/supabase-config.js?v=20261102b" defer></script>
-  <script src="/tienda/recursos/js/supabase-api.js?v=20261102g" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-config.js?v=20261103c" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261103f" defer></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js" defer></script>
-  <script src="/tienda/recursos/js/cedula-nicaragua.js" defer></script>
-  <script src="/tienda/recursos/js/perfil.js?v=20261102l" defer></script>
+  <script src="/tienda/recursos/js/core/cedula-nicaragua.js" defer></script>
+  <script src="/tienda/recursos/js/pages/perfil.js?v=20261103t" defer></script>
 </body>
 </html>

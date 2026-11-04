@@ -128,6 +128,10 @@ class permisosSeeder extends Seeder
             ['nombre_permiso'=>'vista_cuentas_por_cobrar','descripcion_permiso'=>'Ver cuentas por cobrar','modulo_permiso'=>'ventas'],
             ['nombre_permiso'=>'mostrar_cuentas_por_cobrar','descripcion_permiso'=>'Listar cuentas por cobrar','modulo_permiso'=>'ventas'],
             ['nombre_permiso'=>'registrar_pagos_venta','descripcion_permiso'=>'Registrar abonos de ventas a crédito','modulo_permiso'=>'ventas'],
+            ['nombre_permiso'=>'vista_pedidos_web','descripcion_permiso'=>'Ver vista de pedidos web','modulo_permiso'=>'pedidos_web'],
+            ['nombre_permiso'=>'mostrar_pedidos_web','descripcion_permiso'=>'Listar pedidos web','modulo_permiso'=>'pedidos_web'],
+            ['nombre_permiso'=>'actualizar_pedidos_web','descripcion_permiso'=>'Cambiar estado de pedidos web','modulo_permiso'=>'pedidos_web'],
+            ['nombre_permiso'=>'actualizar_pagos_pedidos_web','descripcion_permiso'=>'Confirmar pagos de pedidos web','modulo_permiso'=>'pedidos_web'],
 
             /* ═════════════ COMPRAS ═════════════ */
             ['nombre_permiso'=>'vista_compras','descripcion_permiso'=>'Ver vista compras','modulo_permiso'=>'compras'],

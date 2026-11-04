@@ -216,7 +216,7 @@ function iniciarCatalogo(productos, tallasReferencia) {
             window.jQuery(selectTallas).select2({
                 placeholder: 'Todas las tallas',
                 width: '100%',
-                closeOnSelect: false,
+                closeOnSelect: true,
                 allowClear: true,
             });
         }
@@ -290,6 +290,33 @@ function iniciarCatalogo(productos, tallasReferencia) {
     // Círculos de categoría (con "Todos" para quitar el filtro y "Favoritos"
     // cuando el cliente tiene productos guardados).
     const CATEGORIA_FAVORITOS = '__favoritos__';
+    const CATEGORIA_DESEOS = '__deseos__';
+    let deseosCatalogo = new Set();
+    let deseosCatalogoCargados = false;
+    let deseosAutenticado = false;
+
+    async function cargarDeseosCatalogo() {
+        if (deseosCatalogoCargados) return;
+
+        try {
+            const sesion = await window.sesionTiendaPromise;
+            deseosAutenticado = Boolean(sesion?.autenticado);
+
+            if (!deseosAutenticado) {
+                deseosCatalogo = new Set();
+                return;
+            }
+
+            const datos = await window.TiendaAPI.get('/tienda/api/deseos');
+            deseosCatalogo = new Set(
+                (datos?.deseos || []).map((deseo) => String(deseo.id_producto))
+            );
+        } catch (error) {
+            deseosCatalogo = new Set();
+        } finally {
+            deseosCatalogoCargados = true;
+        }
+    }
 
     const pintarCategorias = () => {
         if (!catGrid) return;
@@ -297,6 +324,7 @@ function iniciarCatalogo(productos, tallasReferencia) {
         const opciones = [
             { nombre: 'Todos', valor: '', icono: 'bi bi-grid' },
             { nombre: 'Favoritos', valor: CATEGORIA_FAVORITOS, icono: 'bi bi-heart-fill' },
+            { nombre: 'Lista de Deseos', valor: CATEGORIA_DESEOS, icono: 'bi bi-star' },
         ].concat(categorias.map(categoria => ({
             nombre: categoria,
             valor: categoria,
@@ -320,7 +348,9 @@ function iniciarCatalogo(productos, tallasReferencia) {
             const coincideCategoria = !categoriaActual
                 || (categoriaActual === CATEGORIA_FAVORITOS
                     ? Boolean(window.favoritosTienda?.has(String(variante.id)))
-                    : variante.categoria === categoriaActual);
+                    : categoriaActual === CATEGORIA_DESEOS
+                        ? deseosCatalogo.has(String(variante.id))
+                        : variante.categoria === categoriaActual);
             const coincideTexto = !termino || normalizar(variante.nombre).includes(termino);
             const precio = Number(variante.precio) || 0;
             const coincidePrecio = (precioMin === null || precio >= precioMin)
@@ -335,12 +365,17 @@ function iniciarCatalogo(productos, tallasReferencia) {
             || tallasSeleccionadas.length > 0;
 
         const sinFavoritos = categoriaActual === CATEGORIA_FAVORITOS && !window.favoritosTienda?.size;
+        const sinDeseos = categoriaActual === CATEGORIA_DESEOS && !deseosCatalogo.size;
 
         const mensajeVacio = sinFavoritos
             ? 'No tienes productos favoritos agregados.'
-            : hayFiltro
-                ? 'No hay productos que coincidan con la búsqueda o el filtro.'
-                : 'No hay productos en esta categoría.';
+            : sinDeseos
+                ? (deseosAutenticado
+                    ? 'No tienes productos en tu lista de deseos.'
+                    : 'Inicia sesión para ver tu lista de deseos.')
+                : hayFiltro
+                    ? 'No hay productos que coincidan con la búsqueda o el filtro.'
+                    : 'No hay productos en esta categoría.';
 
         grid.classList.remove('catalogo-animando');
 
@@ -432,11 +467,16 @@ function iniciarCatalogo(productos, tallasReferencia) {
         });
     };
 
-    catGrid?.addEventListener('click', (event) => {
+    catGrid?.addEventListener('click', async (event) => {
         const boton = event.target.closest('[data-categoria]');
         if (!boton) return;
 
         categoriaActual = boton.dataset.categoria || '';
+
+        if (categoriaActual === CATEGORIA_DESEOS) {
+            await cargarDeseosCatalogo();
+        }
+
         marcarActivo(categoriaActual);
         pintar(true);
 

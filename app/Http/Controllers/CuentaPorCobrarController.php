@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Credenciales;
 use App\Models\PlanPago;
 use App\Services\RegistrarPagoVenta;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class CuentaPorCobrarController extends Controller
 
         $consulta = PlanPago::with([
             'venta.cliente:id_cliente,nombre_cliente',
+            'venta.detalles.producto:id_producto,nombre_producto',
             'venta.pagos.metodoPago:id_metodo_pago,nombre_metodo_pago',
             'venta.pagos.cuenta:id_cuenta,nombre_cuenta',
             'cuotas.aplicaciones'
@@ -76,6 +78,16 @@ class CuentaPorCobrarController extends Controller
                 'total' => (float) $plan->venta->total_venta,
                 'saldo' => $saldo,
                 'estado' => $estado,
+                'productos' => $plan->venta->detalles->map(fn ($detalle) => [
+                    'nombre' => $detalle->producto?->nombre_producto
+                        ?? $detalle->descripcion_variacion
+                        ?? 'Producto',
+                    'descripcion' => $detalle->descripcion_variacion,
+                    'sku' => $detalle->sku_variacion,
+                    'cantidad' => (float) $detalle->cantidad_venta,
+                    'precio_unitario' => (float) $detalle->precio_unitario_venta,
+                    'subtotal' => (float) $detalle->subtotal_detalle_venta
+                ]),
                 'cuotas' => $cuotas,
                 'pagos' => $plan->venta->pagos->map(fn ($pago) => [
                     'id_pago' => $pago->id_pago_venta,
@@ -92,7 +104,11 @@ class CuentaPorCobrarController extends Controller
             $planes = $planes->where('estado', $request->estado)->values();
         }
 
-        return response()->json(['success' => true, 'planes' => $planes]);
+        return response()->json([
+            'success' => true,
+            'planes' => $planes,
+            'tipo_cambio' => (float) (Credenciales::query()->value('tipo_cambio') ?? 0)
+        ]);
     }
 
     /**

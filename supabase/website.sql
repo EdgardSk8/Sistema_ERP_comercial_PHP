@@ -263,6 +263,7 @@ colores as (
                    from public.variacion_tallas vt
                    join public.tallas t on t.id_talla = vt.id_talla
                    where vt.id_variacion = v.id_variacion
+                     and vt.stock > 0
                ), '[]'::jsonb)
            ) as color_json,
            v.id_variacion,

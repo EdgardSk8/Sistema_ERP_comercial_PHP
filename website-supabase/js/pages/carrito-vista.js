@@ -20,20 +20,11 @@ const CLAVE_DIRECCION_ENTREGA = 'tienda_delivery_direccion';
 const CLAVE_UBICACION_ENTREGA = 'tienda_delivery_ubicacion';
 const CLAVE_METODO_PAGO = 'tienda_metodo_pago';
 
-const METODOS_PAGO = {
-    efectivo: 'Efectivo',
-    billetera_movil: 'Billetera móvil',
-    lafise: 'Cuenta Lafise (transferencia)',
-};
-
 const BILLETERA_APP = {
     android: 'https://play.google.com/store/apps/details?id=ni.com.banprogrupopromerica.billeteramovil',
     ios: 'https://apps.apple.com/app/id1614485126',
     web: 'https://www.banprogrupopromerica.com.ni/canales-de-atencion/billetera-movil/',
 };
-
-const BILLETERA_NUMERO = '84774288';
-const CUENTA_LAFISE_CORDOBAS = '140074484';
 
 let direccionesEntrega = [];
 let direccionEntrega = null;
@@ -239,6 +230,7 @@ function actualizarMotivoTransferencia() {
 
     const nombre = String(clienteTienda?.nombre_cliente || '').trim() || 'Cliente sin identificar';
     const telefono = String(clienteTienda?.telefono_cliente || '').trim() || 'Sin teléfono';
+    const horaEntrega = String(document.getElementById('carritoHoraEntrega')?.value || '').trim();
 
     const productos = Carrito.items().map((item) => {
         const variantes = [item.color, item.talla ? `Talla ${item.talla}` : '']
@@ -249,7 +241,7 @@ function actualizarMotivoTransferencia() {
         return `${item.nombre || 'Producto'}${variantes ? ` (${variantes})` : ''} x${cantidad}`;
     }).join('; ');
 
-    campo.value = `Pago Tellez Nic Store | Cliente: ${nombre} | Teléfono: ${telefono} | Productos: ${productos || 'Sin productos'}`;
+    campo.value = `Pago Tellez Nic Store | Cliente: ${nombre} | Teléfono: ${telefono} | Productos: ${productos || 'Sin productos'}${horaEntrega ? ` | Entrega: ${horaEntrega}` : ''}`;
 }
 
 async function copiarDato(boton) {
@@ -669,6 +661,10 @@ document.addEventListener('DOMContentLoaded', () => {
         seleccionarDireccion(evento.target.value);
     });
 
+    document.getElementById('carritoHoraEntrega')?.addEventListener('change', () => {
+        actualizarMotivoTransferencia();
+    });
+
     document.getElementById('btnVaciar')?.addEventListener('click', () => {
         Carrito.vaciar();
         pintarCarrito();
@@ -676,6 +672,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('btnFinalizar')?.addEventListener('click', async () => {
+        const boton = document.getElementById('btnFinalizar');
+        const items = Carrito.items();
+
+        if (!items.length) {
+            tiendaToast('Tu carrito está vacío.', 'aviso');
+            return;
+        }
+
+        if (!clienteTienda) {
+            try {
+                sessionStorage.setItem('tienda_redirect', urlTienda('carrito'));
+            } catch {
+                /* sin almacenamiento: el login vuelve al inicio */
+            }
+
+            tiendaToast('Inicia sesión para enviar tu pedido.', 'aviso');
+            window.location.href = urlTienda('login');
+            return;
+        }
+
         if (!direccionEntrega) {
             tiendaToast('Selecciona una dirección para calcular el envío.', 'aviso');
             return;
@@ -686,33 +702,55 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const metodo = metodoPagoSeleccionado();
-
-        if (metodo === 'billetera_movil') {
-            const copiado = await copiarTexto(BILLETERA_NUMERO);
-
-            tiendaToast(
-                copiado
-                    ? 'Número de billetera copiado: 8477 4288. El checkout estará disponible pronto.'
-                    : 'No se pudo copiar. Copia manualmente el número 8477 4288.',
-                copiado ? 'exito' : 'aviso'
-            );
-            return;
+        if (boton) {
+            boton.disabled = true;
+            boton.textContent = 'Enviando pedido…';
         }
 
-        if (metodo === 'lafise') {
-            const copiado = await copiarTexto(CUENTA_LAFISE_CORDOBAS);
+        try {
+            const datos = await window.TiendaAPI.post('/tienda/api/pedidos', {
+                metodo_pago: metodoPagoSeleccionado(),
+                hora_entrega_preferida: document.getElementById('carritoHoraEntrega')?.value || null,
+                direccion: {
+                    nombre: clienteTienda.nombre_cliente,
+                    telefono: clienteTienda.telefono_cliente,
+                    direccion: direccionEntrega.direccion_manual || direccionEntrega.nombre_direccion,
+                    referencia: direccionEntrega.referencia_direccion,
+                    lat: direccionEntrega.latitud_direccion,
+                    lng: direccionEntrega.longitud_direccion,
+                },
+                items: items.map((item) => ({
+                    id_variacion_talla: Number(item.tallaId),
+                    cantidad: Number(item.cantidad),
+                })),
+            });
+
+            const numero = datos?.pedido?.numero_pedido || 'tu pedido';
+
+            Carrito.vaciar();
+            pintarCarrito();
+
+            const campoHora = document.getElementById('carritoHoraEntrega');
+            if (campoHora) campoHora.value = '';
+
+            tiendaToast(`Pedido ${numero} recibido. Te confirmaremos cuando llegue el pago.`, 'exito');
+
+            setTimeout(() => {
+                window.location.href = `${urlTienda('perfil')}#pedidos`;
+            }, 1200);
+        } catch (error) {
+            const errores = error?.data?.errors;
+            const mensaje = errores ? Object.values(errores)[0] : error?.message;
 
             tiendaToast(
-                copiado
-                    ? 'Cuenta Lafise en córdobas copiada: 140074484. El checkout estará disponible pronto.'
-                    : 'No se pudo copiar. Copia manualmente la cuenta 140074484.',
-                copiado ? 'exito' : 'aviso'
+                Array.isArray(mensaje) ? mensaje[0] : (mensaje || 'No se pudo enviar el pedido.'),
+                'aviso'
             );
-            return;
-        }
 
-        const etiqueta = METODOS_PAGO[metodo] || 'Efectivo';
-        tiendaToast(`Método elegido: ${etiqueta}. El checkout estará disponible pronto.`, 'info');
+            if (boton) {
+                boton.disabled = false;
+                boton.textContent = 'Finalizar compra';
+            }
+        }
     });
 });

@@ -54,7 +54,7 @@ Referencia: `muestra.png` (Sale / Product details / My cart).
 }
 ```
 
-Los tokens viven en `website/css/estilos.css`. No introducir valores sueltos: usar estos nombres.
+Los tokens viven en `website-supabase/css/base/estilos.css`. No introducir valores sueltos: usar estos nombres.
 
 ## 3. Tipografía
 

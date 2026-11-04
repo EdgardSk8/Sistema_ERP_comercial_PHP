@@ -1,0 +1,6 @@
+Copia archivada de la tienda Laravel anterior.
+
+Sitio activo: website-supabase/
+Fecha de archivo: 2026-11-03
+
+No editar esta carpeta. Se conserva solo como referencia histórica.

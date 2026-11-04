@@ -121,6 +121,8 @@
             etiqueta: tipo === 'porcentaje'
                 ? `${String(valor).replace(/\.00$/, '')}%`
                 : `C$ ${valor.toFixed(2)}`,
+            titulo: 'Descuento especial',
+            motivo: 'Se aplica al subtotal de tu carrito.',
         };
     }
 
@@ -136,6 +138,8 @@
             tipo: 'porcentaje',
             valor: 10,
             etiqueta: '10%',
+            titulo: 'Descuento de bienvenida',
+            motivo: '10% de descuento por tu primera compra.',
             primera_compra: true,
         };
     }
@@ -188,6 +192,10 @@
             fecha_nacimiento_cliente: fila.fecha_nacimiento_cliente,
             cedula_cliente: fila.cedula_cliente,
             descuento: descuentoCliente(fila),
+            descuento_primera_compra_usado: Boolean(
+                usuarioActual?.user_metadata?.descuento_primera_compra_usado === true
+                || texto(usuarioActual?.user_metadata?.descuento_primera_compra_usado) === 'true'
+            ),
             ...datosAvatar(),
         };
     }
@@ -863,17 +871,17 @@
             throw errorApi(`Completa: ${faltantes.join(', ')}.`, 422);
         }
 
-        const { data, error: errorUpdate } = await supabase.auth.updateUser({
-            data: { descuento_primera_compra: true },
-        });
+        const { data: aplicado, error: errorUpdate } = await supabase
+            .rpc('web_aplicar_descuento_primera_compra');
 
-        if (errorUpdate) throw errorDeSupabase(errorUpdate, 'No se pudo aplicar el descuento.');
+        if (errorUpdate) throw errorApi(mensajeRpc(errorUpdate, 'No se pudo aplicar el descuento.'), 400);
 
-        usuarioActual = data.user;
+        const { data: authData } = await supabase.auth.getUser();
+        usuarioActual = authData?.user || usuarioActual;
 
         return {
             success: true,
-            mensaje: 'Descuento de primera compra aplicado: 10% en cualquier producto.',
+            mensaje: aplicado?.mensaje || 'Descuento de bienvenida aplicado: 10% en cualquier producto.',
             cliente: datosCliente(clienteActual),
         };
     }
@@ -1230,6 +1238,106 @@
         return { success: true, compras: data || [] };
     }
 
+    /* ── Pedidos web ─────────────────────────────────────────── */
+
+    function mensajeRpc(error, porDefecto) {
+        return String(error?.message || porDefecto || 'No se pudo completar la solicitud.');
+    }
+
+    async function pedidosApi() {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_pedidos');
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudieron cargar tus pedidos.'), 400);
+
+        return { success: true, pedidos: data || [] };
+    }
+
+    async function crearPedidoApi(cuerpo) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_crear_pedido', { p_datos: cuerpo || {} });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo enviar el pedido.'), 422);
+
+        return data || { success: true };
+    }
+
+    async function cancelarPedidoApi(id) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_cancelar_pedido', { p_id: Number(id) });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo cancelar el pedido.'), 400);
+
+        return data || { success: true };
+    }
+
+    async function promocionesApi() {
+        const { data, error } = await supabase.rpc('web_promociones');
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudieron cargar las promociones.'), 400);
+
+        return { success: true, promociones: data || [] };
+    }
+
+    /* ── Lista de deseos ─────────────────────────────────────── */
+
+    async function deseosOpcionesApi() {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_deseos_opciones');
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudieron cargar los pares disponibles.'), 400);
+
+        return { success: true, opciones: data || [] };
+    }
+
+    async function deseosListaApi() {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_lista_deseos');
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo cargar tu lista de deseos.'), 400);
+
+        return { success: true, deseos: data || [] };
+    }
+
+    async function crearDeseoApi(cuerpo) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const idProducto = Number(cuerpo?.id_producto || 0);
+        const idVariacion = Number(cuerpo?.id_variacion || 0);
+        const talla = String(cuerpo?.talla || '').trim();
+
+        if (!idProducto || !idVariacion || !talla) {
+            throw errorApi('Selecciona un par y una talla.', 422);
+        }
+
+        const { data, error } = await supabase.rpc('web_crear_deseo', {
+            p_id_producto: idProducto,
+            p_id_variacion: idVariacion,
+            p_talla: talla,
+            p_nota: cuerpo?.nota || null,
+            p_id_variacion_talla: cuerpo?.id_variacion_talla ? Number(cuerpo.id_variacion_talla) : null,
+        });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo enviar la solicitud.'), 400);
+
+        return data || { success: true };
+    }
+
+    async function eliminarDeseoApi(id) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_eliminar_deseo', { p_id: Number(id) });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo eliminar la solicitud.'), 400);
+
+        return data || { success: true };
+    }
+
     /* ── Reseñas ────────────────────────────────────────────── */
 
     function fechaResenia(valor) {
@@ -1401,6 +1509,18 @@
 
             'GET /tienda/api/historial': () => historialApi(),
 
+            'GET /tienda/api/promociones': () => promocionesApi(),
+
+            'GET /tienda/api/pedidos': () => pedidosApi(),
+
+            'POST /tienda/api/pedidos': () => crearPedidoApi(cuerpo),
+
+            'GET /tienda/api/deseos': () => deseosListaApi(),
+
+            'GET /tienda/api/deseos/opciones': () => deseosOpcionesApi(),
+
+            'POST /tienda/api/deseos': () => crearDeseoApi(cuerpo),
+
             'POST /tienda/api/resenias': () => guardarReseniaApi(cuerpo),
         };
 
@@ -1440,6 +1560,18 @@
 
         if (favoritoEliminar && metodo === 'DELETE') {
             return eliminarFavoritoApi(Number(favoritoEliminar[1]));
+        }
+
+        const pedidoCancelar = url.match(/^\/tienda\/api\/pedidos\/(\d+)\/cancelar$/);
+
+        if (pedidoCancelar && metodo === 'POST') {
+            return cancelarPedidoApi(Number(pedidoCancelar[1]));
+        }
+
+        const deseoEliminar = url.match(/^\/tienda\/api\/deseos\/(\d+)$/);
+
+        if (deseoEliminar && metodo === 'DELETE') {
+            return eliminarDeseoApi(Number(deseoEliminar[1]));
         }
 
         const reseniasListar = url.match(/^\/tienda\/api\/productos\/(\d+)\/resenias(?:\?.*)?$/);

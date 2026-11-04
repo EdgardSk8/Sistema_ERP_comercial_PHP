@@ -16,6 +16,8 @@ export default defineConfig({
                 'resources/css/cajas/Cajas.css',
                 'resources/css/compras/Compras.css',
                 'resources/css/cuentasporcobrar/CuentasPorCobrar.css',
+                'resources/css/pedidosweb/PedidosWeb.css',
+                'resources/css/promociones/Promociones.css',
                 'resources/css/dashboard/Dashboard.css',
                 'resources/css/facturacion/Facturacion.css',
                 'resources/css/permisos/Permisos.css',

@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "imagen": "/tienda/recursos/imagenes/promociones/nike-dunk-descuento.png",
+    "titulo": "Nike SB Dunk Low Panda",
+    "enlace": "/tienda/producto?p=3"
+  },
+  {
+    "imagen": "/tienda/recursos/imagenes/promociones/samba-descuento.png",
+    "titulo": "Adidas Sambas",
+    "enlace": "/tienda/producto?p=5"
+  }
+]

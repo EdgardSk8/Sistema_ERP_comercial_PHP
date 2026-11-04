@@ -1,6 +1,6 @@
 /* Bootstrap Icons v1.11.3 · subconjunto generado solo con los iconos usados.
    Copyright 2019-2024 The Bootstrap Authors · Licencia MIT. */
-@font-face{font-display:block;font-family:bootstrap-icons;src:url('../fonts/bootstrap-icons-subset.woff2') format('woff2')}
+@font-face{font-display:block;font-family:bootstrap-icons;src:url('../../fonts/bootstrap-icons-subset.woff2') format('woff2')}
 [class^="bi-"]::before,
 [class*=" bi-"]::before {
   display: inline-block;

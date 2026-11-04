@@ -39,8 +39,9 @@
 .cartera-estado.pendiente{color:var(--azul);background:var(--azul-soft)}
 .cartera-estado.parcial{color:var(--warning-strong)}
 .cartera-estado.pagada{color:var(--success-text)}
-.cartera-resumen-detalle{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px;padding:14px;border:1px solid var(--border);border-radius:6px;background:var(--surface-muted)}
+.cartera-resumen-detalle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 5px; padding:2px;border:1px solid var(--border);border-radius:6px;background:var(--surface-muted)}
 .cartera-resumen-detalle>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cartera-resumen-detalle>div:nth-child(4){grid-column:1/-1}
 .cartera-resumen-detalle span{font-size:12px;color:var(--text-soft)}
 .cartera-resumen-detalle strong{overflow-wrap:anywhere;color:var(--text)}
 .cartera-resumen-abono{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:11px;border:1px solid var(--border);border-radius:6px;background:var(--surface-muted)}
@@ -49,11 +50,22 @@
 .cartera-resumen-abono-intro p{color:var(--text-soft)}
 .cartera-resumen-abono span,.cartera-proximo-vencimiento{font-size:12px;color:var(--text-soft)}
 .cartera-resumen-abono strong{overflow-wrap:anywhere;color:var(--text);font-size:15px}
-.cartera-resumen-abono .cartera-proximo-vencimiento{grid-column:1/-1;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.cartera-resumen-abono .cartera-proximo-vencimiento{grid-column:auto}
 .cartera-resumen-abono .cartera-proximo-vencimiento strong{font-size:12px}
+
+#modalDetalleCartera .modal-header{align-items:center;gap:10px}
+.cartera-detalle-acciones{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
+.cartera-btn-imprimir{white-space:nowrap}
+.cartera-btn-cerrar{margin-left:2px}
 #modalAbonoCartera .modal-header,#modalAbonoCartera .modal-footer{padding-top:.6rem;padding-bottom:.6rem}
 #modalAbonoCartera .modal-body{padding:.85rem}
+#modalAbonoCartera .form-label{margin-bottom:2px;font-size:11px}
+#modalAbonoCartera .form-control-sm,#modalAbonoCartera .form-select-sm{min-height:29px;padding:.2rem .45rem;font-size:12px}
+#modalAbonoCartera .input-group-sm>.input-group-text{padding:.2rem .45rem;font-size:11px}
+#modalAbonoCartera .input-group-sm>.form-control{font-size:12px}
 #montoAbonoCartera{-moz-appearance:textfield;appearance:textfield}
 #montoAbonoCartera::-webkit-inner-spin-button,#montoAbonoCartera::-webkit-outer-spin-button{margin:0;-webkit-appearance:none}
+.cartera-productos td{padding-top:.35rem;padding-bottom:.35rem}
+.cartera-productos .small{font-size:11px}
 .cartera-acciones{white-space:nowrap}
-@media(max-width:700px){.cartera-page{padding:10px}.cartera-toolbar{padding:10px}.cartera-toolbar-resumen{flex:1 1 100%}.cartera-chip{flex:1 1 44%}.cartera-toolbar-filtros{width:100%;margin-left:0}.cartera-toolbar-filtros .select2-container{flex:1 1 auto;min-width:0}.cartera-page .table{font-size:12px}.cartera-resumen-detalle{gap:10px;padding:12px}.cartera-resumen-abono{gap:8px;padding:10px}}
+@media(max-width:700px){.cartera-page{padding:10px}.cartera-toolbar{padding:10px}.cartera-toolbar-resumen{flex:1 1 100%}.cartera-chip{flex:1 1 44%}.cartera-toolbar-filtros{width:100%;margin-left:0}.cartera-toolbar-filtros .select2-container{flex:1 1 auto;min-width:0}.cartera-page .table{font-size:12px}.cartera-resumen-detalle{gap:3px 5px;padding:3px}.cartera-resumen-abono{gap:8px;padding:10px}}

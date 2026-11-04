@@ -63,8 +63,9 @@ export function imprimirFacturaTermica(data, empresa) {
     const impuestoCalculado = productos.reduce((suma, producto) => suma + producto.impuesto, 0);
     const subtotal = Number(data.subtotal_venta ?? subtotalCalculado);
     const impuesto = Number(data.impuesto_venta ?? impuestoCalculado);
-    const total = Number(data.total_venta ?? data.total ?? subtotal + impuesto);
-    const descuento = Number(data.descuento_venta ?? Math.max(0, subtotal + impuesto - total));
+    const envio = Number(data.costo_envio_venta ?? data.envio ?? 0);
+    const total = Number(data.total_venta ?? data.total ?? subtotal + impuesto + envio);
+    const descuento = Number(data.descuento_venta ?? Math.max(0, subtotal + impuesto + envio - total));
     const fechaOrigen = data.fecha_venta ?? data.fecha ?? new Date();
     const fechaObj = fechaOrigen instanceof Date ? fechaOrigen : new Date(fechaOrigen);
     const fechaValida = !Number.isNaN(fechaObj.getTime());
@@ -102,6 +103,7 @@ export function imprimirFacturaTermica(data, empresa) {
         <div class="resumen-linea"><span>Subtotal</span><span>${formatoMoneda(subtotal)}</span></div>
         ${descuento > 0 ? `<div class="resumen-linea"><span>Descuento</span><span>-${formatoMoneda(descuento)}</span></div>` : ''}
         ${impuesto > 0 ? `<div class="resumen-linea"><span>Impuesto</span><span>${formatoMoneda(impuesto)}</span></div>` : ''}
+        ${envio > 0 ? `<div class="resumen-linea"><span>Envío</span><span>${formatoMoneda(envio)}</span></div>` : ''}
         <div class="resumen-linea total"><span>TOTAL</span><span>${formatoMoneda(total)}</span></div>
     `;
 

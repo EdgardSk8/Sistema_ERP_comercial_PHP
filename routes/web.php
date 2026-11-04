@@ -12,7 +12,8 @@ Route::get('/', function () {
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CajaController;
 use App\Http\Controllers\CargaVistaController;
-use App\Http\Controllers\CategoriaController;use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ClienteWebController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\CredencialesController;
@@ -30,17 +31,19 @@ use App\Http\Controllers\MovimientoCajaController;
 use App\Http\Controllers\MovimientoCuentaController;
 use App\Http\Controllers\MovimientoGastoController;
 use App\Http\Controllers\MovimientoInventarioController;
+use App\Http\Controllers\PedidoWebController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProductoVariacionController;
+use App\Http\Controllers\PromocionController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\ReseniaController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\RolPermisoController;
 use App\Http\Controllers\TallaController;
-use App\Http\Controllers\TipoTallaController;
 use App\Http\Controllers\TipoGastoController;
 use App\Http\Controllers\TiposMedidasController;
+use App\Http\Controllers\TipoTallaController;
 use App\Http\Controllers\TransferenciaCajaCuentaController;
 use App\Http\Controllers\UbicacionController;
 use App\Http\Controllers\UsuarioController;
@@ -70,6 +73,7 @@ Route::view('/dashboard', 'dashboard.Dashboard')->middleware('permiso:vista_dash
 Route::view('/usuarios', 'usuarios.Usuario')->middleware('permiso:vista_usuarios')->name('usuarios');
 Route::view('/proveedores', 'proveedores.Proveedores')->middleware('permiso:vista_proveedores')->name('proveedores');
 Route::view('/productos', 'productos.Productos')->middleware('permiso:vista_productos')->name('productos');
+Route::view('/promociones', 'promociones.Promociones')->middleware('permiso:vista_promociones')->name('promociones');
 Route::view('/ubicaciones', 'ubicaciones.Ubicaciones')->middleware('permiso:vista_ubicaciones')->name('ubicaciones');
 Route::view('/roles', 'roles.Roles')->middleware('permiso:vista_roles')->name('roles');
 Route::view('/permisos', 'permisos.Permisos')->middleware('permiso:vista_permisos')->name('permisos');
@@ -252,6 +256,16 @@ Route::post('/productos/cambiar-estado/{id}', [ProductoController::class, 'Cambi
 
 Route::get('/productos/formulario', [ProductoController::class, 'ObtenerDatosFormularioProducto'])->middleware('permiso:mostrar_productos');
 
+/*  ╔════════════ PROMOCIONES ════════════╗
+    ╚══════════════════════════════════════╝ */
+
+Route::get('/promociones/mostrar', [PromocionController::class, 'MostrarPromociones'])->middleware('permiso:mostrar_promociones');
+Route::get('/promociones/productos', [PromocionController::class, 'ProductosDisponibles'])->middleware('permiso:mostrar_promociones');
+Route::post('/promociones/crear', [PromocionController::class, 'CrearPromocion'])->middleware('permiso:crear_promociones');
+Route::get('/promociones/{id}/editar', [PromocionController::class, 'EditarPromocion'])->middleware('permiso:editar_promociones');
+Route::put('/promociones/{id}/actualizar', [PromocionController::class, 'ActualizarPromocion'])->middleware('permiso:actualizar_promociones');
+Route::post('/promociones/cambiar-estado/{id}', [PromocionController::class, 'CambiarEstadoPromocion'])->middleware('permiso:cambiar_estado_promociones');
+
 /*  ╔══════════════ Endpoint Roles ══════════════╗
     ╚════════════════════════════════════════════╝ */
 
@@ -312,6 +326,14 @@ Route::post('/facturar/ticket-termico', [FacturacionController::class, 'Imprimir
 Route::get('/cuentas-por-cobrar/mostrar', [CuentaPorCobrarController::class, 'Mostrar'])->middleware('permiso:mostrar_cuentas_por_cobrar');
 Route::post('/cuentas-por-cobrar/{idVenta}/pagos', [CuentaPorCobrarController::class, 'RegistrarPago'])->middleware('permiso:registrar_pagos_venta');
 Route::view('/cuentas-por-cobrar', 'cuentasporcobrar.CuentasPorCobrar')->middleware('permiso:vista_cuentas_por_cobrar')->name('cuentas-por-cobrar');
+
+/*  ╔═════════════ PEDIDOS WEB ═════════════════╗
+    ╚════════════════════════════════════════════╝ */
+
+Route::get('/pedidos-web/mostrar', [PedidoWebController::class, 'Mostrar'])->middleware('permiso:mostrar_pedidos_web');
+Route::get('/pedidos-web/{id}/detalle', [PedidoWebController::class, 'Detalle'])->middleware('permiso:mostrar_pedidos_web');
+Route::post('/pedidos-web/{id}/estado', [PedidoWebController::class, 'CambiarEstado'])->middleware('permiso:actualizar_pedidos_web');
+Route::view('/pedidos-web', 'pedidosweb.PedidosWeb')->middleware('permiso:vista_pedidos_web')->name('pedidos-web');
 
 Route::post('/caja/abrir', [CajaController::class, 'AbrirCaja'])->middleware('permiso:abrir_caja');
 Route::post('/caja/cerrar', [CajaController::class, 'CerrarCaja'])->middleware('permiso:cerrar_caja');
@@ -460,10 +482,13 @@ Route::delete('/variacion-tallas/eliminar/{id}', [VariacionTallaController::clas
 
 // Vistas
 Route::get('/tienda', [WebsiteController::class, 'inicio'])->name('tienda');
+Route::get('/producto', [WebsiteController::class, 'productoVista'])->name('tienda.producto.directo');
 Route::get('/tienda/producto/{id}', [WebsiteController::class, 'productoVista'])->name('tienda.producto');
 Route::get('/tienda/carrito', [WebsiteController::class, 'carritoVista'])->name('tienda.carrito');
 Route::get('/tienda/login', [WebsiteController::class, 'loginVista'])->name('tienda.login');
 Route::get('/tienda/perfil', [WebsiteController::class, 'perfilVista'])->name('tienda.perfil');
+Route::get('/tienda/ayuda', [WebsiteController::class, 'ayudaVista'])->name('tienda.ayuda');
+Route::get('/ayuda', [WebsiteController::class, 'ayudaVista'])->name('tienda.ayuda.directa');
 
 // Acceso con redes sociales (OAuth)
 Route::get('/tienda/auth/{proveedor}/redirect', [ClienteWebController::class, 'redirigirProveedor'])

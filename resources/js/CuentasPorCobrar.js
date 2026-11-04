@@ -8,11 +8,14 @@ export default function initCuentasPorCobrar() {
     let planDetalleActual = null;
     let metodos = [];
     let cuentasMetodoPago = [];
+    let tasaDolar = 0;
     const tbody = tabla.querySelector('tbody');
     const modalDetalle = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDetalleCartera'));
     const modalAbono = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAbonoCartera'));
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
     const moneda = valor => `C$ ${Number(valor || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const monedaDolar = valor => `$ ${Number(valor || 0).toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const monedaEn = (valor, codigo) => codigo === 'USD' ? monedaDolar(valor) : moneda(valor);
     const escapar = valor => $('<div>').text(valor ?? '').html();
     const estadoTexto = estado => ({ atrasada: 'Atrasada', pendiente: 'Pendiente', parcial: 'Parcial', pagada: 'Pagada' })[estado] || estado;
 
@@ -104,6 +107,11 @@ export default function initCuentasPorCobrar() {
             const respuesta = await $.getJSON('/cuentas-por-cobrar/mostrar', { estado });
             if (!respuesta.success) throw new Error('No se pudo consultar la cartera.');
             planes = respuesta.planes || [];
+            tasaDolar = Number(respuesta.tipo_cambio) || 0;
+            $('#monedaAbonoCartera option[value="USD"]').prop('disabled', !tasaDolar);
+            if (!tasaDolar && $('#monedaAbonoCartera').val() === 'USD') {
+                $('#monedaAbonoCartera').val('NIO');
+            }
             actualizarResumen();
             renderizar();
         } catch (error) {
@@ -117,6 +125,29 @@ export default function initCuentasPorCobrar() {
         $('#clienteDetalleCartera').text(plan.cliente || '—');
         $('#totalDetalleCartera').text(moneda(plan.total));
         $('#saldoDetalleCartera').text(moneda(plan.saldo));
+
+        const productos = $('#productosDetalleCartera').empty();
+        if (!plan.productos?.length) {
+            productos.append('<tr><td colspan="4" class="text-center text-secondary">Sin productos registrados.</td></tr>');
+        } else {
+            plan.productos.forEach(producto => {
+                const detalle = [producto.descripcion, producto.sku ? `SKU ${producto.sku}` : '']
+                    .filter(Boolean)
+                    .join(' · ');
+
+                productos.append(`
+                    <tr>
+                        <td>
+                            <div>${escapar(producto.nombre)}</div>
+                            ${detalle ? `<div class="small text-secondary">${escapar(detalle)}</div>` : ''}
+                        </td>
+                        <td class="text-center">${Number(producto.cantidad || 0)}</td>
+                        <td class="text-end">${moneda(producto.precio_unitario)}</td>
+                        <td class="text-end">${moneda(producto.subtotal)}</td>
+                    </tr>`);
+            });
+        }
+
         const cuotas = $('#cuotasDetalleCartera').empty();
         plan.cuotas.forEach(cuota => {
             cuotas.append(`<tr><td>${Number(cuota.numero)}</td><td>${formatearFechaCorta(cuota.fecha_vencimiento)}</td><td>${moneda(cuota.monto)}</td><td>${moneda(cuota.pagado)}</td><td>${moneda(cuota.saldo)}</td><td><span class="cartera-estado ${escapar(cuota.estado)}">${estadoTexto(cuota.estado)}</span></td></tr>`);
@@ -142,6 +173,20 @@ export default function initCuentasPorCobrar() {
     async function imprimirDetalle(plan) {
         const empresa = await obtenerCredencialesEmpresa();
         const totalPagado = plan.cuotas.reduce((suma, cuota) => suma + Number(cuota.pagado || 0), 0);
+
+        const filasProductos = (plan.productos || []).map(producto => {
+            const detalle = [producto.descripcion, producto.sku ? `SKU ${producto.sku}` : '']
+                .filter(Boolean)
+                .join(' · ');
+
+            return `
+                <tr>
+                    <td>${escapar(producto.nombre)}${detalle ? `<div class="detalle">${escapar(detalle)}</div>` : ''}</td>
+                    <td class="c">${Number(producto.cantidad || 0)}</td>
+                    <td class="r">${moneda(producto.precio_unitario)}</td>
+                    <td class="r">${moneda(producto.subtotal)}</td>
+                </tr>`;
+        }).join('') || '<tr><td colspan="4" class="c">Sin productos registrados</td></tr>';
 
         const filasCuotas = plan.cuotas.map(cuota => `
             <tr>
@@ -180,6 +225,7 @@ export default function initCuentasPorCobrar() {
                     @page { size: A4; margin: 12mm; }
                     * { box-sizing: border-box; }
                     body { margin: 0; color: #1f2328; font: 12px/1.45 Arial, Helvetica, sans-serif; }
+                    .detalle { color: #555; font-size: 10px; }
                     header { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 2px solid #333; }
                     .empresa { font-size: 16px; font-weight: 700; }
                     .datos-empresa, .datos-doc { color: #555; font-size: 11px; }
@@ -223,6 +269,14 @@ export default function initCuentasPorCobrar() {
                     <div><span>Estado</span><strong>${escapar(estadoTexto(plan.estado))}</strong></div>
                 </section>
 
+                <h2>Productos</h2>
+                <table>
+                    <thead>
+                        <tr><th>Producto</th><th class="c">Cantidad</th><th class="r">Precio</th><th class="r">Subtotal</th></tr>
+                    </thead>
+                    <tbody>${filasProductos}</tbody>
+                </table>
+
                 <h2>Cuotas</h2>
                 <table>
                     <thead>
@@ -259,6 +313,7 @@ export default function initCuentasPorCobrar() {
         const $cuenta = $('#cuentaAbonoCartera').empty();
         if (metodo === 1) {
             $('#contenedorCuentaAbonoCartera').addClass('d-none');
+            actualizarVueltoAbono();
             return;
         }
 
@@ -267,28 +322,121 @@ export default function initCuentasPorCobrar() {
         $('#contenedorCuentaAbonoCartera').removeClass('d-none');
         if (cuentas.length === 0) $('#errorAbonoCartera').text('Este método no tiene cuentas activas configuradas.');
         else $('#errorAbonoCartera').text('');
+        actualizarVueltoAbono();
+    }
+
+    function monedaAbono() {
+        return $('#monedaAbonoCartera').val() === 'USD' ? 'USD' : 'NIO';
+    }
+
+    function esMetodoEfectivo() {
+        return Number($('#metodoAbonoCartera').val()) === 1;
+    }
+
+    function montosAbono() {
+        const codigo = monedaAbono();
+        const saldo = Number(ventaSeleccionada?.saldo) || 0;
+        const recibidoMoneda = Math.max(0, Number($('#montoAbonoCartera').val() || 0));
+        const recibidoCordobas = codigo === 'USD'
+            ? (tasaDolar ? recibidoMoneda * tasaDolar : 0)
+            : recibidoMoneda;
+        const aplicadoCordobas = Math.min(recibidoCordobas, saldo);
+        const vueltoCordobas = esMetodoEfectivo()
+            ? Math.max(0, recibidoCordobas - aplicadoCordobas)
+            : 0;
+        const aplicadoMoneda = codigo === 'USD' && tasaDolar ? aplicadoCordobas / tasaDolar : aplicadoCordobas;
+        const vueltoDolares = tasaDolar ? vueltoCordobas / tasaDolar : 0;
+
+        return {
+            codigo,
+            saldo,
+            recibidoMoneda,
+            recibidoCordobas,
+            aplicadoCordobas,
+            aplicadoMoneda,
+            vueltoCordobas,
+            vueltoDolares
+        };
+    }
+
+    function actualizarSimbolosAbono() {
+        let codigo = monedaAbono();
+
+        if (codigo === 'USD' && !tasaDolar) {
+            $('#monedaAbonoCartera').val('NIO');
+            codigo = 'NIO';
+        }
+
+        const simbolo = codigo === 'USD' ? '$' : 'C$';
+        $('#simboloMontoAbono').text(simbolo);
+        $('#monedaAbonoCartera option[value="USD"]').prop('disabled', !tasaDolar);
+    }
+
+    function actualizarMaximoAbono() {
+        if (!ventaSeleccionada) return;
+
+        const saldo = Number(ventaSeleccionada.saldo) || 0;
+        const codigo = monedaAbono();
+
+        if (esMetodoEfectivo()) {
+            $('#montoAbonoCartera').removeAttr('max');
+            return;
+        }
+
+        const maximo = codigo === 'USD' && tasaDolar ? saldo / tasaDolar : saldo;
+        $('#montoAbonoCartera').attr('max', maximo.toFixed(2));
+    }
+
+    function actualizarVueltoAbono() {
+        const efectivo = esMetodoEfectivo();
+
+        $('#efectivoAbonoCampos').toggleClass('d-none', !efectivo);
+        $('#labelMontoAbono').text(efectivo ? 'Importe recibido' : 'Importe a abonar');
+
+        if (!efectivo) {
+            $('#vueltoAbonoCordobas, #vueltoAbonoDolares').val('');
+            return;
+        }
+
+        const montos = montosAbono();
+
+        if (montos.recibidoMoneda <= 0) {
+            $('#vueltoAbonoCordobas, #vueltoAbonoDolares').val('');
+            return;
+        }
+
+        $('#vueltoAbonoCordobas').val(moneda(montos.vueltoCordobas));
+        $('#vueltoAbonoDolares').val(tasaDolar ? monedaDolar(montos.vueltoDolares) : '—');
     }
 
     function abrirAbono(plan) {
         ventaSeleccionada = plan;
         $('#errorAbonoCartera').text('');
         $('#tituloAbonoCartera').text(`Abono · ${plan.numero_factura}`);
-        $('#saldoAbonoCartera').text(`${plan.cliente} · Saldo pendiente ${moneda(plan.saldo)}`);
-        $('#montoAbonoCartera').val('').attr('max', Number(plan.saldo).toFixed(2));
-        actualizarResumenAbono();
+        $('#saldoAbonoCartera').text(`${plan.cliente} · Saldo pendiente ${moneda(plan.saldo)}${tasaDolar ? ` · ${monedaDolar(Number(plan.saldo) / tasaDolar)}` : ''}`);
+        $('#montoAbonoCartera').val('').removeAttr('max');
+        $('#vueltoAbonoCordobas, #vueltoAbonoDolares').val('');
         $('#referenciaAbonoCartera').val('');
+        $('#monedaAbonoCartera').val('NIO');
+
         const $metodo = $('#metodoAbonoCartera').empty();
         metodos.forEach(metodo => $metodo.append(new Option(metodo.nombre, metodo.id)));
 
         if (metodos.length) $metodo.val(String(metodos[0].id));
+        actualizarSimbolosAbono();
         actualizarCuentas();
+        actualizarResumenAbono();
         modalAbono.show();
     }
 
     function actualizarResumenAbono() {
         if (!ventaSeleccionada) return;
-        const montoIngresado = Math.max(0, Number($('#montoAbonoCartera').val() || 0));
-        let montoPorAplicar = Math.min(montoIngresado, Number(ventaSeleccionada.saldo) || 0);
+
+        actualizarSimbolosAbono();
+        actualizarMaximoAbono();
+
+        const montos = montosAbono();
+        let montoPorAplicar = montos.aplicadoCordobas;
         const cuotas = [...(ventaSeleccionada.cuotas || [])]
             .filter(cuota => Number(cuota.saldo) > 0)
             .sort((a, b) => a.fecha_vencimiento.localeCompare(b.fecha_vencimiento) || Number(a.numero) - Number(b.numero));
@@ -300,16 +448,31 @@ export default function initCuentasPorCobrar() {
             return { ...cuota, saldoRestante: Math.max(0, saldoCuota - aplicado) };
         }).filter(cuota => cuota.saldoRestante > 0);
 
-        const saldoRestante = Math.max(0, (Number(ventaSeleccionada.saldo) || 0) - montoIngresado);
+        const saldoRestante = Math.max(0, montos.saldo - montos.aplicadoCordobas);
         const proximaFecha = cuotasRestantes[0]?.fecha_vencimiento;
         const fechaFormateada = proximaFecha
             ? window.FechaSimple(`${proximaFecha}T12:00:00`)
             : '—';
 
-        $('#previsionMontoAbono').text(moneda(montoIngresado));
+        $('#previsionMontoAbono').text(monedaEn(montos.aplicadoMoneda, montos.codigo));
         $('#previsionSaldoAbono').text(moneda(saldoRestante));
         $('#previsionCuotasAbono').text(`${cuotasRestantes.length} ${cuotasRestantes.length === 1 ? 'fecha' : 'fechas'}`);
         $('#previsionProximoVencimiento').text(fechaFormateada);
+
+        const equivalencia = $('#equivalenciaAbonoCartera');
+        if (montos.codigo === 'USD') {
+            equivalencia.text(tasaDolar
+                ? `Se aplicarán ${moneda(montos.aplicadoCordobas)} al saldo. Tipo de cambio: ${moneda(tasaDolar)} por $1.`
+                : 'El tipo de cambio no está configurado en credenciales.');
+        } else {
+            equivalencia.text(tasaDolar ? `Tipo de cambio: ${moneda(tasaDolar)} por $1.` : '');
+        }
+
+        if (!esMetodoEfectivo() && montos.recibidoCordobas > montos.saldo + 0.001) {
+            equivalencia.text(`El importe supera el saldo pendiente (${moneda(montos.saldo)}).`);
+        }
+
+        actualizarVueltoAbono();
     }
 
     tabla.addEventListener('click', event => {
@@ -321,7 +484,14 @@ export default function initCuentasPorCobrar() {
         if (boton.dataset.accion === 'abono') abrirAbono(plan);
     });
 
-    $('#metodoAbonoCartera').on('change', actualizarCuentas);
+    $('#metodoAbonoCartera').on('change', function () {
+        actualizarCuentas();
+        actualizarResumenAbono();
+    });
+    $('#monedaAbonoCartera').on('change', function () {
+        $('#montoAbonoCartera, #vueltoAbonoCordobas, #vueltoAbonoDolares').val('');
+        actualizarResumenAbono();
+    });
     $('#montoAbonoCartera').off('input.cartera').on('input.cartera', actualizarResumenAbono);
     $('#filtroEstadoCartera').on('change', cargarPlanes);
     $('#recargarCartera').on('click', cargarPlanes);
@@ -333,17 +503,32 @@ export default function initCuentasPorCobrar() {
     $('#formAbonoCartera').on('submit', async function (event) {
         event.preventDefault();
         if (!ventaSeleccionada) return;
-        const monto = Number($('#montoAbonoCartera').val());
+
+        const montos = montosAbono();
         const idMetodo = Number($('#metodoAbonoCartera').val());
         const idCuenta = idMetodo === 1 ? null : Number($('#cuentaAbonoCartera').val()) || null;
-        if (!Number.isFinite(monto) || monto <= 0 || monto > Number(ventaSeleccionada.saldo)) {
-            $('#errorAbonoCartera').text('El importe debe ser mayor que cero y no superar el saldo pendiente.');
+
+        if (montos.codigo === 'USD' && !tasaDolar) {
+            $('#errorAbonoCartera').text('El tipo de cambio no está configurado en credenciales.');
             return;
         }
+
+        if (!Number.isFinite(montos.recibidoMoneda) || montos.recibidoMoneda <= 0 || montos.aplicadoCordobas <= 0) {
+            $('#errorAbonoCartera').text('El importe debe ser mayor que cero.');
+            return;
+        }
+
+        if (!esMetodoEfectivo() && montos.recibidoCordobas > montos.saldo + 0.001) {
+            $('#errorAbonoCartera').text('El importe no puede superar el saldo pendiente.');
+            return;
+        }
+
         if (idMetodo !== 1 && !idCuenta) {
             $('#errorAbonoCartera').text('Selecciona una cuenta receptora activa.');
             return;
         }
+
+        const montoCordobas = Math.round(montos.aplicadoCordobas * 100) / 100;
 
         const boton = $('#guardarAbonoCartera').prop('disabled', true);
         try {
@@ -351,7 +536,7 @@ export default function initCuentasPorCobrar() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
                 body: JSON.stringify({
-                    monto,
+                    monto: montoCordobas,
                     id_metodo_pago: idMetodo,
                     id_cuenta: idCuenta,
                     referencia: $('#referenciaAbonoCartera').val().trim() || null

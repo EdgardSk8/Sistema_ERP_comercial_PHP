@@ -34,7 +34,7 @@
   --e-5: 24px;
   --e-6: 32px;
   --fuente: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --fuente-titulo: "Playfair Display", Georgia, serif;
+  --fuente-titulo: var(--fuente);
   --alto-header: 60px;
 }
 
@@ -1009,6 +1009,9 @@ button { font-family: inherit; }
 }
 
 .carrito-entrega__select:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+.carrito-entrega__label--hora { margin-top: 14px; }
+.carrito-entrega__opcional { font-size: .62rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--texto-suave); }
+.carrito-entrega__nota { margin: 6px 0 0; font-size: .72rem; color: var(--texto-suave); }
 .carrito-entrega__info { margin-top: 12px; font-size: .78rem; line-height: 1.55; color: var(--texto-suave); }
 .carrito-entrega__info a { color: var(--acento); text-decoration: underline; }
 .carrito-entrega__linea { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
@@ -1261,7 +1264,7 @@ button { font-family: inherit; }
 .promos__grid {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(230px, 300px);
+  grid-auto-columns: minmax(270px, 340px);
   gap: var(--e-3);
   overflow-x: auto;
   padding-bottom: 6px;
@@ -1286,19 +1289,56 @@ button { font-family: inherit; }
 
 .promo:hover { transform: translateY(-2px); box-shadow: var(--sombra-media); }
 
-.promo__media { display: block; aspect-ratio: 16 / 10; background: var(--primario-medio); overflow: hidden; }
+.promo__media { position: relative; display: block; aspect-ratio: 1 / 1; background: var(--primario-medio); overflow: hidden; }
 .promo__media img { width: 100%; height: 100%; object-fit: cover; }
 
-.promo__titulo {
-  display: block;
+.promo__descuento {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #198754;
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .3);
+}
+
+.promo__descuento--monto { background: #0d6efd; }
+.promo__descuento--precio { background: var(--acento); }
+
+.promo__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 10px 12px 12px;
-  font-size: .82rem;
+}
+
+.promo__titulo {
+  font-size: .86rem;
   font-weight: 600;
   color: var(--secundario);
 }
 
+.promo__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .74rem;
+  font-weight: 700;
+  color: var(--acento);
+  white-space: nowrap;
+}
+
+.promo:hover .promo__cta i { transform: translateX(2px); }
+.promo__cta i { transition: transform .18s ease; }
+
 @media (min-width: 992px) {
-  .promos__grid { grid-auto-columns: minmax(280px, 360px); }
+  .promos__grid { grid-auto-columns: minmax(340px, 430px); }
 }
 
 /* ── 9. Aviso flotante (toast) ───────────────────────────────── */

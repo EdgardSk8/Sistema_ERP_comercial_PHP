@@ -137,6 +137,7 @@ const modulos = [
     ['#tablaTipoGasto', () => import('./MostrarTipoGasto')],
     ['#tablaMovimientosGastos', () => import('./Movimientos_Gastos')],
     ['#TablaMostrarProductos', () => import('./MostrarProducto')],
+    ['#tablaPromociones', () => import('./MostrarPromociones')],
     ['#tablaCategorias', () => import('./MostrarCategoria')],
     ['#tablaKardex', () => import('./Movimientos_Inventario')],
     ['#tablaUsuarios', () => import('./MostrarUsuarios')],
@@ -155,6 +156,7 @@ const modulos = [
     ['#tablaProductoVariacionDetalle', () => import('./MostrarProductoVariacionDetalle')],
     ['#tablaUbicaciones', () => import('./MostrarUbicaciones')],
     ['#tablaCuentasPorCobrar', () => import('./CuentasPorCobrar')],
+    ['#tablaPedidosWeb', () => import('./MostrarPedidosWeb')],
     ['#manualNav', () => import('./Manual')]
 
 
@@ -247,6 +249,7 @@ const rutas = {
 
     vista_ventas: '/ventas',
     vista_cuentas_por_cobrar: '/cuentas-por-cobrar',
+    vista_pedidos_web: '/pedidos-web',
 
     vista_impuestos: '/impuestos',
 
