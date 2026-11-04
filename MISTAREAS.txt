@@ -1,0 +1,28 @@
+Las tareas ya realizadas se editaran agregando un check como lista
+
+TAREAS ERP
+
+1- Vistas Facturacion/Cuentas por pagar usa elementos muy grandes, 
+usa de ejemplo la vista de pedidos web para modificar
+
+2- En el ID buscarPedidoWeb, hacer ese input mas grande horizontalmente, 
+cambiar estilo de btn de recargarPedidosWeb (mismo tamanio que el input)
+
+3- Usar Hover sobre los inputs de pedidos web cursor pointer
+
+4- al pasar el hover por las filas de la tabla de pedidos,
+en la columnas de accciones no se cambia el color al pasar el raton, 
+revisa que esta pasando ahi
+
+5- en la vista de Inventario/promociones, usa las fechas asi 03/Noviembre/2026
+y no 03/11/2026, revisa las columnas que no estan centradas en acciones
+
+6- En la misma vista de promociones en la parte de editar promocion, 
+usa un modal mas largo (ancho) un poco mas grande el apartado de los productos,
+agrega un filtro que sea selector por categorias y un input de busqueda de productos
+fecha de inicio y fecha de fin y al lado un calendario que marca que dia a que dia estaran las promociones
+(calendario unicamente visual) selector de descuento en img muy bien, valor en entero por defecto
+(decimal si lo quiere el usuario) y los demas elementos estan bien
+
+WEBSITE
+

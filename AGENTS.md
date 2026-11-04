@@ -190,6 +190,7 @@ const modulos = [
 ## 6. Reglas para agentes
 
 **Hacer:**
+- Antes de explorar para ubicar una vista, modal, botón o ID, consulta `MAPA-PROYECTO.md` (se regenera con `scripts/generar-mapa.ps1`).
 - Replicar el patrón de módulo completo: ruta + permiso + método de controlador + vista Blade + `init...()` en `resources/js` + registro en `app.js` + CSS.
 - Validar en el backend siempre; devolver `{ success: false, errors }` con `422`.
 - Usar transacciones en operaciones que tocan varias tablas (ventas, movimientos, caja, inventario).

@@ -517,10 +517,12 @@ function marcarMarcoOpcion(clave) {
     const grupo = porId('marcoOpciones');
     if (!grupo) return;
 
-    grupo.querySelectorAll('.perfil-marco__opcion').forEach((boton) => {
+    grupo.querySelectorAll('.perfil-marco__hito').forEach((boton) => {
         const activo = boton.dataset.marco === clave;
+        const bloqueado = boton.classList.contains('is-bloqueado');
 
-        boton.classList.toggle('is-activo', activo);
+        boton.classList.toggle('is-reclamado', activo);
+        boton.classList.toggle('is-disponible', !activo && !bloqueado);
         boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
     });
 }
@@ -531,8 +533,6 @@ function pintarMarcoPerfil() {
     const casilla = porId('marcoVisible');
     const relleno = porId('marcoRelleno');
     const barra = porId('marcoBarra');
-    const desde = porId('marcoDesde');
-    const hasta = porId('marcoHasta');
     const opciones = porId('marcoOpciones');
 
     if (!nivel || !progreso || !casilla) return;
@@ -542,6 +542,7 @@ function pintarMarcoPerfil() {
         const marco = datos?.marco || null;
         const siguiente = datos?.siguiente || null;
         const niveles = datos?.niveles || [];
+        const desbloqueados = datos?.desbloqueados || [];
         const seleccionado = datos?.marco_estilo || (marco ? marco.clave : '');
 
         if (datos?.forzado && marco) {
@@ -551,40 +552,65 @@ function pintarMarcoPerfil() {
         } else {
             progreso.hidden = false;
 
-            nivel.textContent = marco
-                ? `Nivel ${marco.nombre} · ${ventas} ${ventas === 1 ? 'venta' : 'ventas'}`
-                : 'Aún sin marco';
+            if (marco) {
+                nivel.textContent = `Nivel ${marco.nombre} · ${ventas} ${ventas === 1 ? 'venta' : 'ventas'}`;
+            } else if (desbloqueados.length) {
+                const listo = desbloqueados[desbloqueados.length - 1];
+                nivel.textContent = `Marco ${listo.nombre} listo para reclamar`;
+            } else {
+                nivel.textContent = 'Aún sin marco';
+            }
 
             if (siguiente) {
-                progreso.textContent = marco
-                    ? `Te faltan ${datos.faltan} ${datos.faltan === 1 ? 'venta' : 'ventas'} para ${siguiente.nombre}.`
-                    : `Necesitas ${datos.faltan} ventas para ${siguiente.nombre}.`;
+                if (!marco && desbloqueados.length) {
+                    const listo = desbloqueados[desbloqueados.length - 1];
+                    progreso.textContent = `Reclama tu marco ${listo.nombre} · Te faltan ${datos.faltan} ventas para ${siguiente.nombre}.`;
+                } else if (marco) {
+                    progreso.textContent = `Te faltan ${datos.faltan} ventas para ${siguiente.nombre}.`;
+                } else {
+                    progreso.textContent = `Necesitas ${datos.faltan} ventas para ${siguiente.nombre}.`;
+                }
             } else if (marco) {
                 progreso.textContent = '¡Tienes el marco máximo!';
+            } else if (desbloqueados.length) {
+                const listo = desbloqueados[desbloqueados.length - 1];
+                progreso.textContent = `Reclama tu marco ${listo.nombre} para lucirlo.`;
             } else {
                 progreso.textContent = 'Necesitas 5 ventas para tu primer marco.';
             }
         }
 
         const avance = Math.max(0, Math.min(100, Number(datos?.avance || 0)));
+        const total = niveles.length;
+        const indiceActual = niveles.reduce((ultimo, item, indice) => (item.desbloqueado ? indice : ultimo), -1);
+        /* Los hitos van del 10% al 90% del riel, repartidos en partes iguales. */
+        const tramo = total > 1 ? 80 / (total - 1) : 80;
+        const rellenoPct = indiceActual >= 0
+            ? Math.min(80, indiceActual * tramo + tramo * (avance / 100))
+            : 0;
 
-        if (relleno) relleno.style.width = `${avance}%`;
+        if (relleno) relleno.style.width = `${rellenoPct}%`;
         if (barra) barra.setAttribute('aria-valuenow', String(avance));
-        if (desde) desde.textContent = `${Number(datos?.desde || 0)} ventas`;
-        if (hasta) hasta.textContent = siguiente ? `${datos.hasta} ventas` : 'Máximo';
 
         if (opciones) {
             opciones.innerHTML = niveles.map((item) => {
                 const activo = item.clave === seleccionado;
                 const bloqueado = !item.desbloqueado;
+                const estado = activo ? 'is-reclamado' : bloqueado ? 'is-bloqueado' : 'is-disponible';
+                const icono = activo ? 'bi-check-lg' : bloqueado ? 'bi-lock-fill' : 'bi-plus-lg';
 
-                return `<button type="button" class="perfil-marco__opcion ${activo ? 'is-activo' : ''} ${bloqueado ? 'is-bloqueado' : ''}"
-                            data-marco="${item.clave}" ${bloqueado ? 'disabled' : ''} aria-pressed="${activo}"
-                            title="${item.nombre} · ${item.ventas} ventas">
-                            <span class="perfil-marco__muestra marco--${item.clave}" aria-hidden="true"></span>
-                            <span class="perfil-marco__nombre">${item.nombre}</span>
-                            ${bloqueado ? '<i class="bi bi-lock-fill" aria-hidden="true"></i>' : ''}
-                        </button>`;
+                return `<li class="perfil-marco__hito-item">
+                            <button type="button" class="perfil-marco__hito ${estado}"
+                                data-marco="${item.clave}" ${bloqueado ? 'disabled' : ''} aria-pressed="${activo}"
+                                title="${item.nombre} · ${item.ventas} ventas">
+                                <span class="perfil-marco__nodo">
+                                    <span class="perfil-marco__muestra marco--${item.clave}" aria-hidden="true"></span>
+                                    <span class="perfil-marco__sello" aria-hidden="true"><i class="bi ${icono}"></i></span>
+                                </span>
+                                <span class="perfil-marco__hito-nombre">${item.nombre}</span>
+                                <span class="perfil-marco__hito-ventas">${item.ventas} ventas</span>
+                            </button>
+                        </li>`;
             }).join('');
         }
 
@@ -625,8 +651,8 @@ function conectarMarco() {
     });
 
     porId('marcoOpciones')?.addEventListener('click', async (evento) => {
-        const boton = evento.target.closest('.perfil-marco__opcion');
-        if (!boton || boton.disabled || boton.classList.contains('is-activo')) return;
+        const boton = evento.target.closest('.perfil-marco__hito');
+        if (!boton || boton.disabled || boton.classList.contains('is-reclamado')) return;
 
         const estilo = boton.dataset.marco;
         const anterior = window.marcoTienda?.marco_estilo || '';
@@ -638,8 +664,10 @@ function conectarMarco() {
 
             window.clienteTienda = datos.cliente || window.clienteTienda;
 
+            let nivel = null;
+
             if (window.marcoTienda) {
-                const nivel = (window.marcoTienda.niveles || []).find((item) => item.clave === estilo) || null;
+                nivel = (window.marcoTienda.niveles || []).find((item) => item.clave === estilo) || null;
 
                 window.marcoTienda.marco = nivel;
                 window.marcoTienda.marco_estilo = estilo;
@@ -649,6 +677,7 @@ function conectarMarco() {
             if (casilla) casilla.checked = true;
 
             window.pintarAvatares?.(window.clienteTienda);
+            window.tiendaToast?.(`¡Reclamaste el marco ${nivel?.nombre || estilo}!`, 'exito');
         } catch (error) {
             marcarMarcoOpcion(anterior);
             window.tiendaToast?.(error?.message || 'No se pudo cambiar el marco.', 'aviso');
@@ -656,7 +685,40 @@ function conectarMarco() {
     });
 }
 
+/* ── Mostrar u ocultar contraseñas ───────────────────────────── */
+
+function conectarOjosPassword() {
+    document.querySelectorAll('[data-toggle-password]').forEach((boton) => {
+        boton.addEventListener('click', () => {
+            const input = porId(boton.dataset.togglePassword);
+            if (!input) return;
+
+            const mostrar = input.type === 'password';
+            input.type = mostrar ? 'text' : 'password';
+            boton.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
+            boton.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+
+            const icono = boton.querySelector('i');
+            if (icono) icono.className = mostrar ? 'bi bi-eye-slash' : 'bi bi-eye';
+
+            input.focus();
+        });
+    });
+}
+
+function validarPassword(nueva, confirmacion) {
+    if (!nueva || nueva.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
+    if (!/[a-z]/.test(nueva)) return 'La contraseña debe incluir al menos una letra minúscula.';
+    if (!/[A-Z]/.test(nueva)) return 'La contraseña debe incluir al menos una letra mayúscula.';
+    if (!/\d/.test(nueva)) return 'La contraseña debe incluir al menos un número.';
+    if (nueva !== confirmacion) return 'Las contraseñas no coinciden.';
+
+    return '';
+}
+
 function conectarFormularios() {
+    conectarOjosPassword();
+
     porId('formPerfil')?.addEventListener('submit', async (evento) => {
         evento.preventDefault();
 
@@ -703,6 +765,16 @@ function conectarFormularios() {
     porId('formPassword')?.addEventListener('submit', async (evento) => {
         evento.preventDefault();
 
+        const nueva = porId('passwordNueva').value;
+        const confirmacion = porId('passwordNuevaConfirm').value;
+        const problema = validarPassword(nueva, confirmacion);
+
+        if (problema) {
+            tiendaToast(problema, 'aviso');
+            (problema.includes('coinciden') ? porId('passwordNuevaConfirm') : porId('passwordNueva')).focus();
+            return;
+        }
+
         const boton = evento.currentTarget.querySelector('button[type="submit"]');
         const texto = boton?.textContent;
         bloquearBoton(boton, true);
@@ -743,8 +815,8 @@ function ajustarFormPassword() {
 
     if (ayuda) {
         ayuda.textContent = tiene
-            ? 'Usa una contraseña de al menos 6 caracteres.'
-            : 'Tu cuenta entra con Google. Crea una contraseña para poder entrar también con tu correo.';
+            ? 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.'
+            : 'Tu cuenta entra con Google. Crea una contraseña (mín. 8, mayúscula, minúscula y número) para entrar también con tu correo.';
     }
 
     if (!tiene) {
@@ -1177,6 +1249,36 @@ const METODOS_PAGO_WEB = {
 const WHATSAPP_TIENDA = '50584774288';
 
 const ESTADOS_PEDIDO_CANCELADOS = ['cancelado', 'rechazado', 'devuelto'];
+const ESTADOS_PEDIDO_SOLICITADOS = ['solicitado'];
+const ESTADOS_PEDIDO_ACTIVOS = ['aceptado', 'preparando', 'listo_retiro', 'enviado'];
+const ESTADOS_PEDIDO_ENTREGADOS = ['entregado'];
+const ESTADOS_PAGO_PENDIENTES = ['pendiente', 'en_revision', 'parcial'];
+
+const PRIORIDAD_ESTADO_PEDIDO = {
+    solicitado: 0,
+    aceptado: 1,
+    preparando: 2,
+    listo_retiro: 3,
+    enviado: 4,
+    entregado: 5,
+    cancelado: 6,
+    rechazado: 7,
+    devuelto: 8,
+};
+
+function ordenarPedidosWeb(a, b) {
+    const pa = PRIORIDAD_ESTADO_PEDIDO[a.estado_pedido] ?? 99;
+    const pb = PRIORIDAD_ESTADO_PEDIDO[b.estado_pedido] ?? 99;
+
+    if (pa !== pb) return pa - pb;
+
+    const fa = new Date(a.fecha_pedido || 0).getTime();
+    const fb = new Date(b.fecha_pedido || 0).getTime();
+
+    if (fb !== fa) return fb - fa;
+
+    return Number(b.id_pedido || 0) - Number(a.id_pedido || 0);
+}
 let pedidosWeb = [];
 let filtroPedidosWeb = 'activos';
 
@@ -1201,21 +1303,39 @@ function renderPedidos() {
 
     const mensajes = {
         todos: 'Aún no tienes pedidos registrados.',
+        solicitados: 'No tienes pedidos pendientes de aceptación.',
         activos: 'No tienes pedidos activos.',
+        entregados: 'Aún no tienes pedidos entregados.',
         cancelados: 'No tienes pedidos cancelados.',
+        pagos_pendientes: 'No tienes pedidos con pago pendiente.',
     };
 
-    const pedidos = pedidosWeb.filter((pedido) => {
-        if (filtroPedidosWeb === 'cancelados') {
-            return ESTADOS_PEDIDO_CANCELADOS.includes(pedido.estado_pedido);
-        }
+    const pedidos = pedidosWeb
+        .filter((pedido) => {
+            if (filtroPedidosWeb === 'solicitados') {
+                return ESTADOS_PEDIDO_SOLICITADOS.includes(pedido.estado_pedido);
+            }
 
-        if (filtroPedidosWeb === 'activos') {
-            return !ESTADOS_PEDIDO_CANCELADOS.includes(pedido.estado_pedido);
-        }
+            if (filtroPedidosWeb === 'entregados') {
+                return ESTADOS_PEDIDO_ENTREGADOS.includes(pedido.estado_pedido);
+            }
 
-        return true;
-    });
+            if (filtroPedidosWeb === 'cancelados') {
+                return ESTADOS_PEDIDO_CANCELADOS.includes(pedido.estado_pedido);
+            }
+
+            if (filtroPedidosWeb === 'pagos_pendientes') {
+                return ESTADOS_PAGO_PENDIENTES.includes(pedido.estado_pago)
+                    && !ESTADOS_PEDIDO_CANCELADOS.includes(pedido.estado_pedido);
+            }
+
+            if (filtroPedidosWeb === 'activos') {
+                return ESTADOS_PEDIDO_ACTIVOS.includes(pedido.estado_pedido);
+            }
+
+            return true;
+        })
+        .sort(ordenarPedidosWeb);
 
     const mensaje = vacio.querySelector('p');
     if (mensaje) mensaje.textContent = mensajes[filtroPedidosWeb] || mensajes.todos;
@@ -1244,6 +1364,49 @@ function estadoPago(estado) {
     return ESTADOS_PAGO[estado] || { texto: estado || '—', clase: '' };
 }
 
+function pasosPedidoHTML(pedido) {
+    if (ESTADOS_PEDIDO_CANCELADOS.includes(pedido.estado_pedido)) return '';
+
+    const estado = pedido.estado_pedido;
+    const indiceActual = {
+        solicitado: 0,
+        aceptado: 1,
+        preparando: 2,
+        listo_retiro: 2,
+        enviado: 2,
+        entregado: 3,
+    }[estado] ?? 0;
+
+    const tercerPaso = estado === 'listo_retiro'
+        ? 'Listo para retiro'
+        : estado === 'preparando'
+            ? 'En preparación'
+            : 'En camino';
+
+    const pasos = [
+        { texto: 'Solicitado', fecha: pedido.fecha_pedido },
+        { texto: 'Aceptado', fecha: pedido.fecha_aceptado },
+        { texto: tercerPaso, fecha: pedido.fecha_enviado },
+        { texto: 'Entregado', fecha: pedido.fecha_entregado },
+    ];
+
+    return `
+        <ol class="perfil-pedido__pasos" aria-label="Seguimiento del pedido">
+            ${pasos.map((paso, indice) => {
+                const completado = indice < indiceActual || (estado === 'entregado' && indice === indiceActual);
+                const actual = indice === indiceActual && !completado;
+                const clase = completado ? 'is-hecho' : actual ? 'is-actual' : '';
+                const icono = completado ? 'bi-check-circle-fill' : actual ? 'bi-record-circle' : 'bi-circle';
+
+                return `<li class="perfil-pedido__paso ${clase}">
+                    <i class="bi ${icono}" aria-hidden="true"></i>
+                    <strong>${escapar(paso.texto)}</strong>
+                    ${paso.fecha ? `<span>${formatearFechaHora(paso.fecha)}</span>` : ''}
+                </li>`;
+            }).join('')}
+        </ol>`;
+}
+
 function pedidoHTML(pedido) {
     const estado = estadoPedido(pedido.estado_pedido);
     const pago = estadoPago(pedido.estado_pago);
@@ -1263,19 +1426,30 @@ function pedidoHTML(pedido) {
         ? `<span>Entrega estimada: <strong>${formatearFechaHora(pedido.fecha_entrega_estimada)}</strong></span>`
         : '';
 
-    const aceptado = pedido.fecha_aceptado
-        ? `<span>Aceptado: <strong>${formatearFechaHora(pedido.fecha_aceptado)}</strong></span>`
+    const estaCancelado = ['cancelado', 'rechazado'].includes(pedido.estado_pedido);
+    const estaEntregado = pedido.estado_pedido === 'entregado';
+    const pagoPendienteDigital = pedido.estado_pago === 'pendiente'
+        && ['billetera_movil', 'lafise'].includes(pedido.metodo_pago_web);
+
+    const canceladoFecha = (estaCancelado && pedido.fecha_cancelado)
+        ? `<span>Cancelado: <strong>${formatearFechaHora(pedido.fecha_cancelado)}</strong></span>`
         : '';
 
     const horaPreferida = pedido.hora_entrega_preferida
         ? `<span>Tu hora preferida: <strong>${formatearHora(pedido.hora_entrega_preferida)}</strong></span>`
         : '';
 
-    const fechas = [aceptado, entrega, horaPreferida].filter(Boolean).join('');
+    const fechas = [entrega, canceladoFecha, horaPreferida].filter(Boolean).join('');
 
-    const estaCancelado = ['cancelado', 'rechazado'].includes(pedido.estado_pedido);
-    const pagoPendienteDigital = pedido.estado_pago === 'pendiente'
-        && ['billetera_movil', 'lafise'].includes(pedido.metodo_pago_web);
+    const exito = estaEntregado
+        ? `<div class="perfil-pedido__exito">
+               <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+               <div>
+                   <strong>Entregado satisfactoriamente</strong>
+                   <span>${pedido.fecha_entregado ? `Recibido el ${formatearFechaHora(pedido.fecha_entregado)}` : '¡Gracias por tu compra!'}</span>
+               </div>
+           </div>`
+        : '';
 
     const motivo = (estaCancelado && pedido.nota_negocio)
         ? `<p class="perfil-pedido__motivo">Motivo de cancelación de pedido: <strong>${escapar(pedido.nota_negocio)}</strong></p>`
@@ -1311,6 +1485,8 @@ function pedidoHTML(pedido) {
                 </div>
             </header>
 
+            ${exito}
+            ${pasosPedidoHTML(pedido)}
             <ul class="perfil-compra__items">${articulos}</ul>
             ${motivo}
             ${nota}
@@ -1842,7 +2018,7 @@ function mostrarDescuento(cliente) {
                     <span class="perfil-descuento__valor">${escapar(descuento.etiqueta)}</span>
                     <p class="perfil-descuento__texto">
                         ${escapar(descuento.motivo || (descuento.primera_compra
-                            ? 'Descuento de bienvenida activo: se aplica a cualquier producto.'
+                            ? 'Descuento de bienvenida activo: 10% en zapatos.'
                             : 'Se aplica al subtotal de tu carrito.'))}
                     </p>
                 </div>
@@ -1875,7 +2051,7 @@ function mostrarDescuento(cliente) {
                 <span class="perfil-descuento__sello">10%</span>
                 <div>
                     <p class="perfil-descuento__titulo">Descuento de bienvenida</p>
-                    <p class="perfil-descuento__texto">10% en tu primera compra. Completa estos datos para aplicarlo a cualquier producto.</p>
+                    <p class="perfil-descuento__texto">10% en tu primera compra. Completa estos datos para aplicarlo en zapatos.</p>
                 </div>
             </div>
 
@@ -1977,10 +2153,99 @@ function pintarCuponesPerfil(cupones) {
     });
 }
 
+/* ── Cupón de fidelidad ──────────────────────────────────────── */
+
+async function cargarFidelidadPerfil() {
+    const pendientes = porId('fidelidadPendientes');
+    if (!pendientes) return;
+
+    if (!window.clienteTienda) {
+        pendientes.innerHTML = '<p class="perfil-vacio">Inicia sesión para ver tu progreso de fidelidad.</p>';
+        return;
+    }
+
+    try {
+        const datos = await window.TiendaAPI.get('/tienda/api/fidelidad');
+        pintarFidelidadPerfil(datos || {});
+    } catch {
+        pendientes.innerHTML = '<p class="perfil-vacio">No se pudo cargar tu progreso de fidelidad.</p>';
+    }
+}
+
+function pintarFidelidadPerfil(datos) {
+    const pares = Number(datos?.pares_ciclo || 0);
+    const aporte = Number(datos?.aporte_ciclo || 0);
+    const pendientes = datos?.pendientes || [];
+    const faltan = 10 - pares;
+
+    const paresTexto = porId('fidelidadPares');
+    const texto = porId('fidelidadTexto');
+    const monto = porId('fidelidadMonto');
+    const relleno = porId('fidelidadRelleno');
+    const barra = porId('fidelidadBarra');
+    const lista = porId('fidelidadPendientes');
+
+    if (paresTexto) paresTexto.textContent = `${pares} de 10 pares`;
+    if (monto) monto.textContent = moneda(aporte);
+    if (relleno) relleno.style.width = `${Math.min(100, pares * 10)}%`;
+    if (barra) barra.setAttribute('aria-valuenow', String(pares));
+
+    if (texto) {
+        texto.textContent = pares === 0
+            ? 'Cada 10 pares ganas un cupón por el 10% acumulado.'
+            : `Te faltan ${faltan} ${faltan === 1 ? 'par' : 'pares'} para tu próximo cupón.`;
+    }
+
+    if (!lista) return;
+
+    if (!pendientes.length) {
+        lista.innerHTML = '<p class="perfil-vacio">Aún no tienes cupones de fidelidad por reclamar.</p>';
+        return;
+    }
+
+    lista.innerHTML = pendientes.map((item) => `
+        <div class="perfil-fidelidad__cupon">
+            <div class="perfil-fidelidad__cupon-datos">
+                <strong>Cupón de fidelidad</strong>
+                <small>Ciclo ${Number(item.ciclo)} · 10 pares completados</small>
+            </div>
+
+            <span class="perfil-fidelidad__valor">${moneda(item.valor)}</span>
+
+            <button type="button" class="btn-primario" data-reclamar-fidelidad="${Number(item.ciclo)}">
+                Reclamar
+            </button>
+        </div>`).join('');
+
+    lista.querySelectorAll('[data-reclamar-fidelidad]').forEach((boton) => {
+        boton.addEventListener('click', async () => {
+            boton.disabled = true;
+
+            try {
+                const datosCupon = await window.TiendaAPI.post('/tienda/api/fidelidad/reclamar', {
+                    ciclo: Number(boton.dataset.reclamarFidelidad),
+                });
+
+                window.tiendaToast?.(datosCupon?.mensaje || '¡Reclamaste tu cupón!', 'exito');
+
+                await cargarFidelidadPerfil();
+                await cargarCuponesPerfil();
+            } catch (error) {
+                boton.disabled = false;
+                mostrarError(error);
+            }
+        });
+    });
+}
+
 function conectarCupones() {
     cargarCuponesPerfil();
+    cargarFidelidadPerfil();
 
-    document.addEventListener('tienda:sesion', () => cargarCuponesPerfil());
+    document.addEventListener('tienda:sesion', () => {
+        cargarCuponesPerfil();
+        cargarFidelidadPerfil();
+    });
 
     porId('formCuponPerfil')?.addEventListener('submit', async (evento) => {
         evento.preventDefault();

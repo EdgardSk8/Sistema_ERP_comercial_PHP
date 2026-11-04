@@ -189,6 +189,21 @@ html { scroll-behavior: smooth; }
     font-size: .88rem;
 }
 
+/* ── Grupos dentro de una sección (descuento + cupones) ──────── */
+.perfil-grupo + .perfil-grupo {
+    margin-top: var(--e-5);
+    padding-top: var(--e-4);
+    border-top: 1px solid var(--borde);
+}
+
+.perfil-subtitulo {
+    margin: 0 0 var(--e-3);
+    font-family: var(--fuente-titulo);
+    font-size: .95rem;
+    font-weight: 600;
+    color: var(--secundario);
+}
+
 /* ── Avatar de la cuenta ─────────────────────────────── */
 .perfil-avatar {
     display: flex;
@@ -321,64 +336,186 @@ html { scroll-behavior: smooth; }
     color: var(--texto-suave);
 }
 
+.perfil-marco-bloque {
+    margin-top: var(--e-5);
+    padding-top: var(--e-4);
+    border-top: 1px solid var(--borde);
+}
+
+.perfil-marco {
+    width: 100%;
+}
+
 .perfil-marco__barra {
     position: relative;
-    height: 12px;
-    overflow: hidden;
+    margin: var(--e-5) 0 var(--e-2);
+}
+
+.perfil-marco__barra::before,
+.perfil-marco__relleno {
+    content: "";
+    position: absolute;
+    top: 26px;
+    height: 3px;
     border-radius: 999px;
-    background: rgba(12, 61, 36, .12);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, .14);
+    pointer-events: none;
+}
+
+.perfil-marco__barra::before {
+    left: 10%;
+    right: 10%;
+    background: linear-gradient(90deg, rgba(34, 37, 42, .08), rgba(34, 37, 42, .16), rgba(34, 37, 42, .08));
 }
 
 .perfil-marco__relleno {
-    position: absolute;
-    inset: 0 auto 0 0;
+    left: 10%;
     width: 0;
-    border-radius: 999px;
     background: linear-gradient(90deg, #0e5a34 0%, #177a47 55%, #e3b341 100%);
-}
-
-.perfil-marco__etiquetas {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    font-size: .68rem;
-    font-weight: 600;
-    color: var(--texto-suave);
+    box-shadow: 0 0 10px rgba(23, 122, 71, .35);
+    transition: width .5s ease;
 }
 
 .perfil-marco__opciones {
+    position: relative;
+    z-index: 1;
     display: flex;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
     gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-.perfil-marco__opcion {
+.perfil-marco__hito-item {
+    flex: 1 1 0;
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+}
+
+.perfil-marco__hito {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--texto-suave);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.perfil-marco__nodo {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 10px 4px 5px;
-    border: 1px solid var(--borde);
-    border-radius: 999px;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border: 2px solid var(--borde);
+    border-radius: 50%;
     background: var(--superficie);
-    color: var(--secundario);
-    font-size: .72rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+    box-shadow: 0 2px 6px rgba(34, 37, 42, .06);
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }
 
-.perfil-marco__opcion:hover { transform: translateY(-1px); }
-.perfil-marco__opcion:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
-.perfil-marco__opcion.is-activo { border-color: var(--acento); box-shadow: 0 0 0 2px rgba(227, 179, 65, .35); }
-.perfil-marco__opcion.is-bloqueado { opacity: .45; cursor: not-allowed; }
-.perfil-marco__opcion.is-bloqueado:hover { transform: none; }
-.perfil-marco__opcion i { font-size: .68rem; opacity: .8; }
+.perfil-marco__hito:hover:not(.is-bloqueado):not(.is-reclamado) .perfil-marco__nodo {
+    border-color: var(--acento);
+    box-shadow: 0 0 0 4px rgba(230, 81, 63, .10);
+}
+
+.perfil-marco__hito:focus-visible { outline: none; }
+
+.perfil-marco__hito:focus-visible .perfil-marco__nodo {
+    outline: 2px solid var(--acento);
+    outline-offset: 3px;
+}
+
+.perfil-marco__hito.is-disponible .perfil-marco__nodo {
+    border-color: var(--acento);
+    box-shadow: 0 0 0 4px rgba(230, 81, 63, .10);
+}
+
+.perfil-marco__hito.is-reclamado .perfil-marco__nodo {
+    border-color: var(--secundario);
+    background: var(--primario-claro);
+    box-shadow: 0 0 0 4px rgba(34, 37, 42, .08);
+}
+
+.perfil-marco__hito.is-bloqueado {
+    cursor: not-allowed;
+}
+
+.perfil-marco__hito.is-bloqueado .perfil-marco__nodo {
+    border-style: dashed;
+    opacity: .5;
+    box-shadow: none;
+}
+
+.perfil-marco__sello {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 19px;
+    height: 19px;
+    border: 2px solid var(--superficie);
+    border-radius: 50%;
+    background: var(--texto-suave);
+    color: #fff;
+    font-size: .58rem;
+    line-height: 1;
+}
+
+.perfil-marco__hito.is-disponible .perfil-marco__sello { background: var(--acento); }
+.perfil-marco__hito.is-reclamado .perfil-marco__sello { background: var(--secundario); }
+
+.perfil-marco__hito-nombre {
+    font-size: .72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--secundario);
+    text-align: center;
+}
+
+.perfil-marco__hito.is-bloqueado .perfil-marco__hito-nombre { color: var(--texto-suave); }
+
+.perfil-marco__hito-ventas {
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--primario-claro);
+    font-size: .6rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--texto-suave);
+}
+
+.perfil-marco__hito.is-reclamado .perfil-marco__hito-ventas {
+    background: rgba(34, 37, 42, .08);
+    color: var(--secundario);
+}
+
+@media (max-width: 480px) {
+    .perfil-marco__barra::before,
+    .perfil-marco__relleno { top: 21px; }
+
+    .perfil-marco__nodo { width: 42px; height: 42px; }
+
+    .perfil-marco__sello { width: 17px; height: 17px; font-size: .52rem; }
+
+    .perfil-marco__hito-nombre { font-size: .62rem; }
+    .perfil-marco__hito-ventas { font-size: .54rem; padding: 0 5px; }
+}
 
 .perfil-marco__muestra {
     position: relative;
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     overflow: visible;
     border-radius: 50%;
     background: var(--primario-medio);
@@ -459,7 +596,8 @@ html { scroll-behavior: smooth; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .perfil-marco__opcion { transition: none; }
+    .perfil-marco__nodo,
+    .perfil-marco__relleno { transition: none; }
 }
 
 .perfil-card .form-label {
@@ -476,6 +614,55 @@ html { scroll-behavior: smooth; }
 .perfil-card .form-control:focus {
     border-color: var(--acento);
     box-shadow: 0 0 0 .15rem rgba(230, 81, 63, .15);
+}
+
+/* Campo de contraseña con botón de ojo */
+.campo-password {
+    position: relative;
+}
+
+.campo-password .form-control {
+    padding-right: 42px;
+}
+
+.campo-password__ojo {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--texto-suave);
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+
+.campo-password__ojo:hover,
+.campo-password__ojo:focus-visible {
+    background: rgba(34, 37, 42, .06);
+    color: var(--secundario);
+}
+
+.campo-password__ojo i {
+    font-size: .95rem;
+    pointer-events: none;
+}
+
+.perfil-campo__requisitos {
+    display: block;
+    margin-top: 2px;
+    font-size: .68rem;
+    font-weight: 400;
+    line-height: 1.35;
+    color: var(--texto-suave);
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 .perfil-lista {
@@ -932,6 +1119,11 @@ html { scroll-behavior: smooth; }
     background: rgba(25, 135, 84, .04);
 }
 
+.perfil-compra.perfil-pedido--entregado {
+    border-left-color: #198754;
+    background: rgba(25, 135, 84, .06);
+}
+
 .perfil-compra.perfil-pedido--solicitado {
     border-left-color: #0dcaf0;
     background: rgba(13, 202, 240, .05);
@@ -960,6 +1152,94 @@ html { scroll-behavior: smooth; }
 
 .perfil-pedido__motivo strong {
     color: inherit;
+}
+
+.perfil-pedido__exito {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: var(--e-3);
+    padding: 10px 12px;
+    border: 1px solid rgba(25, 135, 84, .25);
+    border-radius: var(--r-md);
+    background: rgba(25, 135, 84, .08);
+    color: #198754;
+}
+
+.perfil-pedido__exito > i {
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.perfil-pedido__exito strong {
+    display: block;
+    font-size: .84rem;
+}
+
+.perfil-pedido__exito span {
+    display: block;
+    margin-top: 2px;
+    font-size: .76rem;
+    color: var(--texto-suave);
+}
+
+.perfil-pedido__pasos {
+    display: flex;
+    gap: 6px;
+    margin: var(--e-3) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.perfil-pedido__paso {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 4px;
+    border: 1px solid var(--borde);
+    border-radius: var(--r-sm);
+    background: var(--superficie);
+    text-align: center;
+    color: var(--texto-suave);
+}
+
+.perfil-pedido__paso i {
+    font-size: .95rem;
+    line-height: 1;
+}
+
+.perfil-pedido__paso strong {
+    font-size: .68rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.perfil-pedido__paso span {
+    font-size: .62rem;
+    line-height: 1.25;
+}
+
+.perfil-pedido__paso.is-hecho {
+    border-color: rgba(25, 135, 84, .35);
+    background: rgba(25, 135, 84, .08);
+    color: #198754;
+}
+
+.perfil-pedido__paso.is-hecho strong {
+    color: var(--secundario);
+}
+
+.perfil-pedido__paso.is-actual {
+    border-color: rgba(13, 110, 253, .35);
+    background: rgba(13, 110, 253, .08);
+    color: #0d6efd;
+}
+
+.perfil-pedido__paso.is-actual strong {
+    color: var(--secundario);
 }
 
 .perfil-pedido__fechas {
@@ -1031,10 +1311,10 @@ html { scroll-behavior: smooth; }
 .perfil-cupon__campo {
     flex: 1;
     min-width: 0;
-    height: 42px;
+    height: 36px;
     padding: 0 12px;
     border: 1px solid var(--borde);
-    border-radius: var(--r-pill);
+    border-radius: 10px;
     background: var(--superficie);
     font-size: .82rem;
     letter-spacing: .08em;
@@ -1043,7 +1323,108 @@ html { scroll-behavior: smooth; }
 
 .perfil-cupon__campo:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }
 
-.perfil-cupon__form .btn-primario { padding: 0 20px; }
+.perfil-cupon__form .btn-primario { padding: 0 18px; }
+
+/* ── Cupón de fidelidad ──────────────────────────────────────── */
+.perfil-fidelidad {
+    padding: var(--e-4);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    background: var(--superficie);
+    box-shadow: var(--sombra-suave);
+}
+
+.perfil-fidelidad__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e-3);
+    margin-bottom: var(--e-3);
+}
+
+.perfil-fidelidad__resumen {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.perfil-fidelidad__resumen strong {
+    font-size: .86rem;
+    font-weight: 600;
+    color: var(--secundario);
+}
+
+.perfil-fidelidad__resumen small {
+    font-size: .72rem;
+    color: var(--texto-suave);
+}
+
+.perfil-fidelidad__monto {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--primario-claro);
+    font-size: .8rem;
+    font-weight: 700;
+    color: var(--secundario);
+    white-space: nowrap;
+}
+
+.perfil-fidelidad__barra {
+    position: relative;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--primario-medio);
+}
+
+.perfil-fidelidad__relleno {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0e5a34 0%, #177a47 55%, #e3b341 100%);
+    transition: width .4s ease;
+}
+
+.perfil-fidelidad__cupon {
+    display: flex;
+    align-items: center;
+    gap: var(--e-3);
+    padding: var(--e-3) var(--e-4);
+    border: 1px dashed rgba(230, 81, 63, .35);
+    border-radius: var(--r-md);
+    background: rgba(230, 81, 63, .05);
+}
+
+.perfil-fidelidad__cupon-datos {
+    display: grid;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.perfil-fidelidad__cupon-datos strong {
+    font-size: .84rem;
+    color: var(--secundario);
+}
+
+.perfil-fidelidad__cupon-datos small {
+    font-size: .72rem;
+    color: var(--texto-suave);
+}
+
+.perfil-fidelidad__valor {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--acento);
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .perfil-fidelidad__cupon {
+        flex-wrap: wrap;
+    }
+}
 
 .perfil-cupon {
     display: grid;

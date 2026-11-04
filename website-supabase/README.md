@@ -80,7 +80,16 @@ En el panel de Supabase:
 
 - En Perfil → Descuento el cliente ve los requisitos: **teléfono**, **fecha de nacimiento**, **una dirección guardada** y **contraseña creada**.
 - El botón **Aplicar descuento** se habilita cuando todo está completo.
-- Al aplicarlo se guarda `descuento_primera_compra: true` en los metadatos de Auth y el descuento del **10%** se aplica al subtotal del carrito (cualquier producto) vía `carrito-vista.js`.
+- Al aplicarlo se guarda `descuento_primera_compra: true` en los metadatos de Auth y el descuento del **10%** se aplica a los productos de la categoría **Zapatos** vía `carrito-vista.js`.
+- El descuento se consume en la **primera compra que incluye zapatos**, aunque el cliente elija una promoción, un cupón o ningún descuento. Si el pedido se cancela o se rechaza, vuelve a quedar disponible.
+
+### Cupón de fidelidad (10% por par)
+
+- Cada **par** comprado aporta el **10%** de su precio neto (sin envío, después de descuentos) a un acumulado.
+- Al completar **10 pares**, el cliente puede **reclamar** un cupón de monto igual al acumulado, que equivale al precio promedio del par (ej.: 5 × C$ 220 + 5 × C$ 550 = cupón de C$ 385).
+- Progreso y reclamo: `web_fidelidad()` y `web_reclamar_fidelidad(p_ciclo)` en `supabase/fidelidad-tienda.sql`.
+- El cupón se crea en `cupones` (`tipo = monto`, `categoria = Zapatos`, un uso, vence a los 60 días) y se asigna en `cupones_clientes`; aparece en Perfil → Descuentos y cupones y como opción en el carrito.
+- Solo cuentan ventas con `estado_venta = true`.
 
 ## 8. Marcos de avatar por ventas
 

@@ -345,7 +345,7 @@ function normalizarPromocion(fila) {
         titulo: fila?.producto || fila?.titulo || 'Promoción',
         detalle: 'Se suma a tu bienvenida en el resto',
         etiqueta: tipo === 'porcentaje'
-            ? `${String(valor).replace(/\.0+$/, '')}%`
+            ? `${Math.round(valor)}%`
             : `C$ ${valor.toFixed(2)}`,
         tipo,
         valor,

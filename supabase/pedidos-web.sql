@@ -399,6 +399,14 @@ select coalesce(jsonb_agg(jsonb_build_object(
     'total_pedido', p.total_pedido,
     'fecha_entrega_estimada', p.fecha_entrega_estimada,
     'fecha_aceptado', p.fecha_aceptado,
+    'fecha_entregado', p.fecha_entregado,
+    'fecha_cancelado', p.fecha_cancelado,
+    'fecha_enviado', (
+        select min(h.fecha_cambio)
+        from public.pedido_web_estados h
+        where h.id_pedido = p.id_pedido
+          and h.estado_nuevo in ('enviado', 'listo_retiro')
+    ),
     'hora_entrega_preferida', p.hora_entrega_preferida,
     'nota_negocio', p.nota_negocio,
     'puede_cancelar', p.estado_pedido = 'solicitado' and p.estado_pago <> 'pagado',

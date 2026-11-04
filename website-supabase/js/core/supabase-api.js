@@ -119,7 +119,7 @@
             tipo,
             valor,
             etiqueta: tipo === 'porcentaje'
-                ? `${String(valor).replace(/\.00$/, '')}%`
+                ? `${Math.round(valor)}%`
                 : `C$ ${valor.toFixed(2)}`,
             titulo: 'Descuento especial',
             motivo: 'Se aplica al subtotal de tu carrito.',
@@ -148,14 +148,18 @@
     function cuentaTienePassword() {
         if (!usuarioActual) return false;
 
-        /* Bandera persistente para cuentas que crearon contraseña desde el perfil. */
-        if (usuarioActual.user_metadata?.password_set === true) return true;
-
         const proveedores = usuarioActual.app_metadata?.providers || [];
+        const identidades = usuarioActual.identities || [];
 
+        /* La identidad de correo es la única prueba real de que existe contraseña. */
         if (proveedores.includes('email')) return true;
+        if (identidades.some((identidad) => identidad.provider === 'email')) return true;
 
-        return (usuarioActual.identities || []).some((identidad) => identidad.provider === 'email');
+        /* Cuenta solo con Google (u otro proveedor): todavía no tiene contraseña. */
+        if (proveedores.length || identidades.length) return false;
+
+        /* Respaldo para sesiones antiguas sin metadatos de proveedor. */
+        return usuarioActual.user_metadata?.password_set === true;
     }
 
     function marcarPasswordLocal() {
@@ -750,8 +754,8 @@
         const siguiente = niveles.find((nivel) => !nivel.desbloqueado) || null;
 
         const estiloGuardado = texto(usuarioActual?.user_metadata?.marco_avatar_estilo).toLowerCase();
-        const marco = desbloqueados.find((nivel) => nivel.clave === estiloGuardado)
-            || (desbloqueados.length ? desbloqueados[desbloqueados.length - 1] : null);
+        /* El marco se equipa solo cuando el cliente lo reclama en la línea de tiempo. */
+        const marco = desbloqueados.find((nivel) => nivel.clave === estiloGuardado) || null;
 
         const previo = desbloqueados.length ? desbloqueados[desbloqueados.length - 1].ventas : 0;
         const hasta = siguiente ? siguiente.ventas : (marco ? marco.ventas : 5);
@@ -881,7 +885,7 @@
 
         return {
             success: true,
-            mensaje: aplicado?.mensaje || 'Descuento de bienvenida aplicado: 10% en cualquier producto.',
+            mensaje: aplicado?.mensaje || 'Descuento de bienvenida aplicado: 10% en zapatos.',
             cliente: datosCliente(clienteActual),
         };
     }
@@ -894,13 +898,20 @@
         const confirmacion = String(cuerpo.password_nueva_confirmation || '');
         const tienePassword = cuentaTienePassword();
 
-        if (!nueva || nueva.length < 6) {
-            throw errorApi('La nueva contraseña debe tener al menos 6 caracteres.', 422, {
-                password_nueva: ['La nueva contraseña debe tener al menos 6 caracteres.'],
-            });
+        const faltantes = [];
+
+        if (!nueva || nueva.length < 8) faltantes.push('al menos 8 caracteres');
+        if (!/[a-z]/.test(nueva)) faltantes.push('una letra minúscula');
+        if (!/[A-Z]/.test(nueva)) faltantes.push('una letra mayúscula');
+        if (!/\d/.test(nueva)) faltantes.push('un número');
+
+        if (faltantes.length) {
+            const mensaje = `La contraseña debe incluir ${faltantes.join(', ')}.`;
+
+            throw errorApi(mensaje, 422, { password_nueva: [mensaje] });
         }
 
-        if (confirmacion && nueva !== confirmacion) {
+        if (!confirmacion || nueva !== confirmacion) {
             throw errorApi('Las contraseñas no coinciden.', 422, {
                 password_nueva_confirmation: ['Las contraseñas no coinciden.'],
             });
@@ -961,13 +972,12 @@
 
             if (/different|same password/i.test(crudo)) {
                 mensaje = 'La nueva contraseña debe ser diferente a la actual.';
-                marcarPasswordLocal();
             } else if (/already has a password|already set/i.test(crudo)) {
                 mensaje = 'Tu cuenta ya tiene contraseña. Ingresa la contraseña actual para cambiarla.';
-                marcarPasswordLocal();
             } else if (/reauthentication|reauthenticate|recent|current password/i.test(crudo)) {
-                mensaje = 'Por seguridad, ingresa tu contraseña actual para cambiar la contraseña.';
-                marcarPasswordLocal();
+                mensaje = tienePassword
+                    ? 'Por seguridad, ingresa tu contraseña actual para cambiar la contraseña.'
+                    : 'Por seguridad, cierra sesión, vuelve a entrar con Google y crea la contraseña.';
             }
 
             throw errorApi(mensaje, 422);
@@ -1285,6 +1295,40 @@
         return { success: true, cupones: data || [] };
     }
 
+    async function fidelidadApi() {
+        if (!usuarioActual) {
+            return {
+                success: true,
+                pares_total: 0,
+                pares_ciclo: 0,
+                pares_faltan: 10,
+                aporte_ciclo: 0,
+                ciclo_actual: 1,
+                pendientes: [],
+            };
+        }
+
+        const { data, error } = await supabase.rpc('web_fidelidad');
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo cargar tu fidelidad.'), 400);
+
+        return data || {};
+    }
+
+    async function reclamarFidelidadApi(cuerpo) {
+        if (!usuarioActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const ciclo = Number(cuerpo?.ciclo || 0);
+
+        if (!ciclo) throw errorApi('El ciclo del cupón no es válido.', 422);
+
+        const { data, error } = await supabase.rpc('web_reclamar_fidelidad', { p_ciclo: ciclo });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo reclamar el cupón.'), 400);
+
+        return data || { success: true };
+    }
+
     async function canjearCuponApi(cuerpo) {
         if (!clienteActual) throw errorApi('Inicia sesión para usar cupones.', 401);
 
@@ -1555,6 +1599,10 @@
             'GET /tienda/api/descuentos': () => descuentosApi(),
 
             'GET /tienda/api/cupones': () => cuponesApi(),
+
+            'GET /tienda/api/fidelidad': () => fidelidadApi(),
+
+            'POST /tienda/api/fidelidad/reclamar': () => reclamarFidelidadApi(cuerpo),
 
             'POST /tienda/api/cupones/canjear': () => canjearCuponApi(cuerpo),
 

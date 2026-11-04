@@ -357,7 +357,7 @@ function etiquetaPromocion() {
     const valor = Number(promocionProducto.valor_descuento) || 0;
 
     return promocionProducto.tipo_descuento === 'porcentaje'
-        ? `${String(valor).replace(/\.00$/, '')}%`
+        ? `${Math.round(valor)}%`
         : moneda(valor);
 }
 

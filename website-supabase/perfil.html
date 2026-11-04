@@ -94,7 +94,7 @@
               <li><a class="perfil__item" href="/tienda/perfil#deseos"><i class="bi bi-star"></i> Lista de Deseos</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#pedidos"><i class="bi bi-bag"></i> Mis pedidos</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#historial"><i class="bi bi-receipt"></i> Historial de compras</a></li>
-              <li><a class="perfil__item" href="/tienda/perfil#descuentos"><i class="bi bi-ticket-perforated"></i> Descuento</a></li>
+              <li><a class="perfil__item" href="/tienda/perfil#descuentos"><i class="bi bi-ticket-perforated"></i> Descuentos y cupones</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#configuracion"><i class="bi bi-gear"></i> Configuración</a></li>
             </ul>
 
@@ -133,10 +133,7 @@
           <i class="bi bi-receipt"></i> Historial de compras
         </a>
         <a class="perfil-nav__item" href="#descuentos" data-seccion="descuentos">
-          <i class="bi bi-ticket-perforated"></i> Descuento
-        </a>
-        <a class="perfil-nav__item" href="#cupones" data-seccion="cupones">
-          <i class="bi bi-ticket-perforated"></i> Cupones
+          <i class="bi bi-ticket-perforated"></i> Descuentos y cupones
         </a>
         <a class="perfil-nav__item" href="#configuracion" data-seccion="configuracion">
           <i class="bi bi-gear"></i> Configuración
@@ -201,35 +198,31 @@
                     </button>
                   </div>
 
-                  <p class="perfil-avatar__etiqueta">Marco de ventas</p>
-                  <div class="perfil-marco">
-                    <div class="perfil-marco__cabecera">
-                      <div class="perfil-marco__texto">
-                        <strong id="marcoNivel">Aún sin marco</strong>
-                        <small id="marcoProgreso">Necesitas 5 ventas para tu primer marco.</small>
-                      </div>
+                </div>
+              </div>
 
-                      <label class="perfil-switch">
-                        <input type="checkbox" id="marcoVisible" role="switch" aria-label="Mostrar marco">
-                        <span class="perfil-switch__pista" aria-hidden="true">
-                          <span class="perfil-switch__bola"></span>
-                        </span>
-                        <span class="perfil-switch__texto">Mostrar</span>
-                      </label>
+              <div class="perfil-marco-bloque">
+                <p class="perfil-avatar__etiqueta">Marco de ventas</p>
+                <div class="perfil-marco">
+                  <div class="perfil-marco__cabecera">
+                    <div class="perfil-marco__texto">
+                      <strong id="marcoNivel">Aún sin marco</strong>
+                      <small id="marcoProgreso">Necesitas 5 ventas para tu primer marco.</small>
                     </div>
 
-                    <div class="perfil-marco__barra" id="marcoBarra" role="progressbar"
-                         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
-                         aria-label="Progreso de ventas para el siguiente marco">
-                      <span class="perfil-marco__relleno" id="marcoRelleno"></span>
-                    </div>
+                    <label class="perfil-switch">
+                      <input type="checkbox" id="marcoVisible" role="switch" aria-label="Mostrar marco">
+                      <span class="perfil-switch__pista" aria-hidden="true">
+                        <span class="perfil-switch__bola"></span>
+                      </span>
+                      <span class="perfil-switch__texto">Mostrar</span>
+                    </label>
+                  </div>
 
-                    <div class="perfil-marco__etiquetas">
-                      <span id="marcoDesde">0 ventas</span>
-                      <span id="marcoHasta">5 ventas</span>
-                    </div>
+                  <div class="perfil-marco__barra" id="marcoBarra">
+                    <span class="perfil-marco__relleno" id="marcoRelleno"></span>
 
-                    <div class="perfil-marco__opciones" id="marcoOpciones" role="group" aria-label="Marcos disponibles"></div>
+                    <ol class="perfil-marco__opciones" id="marcoOpciones" aria-label="Marcos disponibles por ventas"></ol>
                   </div>
                 </div>
               </div>
@@ -456,11 +449,20 @@
             <input type="radio" name="filtroPedidosWeb" id="pedidosTodos" value="todos">
             <label for="pedidosTodos">Todos</label>
 
+            <input type="radio" name="filtroPedidosWeb" id="pedidosSolicitados" value="solicitados">
+            <label for="pedidosSolicitados">Solicitados</label>
+
             <input type="radio" name="filtroPedidosWeb" id="pedidosActivos" value="activos" checked>
             <label for="pedidosActivos">Activos</label>
 
+            <input type="radio" name="filtroPedidosWeb" id="pedidosEntregados" value="entregados">
+            <label for="pedidosEntregados">Entregados</label>
+
             <input type="radio" name="filtroPedidosWeb" id="pedidosCancelados" value="cancelados">
             <label for="pedidosCancelados">Cancelados</label>
+
+            <input type="radio" name="filtroPedidosWeb" id="pedidosPagosPendientes" value="pagos_pendientes">
+            <label for="pedidosPagosPendientes">Pagos pendientes</label>
           </div>
 
           <div id="pedidosInvitado" class="perfil-vacio">
@@ -500,41 +502,61 @@
         </div>
       </section>
 
-      <!-- Sección: Descuento -->
+      <!-- Sección: Descuentos y cupones -->
       <section class="perfil-seccion" id="descuentos">
         <header class="perfil-seccion__cabecera">
           <span class="perfil-seccion__etiqueta">Mi cuenta</span>
-          <h2 class="perfil-seccion__titulo">Descuento</h2>
-          <p class="perfil-seccion__texto">Descuento de primera compra con requisitos.</p>
+          <h2 class="perfil-seccion__titulo">Descuentos y cupones</h2>
+          <p class="perfil-seccion__texto">Tu descuento de bienvenida y los cupones disponibles.</p>
         </header>
 
         <div class="perfil-seccion__cuerpo">
-          <div id="descuentoInvitado" class="perfil-vacio">
-            <i class="bi bi-ticket-perforated"></i>
-            <p>Inicia sesión para consultar tu descuento.</p>
+          <div class="perfil-grupo">
+            <h3 class="perfil-subtitulo">Descuento de bienvenida</h3>
+
+            <div id="descuentoInvitado" class="perfil-vacio">
+              <i class="bi bi-ticket-perforated"></i>
+              <p>Inicia sesión para consultar tu descuento.</p>
+            </div>
+
+            <div id="contenidoDescuento" hidden></div>
           </div>
 
-          <div id="contenidoDescuento" hidden></div>
-        </div>
-      </section>
+          <div class="perfil-grupo">
+            <h3 class="perfil-subtitulo">Cupón de fidelidad</h3>
 
-      <!-- Sección: Cupones -->
-      <section class="perfil-seccion" id="cupones">
-        <header class="perfil-seccion__cabecera">
-          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
-          <h2 class="perfil-seccion__titulo">Cupones</h2>
-          <p class="perfil-seccion__texto">Cada cupón se usa una sola vez y tiene fecha de expiración.</p>
-        </header>
+            <div class="perfil-fidelidad">
+              <div class="perfil-fidelidad__cabecera">
+                <div class="perfil-fidelidad__resumen">
+                  <strong id="fidelidadPares">0 de 10 pares</strong>
+                  <small id="fidelidadTexto">Cada 10 pares ganas un cupón por el 10% acumulado.</small>
+                </div>
 
-        <div class="perfil-seccion__cuerpo">
-          <form class="perfil-cupon__form" id="formCuponPerfil" autocomplete="off">
-            <input class="perfil-cupon__campo" id="cuponPerfilCodigo" type="text" maxlength="40"
-                   placeholder="Código de cupón" aria-label="Código de cupón">
-            <button class="btn-primario" type="submit">Canjear</button>
-          </form>
+                <span class="perfil-fidelidad__monto" id="fidelidadMonto">C$ 0.00</span>
+              </div>
 
-          <div class="perfil-lista" id="listaCupones">
-            <p class="perfil-vacio">Cargando cupones…</p>
+              <div class="perfil-fidelidad__barra" id="fidelidadBarra" role="progressbar"
+                   aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"
+                   aria-label="Pares acumulados para el cupón de fidelidad">
+                <span class="perfil-fidelidad__relleno" id="fidelidadRelleno"></span>
+              </div>
+            </div>
+
+            <div class="perfil-lista" id="fidelidadPendientes"></div>
+          </div>
+
+          <div class="perfil-grupo">
+            <h3 class="perfil-subtitulo">Cupones</h3>
+
+            <form class="perfil-cupon__form" id="formCuponPerfil" autocomplete="off">
+              <input class="perfil-cupon__campo" id="cuponPerfilCodigo" type="text" maxlength="40"
+                     placeholder="Código de cupón" aria-label="Código de cupón">
+              <button class="btn-primario" type="submit">Canjear</button>
+            </form>
+
+            <div class="perfil-lista" id="listaCupones">
+              <p class="perfil-vacio">Cargando cupones…</p>
+            </div>
           </div>
         </div>
       </section>
@@ -559,22 +581,42 @@
               </div>
             <form id="formPassword" class="perfil-card">
               <h3 class="perfil-card__titulo" id="passwordTitulo">Cambiar contraseña</h3>
-              <p class="perfil-card__texto" id="passwordAyuda">Usa una contraseña de al menos 6 caracteres.</p>
+              <p class="perfil-card__texto" id="passwordAyuda">La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.</p>
 
               <div class="row g-3">
                 <div class="col-md-4" id="passwordActualCol">
                   <label class="form-label" for="passwordActual">Contraseña actual</label>
-                  <input class="form-control" id="passwordActual" name="password_actual" type="password" autocomplete="current-password">
+                  <div class="campo-password">
+                    <input class="form-control" id="passwordActual" name="password_actual" type="password" autocomplete="current-password">
+                    <button type="button" class="campo-password__ojo" data-toggle-password="passwordActual" aria-label="Mostrar contraseña" aria-pressed="false">
+                      <i class="bi bi-eye" aria-hidden="true"></i>
+                    </button>
+                  </div>
                 </div>
 
                 <div class="col-md-4">
-                  <label class="form-label" for="passwordNueva">Nueva contraseña</label>
-                  <input class="form-control" id="passwordNueva" name="password_nueva" type="password" autocomplete="new-password" required>
+                  <label class="form-label" for="passwordNueva">Nueva contraseña
+                    <span class="perfil-campo__requisitos">Mínimo 8 caracteres, una mayúscula, una minúscula y un número</span>
+                  </label>
+                  <div class="campo-password">
+                    <input class="form-control" id="passwordNueva" name="password_nueva" type="password" autocomplete="new-password"
+                      required minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}"
+                      title="Mínimo 8 caracteres, con al menos una minúscula, una mayúscula y un número.">
+                    <button type="button" class="campo-password__ojo" data-toggle-password="passwordNueva" aria-label="Mostrar contraseña" aria-pressed="false">
+                      <i class="bi bi-eye" aria-hidden="true"></i>
+                    </button>
+                  </div>
                 </div>
 
                 <div class="col-md-4">
                   <label class="form-label" for="passwordNuevaConfirm">Confirmar nueva</label>
-                  <input class="form-control" id="passwordNuevaConfirm" name="password_nueva_confirmation" type="password" autocomplete="new-password" required>
+                  <div class="campo-password">
+                    <input class="form-control" id="passwordNuevaConfirm" name="password_nueva_confirmation" type="password" autocomplete="new-password"
+                      required minlength="8" title="Repite la nueva contraseña.">
+                    <button type="button" class="campo-password__ojo" data-toggle-password="passwordNuevaConfirm" aria-label="Mostrar contraseña" aria-pressed="false">
+                      <i class="bi bi-eye" aria-hidden="true"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
 

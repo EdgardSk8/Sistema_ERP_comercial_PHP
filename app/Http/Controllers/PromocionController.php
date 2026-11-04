@@ -47,19 +47,21 @@ class PromocionController extends Controller
     {
         try {
             $productos = Producto::with([
+                'categoria:id_categoria,nombre_categoria',
                 'variaciones' => fn ($query) => $query
                     ->where('estado_variacion', true)
                     ->with(['imagenes' => fn ($imagenes) => $imagenes->orderBy('orden')]),
             ])
                 ->where('estado_producto', true)
                 ->orderBy('nombre_producto')
-                ->get(['id_producto', 'nombre_producto', 'precio_compra', 'precio_venta', 'imagen_producto'])
+                ->get(['id_producto', 'id_categoria', 'nombre_producto', 'precio_compra', 'precio_venta', 'imagen_producto'])
                 ->map(function ($producto) {
                     $imagenVariacion = $producto->variaciones->first()?->imagenes->first()?->imagen;
                     $producto->imagen_producto_url = $this->urlImagenProductoVariacion(
                         $producto->imagen_producto,
                         $imagenVariacion
                     );
+                    $producto->nombre_categoria = $producto->categoria->nombre_categoria ?? null;
 
                     return $producto;
                 });
@@ -101,7 +103,7 @@ class PromocionController extends Controller
                     : null,
                 'fecha_inicio_promocion' => $request->fecha_inicio_promocion,
                 'fecha_fin_promocion' => $request->fecha_fin_promocion ?: null,
-                'estado_promocion' => true,
+                'estado_promocion' => $request->has('estado_promocion') ? $request->boolean('estado_promocion') : true,
                 'fecha_creacion_promocion' => now(),
             ]);
 
@@ -175,6 +177,10 @@ class PromocionController extends Controller
                 'fecha_fin_promocion' => $request->fecha_fin_promocion ?: null,
                 'fecha_actualizacion_promocion' => now(),
             ];
+
+            if ($request->has('estado_promocion')) {
+                $datos['estado_promocion'] = $request->boolean('estado_promocion');
+            }
 
             if ($request->hasFile('imagen_promocion')) {
                 $imagenAnterior = $promocion->imagen_promocion;
@@ -255,6 +261,7 @@ class PromocionController extends Controller
             'imagen_promocion' => ($imagenObligatoria ? 'required' : 'nullable').'|image|mimes:jpg,jpeg,png,webp|max:4096',
             'tipo_descuento_promocion' => 'nullable|in:porcentaje,monto,precio',
             'valor_descuento_promocion' => 'nullable|required_with:tipo_descuento_promocion|numeric|min:0',
+            'estado_promocion' => 'nullable|boolean',
         ], [
             'required' => 'El campo :attribute es obligatorio.',
             'exists' => 'El :attribute seleccionado no existe.',
@@ -274,6 +281,7 @@ class PromocionController extends Controller
             'imagen_promocion' => 'imagen',
             'tipo_descuento_promocion' => 'tipo de descuento',
             'valor_descuento_promocion' => 'valor del descuento',
+            'estado_promocion' => 'estado de la promoción',
         ]);
 
         $validator->after(function ($validador) use ($request) {

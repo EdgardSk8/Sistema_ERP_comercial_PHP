@@ -2,7 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Caja;
+use App\Models\Cuenta;
+use App\Models\DetalleVenta;
+use App\Models\MovimientoCaja;
+use App\Models\MovimientoCuenta;
+use App\Models\MovimientoInventario;
+use App\Models\Producto;
+use App\Models\VariacionTalla;
+use App\Models\Venta;
+use App\Services\CosteoInventarioService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
@@ -125,6 +136,8 @@ class PedidoWebController extends Controller
             ->selectRaw('count(*) as total')
             ->selectRaw("sum(case when estado_pedido = 'solicitado' then 1 else 0 end) as solicitados")
             ->selectRaw("sum(case when estado_pedido = 'aceptado' then 1 else 0 end) as aceptados")
+            ->selectRaw("sum(case when estado_pedido in ('enviado', 'listo_retiro') then 1 else 0 end) as en_camino")
+            ->selectRaw("sum(case when estado_pedido = 'entregado' then 1 else 0 end) as entregados")
             ->selectRaw("sum(case when estado_pedido = 'cancelado' then 1 else 0 end) as cancelados")
             ->first();
 
@@ -135,6 +148,8 @@ class PedidoWebController extends Controller
                 'total' => (int) ($resumen->total ?? 0),
                 'solicitados' => (int) ($resumen->solicitados ?? 0),
                 'aceptados' => (int) ($resumen->aceptados ?? 0),
+                'en_camino' => (int) ($resumen->en_camino ?? 0),
+                'entregados' => (int) ($resumen->entregados ?? 0),
                 'cancelados' => (int) ($resumen->cancelados ?? 0),
             ],
         ]);
@@ -258,12 +273,20 @@ class PedidoWebController extends Controller
 
         $usuario = session('usuario', []);
 
+        $facturo = false;
+
         try {
-            DB::transaction(function () use ($id, $pedido, $datos, $nuevoEstadoPedido, $nuevoEstadoPago, $request, $usuario) {
+            DB::transaction(function () use ($id, $pedido, $datos, $nuevoEstadoPedido, $nuevoEstadoPago, $request, $usuario, &$facturo) {
                 DB::table('pedidos_web')->where('id_pedido', $id)->update($datos);
 
                 $huboCambio = $nuevoEstadoPedido !== $pedido->estado_pedido
                     || $nuevoEstadoPago !== $pedido->estado_pago;
+
+                if (in_array($nuevoEstadoPedido, ['aceptado', 'entregado'], true)
+                    && $nuevoEstadoPago === 'pagado'
+                    && in_array($pedido->metodo_pago_web, ['efectivo', 'lafise', 'billetera_movil'], true)) {
+                    $facturo = $this->facturarPedidoWeb((int) $id, $usuario);
+                }
 
                 if (! $huboCambio && ! $request->filled('nota_negocio')) {
                     return;
@@ -280,6 +303,13 @@ class PedidoWebController extends Controller
                     'nota' => $request->input('nota_negocio') ?: null,
                 ]);
             });
+        } catch (\Exception $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'mensaje' => $e->getMessage() ?: 'No se pudo actualizar el pedido. Intenta de nuevo.',
+            ], 422);
         } catch (Throwable $e) {
             report($e);
 
@@ -294,11 +324,17 @@ class PedidoWebController extends Controller
             $this->reactivarDescuentoBienvenida((int) $pedido->id_cliente);
         }
 
+        if ($facturo) {
+            Cache::forget('pos.productos.'.md5(''));
+        }
+
         $actualizado = DB::table('pedidos_web')->where('id_pedido', $id)->first();
 
         return response()->json([
             'success' => true,
-            'mensaje' => 'Pedido actualizado correctamente.',
+            'mensaje' => $facturo
+                ? 'Pedido aceptado y pagado. Venta registrada, stock descontado e ingreso registrado en caja/cuenta.'
+                : 'Pedido actualizado correctamente.',
             'pedido' => [
                 'id_pedido' => (int) $id,
                 'estado_pedido' => $nuevoEstadoPedido,
@@ -310,6 +346,260 @@ class PedidoWebController extends Controller
                 'nota_negocio' => $actualizado->nota_negocio,
             ],
         ]);
+    }
+
+    private function cuentaParaPedidoWeb(string $metodoPago): ?object
+    {
+        $consulta = DB::table('cuentas')->where('estado', 1);
+
+        if ($metodoPago === 'billetera_movil') {
+            $consulta->where(function ($query) {
+                $query->where('nombre_cuenta', 'ilike', '%billetera%')
+                    ->orWhere('nombre_cuenta', 'ilike', '%móvil%')
+                    ->orWhere('nombre_cuenta', 'ilike', '%movil%');
+            });
+        } else {
+            $consulta->where('nombre_cuenta', 'ilike', '%lafise%');
+        }
+
+        $cuenta = $consulta->orderBy('id_cuenta')->first();
+
+        return $cuenta ?: DB::table('cuentas')->where('estado', 1)->orderBy('id_cuenta')->first();
+    }
+
+    private function facturarPedidoWeb(int $idPedido, array $usuario): bool
+    {
+        $pedido = DB::table('pedidos_web')->where('id_pedido', $idPedido)->lockForUpdate()->first();
+
+        if (! $pedido || $pedido->id_venta) {
+            return false;
+        }
+
+        if (! in_array($pedido->metodo_pago_web, ['efectivo', 'lafise', 'billetera_movil'], true)
+            || ! in_array($pedido->estado_pedido, ['aceptado', 'entregado'], true)
+            || $pedido->estado_pago !== 'pagado') {
+            return false;
+        }
+
+        $items = DB::table('detalle_pedidos_web')
+            ->where('id_pedido', $idPedido)
+            ->orderBy('id_detalle_pedido')
+            ->get();
+
+        if ($items->isEmpty()) {
+            throw new \Exception('El pedido no tiene productos para facturar.');
+        }
+
+        $idUsuario = (int) ($usuario['id'] ?? 0);
+        $esEfectivo = $pedido->metodo_pago_web === 'efectivo';
+        $caja = null;
+        $cuenta = null;
+        $ingresoEnCuenta = ! $esEfectivo;
+
+        if ($esEfectivo) {
+            $caja = Caja::where('estado_caja', 1)
+                ->where('id_usuario', $idUsuario)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $caja) {
+                // Sin caja abierta: el efectivo queda registrado en una cuenta.
+                $cuenta = $this->cuentaParaPedidoWeb($pedido->metodo_pago_web);
+                $ingresoEnCuenta = true;
+
+                if (! $cuenta) {
+                    throw new \Exception('No hay caja abierta ni una cuenta activa para registrar el pago del pedido.');
+                }
+            }
+        } else {
+            $cuenta = $this->cuentaParaPedidoWeb($pedido->metodo_pago_web);
+
+            if (! $cuenta) {
+                throw new \Exception('No hay una cuenta activa para registrar el pago del pedido.');
+            }
+        }
+
+        $cliente = DB::table('clientes')->where('id_cliente', $pedido->id_cliente)->first();
+        $nombreCliente = $cliente->nombre_cliente ?? $pedido->nombre_recibe ?? 'Cliente';
+        $telefonoCliente = $cliente->telefono_cliente ?? $pedido->telefono_contacto ?? '';
+        $correoCliente = $cliente->correo_cliente ?? '';
+        $detalleCliente = trim($nombreCliente
+            .($telefonoCliente ? ' · Tel: '.$telefonoCliente : '')
+            .($correoCliente ? ' · '.$correoCliente : ''));
+
+        $numero = 'VTA-'.now()->format('Ymd').'-'.str_pad((Venta::max('id_venta') + 1), 5, '0', STR_PAD_LEFT);
+
+        $venta = Venta::create([
+            'numero_factura' => $numero,
+            'id_cliente' => $pedido->id_cliente,
+            'id_usuario' => $idUsuario,
+            'id_caja' => (! $ingresoEnCuenta && $caja) ? $caja->id_caja : null,
+            'id_cuenta' => $ingresoEnCuenta ? $cuenta->id_cuenta : null,
+            'subtotal_venta' => 0,
+            'impuesto_venta' => 0,
+            'descuento_venta' => (float) ($pedido->descuento_pedido ?? 0),
+            'total_venta' => 0,
+            'id_metodo_pago' => $esEfectivo ? 1 : 2,
+            'monto_recibido' => (float) $pedido->total_pedido,
+            'vuelto' => 0,
+        ]);
+
+        $subtotalGeneral = 0.0;
+        $impuestoGeneral = 0.0;
+
+        foreach ($items as $item) {
+            $cantidad = (int) $item->cantidad_pedido;
+
+            if ($cantidad < 1) {
+                throw new \Exception('La cantidad de un producto del pedido no es válida.');
+            }
+
+            $producto = Producto::with('impuesto')->find($item->id_producto);
+
+            if (! $producto) {
+                throw new \Exception('El producto "'.$item->nombre_producto.'" ya no existe.');
+            }
+
+            $variacionTalla = null;
+
+            if (! empty($item->id_variacion_talla)) {
+                $variacionTalla = VariacionTalla::with(['variacion', 'talla'])
+                    ->where('id_variacion_talla', $item->id_variacion_talla)
+                    ->whereHas('variacion', fn ($query) => $query->where('id_producto', $producto->id_producto))
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            $impuestoUnitario = round((float) ($item->monto_impuesto_pedido ?? 0) / $cantidad, 2);
+            $precioSinImpuesto = round((float) $item->precio_unitario_pedido - $impuestoUnitario, 2);
+            $subtotal = round($precioSinImpuesto * $cantidad, 2);
+            $impuesto = round($impuestoUnitario * $cantidad, 2);
+
+            $subtotalGeneral += $subtotal;
+            $impuestoGeneral += $impuesto;
+
+            $costoRespaldo = (float) ($variacionTalla
+                ? ($variacionTalla->precio_compra ?? $producto->precio_compra ?? 0)
+                : ($producto->precio_compra ?? 0));
+
+            $costeoFifo = app(CosteoInventarioService::class)->consumir(
+                $producto->id_producto,
+                $variacionTalla?->id_variacion_talla,
+                $cantidad,
+                $costoRespaldo
+            );
+
+            $costoUnitario = $cantidad > 0
+                ? round($costeoFifo['costo_total'] / $cantidad, 6)
+                : 0.0;
+
+            DetalleVenta::create([
+                'id_venta' => $venta->id_venta,
+                'id_producto' => $producto->id_producto,
+                'id_variacion_talla' => $variacionTalla?->id_variacion_talla,
+                'descripcion_variacion' => $variacionTalla
+                    ? trim(($variacionTalla->variacion->color ?? '').' · '.($variacionTalla->talla->talla ?? ''))
+                    : null,
+                'sku_variacion' => $variacionTalla?->sku,
+                'cantidad_venta' => $cantidad,
+                'precio_unitario_venta' => $precioSinImpuesto,
+                'costo_unitario_venta' => $costoUnitario,
+                'consumos_lotes' => $costeoFifo['consumos'],
+                'subtotal_detalle_venta' => $subtotal,
+                'porcentaje_impuesto' => (float) ($item->porcentaje_impuesto_pedido ?? 0),
+                'monto_impuesto' => $impuesto,
+            ]);
+
+            $stockAntes = $variacionTalla ? $variacionTalla->stock : $producto->stock_actual;
+
+            if ($stockAntes < $cantidad) {
+                throw new \Exception("El producto '{$producto->nombre_producto}' ya no tiene existencias disponibles.");
+            }
+
+            if ($variacionTalla) {
+                $actualizado = VariacionTalla::where('id_variacion_talla', $variacionTalla->id_variacion_talla)
+                    ->where('stock', '>=', $cantidad)
+                    ->decrement('stock', $cantidad);
+
+                if (! $actualizado) {
+                    $nombreTalla = $variacionTalla->talla->talla ?? 'seleccionada';
+                    throw new \Exception("La talla '{$nombreTalla}' ya no tiene existencias disponibles.");
+                }
+
+                $producto->decrement('stock_actual', $cantidad);
+                $stockResultante = $producto->fresh()->stock_actual;
+            } else {
+                $actualizado = Producto::where('id_producto', $producto->id_producto)
+                    ->where('stock_actual', '>=', $cantidad)
+                    ->decrement('stock_actual', $cantidad);
+
+                if (! $actualizado) {
+                    throw new \Exception("El producto '{$producto->nombre_producto}' ya no tiene existencias disponibles.");
+                }
+
+                $stockResultante = $producto->fresh()->stock_actual;
+            }
+
+            MovimientoInventario::create([
+                'id_producto' => $producto->id_producto,
+                'tipo_movimiento' => 'SALIDA',
+                'cantidad_movimiento' => $cantidad,
+                'stock_resultante' => $stockResultante,
+                'motivo_movimiento' => 'Venta pedido web '.$pedido->numero_pedido,
+                'id_referencia' => $venta->id_venta,
+                'tipo_referencia' => 'VENTA',
+                'precio_unitario' => $precioSinImpuesto,
+                'id_usuario' => $idUsuario,
+            ]);
+        }
+
+        $subtotalConEnvio = round($subtotalGeneral + (float) ($pedido->costo_envio_pedido ?? 0), 2);
+        $totalGeneral = round(max($subtotalConEnvio + $impuestoGeneral - (float) ($pedido->descuento_pedido ?? 0), 0), 2);
+
+        if (abs($totalGeneral - (float) $pedido->total_pedido) > 0.01) {
+            $totalGeneral = (float) $pedido->total_pedido;
+            $subtotalConEnvio = round($totalGeneral + (float) ($pedido->descuento_pedido ?? 0) - $impuestoGeneral, 2);
+        }
+
+        $venta->update([
+            'subtotal_venta' => $subtotalConEnvio,
+            'impuesto_venta' => $impuestoGeneral,
+            'total_venta' => $totalGeneral,
+            'monto_recibido' => $totalGeneral,
+            'vuelto' => 0,
+        ]);
+
+        $etiquetaCanal = $esEfectivo
+            ? ($ingresoEnCuenta ? 'Efectivo sin caja' : 'Efectivo en caja')
+            : ($pedido->metodo_pago_web === 'lafise' ? 'Lafise' : 'Billetera móvil');
+
+        $concepto = mb_substr('Ingreso pedido web '.$pedido->numero_pedido.' · '.$etiquetaCanal.' · '.$detalleCliente, 0, 255);
+
+        if (! $ingresoEnCuenta) {
+            MovimientoCaja::create([
+                'id_caja' => $caja->id_caja,
+                'tipo_movimiento_caja' => 'INGRESO',
+                'concepto_movimiento_caja' => $concepto,
+                'monto_movimiento_caja' => $totalGeneral,
+                'id_usuario' => $idUsuario,
+                'id_referencia' => $venta->id_venta,
+            ]);
+        } else {
+            Cuenta::where('id_cuenta', $cuenta->id_cuenta)->increment('saldo_actual', $totalGeneral);
+
+            MovimientoCuenta::create([
+                'id_cuenta' => $cuenta->id_cuenta,
+                'tipo_movimiento' => 'INGRESO',
+                'monto' => $totalGeneral,
+                'descripcion' => $concepto,
+                'fecha' => now(),
+                'id_usuario' => $idUsuario,
+            ]);
+        }
+
+        DB::table('pedidos_web')->where('id_pedido', $idPedido)->update(['id_venta' => $venta->id_venta]);
+
+        return true;
     }
 
     private function reactivarDescuentoBienvenida(int $idCliente): void

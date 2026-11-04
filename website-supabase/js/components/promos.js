@@ -62,7 +62,7 @@
         if (!tipo || numero <= 0) return '';
 
         if (tipo === 'porcentaje') {
-            return `${String(numero).replace(/\.00$/, '')}% DESCUENTO`;
+            return `${Math.round(numero)}% DESCUENTO`;
         }
 
         if (tipo === 'monto') {

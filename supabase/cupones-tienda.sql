@@ -65,6 +65,7 @@ join public.clientes cl on cl.id_cliente = cc.id_cliente
 where cl.auth_id = auth.uid()
   and cc.usado_cupon = false
   and c.estado_cupon = true
+  and coalesce(c.usos_realizados, 0) < c.usos_maximos
   and c.fecha_inicio_cupon <= now()
   and (c.fecha_fin_cupon is null or c.fecha_fin_cupon >= now());
 $$;

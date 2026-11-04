@@ -94,7 +94,13 @@ begin
        and coalesce(pr.valor_descuento_promocion, 0) > 0
        and pr.fecha_inicio_promocion <= current_date
        and (pr.fecha_fin_promocion is null or pr.fecha_fin_promocion >= current_date)
-       and p.estado_producto = true;
+       and p.estado_producto = true
+       /* Promociones: uso único, solo en la primera compra (sin pedidos previos válidos). */
+       and not exists (
+           select 1 from public.pedidos_web pw
+           where pw.id_cliente = v_cliente.id_cliente
+             and pw.estado_pedido not in ('cancelado', 'rechazado')
+       );
 
     return jsonb_build_object(
         'success', true,
@@ -349,6 +355,7 @@ begin
           and cc.usado_cupon = false
           and upper(c.codigo_cupon) = v_cupon_codigo
           and c.estado_cupon = true
+          and coalesce(c.usos_realizados, 0) < c.usos_maximos
           and (c.fecha_fin_cupon is null or c.fecha_fin_cupon >= now())
         limit 1;
 
@@ -408,7 +415,12 @@ begin
         where pr.id_promocion = v_promo_id
           and pr.estado_promocion = true
           and pr.fecha_inicio_promocion <= current_date
-          and (pr.fecha_fin_promocion is null or pr.fecha_fin_promocion >= current_date);
+          and (pr.fecha_fin_promocion is null or pr.fecha_fin_promocion >= current_date)
+          and not exists (
+              select 1 from public.pedidos_web pw
+              where pw.id_cliente = v_cliente.id_cliente
+                and pw.estado_pedido not in ('cancelado', 'rechazado')
+          );
 
         if v_promo.id_promocion is not null then
             select coalesce(sum(d.subtotal_pedido), 0),
@@ -482,9 +494,30 @@ begin
         update public.cupones
            set usos_realizados = coalesce(usos_realizados, 0) + 1
          where id_cupon = v_cupon.id_cupon;
+
+        /* Al agotarse los usos, el cupón se desactiva (uso único). */
+        update public.cupones
+           set estado_cupon = false
+         where id_cupon = v_cupon.id_cupon
+           and coalesce(usos_realizados, 0) >= usos_maximos;
     end if;
 
-    if v_uso_bienvenida then
+    /* La bienvenida se consume en la primera compra que incluye zapatos,
+       aunque el cliente haya elegido una promoción, un cupón o ningún descuento. */
+    select u.raw_user_meta_data into v_meta
+    from auth.users u
+    where u.id = auth.uid();
+
+    if v_uso_bienvenida
+       or (
+           v_base_bienvenida > 0
+           and lower(coalesce(v_meta ->> 'descuento_primera_compra', '')) in ('true', 't', '1')
+           and lower(coalesce(v_meta ->> 'descuento_primera_compra_usado', '')) not in ('true', 't', '1')
+           and (
+               nullif(v_meta ->> 'descuento_primera_compra_expira', '') is null
+               or (v_meta ->> 'descuento_primera_compra_expira')::timestamptz >= now()
+           )
+       ) then
         update auth.users
            set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
                || jsonb_build_object(

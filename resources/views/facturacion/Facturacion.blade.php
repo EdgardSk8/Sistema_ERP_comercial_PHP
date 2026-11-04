@@ -36,7 +36,7 @@
 
                 <div class="mini-contenedor-pos">
 
-                <table id="tablaProductos" class="table table-bordered">
+                <table id="tablaProductos" class="table table-sm table-bordered">
                     <thead>
                         <tr>
                             <th>Producto / SKU</th>
@@ -179,7 +179,7 @@
 
             <div class="Facturacion-Carrito">
 
-                <table class="table  table-bordered">
+                <table class="table table-sm table-bordered">
                     <thead>
                         <tr>
                             <th>Producto</th>

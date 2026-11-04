@@ -556,17 +556,56 @@ button { font-family: inherit; }
 .pie__grid { display: grid; gap: var(--e-5); }
 .pie__bloque--marca .marca { font-size: 1rem; }
 .pie__eslogan { margin: var(--e-2) 0 0; max-width: 30ch; font-size: .82rem; line-height: 1.6; opacity: .72; }
-.pie__redes { display: flex; gap: 10px; margin-top: var(--e-4); }
+.pie__redes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: var(--e-4); }
 
 .pie__redes a {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
   border: 1px solid rgba(245, 238, 222, .22);
   border-radius: var(--r-pill);
-  font-size: 1rem;
+  font-size: .8rem;
+  white-space: nowrap;
   transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+
+.pie__redes a i { font-size: 1rem; }
+
+.pie__redes a[href*="instagram"] {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  border-color: transparent;
+  color: #fff;
+}
+
+.pie__redes a[href*="instagram"]:hover {
+  background: linear-gradient(45deg, #e6683c 0%, #dc2743 25%, #cc2366 50%, #bc1888 75%, #a0126f 100%);
+  border-color: transparent;
+  color: #fff;
+}
+
+.pie__redes a[href*="facebook"] {
+  background: #1877f2;
+  border-color: #1877f2;
+  color: #fff;
+}
+
+.pie__redes a[href*="facebook"]:hover {
+  background: #0f65d4;
+  border-color: #0f65d4;
+  color: #fff;
+}
+
+.pie__redes a[href*="wa.me"] {
+  background: #25d366;
+  border-color: #25d366;
+  color: #fff;
+}
+
+.pie__redes a[href*="wa.me"]:hover {
+  background: #1ebe57;
+  border-color: #1ebe57;
+  color: #fff;
 }
 
 .pie__redes a:hover { background: var(--complementario); border-color: var(--complementario); color: var(--secundario); transform: translateY(-2px); }
@@ -945,18 +984,61 @@ button { font-family: inherit; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 42px;
-  border-radius: var(--r-pill);
-  font-size: .8rem;
+  gap: 6px;
+  height: 36px;
+  padding: 0 15px;
+  border-radius: 10px;
+  font-size: .76rem;
   font-weight: 600;
+  letter-spacing: .01em;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
-  transition: opacity .18s ease;
+  transition: border-color .18s ease, box-shadow .18s ease;
 }
 
-.btn-primario { border: 1px solid var(--secundario); background: var(--secundario); color: var(--primario); }
-.btn-secundario { border: 1px solid var(--primario-hondo); background: var(--complementario); color: var(--secundario); }
-.btn-primario:hover, .btn-secundario:hover { opacity: .86; }
+.btn-primario {
+  border: 1px solid var(--secundario);
+  background: var(--secundario);
+  color: var(--primario);
+  box-shadow: 0 1px 2px rgba(34, 37, 42, .14);
+}
+
+.btn-secundario {
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  color: var(--secundario);
+}
+
+.btn-primario:hover {
+  background: #2E3239;
+  border-color: #2E3239;
+  box-shadow: 0 6px 14px rgba(34, 37, 42, .16);
+}
+
+.btn-secundario:hover {
+  border-color: var(--primario-hondo);
+  background: var(--primario-claro);
+}
+
+.btn-primario:active,
+.btn-secundario:active {
+  box-shadow: none;
+}
+
+.btn-primario:focus-visible,
+.btn-secundario:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.btn-primario:disabled,
+.btn-secundario:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 
 /* ── 7. Carrito ──────────────────────────────────────────────── */
 .carrito { padding-top: 24px; }
@@ -1029,7 +1111,7 @@ button { font-family: inherit; }
 .resumen__fila { display: flex; justify-content: space-between; padding: 6px 0; font-size: .86rem; color: var(--texto-suave); }
 .resumen__fila--total { margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--borde); font-size: 1rem; font-weight: 700; color: var(--secundario); }
 .resumen__gratis { color: var(--secundario); font-weight: 600; }
-.resumen__btn { width: 100%; margin-top: 16px; }
+.resumen__btn { width: 100%; margin-top: 16px; height: 44px; font-size: .82rem; border-radius: 12px; }
 .resumen__wa {
   display: flex;
   align-items: center;

@@ -11,6 +11,10 @@ export default function initPedidosWeb() {
     const modalElemento = document.getElementById('modalDetallePedidoWeb');
     const modal = bootstrap.Modal.getOrCreateInstance(modalElemento);
 
+    const modalAccionElemento = document.getElementById('modalConfirmarAccionPedidoWeb');
+    const modalAccion = modalAccionElemento ? bootstrap.Modal.getOrCreateInstance(modalAccionElemento) : null;
+    let accionRapidaPendiente = null;
+
 
     const fechaEntregaInput = document.getElementById('fechaEntregaPedidoWeb');
 
@@ -162,6 +166,8 @@ export default function initPedidosWeb() {
         document.getElementById('resumenPedidosTotal').textContent = Number(resumen?.total || 0);
         document.getElementById('resumenPedidosSolicitados').textContent = Number(resumen?.solicitados || 0);
         document.getElementById('resumenPedidosAceptados').textContent = Number(resumen?.aceptados || 0);
+        document.getElementById('resumenPedidosEnCamino').textContent = Number(resumen?.en_camino || 0);
+        document.getElementById('resumenPedidosEntregados').textContent = Number(resumen?.entregados || 0);
         document.getElementById('resumenPedidosCancelados').textContent = Number(resumen?.cancelados || 0);
     }
 
@@ -192,6 +198,9 @@ export default function initPedidosWeb() {
                 ? `${pedido.items_resumen} (+${pedido.items_total - 3})`
                 : (pedido.items_resumen || '—');
 
+            const puedeEnCamino = ['aceptado', 'preparando'].includes(pedido.estado_pedido);
+            const puedeEntregar = ['enviado', 'listo_retiro'].includes(pedido.estado_pedido);
+
             const fila = document.createElement('tr');
             fila.innerHTML = `
                 <td class="pedidos-numero">${escapar(pedido.numero_pedido || `VTA-${pedido.id_pedido}`)}</td>
@@ -201,6 +210,7 @@ export default function initPedidosWeb() {
                 <td class="fw-semibold">${moneda(pedido.total_pedido)}</td>
                 <td>${badgePedido(pedido.estado_pedido)}</td>
                 <td>${badgePago(pedido.estado_pago)}</td>
+                <td class="pedidos-metodo-pago">${escapar(METODOS_PAGO[pedido.metodo_pago_web] || pedido.metodo_pago_web || '—')}</td>
                 <td>${formatearHora(pedido.hora_entrega_preferida)}</td>
                 <td>${escapar(window.FechaSimple(pedido.fecha_aceptado) || '—')}</td>
                 <td>${escapar(window.formatearFechaDiaHora(pedido.fecha_entrega_estimada) || '—')}</td>
@@ -208,6 +218,14 @@ export default function initPedidosWeb() {
                     <button type="button" class="btn-detalle" data-pedido="${Number(pedido.id_pedido)}"
                         title="Gestionar pedido" aria-label="Gestionar pedido">
                         <i class="ph ph-eye"></i>
+                    </button>
+                    <button type="button" class="btn-en-camino${puedeEnCamino ? '' : ' d-none'}"
+                        data-en-camino="${Number(pedido.id_pedido)}" title="Marcar en camino" aria-label="Marcar en camino">
+                        <i class="ph ph-truck"></i>
+                    </button>
+                    <button type="button" class="btn-entregado${puedeEntregar ? '' : ' d-none'}"
+                        data-entregado="${Number(pedido.id_pedido)}" title="Marcar entregado" aria-label="Marcar entregado">
+                        <i class="ph ph-check-circle"></i>
                     </button>
                 </td>`;
             tbody.append(fila);
@@ -223,7 +241,7 @@ export default function initPedidosWeb() {
         const error = document.getElementById('errorPedidos');
         error.classList.add('d-none');
         error.textContent = '';
-        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-secondary py-4">Cargando pedidos…</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center text-secondary py-4">Cargando pedidos…</td></tr>';
 
         try {
             const parametros = new URLSearchParams({
@@ -495,9 +513,27 @@ export default function initPedidosWeb() {
                 const esEfectivo = pedido.metodo_pago_web === 'efectivo';
                 document.getElementById('grupoEstadoPagoWeb').classList.toggle('d-none', esEfectivo);
 
+                const btnPagado = document.getElementById('btnMarcarPagadoPedidoWeb');
+                if (btnPagado) {
+                    const puedeMarcarPagado = esEfectivo
+                        && pedido.estado_pago !== 'pagado'
+                        && !pedido.id_venta;
+                    btnPagado.classList.toggle('d-none', !puedeMarcarPagado);
+                    btnPagado.disabled = !puedeMarcarPagado;
+                }
+
                 const transiciones = pedido.transiciones || [];
                 document.getElementById('btnAceptarPedidoWeb').disabled = pedido.estado_pedido !== 'solicitado';
                 document.getElementById('btnCancelarPedidoWeb').disabled = !transiciones.includes('cancelado');
+
+                const selectEstado = document.getElementById('selectEstadoPedidoWeb');
+                if (selectEstado) {
+                    selectEstado.innerHTML = [
+                        `<option value="${escapar(pedido.estado_pedido)}" selected>${escapar(estadoPedidoTexto(pedido.estado_pedido))} (actual)</option>`,
+                        ...transiciones.map((estado) => `<option value="${escapar(estado)}">${escapar(estadoPedidoTexto(estado))}</option>`),
+                    ].join('');
+                    selectEstado.disabled = transiciones.length === 0;
+                }
 
                 pintarItems(pedido.items);
                 pintarHistorial(pedido.historial);
@@ -544,6 +580,56 @@ export default function initPedidosWeb() {
         }
     }
 
+    async function ejecutarCambioEstadoRapido(idPedido, estado) {
+        try {
+            const respuesta = await fetch(`/pedidos-web/${idPedido}/estado`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                },
+                body: JSON.stringify({ estado_pedido: estado }),
+            });
+
+            const datos = await respuesta.json().catch(() => ({}));
+
+            if (!respuesta.ok || !datos.success) {
+                throw new Error(primerError(datos) || 'No se pudo actualizar el pedido.');
+            }
+
+            mostrarToast(datos.mensaje || 'Pedido actualizado.', 'success');
+            await cargar();
+        } catch (fallo) {
+            mostrarToast(fallo.message || 'No se pudo actualizar el pedido.', 'danger');
+        }
+    }
+
+    function confirmarCambioEstadoRapido(idPedido, estado, titulo, mensaje) {
+        if (!modalAccion) {
+            if (window.confirm(mensaje)) ejecutarCambioEstadoRapido(idPedido, estado);
+            return;
+        }
+
+        accionRapidaPendiente = { idPedido, estado };
+        document.getElementById('tituloConfirmarAccionPedidoWeb').textContent = titulo;
+        document.getElementById('mensajeConfirmarAccionPedidoWeb').textContent = mensaje;
+        modalAccion.show();
+    }
+
+    document.getElementById('confirmarAccionPedidoWeb')?.addEventListener('click', () => {
+        if (!accionRapidaPendiente) return;
+
+        const { idPedido, estado } = accionRapidaPendiente;
+        accionRapidaPendiente = null;
+        modalAccion?.hide();
+        ejecutarCambioEstadoRapido(idPedido, estado);
+    });
+
+    modalAccionElemento?.addEventListener('hidden.bs.modal', () => {
+        accionRapidaPendiente = null;
+    });
+
     document.getElementById('formEstadoPedidoWeb').addEventListener('submit', (evento) => {
         evento.preventDefault();
 
@@ -556,6 +642,23 @@ export default function initPedidosWeb() {
 
         if (!esEfectivo) {
             payload.estado_pago = document.getElementById('selectEstadoPagoWeb').value;
+        }
+
+        const estadoSeleccionado = document.getElementById('selectEstadoPedidoWeb')?.value;
+
+        if (estadoSeleccionado && estadoSeleccionado !== pedidoActual?.estado_pedido) {
+            if (['cancelado', 'rechazado'].includes(estadoSeleccionado) && !payload.nota_negocio) {
+                mostrarToast('Escribe el motivo en Nota / motivo.', 'warning');
+                document.getElementById('notaPedidoWeb').focus();
+                return;
+            }
+
+            if (estadoSeleccionado === 'entregado'
+                && !window.confirm('¿Confirmas que el pedido fue entregado al cliente?')) {
+                return;
+            }
+
+            payload.estado_pedido = estadoSeleccionado;
         }
 
         guardarCambios(payload);
@@ -598,9 +701,46 @@ export default function initPedidosWeb() {
     });
 
     document.getElementById('btnImprimirPedidoWeb').addEventListener('click', imprimirPedido);
+
+    document.getElementById('btnMarcarPagadoPedidoWeb').addEventListener('click', () => {
+        const esEfectivo = pedidoActual?.metodo_pago_web === 'efectivo';
+        if (!esEfectivo) return;
+
+        if (!window.confirm('¿Confirmas que el pedido fue pagado en efectivo? Se descontará el stock y se registrará el ingreso en caja.')) return;
+
+        guardarCambios({
+            estado_pago: 'pagado',
+            fecha_entrega_estimada: valorFechaEntrega(),
+            nota_negocio: document.getElementById('notaPedidoWeb').value.trim() || null,
+        });
+    });
     document.getElementById('btnWhatsappPedidoWeb').addEventListener('click', enviarPedidoWhatsapp);
 
     tabla.addEventListener('click', (evento) => {
+        const botonEnCamino = evento.target.closest('[data-en-camino]');
+
+        if (botonEnCamino) {
+            confirmarCambioEstadoRapido(
+                Number(botonEnCamino.dataset.enCamino),
+                'enviado',
+                'Marcar en camino',
+                '¿Marcar este pedido en camino? El cliente verá el seguimiento actualizado.'
+            );
+            return;
+        }
+
+        const botonEntregado = evento.target.closest('[data-entregado]');
+
+        if (botonEntregado) {
+            confirmarCambioEstadoRapido(
+                Number(botonEntregado.dataset.entregado),
+                'entregado',
+                'Marcar entregado',
+                '¿Confirmas que el paquete fue entregado al cliente?'
+            );
+            return;
+        }
+
         const boton = evento.target.closest('[data-pedido]');
         if (!boton) return;
 

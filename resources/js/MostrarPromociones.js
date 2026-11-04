@@ -8,6 +8,10 @@ export default function initPromociones() {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
     const modalElemento = document.getElementById('modalPromocion');
     const modal = bootstrap.Modal.getOrCreateInstance(modalElemento);
+    const modalImagenElemento = document.getElementById('modalImagenPromocion');
+    const modalImagen = modalImagenElemento ? bootstrap.Modal.getOrCreateInstance(modalImagenElemento) : null;
+    const imagenGrande = document.getElementById('imagenPromocionGrande');
+    const tituloImagen = document.getElementById('tituloImagenPromocion');
     const form = document.getElementById('formPromocion');
     const tituloModal = document.getElementById('tituloModalPromocion');
     const inputId = document.getElementById('idPromocion');
@@ -18,6 +22,9 @@ export default function initPromociones() {
     const fechaFin = document.getElementById('promocionFechaFin');
     const tipoDescuentoSelect = document.getElementById('promocionTipoDescuento');
     const valorDescuentoInput = document.getElementById('promocionValorDescuento');
+    const estadoInput = document.getElementById('promocionEstado');
+    const precioFinalInput = document.getElementById('promocionPrecioFinalInput');
+    let sincronizandoPrecioFinal = false;
     const badgePreview = document.getElementById('promocionBadgePreview');
     const precioCompraEl = document.getElementById('promocionPrecioCompra');
     const precioActualEl = document.getElementById('promocionPrecioActual');
@@ -60,6 +67,22 @@ export default function initPromociones() {
         input.value = valor || '';
     }
 
+    function formatearFechaPromocion(fechaSQL) {
+        if (!fechaSQL) return '';
+
+        const texto = String(fechaSQL).trim();
+        const fecha = /^\d{4}-\d{2}-\d{2}/.test(texto)
+            ? new Date(`${texto.slice(0, 10)}T00:00:00`)
+            : new Date(texto);
+
+        if (isNaN(fecha.getTime())) return texto;
+
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
+            'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+        return `${fecha.getDate().toString().padStart(2, '0')}/${meses[fecha.getMonth()]}/${fecha.getFullYear()}`;
+    }
+
     function formatearDescuento(tipo, valor) {
         const numero = Number(valor) || 0;
 
@@ -68,7 +91,8 @@ export default function initPromociones() {
         }
 
         if (tipo === 'porcentaje') {
-            return { texto: `${String(numero).replace(/\.00$/, '')}% DESCUENTO`, clase: 'porcentaje' };
+            const pct = Math.round(numero * 100) / 100;
+            return { texto: `${pct}% DESCUENTO`, clase: 'porcentaje' };
         }
 
         if (tipo === 'monto') {
@@ -85,6 +109,7 @@ export default function initPromociones() {
     function actualizarDescuentoPreview() {
         const tipo = tipoDescuentoSelect.value;
         valorDescuentoInput.disabled = !tipo;
+        precioFinalInput.disabled = !tipo;
 
         const descuento = formatearDescuento(tipo, valorDescuentoInput.value);
 
@@ -122,6 +147,12 @@ export default function initPromociones() {
         precioActualEl.textContent = producto ? moneda(venta) : '—';
         descuentoTextoEl.textContent = descuento.texto || 'Sin descuento';
         precioFinalEl.textContent = producto ? moneda(final) : '—';
+
+        if (!sincronizandoPrecioFinal) {
+            precioFinalInput.value = (producto && tipo && valor > 0 && final > 0)
+                ? String(Number(final.toFixed(6)))
+                : '';
+        }
     }
 
     function mostrarPreview(url) {
@@ -156,6 +187,61 @@ export default function initPromociones() {
         return { clase: 'activa', texto: 'Activa' };
     }
 
+    function diasRestantes(promocion) {
+        const fin = promocion.fecha_fin_promocion
+            ? String(promocion.fecha_fin_promocion).slice(0, 10)
+            : null;
+
+        if (!fin) return { clase: 'sin-fin', texto: 'Sin límite' };
+
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        const fechaFin = new Date(`${fin}T00:00:00`);
+        const dias = Math.ceil((fechaFin.getTime() - hoy.getTime()) / 86400000);
+
+        if (dias < 0) return { clase: 'vencida', texto: 'Vencida' };
+        if (dias === 0) return { clase: 'hoy', texto: 'Hoy' };
+
+        return { clase: 'activa', texto: `${dias} día${dias === 1 ? '' : 's'}` };
+    }
+
+    function pintarProductos() {
+        const categoria = document.getElementById('promocionFiltroCategoria').value;
+        const texto = document.getElementById('promocionBuscarProducto').value.trim().toLowerCase();
+
+        const filtrados = productosPromocion.filter((producto) => {
+            const cumpleCategoria = !categoria || String(producto.nombre_categoria || '') === categoria;
+            const cumpleTexto = !texto || String(producto.nombre_producto || '').toLowerCase().includes(texto);
+
+            return cumpleCategoria && cumpleTexto;
+        });
+
+        if (!filtrados.length) {
+            productosContenedor.innerHTML = '<p class="text-secondary small mb-0 p-2">No hay productos que coincidan.</p>';
+            return;
+        }
+
+        const activo = Number(productoInput.value) || 0;
+
+        productosContenedor.innerHTML = filtrados.map((producto) => `
+            <button type="button" class="promociones-producto-opcion"
+                data-producto-id="${Number(producto.id_producto)}" role="option">
+                ${producto.imagen_producto_url
+                    ? `<img class="promociones-producto-opcion__img" src="${escapar(producto.imagen_producto_url)}" alt="${escapar(producto.nombre_producto)}" loading="lazy">`
+                    : '<span class="promociones-producto-opcion__vacio"><i class="ph ph-image"></i></span>'}
+                <span class="promociones-producto-opcion__info">
+                    <strong>${escapar(producto.nombre_producto)}</strong>
+                </span>
+            </button>`).join('');
+
+        productosContenedor.querySelectorAll('.promociones-producto-opcion').forEach((opcion) => {
+            const esActivo = Number(opcion.dataset.productoId) === activo;
+            opcion.classList.toggle('is-activo', esActivo);
+            opcion.setAttribute('aria-selected', esActivo ? 'true' : 'false');
+        });
+    }
+
     async function cargarProductos() {
         try {
             const respuesta = await fetch('/promociones/productos', {
@@ -169,16 +255,15 @@ export default function initPromociones() {
 
             productosPromocion = datos.productos || [];
 
-            productosContenedor.innerHTML = productosPromocion.map((producto) => `
-                <button type="button" class="promociones-producto-opcion"
-                    data-producto-id="${Number(producto.id_producto)}" role="option">
-                    ${producto.imagen_producto_url
-                        ? `<img class="promociones-producto-opcion__img" src="${escapar(producto.imagen_producto_url)}" alt="${escapar(producto.nombre_producto)}" loading="lazy">`
-                        : '<span class="promociones-producto-opcion__vacio"><i class="ph ph-image"></i></span>'}
-                    <span class="promociones-producto-opcion__info">
-                        <strong>${escapar(producto.nombre_producto)}</strong>
-                    </span>
-                </button>`).join('');
+            const categorias = [...new Set(
+                productosPromocion.map((producto) => producto.nombre_categoria).filter(Boolean)
+            )].sort((a, b) => a.localeCompare(b));
+
+            document.getElementById('promocionFiltroCategoria').innerHTML =
+                '<option value="">Todas las categorías</option>'
+                + categorias.map((categoria) => `<option value="${escapar(categoria)}">${escapar(categoria)}</option>`).join('');
+
+            pintarProductos();
         } catch (fallo) {
             productosContenedor.innerHTML = `<p class="text-secondary small mb-0 p-2">${escapar(fallo.message || 'No se pudieron cargar los productos.')}</p>`;
         }
@@ -200,7 +285,7 @@ export default function initPromociones() {
     async function cargarPromociones() {
         errorPagina.classList.add('d-none');
         errorPagina.textContent = '';
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">Cargando promociones…</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-secondary py-4">Cargando promociones…</td></tr>';
 
         try {
             const respuesta = await fetch('/promociones/mostrar', {
@@ -233,6 +318,7 @@ export default function initPromociones() {
 
         promociones.forEach((promocion) => {
             const estado = estadoPromocion(promocion);
+            const dias = diasRestantes(promocion);
             const imagen = promocion.imagen_promocion_url || promocion.imagen_producto_url;
             const descuento = formatearDescuento(
                 promocion.tipo_descuento_promocion,
@@ -241,7 +327,7 @@ export default function initPromociones() {
             const imagenHtml = `
                 <div class="promociones-imagen-wrap">
                     ${imagen
-                        ? `<img class="promociones-thumb" src="${escapar(imagen)}" alt="${escapar(promocion.nombre_producto)}" loading="lazy">`
+                        ? `<img class="promociones-thumb" src="${escapar(imagen)}" alt="${escapar(promocion.nombre_producto)}" loading="lazy" data-imagen="${escapar(imagen)}" data-nombre="${escapar(promocion.nombre_producto)}" title="Ver imagen en grande" role="button" tabindex="0">`
                         : '<span class="promociones-thumb--vacio"><i class="ph ph-image"></i></span>'}
                     ${descuento.texto
                         ? `<span class="promociones-descuento promociones-descuento--${descuento.clase}">${escapar(descuento.texto)}</span>`
@@ -258,22 +344,25 @@ export default function initPromociones() {
                 </td>
                 <td>
                     <div class="promociones-fechas">
-                        ${window.formatearFechaCorta(promocion.fecha_inicio_promocion)}
+                        ${formatearFechaPromocion(promocion.fecha_inicio_promocion)}
                     </div>
                 </td>
                 <td>
                     <div class="promociones-fechas">
                         ${promocion.fecha_fin_promocion
-                            ? window.formatearFechaCorta(promocion.fecha_fin_promocion)
+                            ? formatearFechaPromocion(promocion.fecha_fin_promocion)
                             : '<small>Sin fecha fin</small>'}
                     </div>
+                </td>
+                <td>
+                    <div class="promociones-dias ${dias.clase}">${dias.texto}</div>
                 </td>
                 <td>
                     <span class="promociones-badge promociones-badge--${estado.clase}">
                         ${estado.texto}
                     </span>
                 </td>
-                <td class="text-end">
+                <td class="text-center">
                     <div class="promociones-acciones">
                         <button type="button" class="btn-editar" data-editar="${Number(promocion.id_promocion)}"
                             title="Editar promoción" aria-label="Editar promoción">
@@ -306,6 +395,7 @@ export default function initPromociones() {
             const promocion = datos.promocion;
 
             inputId.value = promocion.id_promocion;
+            estadoInput.checked = Boolean(promocion.estado_promocion);
             seleccionarProducto(promocion.id_producto);
             tipoDescuentoSelect.value = promocion.tipo_descuento_promocion || '';
             valorDescuentoInput.value = promocion.valor_descuento_promocion || '';
@@ -325,6 +415,24 @@ export default function initPromociones() {
     tipoDescuentoSelect.addEventListener('change', actualizarDescuentoPreview);
     valorDescuentoInput.addEventListener('input', actualizarDescuentoPreview);
 
+    precioFinalInput.addEventListener('input', () => {
+        const producto = productosPromocion.find(
+            (item) => String(item.id_producto) === String(productoInput.value)
+        );
+        const venta = Number(producto?.precio_venta || 0);
+        const final = Number(precioFinalInput.value) || 0;
+
+        if (venta <= 0 || final <= 0 || final >= venta) return;
+
+        const porcentaje = ((venta - final) / venta) * 100;
+
+        sincronizandoPrecioFinal = true;
+        tipoDescuentoSelect.value = 'porcentaje';
+        valorDescuentoInput.value = String(Number(porcentaje.toFixed(6)));
+        actualizarDescuentoPreview();
+        sincronizandoPrecioFinal = false;
+    });
+
     productosContenedor.addEventListener('click', (evento) => {
         const opcion = evento.target.closest('[data-producto-id]');
         if (!opcion) return;
@@ -332,9 +440,13 @@ export default function initPromociones() {
         seleccionarProducto(opcion.dataset.productoId);
     });
 
+    document.getElementById('promocionFiltroCategoria').addEventListener('change', pintarProductos);
+    document.getElementById('promocionBuscarProducto').addEventListener('input', pintarProductos);
+
     document.getElementById('btnNuevaPromocion').addEventListener('click', () => {
         form.reset();
         inputId.value = '';
+        estadoInput.checked = true;
         seleccionarProducto(null);
         tipoDescuentoSelect.value = '';
         valorDescuentoInput.value = '';
@@ -377,6 +489,7 @@ export default function initPromociones() {
         datos.append('fecha_fin_promocion', fechaFin.value || '');
         datos.append('tipo_descuento_promocion', tipoDescuentoSelect.value);
         datos.append('valor_descuento_promocion', tipoDescuentoSelect.value ? (valorDescuentoInput.value || '0') : '');
+        datos.append('estado_promocion', estadoInput.checked ? '1' : '0');
 
         if (inputImagen.files[0]) {
             datos.append('imagen_promocion', inputImagen.files[0]);
@@ -424,6 +537,14 @@ export default function initPromociones() {
             return;
         }
 
+        const imagenBoton = evento.target.closest('[data-imagen]');
+        if (imagenBoton) {
+            if (imagenGrande) imagenGrande.src = imagenBoton.dataset.imagen;
+            if (tituloImagen) tituloImagen.textContent = imagenBoton.dataset.nombre || 'Imagen de la promoción';
+            if (modalImagen) modalImagen.show();
+            return;
+        }
+
         const estado = evento.target.closest('[data-estado]');
         if (!estado) return;
 
@@ -449,6 +570,16 @@ export default function initPromociones() {
             estado.disabled = false;
             mostrarToast(fallo.message || 'No se pudo cambiar el estado.', 'danger');
         }
+    });
+
+    tbody.addEventListener('keydown', (evento) => {
+        if (evento.key !== 'Enter' && evento.key !== ' ') return;
+
+        const imagenBoton = evento.target.closest('[data-imagen]');
+        if (!imagenBoton) return;
+
+        evento.preventDefault();
+        imagenBoton.click();
     });
 
     cargarProductos();

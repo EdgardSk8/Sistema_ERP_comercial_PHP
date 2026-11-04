@@ -22,8 +22,9 @@
                             <th>Producto</th>
                             <th>Inicio</th>
                             <th>Fin</th>
+                            <th>Días restantes</th>
                             <th>Estado</th>
-                            <th class="text-end">Acciones</th>
+                            <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -39,7 +40,7 @@
     </section>
 
     <div class="modal fade" id="modalPromocion" tabindex="-1" aria-labelledby="tituloModalPromocion" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header d-flex justify-content-between align-items-center">
                     <h5 class="modal-title text-start" id="tituloModalPromocion">Nueva promoción</h5>
@@ -50,40 +51,29 @@
                     <div class="modal-body">
                         <input type="hidden" id="idPromocion">
 
-                        <div class="row g-3">
-                            <div class="col-md-7">
+                        <div class="row g-4">
+
+                            <div class="col-md-6">
                                 <label class="form-label">Producto</label>
                                 <input type="hidden" id="promocionProducto">
-                                <div id="promocionProductos" class="promociones-productos"
-                                    role="listbox" aria-label="Selecciona un producto"></div>
 
-                                <label for="promocionFechaInicio" class="form-label mt-3">Fecha de inicio</label>
-                                <input type="text" id="promocionFechaInicio" class="form-control form-control-sm"
-                                    placeholder="Selecciona la fecha" autocomplete="off">
-
-                                <label for="promocionFechaFin" class="form-label mt-3">Fecha de fin <span class="text-secondary">(opcional)</span></label>
-                                <input type="text" id="promocionFechaFin" class="form-control form-control-sm"
-                                    placeholder="Selecciona la fecha" autocomplete="off">
-
-                                <div class="row g-2 mt-1">
-                                    <div class="col-7">
-                                        <label for="promocionTipoDescuento" class="form-label">Descuento en la imagen</label>
-                                        <select id="promocionTipoDescuento" class="form-select form-select-sm">
-                                            <option value="">Sin descuento</option>
-                                            <option value="porcentaje">Porcentaje (%)</option>
-                                            <option value="monto">Monto fijo (-C$)</option>
-                                            <option value="precio">Precio reducido (C$)</option>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <select id="promocionFiltroCategoria" class="form-select form-select-sm">
+                                            <option value="">Todas las categorías</option>
                                         </select>
                                     </div>
-                                    <div class="col-5">
-                                        <label for="promocionValorDescuento" class="form-label">Valor</label>
-                                        <input type="number" id="promocionValorDescuento" class="form-control form-control-sm"
-                                            min="0" step="0.01" placeholder="10" disabled>
+                                    <div class="col-6">
+                                        <input type="search" id="promocionBuscarProducto" class="form-control form-control-sm"
+                                            placeholder="Buscar producto…" autocomplete="off">
                                     </div>
                                 </div>
+
+                                <div id="promocionProductos" class="promociones-productos"
+                                    role="listbox" aria-label="Selecciona un producto"></div>
                             </div>
 
-                            <div class="col-md-5">
+                            <div class="col-md-6">
                                 <label for="promocionImagen" class="form-label">Imagen de la promoción</label>
 
                                 <label class="promociones-upload" for="promocionImagen">
@@ -97,7 +87,49 @@
 
                                 <input type="file" id="promocionImagen" class="d-none" accept="image/jpeg,image/png,image/webp">
                                 <small class="text-secondary">JPG, PNG o WebP. Máximo 4 MB.</small>
+
+                                <div class="row g-2 mt-2">
+                                    <div class="col-6">
+                                        <label for="promocionFechaInicio" class="form-label">Fecha inicio</label>
+                                        <input type="text" id="promocionFechaInicio" class="form-control form-control-sm"
+                                            placeholder="Inicio" autocomplete="off">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="promocionFechaFin" class="form-label">Fecha fin <span class="text-secondary">(opc.)</span></label>
+                                        <input type="text" id="promocionFechaFin" class="form-control form-control-sm"
+                                            placeholder="Fin" autocomplete="off">
+                                    </div>
+                                    
+                                </div>
+
+                                <div class="row g-2 mt-1">
+                                    <div class="col-6">
+                                        <label for="promocionTipoDescuento" class="form-label">Descuento en la imagen</label>
+                                        <select id="promocionTipoDescuento" class="form-select form-select-sm">
+                                            <option value="">Sin descuento</option>
+                                            <option value="porcentaje">Porcentaje (%)</option>
+                                            <option value="monto">Monto fijo (-C$)</option>
+                                            <option value="precio">Precio reducido (C$)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-3">
+                                        <label for="promocionValorDescuento" class="form-label">Valor</label>
+                                        <input type="number" id="promocionValorDescuento" class="form-control form-control-sm"
+                                            min="0" step="any" placeholder="10" disabled>
+                                    </div>
+                                    <div class="col-3">
+                                        <label for="promocionPrecioFinalInput" class="form-label">Precio final</label>
+                                        <input type="number" id="promocionPrecioFinalInput" class="form-control form-control-sm"
+                                            min="0" step="any" placeholder="Ej. 700.00" disabled>
+                                    </div>
+                                </div>
+
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="promocionEstado" checked>
+                                    <label class="form-check-label" for="promocionEstado">Promoción activa <span class="text-secondary">(desactiva para dar de baja)</span></label>
+                                </div>
                             </div>
+
                         </div>
 
                         <div class="promociones-precios">
@@ -122,7 +154,7 @@
                         <div id="errorFormPromocion" class="small text-danger mt-2" role="alert"></div>
                     </div>
 
-                    <div class="modal-footer d-flex justify-content-end gap-2 p-3">
+                    <div class="modal-footer d-flex justify-content-end">
                         <button type="button" class="btn promociones-btn-secundario" data-bs-dismiss="modal">
                             Cancelar
                         </button>
@@ -131,6 +163,19 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalImagenPromocion" tabindex="-1" aria-labelledby="tituloImagenPromocion" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="tituloImagenPromocion">Imagen de la promoción</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body text-center p-2">
+                    <img id="imagenPromocionGrande" src="" alt="Imagen de la promoción" class="img-fluid rounded">
+                </div>
             </div>
         </div>
     </div>

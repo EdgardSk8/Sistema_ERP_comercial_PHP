@@ -1160,7 +1160,8 @@ button i{ pointer-events:none; }
 
 
 /* BOTONES DE MODALES */
-.btn-sm-modal{
+.btn-sm-modal,
+.modal .btn{
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1168,7 +1169,8 @@ button i{ pointer-events:none; }
     font-size: var(--fs-m);
 }
 
-.btn-sm-modal i{ font-size: var(--fs-lg); }
+.btn-sm-modal i,
+.modal .btn i{ font-size: var(--fs-lg); }
 
 .guardar, .actualizar { background-color: var(--verde); transition: background-color 0.2s ease; transition: all 0.15s ease; color: var(--text-on-accent); }
 .btn.guardar:hover, .btn.actualizar:hover { background-color: var(--verde-hover); color: var(--text-on-accent); }

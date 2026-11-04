@@ -4,9 +4,9 @@
 .cartera-toolbar-titulo{margin:0;font-size:15px;font-weight:700;color:var(--text)}
 .cartera-toolbar-sub{font-size:12px;color:var(--text-soft)}
 .cartera-toolbar-resumen{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 340px}
-.cartera-chip{display:flex;flex-direction:column;gap:1px;min-width:104px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface-muted)}
-.cartera-chip>span{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--text-soft)}
-.cartera-chip>strong{font-size:14px;color:var(--text)}
+.cartera-chip{display:flex;flex-direction:column;gap:1px;min-width:84px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface-muted)}
+.cartera-chip>span{font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--text-soft)}
+.cartera-chip>strong{font-size:13px;color:var(--text)}
 .cartera-chip-vencido>strong{color:var(--danger-text)}
 .cartera-chip-porvencer>strong{color:var(--azul)}
 .cartera-chip-clientes>strong{color:var(--verde)}

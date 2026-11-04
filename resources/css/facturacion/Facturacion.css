@@ -260,3 +260,23 @@
 
 /* Selectores (Select2)*/
 .select2-results__options { max-height: 70vh !important; }
+
+/* Tablas compactas (referencia: vista de pedidos web) */
+.mini-contenedor-pos .table,
+.Facturacion-Carrito .table {
+    font-size: 12px;
+    margin-bottom: 0;
+}
+
+.mini-contenedor-pos .table th,
+.mini-contenedor-pos .table td,
+.Facturacion-Carrito .table th,
+.Facturacion-Carrito .table td {
+    padding: .3rem .4rem;
+    vertical-align: middle;
+}
+
+.Facturacion-Carrito .table th,
+.Facturacion-Carrito .table td {
+    white-space: nowrap;
+}
