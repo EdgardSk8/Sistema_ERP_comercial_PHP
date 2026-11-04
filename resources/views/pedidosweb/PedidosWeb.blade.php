@@ -262,6 +262,10 @@
                                 <strong>Total:</strong>
                                 <strong id="totalDetallePedidoWeb">C$ 0.00</strong>
                             </div>
+
+                            <button type="button" class="btn pedidos-btn-whatsapp w-100 mt-2" id="btnWhatsappPedidoWeb">
+                                <i class="ph ph-whatsapp-logo"></i> Enviar pedido por WhatsApp
+                            </button>
                         </div>
                     </div>
 

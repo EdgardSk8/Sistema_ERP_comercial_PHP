@@ -527,7 +527,7 @@ class CompraController extends Controller
             $total = $totales->get($caja->id_caja);
 
             $ingresos = (float) ($total->ingresos ?? 0);
-            $salidas  = (float) ($total->salidas ?? 0);
+            $salidas = (float) ($total->salidas ?? 0);
 
             $saldoActual = $caja->monto_inicial + $ingresos - $salidas;
 

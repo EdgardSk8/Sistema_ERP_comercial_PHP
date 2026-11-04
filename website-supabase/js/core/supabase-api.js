@@ -1274,12 +1274,53 @@
         return data || { success: true };
     }
 
+    /* Cupones del cliente (un uso por cupón). */
+    async function cuponesApi() {
+        if (!clienteActual) return { success: true, cupones: [] };
+
+        const { data, error } = await supabase.rpc('web_cupones');
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudieron cargar tus cupones.'), 400);
+
+        return { success: true, cupones: data || [] };
+    }
+
+    async function canjearCuponApi(cuerpo) {
+        if (!clienteActual) throw errorApi('Inicia sesión para usar cupones.', 401);
+
+        const codigo = String(cuerpo?.codigo || '').trim();
+
+        if (!codigo) throw errorApi('Escribe el código del cupón.', 422);
+
+        const { data, error } = await supabase.rpc('web_canjear_cupon', { p_codigo: codigo });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo usar el cupón.'), 400);
+
+        return data || { success: true };
+    }
+
     async function promocionesApi() {
         const { data, error } = await supabase.rpc('web_promociones');
-
         if (error) throw errorApi(mensajeRpc(error, 'No se pudieron cargar las promociones.'), 400);
 
         return { success: true, promociones: data || [] };
+    }
+
+    /* Descuentos que puede elegir el cliente (uno solo, no se acumulan). */
+    async function descuentosApi() {
+        if (!clienteActual) {
+            return { success: true, descuento_cliente: null, promociones: [] };
+        }
+
+        const { data, error } = await supabase.rpc('web_descuentos_disponibles');
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudieron cargar los descuentos.'), 400);
+
+        return {
+            success: true,
+            descuento_cliente: data?.descuento_cliente || null,
+            promociones: data?.promociones || [],
+        };
     }
 
     /* ── Lista de deseos ─────────────────────────────────────── */
@@ -1510,6 +1551,12 @@
             'GET /tienda/api/historial': () => historialApi(),
 
             'GET /tienda/api/promociones': () => promocionesApi(),
+
+            'GET /tienda/api/descuentos': () => descuentosApi(),
+
+            'GET /tienda/api/cupones': () => cuponesApi(),
+
+            'POST /tienda/api/cupones/canjear': () => canjearCuponApi(cuerpo),
 
             'GET /tienda/api/pedidos': () => pedidosApi(),
 

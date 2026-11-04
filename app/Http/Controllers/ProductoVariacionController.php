@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Producto;
+use App\Models\ProductoVariacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use App\Models\ProductoVariacion;
-use App\Models\Producto;
-
 
 class ProductoVariacionController extends Controller
 {
-
-/*  ╔════════════ Crear Variación Producto ════════════╗
-    ╚══════════════════════════════════════════════════╝ */
+    /*  ╔════════════ Crear Variación Producto ════════════╗
+        ╚══════════════════════════════════════════════════╝ */
 
     public function CrearProductoVariacion(Request $request)
     {
@@ -26,51 +24,50 @@ class ProductoVariacionController extends Controller
                 [
                     'id_producto' => [
                         'required',
-                        'exists:productos,id_producto'
+                        'exists:productos,id_producto',
                     ],
                     'color' => [
                         'required',
-                        'max:50'
-                    ]
+                        'max:50',
+                    ],
                 ],
                 [
                     'id_producto.required' => 'El producto es obligatorio.',
                     'id_producto.exists' => 'El producto seleccionado no existe.',
                     'color.required' => 'El color es obligatorio.',
-                    'color.max' => 'El color no puede exceder 50 caracteres.'
+                    'color.max' => 'El color no puede exceder 50 caracteres.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             ProductoVariacion::create([
                 'id_producto' => $request->id_producto,
                 'color' => $request->color,
-                'estado_variacion' => true
+                'estado_variacion' => true,
             ]);
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Variación creada correctamente'
+                'mensaje' => 'Variación creada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al crear variación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔═════════════ Editar Variación Producto ═════════════╗
-    ╚═════════════════════════════════════════════════════╝ */
+    /*  ╔═════════════ Editar Variación Producto ═════════════╗
+        ╚═════════════════════════════════════════════════════╝ */
 
     public function EditarProductoVariacion($id)
     {
@@ -78,30 +75,29 @@ class ProductoVariacionController extends Controller
 
             $variacion = ProductoVariacion::find($id);
 
-            if (!$variacion) {
+            if (! $variacion) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Variación no encontrada'
+                    'mensaje' => 'Variación no encontrada',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'variacion' => $variacion
+                'variacion' => $variacion,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener variación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔════════════ Actualizar Variación Producto ═══════════╗
-    ╚══════════════════════════════════════════════════════╝ */
+    /*  ╔════════════ Actualizar Variación Producto ═══════════╗
+        ╚══════════════════════════════════════════════════════╝ */
 
     public function ActualizarProductoVariacion(Request $request, $id)
     {
@@ -109,39 +105,39 @@ class ProductoVariacionController extends Controller
 
             $variacion = ProductoVariacion::find($id);
 
-            if (!$variacion) {
+            if (! $variacion) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Variación no encontrada'
+                    'mensaje' => 'Variación no encontrada',
                 ], 404);
             }
 
             $validator = Validator::make(
                 [
                     'color' => $request->color,
-                    'estado_variacion' => $request->estado_variacion
+                    'estado_variacion' => $request->estado_variacion,
                 ],
                 [
                     'color' => [
                         'required',
-                        'max:50'
+                        'max:50',
                     ],
                     'estado_variacion' => [
                         'required',
-                        'boolean'
-                    ]
+                        'boolean',
+                    ],
                 ],
                 [
                     'color.required' => 'El color es obligatorio.',
                     'color.max' => 'El color no puede exceder 50 caracteres.',
-                    'estado_variacion.boolean' => 'El estado debe ser verdadero o falso.'
+                    'estado_variacion.boolean' => 'El estado debe ser verdadero o falso.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -151,21 +147,20 @@ class ProductoVariacionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Variación actualizada correctamente'
+                'mensaje' => 'Variación actualizada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al actualizar variación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔════════════ Cambiar Estado Variación ════════════╗
-    ╚══════════════════════════════════════════════════╝ */
+    /*  ╔════════════ Cambiar Estado Variación ════════════╗
+        ╚══════════════════════════════════════════════════╝ */
 
     public function CambiarEstadoProductoVariacion($id)
     {
@@ -173,26 +168,26 @@ class ProductoVariacionController extends Controller
 
             $variacion = ProductoVariacion::find($id);
 
-            if (!$variacion) {
+            if (! $variacion) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Variación no encontrada'
+                    'mensaje' => 'Variación no encontrada',
                 ], 404);
             }
 
-            $variacion->estado_variacion = !$variacion->estado_variacion;
+            $variacion->estado_variacion = ! $variacion->estado_variacion;
             $variacion->save();
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Estado de la variación actualizado'
+                'mensaje' => 'Estado de la variación actualizado',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al cambiar estado de la variación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -202,10 +197,10 @@ class ProductoVariacionController extends Controller
         try {
             $variacion = ProductoVariacion::find($id);
 
-            if (!$variacion) {
+            if (! $variacion) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Variación no encontrada'
+                    'mensaje' => 'Variación no encontrada',
                 ], 404);
             }
 
@@ -213,20 +208,19 @@ class ProductoVariacionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Variación eliminada correctamente'
+                'mensaje' => 'Variación eliminada correctamente',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Error al eliminar la variación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔════════════ Mostrar Variaciones ════════════╗
-    ╚═════════════════════════════════════════════╝ */
+    /*  ╔════════════ Mostrar Variaciones ════════════╗
+        ╚═════════════════════════════════════════════╝ */
 
     public function MostrarProductoVariacion()
     {
@@ -236,14 +230,14 @@ class ProductoVariacionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'variaciones' => $variaciones
+                'variaciones' => $variaciones,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener variaciones',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -259,16 +253,15 @@ class ProductoVariacionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'productos' => $productos
+                'productos' => $productos,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener productos',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
-
 } // Fin de controlador

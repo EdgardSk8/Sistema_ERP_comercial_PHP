@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cuenta;
+use App\Models\MetodoPago;
+use App\Models\MetodoPagoCuenta;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use App\Models\MetodoPago;
-use App\Models\Cuenta;
-use App\Models\MetodoPagoCuenta;
 
 class MetodoPagoCuentaController extends Controller
 {
-    public function CrearMetodoPagoCuenta(Request $request)
+    public function CrearMetodoPagoCuenta(Request $request): JsonResponse
     {
         try {
 
@@ -23,65 +24,64 @@ class MetodoPagoCuentaController extends Controller
                 [
                     'id_metodo_pago' => [
                         'required',
-                        'exists:metodos_pago,id_metodo_pago'
+                        'exists:metodos_pago,id_metodo_pago',
                     ],
                     'id_cuenta' => [
                         'required',
-                        'exists:cuentas,id_cuenta'
-                    ]
+                        'exists:cuentas,id_cuenta',
+                    ],
                 ]
-                
+
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             $existe = MetodoPagoCuenta::where('id_metodo_pago', $request->id_metodo_pago)
                 ->where('id_cuenta', $request->id_cuenta)
                 ->exists();
-                
 
             if ($existe) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'La relación ya existe'
+                    'mensaje' => 'La relación ya existe',
                 ], 422);
             }
 
             MetodoPagoCuenta::create([
                 'id_metodo_pago' => $request->id_metodo_pago,
                 'id_cuenta' => $request->id_cuenta,
-                'estado' => true
+                'estado' => true,
             ]);
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Referencia creada correctamente'
+                'mensaje' => 'Referencia creada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al crear referencia',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-    public function EditarMetodoPagoCuenta($id)
+    public function EditarMetodoPagoCuenta(int|string $id): JsonResponse
     {
         try {
 
             $referencia = MetodoPagoCuenta::join(
-                    'metodos_pago',
-                    'metodo_pago_cuenta.id_metodo_pago',
-                    '=',
-                    'metodos_pago.id_metodo_pago'
-                )
+                'metodos_pago',
+                'metodo_pago_cuenta.id_metodo_pago',
+                '=',
+                'metodos_pago.id_metodo_pago'
+            )
                 ->where(
                     'metodo_pago_cuenta.id_metodo_pago_cuenta',
                     $id
@@ -93,19 +93,19 @@ class MetodoPagoCuentaController extends Controller
                 )
                 ->first();
 
-            if (!$referencia) {
+            if (! $referencia) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Referencia no encontrada'
+                    'mensaje' => 'Referencia no encontrada',
                 ], 404);
             }
 
             $cuentasVinculadas = MetodoPagoCuenta::join(
-                    'cuentas',
-                    'metodo_pago_cuenta.id_cuenta',
-                    '=',
-                    'cuentas.id_cuenta'
-                )
+                'cuentas',
+                'metodo_pago_cuenta.id_cuenta',
+                '=',
+                'cuentas.id_cuenta'
+            )
                 ->where(
                     'metodo_pago_cuenta.id_metodo_pago',
                     $referencia->id_metodo_pago
@@ -120,7 +120,7 @@ class MetodoPagoCuentaController extends Controller
             return response()->json([
                 'success' => true,
                 'referencia' => $referencia,
-                'cuentas_vinculadas' => $cuentasVinculadas
+                'cuentas_vinculadas' => $cuentasVinculadas,
             ]);
 
         } catch (\Exception $e) {
@@ -128,22 +128,22 @@ class MetodoPagoCuentaController extends Controller
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Error al obtener referencia',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
 
         }
     }
 
-    public function ActualizarMetodoPagoCuenta(Request $request, $id)
+    public function ActualizarMetodoPagoCuenta(Request $request, int|string $id): JsonResponse
     {
         try {
 
             $referencia = MetodoPagoCuenta::find($id);
 
-            if (!$referencia) {
+            if (! $referencia) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Referencia no encontrada'
+                    'mensaje' => 'Referencia no encontrada',
                 ], 404);
             }
 
@@ -168,7 +168,7 @@ class MetodoPagoCuentaController extends Controller
             if ($existe) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'La relación ya existe'
+                    'mensaje' => 'La relación ya existe',
                 ], 422);
             }
 
@@ -179,7 +179,7 @@ class MetodoPagoCuentaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Referencia actualizada correctamente'
+                'mensaje' => 'Referencia actualizada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
@@ -187,89 +187,89 @@ class MetodoPagoCuentaController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al actualizar referencia',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-    public function CambiarEstadoMetodoPagoCuenta($id)
+    public function CambiarEstadoMetodoPagoCuenta(int|string $id): JsonResponse
     {
         try {
 
             $referencia = MetodoPagoCuenta::find($id);
 
-            if (!$referencia) {
+            if (! $referencia) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Referencia no encontrada'
+                    'mensaje' => 'Referencia no encontrada',
                 ], 404);
             }
 
-            $referencia->estado = !$referencia->estado;
+            $referencia->estado = ! $referencia->estado;
             $referencia->save();
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Estado actualizado correctamente'
+                'mensaje' => 'Estado actualizado correctamente',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al cambiar estado',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-    //MOSTRAR 
-    public function MostrarMetodoPagoCuenta()
+    // MOSTRAR
+    public function MostrarMetodoPagoCuenta(): JsonResponse
     {
         try {
 
-        $referencias = DB::table('metodos_pago')
-            ->leftJoin(
-                'metodo_pago_cuenta',
-                'metodos_pago.id_metodo_pago',
-                '=',
-                'metodo_pago_cuenta.id_metodo_pago'
-            )
-            ->leftJoin(
-                'cuentas',
-                'metodo_pago_cuenta.id_cuenta',
-                '=',
-                'cuentas.id_cuenta'
-            )
-            ->where('metodos_pago.id_metodo_pago', '!=', 1) //OCULTA METODO DE PAGO EFECTIVO
-            ->select(
-                'metodos_pago.id_metodo_pago',
-                'metodos_pago.nombre_metodo_pago',
-                'metodo_pago_cuenta.id_metodo_pago_cuenta',
-                'metodo_pago_cuenta.estado',
-                'cuentas.nombre_cuenta'
-            )
-            ->get()
-            ->groupBy('id_metodo_pago')
-            ->map(function ($grupo) {
+            $referencias = DB::table('metodos_pago')
+                ->leftJoin(
+                    'metodo_pago_cuenta',
+                    'metodos_pago.id_metodo_pago',
+                    '=',
+                    'metodo_pago_cuenta.id_metodo_pago'
+                )
+                ->leftJoin(
+                    'cuentas',
+                    'metodo_pago_cuenta.id_cuenta',
+                    '=',
+                    'cuentas.id_cuenta'
+                )
+                ->where('metodos_pago.id_metodo_pago', '!=', 1) // OCULTA METODO DE PAGO EFECTIVO
+                ->select(
+                    'metodos_pago.id_metodo_pago',
+                    'metodos_pago.nombre_metodo_pago',
+                    'metodo_pago_cuenta.id_metodo_pago_cuenta',
+                    'metodo_pago_cuenta.estado',
+                    'cuentas.nombre_cuenta'
+                )
+                ->get()
+                ->groupBy('id_metodo_pago')
+                ->map(function ($grupo) {
 
-                $cuentas = $grupo
-                    ->pluck('nombre_cuenta')
-                    ->filter()
-                    ->values();
+                    $cuentas = $grupo
+                        ->pluck('nombre_cuenta')
+                        ->filter()
+                        ->values();
 
-                return [
-                    'id_metodo_pago_cuenta' => $grupo->first()->id_metodo_pago_cuenta,
-                    'id_metodo_pago'     => $grupo->first()->id_metodo_pago,
-                    'nombre_metodo_pago' => $grupo->first()->nombre_metodo_pago,
-                    'estado'             => $grupo->first()->estado,
-                    'cuentas'            => $cuentas
-                ];
-            })
-            ->values();
+                    return [
+                        'id_metodo_pago_cuenta' => $grupo->first()->id_metodo_pago_cuenta,
+                        'id_metodo_pago' => $grupo->first()->id_metodo_pago,
+                        'nombre_metodo_pago' => $grupo->first()->nombre_metodo_pago,
+                        'estado' => $grupo->first()->estado,
+                        'cuentas' => $cuentas,
+                    ];
+                })
+                ->values();
 
             return response()->json([
                 'success' => true,
-                'referencias' => $referencias
+                'referencias' => $referencias,
             ]);
 
         } catch (\Exception $e) {
@@ -277,12 +277,12 @@ class MetodoPagoCuentaController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener referencias',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-    public function ObtenerDatosFormulario()
+    public function ObtenerDatosFormulario(): JsonResponse
     {
         try {
 
@@ -290,23 +290,23 @@ class MetodoPagoCuentaController extends Controller
                 'id_metodo_pago',
                 'nombre_metodo_pago'
             )
-            ->where('estado_metodo_pago', 1)
-            ->where('metodos_pago.id_metodo_pago', '!=', 1) //OCULTA METODO DE PAGO EFECTIVO
-            ->orderBy('nombre_metodo_pago')
-            ->get();
+                ->where('estado_metodo_pago', 1)
+                ->where('metodos_pago.id_metodo_pago', '!=', 1) // OCULTA METODO DE PAGO EFECTIVO
+                ->orderBy('nombre_metodo_pago')
+                ->get();
 
             $cuentas = Cuenta::select(
                 'id_cuenta',
                 'nombre_cuenta'
             )
-            ->where('estado', 1)
-            ->orderBy('nombre_cuenta')
-            ->get();
+                ->where('estado', 1)
+                ->orderBy('nombre_cuenta')
+                ->get();
 
             return response()->json([
                 'success' => true,
                 'metodos_pago' => $metodosPago,
-                'cuentas' => $cuentas
+                'cuentas' => $cuentas,
             ]);
 
         } catch (\Exception $e) {
@@ -314,22 +314,22 @@ class MetodoPagoCuentaController extends Controller
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Error al cargar datos',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
 
         }
     }
 
-    public function ObtenerCuentasMetodoPago($idMetodoPago)
+    public function ObtenerCuentasMetodoPago(int|string $idMetodoPago): JsonResponse
     {
         try {
 
             $cuentas = MetodoPagoCuenta::join(
-                    'cuentas',
-                    'metodo_pago_cuenta.id_cuenta',
-                    '=',
-                    'cuentas.id_cuenta'
-                )
+                'cuentas',
+                'metodo_pago_cuenta.id_cuenta',
+                '=',
+                'cuentas.id_cuenta'
+            )
                 ->where('metodo_pago_cuenta.id_metodo_pago', $idMetodoPago)
                 ->where('metodo_pago_cuenta.estado', 1)
                 ->select(
@@ -341,7 +341,7 @@ class MetodoPagoCuentaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'cuentas' => $cuentas
+                'cuentas' => $cuentas,
             ]);
 
         } catch (\Exception $e) {
@@ -349,12 +349,9 @@ class MetodoPagoCuentaController extends Controller
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Error al obtener cuentas',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
 
         }
     }
-
-
-
 }

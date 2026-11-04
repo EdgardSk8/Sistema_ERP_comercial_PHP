@@ -47,7 +47,7 @@ class PermisoMiddleware
         'medidas' => 'vista_medidas',
     ];
 
-    public function handle(Request $request, Closure $next, $permiso): Response
+    public function handle(Request $request, Closure $next, string $permiso): Response
     {
         $usuario = session('usuario');
 

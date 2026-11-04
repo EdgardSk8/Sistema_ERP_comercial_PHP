@@ -131,7 +131,7 @@ class TipoTallaController extends Controller
         $validator = Validator::make($request->all(), [
             'nombre_tipo_talla' => [
                 'required', 'string', 'max:60',
-                'unique:tipos_talla,nombre_tipo_talla,' . $tipo->id_tipo_talla . ',id_tipo_talla',
+                'unique:tipos_talla,nombre_tipo_talla,'.$tipo->id_tipo_talla.',id_tipo_talla',
             ],
             'descripcion_tipo_talla' => ['nullable', 'string', 'max:150'],
             'estado_tipo_talla' => ['required', 'boolean'],

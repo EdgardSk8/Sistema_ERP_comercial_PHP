@@ -100,6 +100,7 @@ function datosParaCarrito() {
         tallaId: tallaActual.id,
         talla: tallaActual.nombre,
         precio: tallaActual.precio ?? producto.precio,
+        categoria: producto.categoria,
         imagen: variacionActual.imagenes?.[0] || producto.imagen,
         stock: tallaActual.stock,
     };
@@ -110,6 +111,7 @@ let producto = null;
 let variacionActual = null;
 let tallaActual = null;
 let carrusel = null;
+let promocionProducto = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -331,19 +333,106 @@ function pintarEquivalencias() {
         : `Talla ${tallaActual.nombre}`;
 }
 
+/* ── Promoción del producto y aviso de registro ─────────────── */
+async function cargarPromocionProducto() {
+    promocionProducto = null;
+
+    if (!producto) return;
+
+    try {
+        const datos = await window.TiendaAPI.get('/tienda/api/promociones');
+        const promo = (datos?.promociones || []).find(
+            (fila) => String(fila.id_producto) === String(producto.id) && Number(fila.valor_descuento) > 0
+        );
+
+        promocionProducto = promo || null;
+    } catch {
+        promocionProducto = null;
+    }
+}
+
+function etiquetaPromocion() {
+    if (!promocionProducto) return '';
+
+    const valor = Number(promocionProducto.valor_descuento) || 0;
+
+    return promocionProducto.tipo_descuento === 'porcentaje'
+        ? `${String(valor).replace(/\.00$/, '')}%`
+        : moneda(valor);
+}
+
+function precioConPromocion(precioBase) {
+    const base = Number(precioBase) || 0;
+    if (!promocionProducto || base <= 0) return base;
+
+    const valor = Number(promocionProducto.valor_descuento) || 0;
+    if (valor <= 0) return base;
+
+    if (promocionProducto.tipo_descuento === 'porcentaje') {
+        return Math.max(0, Math.round(base * (1 - valor / 100) * 100) / 100);
+    }
+
+    if (promocionProducto.tipo_descuento === 'monto') {
+        return Math.max(0, base - valor);
+    }
+
+    if (promocionProducto.tipo_descuento === 'precio') {
+        return valor;
+    }
+
+    return base;
+}
+
+function pintarAvisoDescuento() {
+    const caja = $('productoAvisoDescuento');
+    if (!caja) return;
+
+    if (window.clienteTienda) {
+        caja.hidden = true;
+        caja.innerHTML = '';
+        return;
+    }
+
+    const mensaje = promocionProducto
+        ? `Regístrate para aplicar el descuento de ${etiquetaPromocion()} en este producto.`
+        : 'Regístrate y obtén 10% de descuento en tu primera compra.';
+
+    caja.hidden = false;
+    caja.innerHTML = `
+        <i class="bi bi-percent" aria-hidden="true"></i>
+        <p>${escapar(mensaje)}</p>
+        <a class="producto__aviso-dto-link" href="/tienda/login">Crear cuenta o iniciar sesión</a>
+    `;
+}
+
 function pintarPrecio() {
     const precioBase = Number(tallaActual?.precio ?? variacionActual?.tallas?.[0]?.precio ?? producto.precio) || 0;
-    const descuento = window.descuentoClienteActivo?.();
-    const precioFinal = window.precioConDescuento?.(precioBase) ?? precioBase;
+    const descuento = window.descuentoClienteActivo?.(producto.categoria);
+    const precioCuenta = window.precioConDescuento?.(precioBase, producto.categoria) ?? precioBase;
+    const precioPromo = precioConPromocion(precioBase);
     const nodo = $('productoPrecio');
 
     if (!nodo) return;
 
-    if (descuento && precioFinal < precioBase) {
+    /* No se acumulan: se muestra el mejor precio y en el carrito se elige. */
+    let precioFinal = precioBase;
+    let etiqueta = '';
+
+    if (precioPromo < precioFinal) {
+        precioFinal = precioPromo;
+        etiqueta = etiquetaPromocion();
+    }
+
+    if (descuento && precioCuenta < precioFinal) {
+        precioFinal = precioCuenta;
+        etiqueta = descuento.etiqueta;
+    }
+
+    if (precioFinal < precioBase) {
         nodo.innerHTML = `
             <span class="producto__precio--antes">${moneda(precioBase)}</span>
             <span class="producto__precio--dto">${moneda(precioFinal)}</span>
-            <span class="producto__descuento">${descuento.etiqueta} DESCUENTO</span>
+            <span class="producto__descuento">${escapar(etiqueta)} DESCUENTO</span>
         `;
     } else {
         nodo.textContent = moneda(precioBase);
@@ -352,6 +441,7 @@ function pintarPrecio() {
     const impuesto = Number(producto.impuesto || 0);
     $('productoImpuesto').textContent = impuesto > 0 ? `IVA ${impuesto}% incluido` : '';
 
+    pintarAvisoDescuento();
     actualizarWhatsapp();
 }
 
@@ -367,11 +457,13 @@ function enlaceWhatsappProducto() {
     if (tallaActual?.nombre) lineas.push(`Talla: ${tallaActual.nombre}`);
 
     const precioBase = Number(tallaActual?.precio ?? producto.precio) || 0;
-    const descuento = window.descuentoClienteActivo?.();
-    const precioFinal = window.precioConDescuento?.(precioBase) ?? precioBase;
+    const descuento = window.descuentoClienteActivo?.(producto.categoria);
+    const precioCuenta = window.precioConDescuento?.(precioBase, producto.categoria) ?? precioBase;
+    const precioPromo = precioConPromocion(precioBase);
+    const precioFinal = Math.min(precioCuenta, precioPromo);
 
     if (precioBase) lineas.push(`Precio: ${moneda(precioFinal)}`);
-    if (descuento && precioFinal < precioBase) lineas.push(`Descuento ${descuento.etiqueta} aplicado.`);
+    if (precioFinal < precioBase) lineas.push(`Descuento ${descuento?.etiqueta || etiquetaPromocion()} aplicado.`);
 
     lineas.push(
         `${location.origin}${urlTienda('producto')}?p=${producto.id}`
@@ -475,6 +567,9 @@ async function cargarProducto() {
 
         // Espera la sesión para mostrar el descuento del cliente desde el primer render.
         await (window.sesionTiendaPromise || Promise.resolve()).catch(() => null);
+
+        // Promoción activa del producto (los descuentos no se acumulan).
+        await cargarPromocionProducto();
 
         // El catálogo enlaza cada color con ?color=Nombre.
         const colorBuscado = new URLSearchParams(location.search).get('color') || '';
@@ -599,8 +694,8 @@ async function cargarRelacionados() {
 
         lista.innerHTML = tarjetas.map(item => {
             const precioBase = Number(item.precio) || 0;
-            const descuento = window.descuentoClienteActivo?.();
-            const precioFinal = window.precioConDescuento?.(precioBase) ?? precioBase;
+            const descuento = window.descuentoClienteActivo?.(item.categoria);
+            const precioFinal = window.precioConDescuento?.(precioBase, item.categoria) ?? precioBase;
             const tieneDescuento = Boolean(descuento && precioFinal < precioBase);
 
             return `

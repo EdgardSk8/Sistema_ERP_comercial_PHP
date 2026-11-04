@@ -354,6 +354,48 @@ export default function initPedidosWeb() {
         }
     }
 
+    function enviarPedidoWhatsapp() {
+        if (!pedidoActual) {
+            mostrarToast('No hay datos del pedido para enviar.', 'danger');
+            return;
+        }
+
+        const telefono = String(pedidoActual.telefono_contacto || pedidoActual.telefono_cliente || '')
+            .replace(/\D/g, '');
+
+        if (!telefono) {
+            mostrarToast('El pedido no tiene teléfono de contacto.', 'warning');
+            return;
+        }
+
+        const numero = telefono.length === 8 ? `505${telefono}` : telefono;
+        const lineas = (pedidoActual.items || []).map((item) => {
+            const variante = [item.color_producto, item.talla_producto ? `Talla ${item.talla_producto}` : '']
+                .filter(Boolean)
+                .join(' · ');
+
+            return `• ${item.cantidad_pedido} x ${item.nombre_producto}${variante ? ` (${variante})` : ''} - ${moneda(item.subtotal_pedido)}`;
+        });
+
+        const mensaje = [
+            `*Pedido ${pedidoActual.numero_pedido || pedidoActual.id_pedido}*`,
+            `Cliente: ${pedidoActual.nombre_cliente || '—'}`,
+            '',
+            '*Productos:*',
+            ...lineas,
+            '',
+            `Subtotal: ${moneda(pedidoActual.subtotal_pedido)}`,
+            Number(pedidoActual.descuento_pedido) > 0 ? `Descuento: -${moneda(pedidoActual.descuento_pedido)}` : null,
+            Number(pedidoActual.costo_envio_pedido) > 0 ? `Envío: ${moneda(pedidoActual.costo_envio_pedido)}` : null,
+            `*Total: ${moneda(pedidoActual.total_pedido)}*`,
+            '',
+            `Entrega: ${pedidoActual.direccion_entrega || '—'}`,
+            pedidoActual.referencia_entrega ? `Referencia: ${pedidoActual.referencia_entrega}` : null,
+        ].filter((linea) => linea !== null).join('\n');
+
+        window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    }
+
     async function imprimirPedido() {
         if (!pedidoActual) {
             mostrarToast('No hay datos del pedido para imprimir.', 'danger');
@@ -556,6 +598,7 @@ export default function initPedidosWeb() {
     });
 
     document.getElementById('btnImprimirPedidoWeb').addEventListener('click', imprimirPedido);
+    document.getElementById('btnWhatsappPedidoWeb').addEventListener('click', enviarPedidoWhatsapp);
 
     tabla.addEventListener('click', (evento) => {
         const boton = evento.target.closest('[data-pedido]');

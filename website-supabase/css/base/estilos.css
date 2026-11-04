@@ -385,10 +385,10 @@ button { font-family: inherit; }
 /* ── 4. Tarjetas de producto ─────────────────────────────────── */
 .grid-productos { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--e-3); }
 
-/* Entrada suave al cambiar de categoría */
+/* Entrada suave al cambiar de categoría o aplicar filtros */
 .grid-productos.catalogo-animando .card-producto {
-  animation: catalogo-aparecer .3s ease backwards;
-  animation-delay: calc(var(--i, 0) * 22ms);
+  animation: catalogo-aparecer .45s cubic-bezier(.22, .9, .3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 26ms);
 }
 
 @keyframes catalogo-aparecer {
@@ -767,6 +767,25 @@ button { font-family: inherit; }
 .producto__precio--antes { font-size: .9rem; color: var(--texto-suave); text-decoration: line-through; }
 .producto__precio--dto { color: var(--acento); }
 .producto__descuento { white-space: nowrap; padding: 3px 8px; border-radius: var(--r-sm); background: var(--acento); color: #fff; font-size: .68rem; font-weight: 700; }
+
+/* Aviso para que el visitante se registre y aplique descuentos */
+.producto__aviso-dto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--acento);
+  border-radius: var(--r-md);
+  background: rgba(230, 81, 63, .06);
+  font-size: .78rem;
+  line-height: 1.4;
+  color: var(--texto-suave);
+}
+.producto__aviso-dto i { color: var(--acento); }
+.producto__aviso-dto p { flex: 1 1 100%; margin: 0; }
+.producto__aviso-dto-link { font-weight: 600; color: var(--acento); text-decoration: underline; }
 .producto__categoria { margin: 0; font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; color: var(--texto-suave); }
 .producto__categoria[hidden] { display: none; }
 
@@ -968,6 +987,37 @@ button { font-family: inherit; }
 .stepper span { min-width: 18px; text-align: center; font-size: .84rem; font-weight: 600; }
 .carrito-item__quitar { border: 0; background: transparent; color: var(--acento); font-size: .95rem; cursor: pointer; }
 
+/* Tarjeta agrupada: un producto con varias tallas */
+.carrito-item--grupo { grid-template-columns: 84px minmax(0, 1fr); align-items: start; }
+.carrito-item__precio-antes { color: var(--texto-suave); font-weight: 400; }
+.carrito-item__ahorro {
+  margin-top: 2px;
+  font-size: .7rem;
+  font-weight: 700;
+  color: #2F7D4F;
+}
+.carrito-item__tallas {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--borde);
+}
+.carrito-talla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  font-size: .8rem;
+  color: var(--texto-suave);
+}
+.carrito-talla__nombre { font-weight: 600; color: var(--secundario); }
+.carrito-talla__precio { display: flex; align-items: baseline; gap: 5px; justify-self: end; font-variant-numeric: tabular-nums; }
+.carrito-talla__precio s { color: var(--texto-suave); font-size: .74rem; }
+.carrito-talla__precio.is-descuento strong { color: var(--acento); }
+.carrito-talla__precio small { font-size: .68rem; color: var(--texto-suave); }
+
 .carrito-item--saliendo {
   opacity: 0;
   transform: translateX(-14px) scale(.98);
@@ -980,8 +1030,95 @@ button { font-family: inherit; }
 .resumen__fila--total { margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--borde); font-size: 1rem; font-weight: 700; color: var(--secundario); }
 .resumen__gratis { color: var(--secundario); font-weight: 600; }
 .resumen__btn { width: 100%; margin-top: 16px; }
+.resumen__wa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  margin-top: 10px;
+  border: 1px solid rgba(37, 211, 102, .35);
+  border-radius: var(--r-pill);
+  background: rgba(37, 211, 102, .1);
+  font-size: .8rem;
+  font-weight: 600;
+  color: #128c4a;
+  text-decoration: none;
+  transition: background .18s ease;
+}
+.resumen__wa:hover { background: rgba(37, 211, 102, .2); }
 .resumen__vaciar { width: 100%; margin-top: 10px; border: 0; background: transparent; color: var(--texto-suave); font-size: .78rem; text-decoration: underline; cursor: pointer; }
 .resumen__detalle { margin-top: -2px; padding-bottom: 4px; font-size: .68rem; line-height: 1.45; color: var(--texto-suave); }
+
+/* Descuentos elegibles en el carrito (uno solo, no se acumulan) */
+.resumen__descuentos { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--borde); }
+.resumen__descuentos-titulo { margin: 0 0 8px; font-size: .68rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--texto-suave); }
+.resumen__descuentos-lista { display: grid; gap: 6px; }
+.resumen__dto {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-md);
+  background: var(--superficie);
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease;
+}
+.resumen__dto:hover { border-color: var(--secundario); }
+.resumen__dto.is-activo { border-color: var(--secundario); background: var(--primario-claro); }
+.resumen__dto input { margin: 0; accent-color: var(--acento); }
+.resumen__dto-texto { display: flex; flex-direction: column; min-width: 0; }
+.resumen__dto-texto strong { font-size: .78rem; }
+.resumen__dto-texto small { font-size: .68rem; color: var(--texto-suave); }
+.resumen__dto-sello { padding: 2px 8px; border-radius: var(--r-pill); background: var(--secundario); color: var(--primario); font-size: .66rem; font-weight: 700; }
+.resumen__descuentos-nota { margin: 6px 0 0; font-size: .66rem; color: var(--texto-suave); }
+
+/* Canje de cupón por código */
+.resumen__cupon { display: flex; gap: 6px; margin-top: 8px; }
+.resumen__cupon-campo {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-md);
+  background: var(--superficie);
+  font-size: .78rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.resumen__cupon-campo:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }
+.resumen__cupon-btn {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--secundario);
+  border-radius: var(--r-md);
+  background: var(--secundario);
+  color: var(--primario);
+  font-size: .76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.resumen__cupon-btn:hover { opacity: .88; }
+.resumen__aviso-dto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px dashed var(--primario-hondo);
+  border-radius: var(--r-md);
+  background: var(--primario-claro);
+  font-size: .76rem;
+  line-height: 1.4;
+  color: var(--texto-suave);
+}
+.resumen__aviso-dto p { flex: 1 1 100%; margin: 0; }
+.resumen__aviso-dto i { color: var(--acento); }
+.resumen__aviso-dto-link { font-weight: 600; color: var(--acento); text-decoration: underline; }
 
 .carrito-entrega {
   margin-top: 18px;
@@ -1597,6 +1734,43 @@ button { font-family: inherit; }
   border-radius: var(--r-md);
   background: var(--superficie);
   box-shadow: var(--sombra-suave);
+  transform-origin: top center;
+}
+
+.filtros[open] .filtros__panel {
+  animation: filtrosDesplegar .5s cubic-bezier(.22, .9, .3, 1);
+}
+
+.filtros.filtros--cerrando .filtros__panel {
+  animation: filtrosCerrar .5s cubic-bezier(.4, 0, .2, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes filtrosDesplegar {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scaleY(.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes filtrosCerrar {
+  from {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scaleY(.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filtros[open] .filtros__panel,
+  .filtros.filtros--cerrando .filtros__panel { animation: none; }
 }
 
 .filtros__fila { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--e-4); align-items: start; }
@@ -2355,6 +2529,8 @@ button { font-family: inherit; }
   /* Carrito: dos columnas con resumen fijo */
   .carrito { display: grid; grid-template-columns: 1.6fr .9fr; gap: 24px; align-items: start; padding: 32px 0; }
   .carrito__cabecera, .carrito-vacio { grid-column: 1 / -1; margin-bottom: 0; }
+  .carrito__principal { grid-column: 1; min-width: 0; }
+  .carrito > .resumen { grid-column: 2; grid-row: 2; align-self: start; }
   .resumen { margin-top: 0; position: sticky; top: 88px; }
 
   /* Relacionados a casi todo el ancho */

@@ -1481,7 +1481,7 @@ class DashboardController extends Controller
 
                 'promedio' => [
                     'titulo' => 'Promedio',
-                    'valor' => number_format($promedioMovimiento,2,',','.'),
+                    'valor' => number_format($promedioMovimiento, 2, ',', '.'),
                     'tooltip' => 'Promedio por movimiento',
                     'icono' => 'fas fa-chart-line',
                 ],

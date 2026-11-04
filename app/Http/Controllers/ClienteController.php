@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cliente;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use App\Models\Cliente;
 
 class ClienteController extends Controller
 {
-
-/*  ╔════════════ Crear Cliente ═════════════╗ 
-    ╚════════════════════════════════════════╝ */
+    /*  ╔════════════ Crear Cliente ═════════════╗
+        ╚════════════════════════════════════════╝ */
 
     public function CrearCliente(Request $request)
     {
@@ -34,56 +33,56 @@ class ClienteController extends Controller
                 [
                     'nombre_cliente' => [
                         'required',
-                        'max:150'
+                        'max:150',
                     ],
                     'cedula_cliente' => [
                         'nullable',
                         'unique:clientes,cedula_cliente',
-                        'max:16'
+                        'max:16',
                     ],
                     'ruc_cliente' => [
                         'nullable',
                         'unique:clientes,ruc_cliente',
-                        'max:20'
+                        'max:20',
                     ],
                     'telefono_cliente' => [
                         'nullable',
-                        'max:20'
+                        'max:20',
                     ],
                     'direccion_cliente' => [
                         'nullable',
-                        'max:200'
+                        'max:200',
                     ],
                     'correo_cliente' => [
                         'nullable',
                         'email',
-                        'max:100'
+                        'max:100',
                     ],
                     'fecha_nacimiento_cliente' => [
                         'nullable',
                         'date',
-                        'before:today'
+                        'before:today',
                     ],
                     'usuario_cliente' => [
                         'nullable',
                         'alpha_dash',
                         'min:4',
                         'max:60',
-                        'unique:clientes,usuario_cliente'
+                        'unique:clientes,usuario_cliente',
                     ],
                     'password_cliente' => [
                         'nullable',
-                        'min:6'
+                        'min:6',
                     ],
                     'descuento_tipo_cliente' => [
                         'nullable',
-                        'in:porcentaje,monto'
+                        'in:porcentaje,monto',
                     ],
                     'descuento_valor_cliente' => [
                         'nullable',
                         'numeric',
-                        'min:0'
-                    ]
+                        'min:0',
+                    ],
                 ],
                 [
                     'nombre_cliente.required' => 'El nombre del cliente es obligatorio.',
@@ -110,14 +109,14 @@ class ClienteController extends Controller
 
                     'descuento_tipo_cliente.in' => 'El tipo de descuento no es válido.',
                     'descuento_valor_cliente.numeric' => 'El descuento debe ser numérico.',
-                    'descuento_valor_cliente.min' => 'El descuento no puede ser negativo.'
+                    'descuento_valor_cliente.min' => 'El descuento no puede ser negativo.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -133,12 +132,12 @@ class ClienteController extends Controller
                 'password_hash_cliente' => $request->filled('password_cliente') ? Hash::make($request->password_cliente) : null,
                 'descuento_tipo_cliente' => $request->filled('descuento_tipo_cliente') ? $request->descuento_tipo_cliente : null,
                 'descuento_valor_cliente' => $request->filled('descuento_valor_cliente') ? $request->descuento_valor_cliente : 0,
-                'estado_cliente' => true
+                'estado_cliente' => true,
             ]);
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Cliente creado correctamente'
+                'mensaje' => 'Cliente creado correctamente',
             ], 200);
 
         } catch (\Exception $e) {
@@ -146,14 +145,14 @@ class ClienteController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al crear cliente',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
 
         }
     }
 
-/*  ╔════════════ Editar Cliente ═════════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔════════════ Editar Cliente ═════════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function EditarCliente($id)
     {
@@ -161,16 +160,16 @@ class ClienteController extends Controller
 
             $cliente = Cliente::find($id);
 
-            if (!$cliente) {
+            if (! $cliente) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Cliente no encontrado'
+                    'mensaje' => 'Cliente no encontrado',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'cliente' => $cliente
+                'cliente' => $cliente,
             ], 200);
 
         } catch (\Exception $e) {
@@ -178,14 +177,14 @@ class ClienteController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener cliente',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
 
         }
     }
 
-/*  ╔═══════════ Actualizar Cliente ═══════════╗ 
-    ╚══════════════════════════════════════════╝ */
+    /*  ╔═══════════ Actualizar Cliente ═══════════╗
+        ╚══════════════════════════════════════════╝ */
 
     public function ActualizarCliente(Request $request, $id)
     {
@@ -193,10 +192,10 @@ class ClienteController extends Controller
 
             $cliente = Cliente::find($id);
 
-            if (!$cliente) {
+            if (! $cliente) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Cliente no encontrado'
+                    'mensaje' => 'Cliente no encontrado',
                 ], 404);
             }
 
@@ -218,67 +217,67 @@ class ClienteController extends Controller
                 [
                     'nombre_cliente' => [
                         'required',
-                        'max:150'
+                        'max:150',
                     ],
                     'cedula_cliente' => [
                         'nullable',
                         "unique:clientes,cedula_cliente,$id,id_cliente",
-                        'max:16'
+                        'max:16',
                     ],
                     'ruc_cliente' => [
                         'nullable',
                         "unique:clientes,ruc_cliente,$id,id_cliente",
-                        'max:20'
+                        'max:20',
                     ],
                     'telefono_cliente' => [
                         'nullable',
-                        'max:20'
+                        'max:20',
                     ],
                     'direccion_cliente' => [
                         'nullable',
-                        'max:200'
+                        'max:200',
                     ],
                     'correo_cliente' => [
                         'nullable',
                         'email',
-                        'max:100'
+                        'max:100',
                     ],
                     'estado_cliente' => [
                         'required',
-                        'boolean'
+                        'boolean',
                     ],
                     'fecha_nacimiento_cliente' => [
                         'nullable',
                         'date',
-                        'before:today'
+                        'before:today',
                     ],
                     'usuario_cliente' => [
                         'nullable',
                         'alpha_dash',
                         'min:4',
                         'max:60',
-                        "unique:clientes,usuario_cliente,$id,id_cliente"
+                        "unique:clientes,usuario_cliente,$id,id_cliente",
                     ],
                     'password_cliente' => [
                         'nullable',
-                        'min:6'
+                        'min:6',
                     ],
                     'descuento_tipo_cliente' => [
                         'nullable',
-                        'in:porcentaje,monto'
+                        'in:porcentaje,monto',
                     ],
                     'descuento_valor_cliente' => [
                         'nullable',
                         'numeric',
-                        'min:0'
-                    ]
+                        'min:0',
+                    ],
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -303,7 +302,7 @@ class ClienteController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Cliente actualizado correctamente'
+                'mensaje' => 'Cliente actualizado correctamente',
             ], 200);
 
         } catch (\Exception $e) {
@@ -311,33 +310,34 @@ class ClienteController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al actualizar cliente',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
 
         }
     }
 
-/*  ╔═══════════ Cambiar Estado Cliente ═════════╗ 
-    ╚════════════════════════════════════════════╝ */
+    /*  ╔═══════════ Cambiar Estado Cliente ═════════╗
+        ╚════════════════════════════════════════════╝ */
 
-    public function CambiarEstadoCliente($id){
+    public function CambiarEstadoCliente($id)
+    {
         try {
 
             $cliente = Cliente::find($id);
 
-            if (!$cliente) {
+            if (! $cliente) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Cliente no encontrado'
+                    'mensaje' => 'Cliente no encontrado',
                 ], 404);
             }
 
-            $cliente->estado_cliente = !$cliente->estado_cliente;
+            $cliente->estado_cliente = ! $cliente->estado_cliente;
             $cliente->save();
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Estado del cliente actualizado'
+                'mensaje' => 'Estado del cliente actualizado',
             ], 200);
 
         } catch (\Exception $e) {
@@ -345,23 +345,24 @@ class ClienteController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al cambiar estado del cliente',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
 
         }
     }
 
-/*  ╔═══════════ Mostrar Clientes ════════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔═══════════ Mostrar Clientes ════════════╗
+        ╚═════════════════════════════════════════╝ */
 
-    public function MostrarClientes(){
+    public function MostrarClientes()
+    {
         try {
 
             $clientes = Cliente::all();
 
             return response()->json([
                 'success' => true,
-                'clientes' => $clientes
+                'clientes' => $clientes,
             ], 200);
 
         } catch (\Exception $e) {
@@ -369,10 +370,9 @@ class ClienteController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener clientes',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
 
         }
     }
-
 } // Fin de controlador

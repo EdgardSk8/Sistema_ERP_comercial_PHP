@@ -16,7 +16,7 @@ class CuentaPorCobrarController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'cliente' => 'nullable|integer|exists:clientes,id_cliente',
-            'estado' => 'nullable|in:todas,pendiente,parcial,atrasada,pagada'
+            'estado' => 'nullable|in:todas,pendiente,parcial,atrasada,pagada',
         ]);
 
         if ($validator->fails()) {
@@ -28,7 +28,7 @@ class CuentaPorCobrarController extends Controller
             'venta.detalles.producto:id_producto,nombre_producto',
             'venta.pagos.metodoPago:id_metodo_pago,nombre_metodo_pago',
             'venta.pagos.cuenta:id_cuenta,nombre_cuenta',
-            'cuotas.aplicaciones'
+            'cuotas.aplicaciones',
         ])->whereHas('venta', function ($query) use ($request) {
             $query->where('estado_venta', 1);
             if ($request->filled('cliente')) {
@@ -58,7 +58,7 @@ class CuentaPorCobrarController extends Controller
                     'pagado' => $pagado,
                     'saldo' => $saldo,
                     'estado' => $estado,
-                    'dias_atraso' => $estado === 'atrasada' ? $vencimiento->diffInDays($hoy) : 0
+                    'dias_atraso' => $estado === 'atrasada' ? $vencimiento->diffInDays($hoy) : 0,
                 ];
             });
 
@@ -86,7 +86,7 @@ class CuentaPorCobrarController extends Controller
                     'sku' => $detalle->sku_variacion,
                     'cantidad' => (float) $detalle->cantidad_venta,
                     'precio_unitario' => (float) $detalle->precio_unitario_venta,
-                    'subtotal' => (float) $detalle->subtotal_detalle_venta
+                    'subtotal' => (float) $detalle->subtotal_detalle_venta,
                 ]),
                 'cuotas' => $cuotas,
                 'pagos' => $plan->venta->pagos->map(fn ($pago) => [
@@ -95,8 +95,8 @@ class CuentaPorCobrarController extends Controller
                     'monto' => (float) $pago->monto_pago,
                     'metodo' => $pago->metodoPago?->nombre_metodo_pago ?? 'Método de pago',
                     'cuenta' => $pago->cuenta?->nombre_cuenta,
-                    'referencia' => $pago->referencia_pago
-                ])
+                    'referencia' => $pago->referencia_pago,
+                ]),
             ];
         });
 
@@ -107,7 +107,7 @@ class CuentaPorCobrarController extends Controller
         return response()->json([
             'success' => true,
             'planes' => $planes,
-            'tipo_cambio' => (float) (Credenciales::query()->value('tipo_cambio') ?? 0)
+            'tipo_cambio' => (float) (Credenciales::query()->value('tipo_cambio') ?? 0),
         ]);
     }
 
@@ -160,7 +160,7 @@ class CuentaPorCobrarController extends Controller
             'monto' => 'required|numeric|gt:0',
             'id_metodo_pago' => 'required|integer|exists:metodos_pago,id_metodo_pago',
             'id_cuenta' => 'nullable|integer|exists:cuentas,id_cuenta',
-            'referencia' => 'nullable|string|max:120'
+            'referencia' => 'nullable|string|max:120',
         ]);
 
         if ($validator->fails()) {
@@ -180,7 +180,7 @@ class CuentaPorCobrarController extends Controller
             return response()->json([
                 'success' => true,
                 'mensaje' => 'Abono registrado correctamente.',
-                'id_pago' => $pago->id_pago_venta
+                'id_pago' => $pago->id_pago_venta,
             ]);
         } catch (Throwable $e) {
             return response()->json(['success' => false, 'mensaje' => $e->getMessage()], 422);

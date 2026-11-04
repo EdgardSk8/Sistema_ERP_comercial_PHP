@@ -6,17 +6,16 @@ use Illuminate\Support\Facades\DB;
 
 class CargaVistaController extends Controller
 {
-    
     public function cargarpermisosUsuario()
     {
         try {
 
             $usuario = session('usuario');
 
-            if (!$usuario) {
+            if (! $usuario) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'No autenticado'
+                    'message' => 'No autenticado',
                 ], 401);
             }
 
@@ -31,16 +30,15 @@ class CargaVistaController extends Controller
             return response()->json([
                 'status' => true,
                 'permisos' => $permisos,
-                'primer' => $permisos[0]->nombre_permiso ?? null
+                'primer' => $permisos[0]->nombre_permiso ?? null,
             ]);
 
         } catch (\Throwable $e) {
 
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
-
 }

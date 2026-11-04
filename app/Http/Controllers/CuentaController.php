@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use App\Models\Cuenta;
 use App\Models\MovimientoCuenta;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class CuentaController extends Controller
 {
-
-/*  ╔═════════════ Crear Cuenta ══════════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔═════════════ Crear Cuenta ══════════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function CrearCuenta(Request $request)
     {
@@ -29,34 +28,34 @@ class CuentaController extends Controller
                     'nombre_cuenta' => [
                         'required',
                         'unique:cuentas,nombre_cuenta',
-                        'max:100'
+                        'max:100',
                     ],
                     'tipo_cuenta' => [
                         'required',
-                        'max:50'
+                        'max:50',
                     ],
                     'descripcion' => [
                         'nullable',
-                        'max:150'
+                        'max:150',
                     ],
                     'saldo_actual' => [
                         'required',
                         'numeric',
-                        'min:0'
-                    ]
+                        'min:0',
+                    ],
                 ],
                 [
                     'nombre_cuenta.required' => 'El nombre de la cuenta es obligatorio.',
                     'nombre_cuenta.unique' => 'Ya existe una cuenta con ese nombre.',
                     'saldo_actual.numeric' => 'El saldo debe ser numérico.',
-                    'saldo_actual.min' => 'El saldo no puede ser negativo.'
+                    'saldo_actual.min' => 'El saldo no puede ser negativo.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -65,26 +64,25 @@ class CuentaController extends Controller
                 'tipo_cuenta' => $request->tipo_cuenta,
                 'descripcion' => $request->descripcion,
                 'saldo_actual' => $request->saldo_actual,
-                'estado' => true
+                'estado' => true,
             ]);
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Cuenta creada correctamente'
+                'mensaje' => 'Cuenta creada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al crear cuenta',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔═════════════ Editar Cuenta ══════════════╗ 
-    ╚══════════════════════════════════════════╝ */
+    /*  ╔═════════════ Editar Cuenta ══════════════╗
+        ╚══════════════════════════════════════════╝ */
 
     public function EditarCuenta($id)
     {
@@ -92,30 +90,29 @@ class CuentaController extends Controller
 
             $cuenta = Cuenta::find($id);
 
-            if (!$cuenta) {
+            if (! $cuenta) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Cuenta no encontrada'
+                    'mensaje' => 'Cuenta no encontrada',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'cuenta' => $cuenta
+                'cuenta' => $cuenta,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener cuenta',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔═══════════ Actualizar Cuenta ═══════════╗ 
-    ╚═════════════════════════════════════════╝ */
+    /*  ╔═══════════ Actualizar Cuenta ═══════════╗
+        ╚═════════════════════════════════════════╝ */
 
     public function ActualizarCuenta(Request $request, $id)
     {
@@ -123,10 +120,10 @@ class CuentaController extends Controller
 
             $cuenta = Cuenta::find($id);
 
-            if (!$cuenta) {
+            if (! $cuenta) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Cuenta no encontrada'
+                    'mensaje' => 'Cuenta no encontrada',
                 ], 404);
             }
 
@@ -136,65 +133,64 @@ class CuentaController extends Controller
                     'tipo_cuenta' => $request->tipo_cuenta,
                     'descripcion' => $request->descripcion,
                     'saldo_actual' => $request->saldo_actual,
-                    'estado' => $request->estado
+                    'estado' => $request->estado,
                 ],
                 [
                     'nombre_cuenta' => [
                         'required',
                         "unique:cuentas,nombre_cuenta,$id,id_cuenta",
-                        'max:100'
+                        'max:100',
                     ],
                     'tipo_cuenta' => [
                         'required',
-                        'max:50'
+                        'max:50',
                     ],
                     'descripcion' => [
                         'nullable',
-                        'max:150'
+                        'max:150',
                     ],
                     'saldo_actual' => [
                         'required',
                         'numeric',
-                        'min:0'
+                        'min:0',
                     ],
                     'estado' => [
                         'required',
-                        'boolean'
-                    ]
+                        'boolean',
+                    ],
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             $cuenta->nombre_cuenta = $request->nombre_cuenta;
             $cuenta->tipo_cuenta = $request->tipo_cuenta;
             $cuenta->descripcion = $request->descripcion;
-            //$cuenta->saldo_actual = $request->saldo_actual;
+            // $cuenta->saldo_actual = $request->saldo_actual;
             $cuenta->estado = $request->estado;
             $cuenta->save();
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Cuenta actualizada correctamente'
+                'mensaje' => 'Cuenta actualizada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al actualizar cuenta',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔═══════════ Cambiar Estado Cuenta ═════════╗ 
-    ╚═══════════════════════════════════════════╝ */
+    /*  ╔═══════════ Cambiar Estado Cuenta ═════════╗
+        ╚═══════════════════════════════════════════╝ */
 
     public function CambiarEstadoCuenta($id)
     {
@@ -202,33 +198,32 @@ class CuentaController extends Controller
 
             $cuenta = Cuenta::find($id);
 
-            if (!$cuenta) {
+            if (! $cuenta) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Cuenta no encontrada'
+                    'mensaje' => 'Cuenta no encontrada',
                 ], 404);
             }
 
-            $cuenta->estado = !$cuenta->estado;
+            $cuenta->estado = ! $cuenta->estado;
             $cuenta->save();
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Estado de la cuenta actualizado'
+                'mensaje' => 'Estado de la cuenta actualizado',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al cambiar estado',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔═══════════ Mostrar Cuentas ════════════╗ 
-    ╚════════════════════════════════════════╝ */
+    /*  ╔═══════════ Mostrar Cuentas ════════════╗
+        ╚════════════════════════════════════════╝ */
     public function MostrarCuentas()
     {
         try {
@@ -237,20 +232,20 @@ class CuentaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'cuentas' => $cuentas
+                'cuentas' => $cuentas,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener cuentas',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-/*  ╔═══════════ Transferir Entre Cuentas ═══════════╗ 
-    ╚════════════════════════════════════════════════╝ */
+    /*  ╔═══════════ Transferir Entre Cuentas ═══════════╗
+        ╚════════════════════════════════════════════════╝ */
 
     public function TransferirEntreCuentas(Request $request)
     {
@@ -261,33 +256,33 @@ class CuentaController extends Controller
                 [
                     'cuenta_origen' => [
                         'required',
-                        'exists:cuentas,id_cuenta'
+                        'exists:cuentas,id_cuenta',
                     ],
                     'cuenta_destino' => [
                         'required',
                         'exists:cuentas,id_cuenta',
-                        'different:cuenta_origen'
+                        'different:cuenta_origen',
                     ],
                     'monto' => [
                         'required',
                         'numeric',
-                        'min:0.01'
+                        'min:0.01',
                     ],
                     'descripcion' => [
                         'nullable',
-                        'max:255'
-                    ]
+                        'max:255',
+                    ],
                 ],
                 [
                     'cuenta_destino.different' => 'No puedes transferir a la misma cuenta.',
-                    'monto.min' => 'El monto debe ser mayor a 0.'
+                    'monto.min' => 'El monto debe ser mayor a 0.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -304,24 +299,24 @@ class CuentaController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            if (!$cuentaOrigen || !$cuentaDestino) {
+            if (! $cuentaOrigen || ! $cuentaDestino) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Cuenta no encontrada'
+                    'mensaje' => 'Cuenta no encontrada',
                 ], 404);
             }
 
-            if (!$cuentaOrigen->estado || !$cuentaDestino->estado) {
+            if (! $cuentaOrigen->estado || ! $cuentaDestino->estado) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Una de las cuentas está inactiva'
+                    'mensaje' => 'Una de las cuentas está inactiva',
                 ], 400);
             }
 
             if ($cuentaOrigen->saldo_actual < $monto) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Saldo insuficiente en la cuenta origen'
+                    'mensaje' => 'Saldo insuficiente en la cuenta origen',
                 ], 400);
             }
 
@@ -347,7 +342,7 @@ class CuentaController extends Controller
                 'descripcion' => $descripcion,
                 'monto' => $monto,
                 'fecha' => $fecha,
-                'id_usuario' => $idUsuario
+                'id_usuario' => $idUsuario,
             ]);
 
             MovimientoCuenta::create([
@@ -356,34 +351,34 @@ class CuentaController extends Controller
                 'descripcion' => $descripcion,
                 'monto' => $monto,
                 'fecha' => $fecha,
-                'id_usuario' => $idUsuario
+                'id_usuario' => $idUsuario,
             ]);
 
             \DB::commit();
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Transferencia realizada correctamente'
+                'mensaje' => 'Transferencia realizada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
 
             \DB::rollBack();
 
-            \Log::error('Error en transferencia entre cuentas: ' . $e->getMessage(), [
+            \Log::error('Error en transferencia entre cuentas: '.$e->getMessage(), [
                 'request' => $request->all(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Error al transferir entre cuentas'
+                'mensaje' => 'Error al transferir entre cuentas',
             ], 500);
         }
     }
 
-/*  ╔═══════════ Mostrar Cuentas Selector ═══════════╗ 
-    ╚════════════════════════════════════════════════╝ */
+    /*  ╔═══════════ Mostrar Cuentas Selector ═══════════╗
+        ╚════════════════════════════════════════════════╝ */
 
     public function MostrarCuentasSelector()
     {
@@ -399,23 +394,22 @@ class CuentaController extends Controller
                     'id' => $cuenta->id_cuenta, // valor real que se envía al backend
                     'nombre' => $cuenta->nombre_cuenta,
                     'saldo_actual' => $cuenta->saldo_actual,
-                    'display' => "{$cuenta->nombre_cuenta} (Saldo: C$ " . number_format($cuenta->saldo_actual, 2) . ")"
+                    'display' => "{$cuenta->nombre_cuenta} (Saldo: C$ ".number_format($cuenta->saldo_actual, 2).')',
                 ];
             });
 
             return response()->json([
                 'success' => true,
-                'cuentas' => $data
+                'cuentas' => $data,
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Error al obtener cuentas'
+                'mensaje' => 'Error al obtener cuentas',
             ], 500);
         }
     }
-
 
     public function MovimientoCuenta(Request $request)
     {
@@ -425,19 +419,19 @@ class CuentaController extends Controller
                 'id_cuenta' => 'required|exists:cuentas,id_cuenta',
                 'tipo_movimiento' => 'required|in:AGREGAR,RETIRAR',
                 'monto' => 'required|numeric|min:0.01',
-                'descripcion' => 'nullable|max:150'
+                'descripcion' => 'nullable|max:150',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             $idUsuario = session('usuario.id');
 
-            if (!$idUsuario) {
+            if (! $idUsuario) {
                 throw new \Exception('Sesión no válida');
             }
 
@@ -445,7 +439,7 @@ class CuentaController extends Controller
 
                 $cuenta = Cuenta::lockForUpdate()->find($request->id_cuenta);
 
-                if (!$cuenta) {
+                if (! $cuenta) {
                     throw new \Exception('Cuenta no encontrada', 404);
                 }
 
@@ -461,7 +455,7 @@ class CuentaController extends Controller
 
                 $descripcion = trim($request->descripcion);
 
-                if (!$descripcion) {
+                if (! $descripcion) {
                     $descripcion = $tipoReal === 'INGRESO'
                         ? 'Ingreso de dinero'
                         : 'Salida de dinero';
@@ -474,7 +468,7 @@ class CuentaController extends Controller
                     'monto' => $monto,
                     'fecha' => now(),
                     'id_usuario' => $idUsuario,
-                    'id_transferencia' => null
+                    'id_transferencia' => null,
                 ]);
 
                 if ($tipoReal === 'INGRESO') {
@@ -488,7 +482,7 @@ class CuentaController extends Controller
                 return [
                     'success' => true,
                     'mensaje' => 'Movimiento realizado correctamente',
-                    'saldo_actual' => $cuenta->saldo_actual
+                    'saldo_actual' => $cuenta->saldo_actual,
                 ];
             });
 
@@ -501,11 +495,8 @@ class CuentaController extends Controller
 
             return response()->json([
                 'success' => false,
-                'mensaje' => $e->getMessage()
+                'mensaje' => $e->getMessage(),
             ], $status);
         }
     }
-
-    
-
 }

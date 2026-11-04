@@ -34,7 +34,7 @@ class TallaController extends Controller
 
             if ($request->filled('buscar')) {
                 $buscar = trim($request->input('buscar'));
-                $query->where('talla', 'like', '%' . $buscar . '%');
+                $query->where('talla', 'like', '%'.$buscar.'%');
             }
 
             if ($request->has('estado')) {
@@ -126,7 +126,7 @@ class TallaController extends Controller
                 $variantes->where('stock', '>', 0);
             }])->find($id);
 
-        if (!$talla) {
+        if (! $talla) {
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Talla no encontrada.',
@@ -143,7 +143,7 @@ class TallaController extends Controller
     {
         $talla = Talla::find($id);
 
-        if (!$talla) {
+        if (! $talla) {
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Talla no encontrada.',
@@ -181,7 +181,7 @@ class TallaController extends Controller
             ], 422);
         }
 
-        if (!$request->boolean('estado_talla') && $this->tieneStockAsignado($talla)) {
+        if (! $request->boolean('estado_talla') && $this->tieneStockAsignado($talla)) {
             return response()->json([
                 'success' => false,
                 'mensaje' => 'No se puede desactivar esta talla porque tiene existencias en una o más variantes.',
@@ -201,7 +201,7 @@ class TallaController extends Controller
                 'talla' => $talla->fresh()->loadCount('variaciones')->loadCount([
                     'variaciones as variantes_con_stock_count' => function ($variantes) {
                         $variantes->where('stock', '>', 0);
-                    }
+                    },
                 ]),
             ]);
         } catch (\Throwable $e) {
@@ -217,7 +217,7 @@ class TallaController extends Controller
     {
         $talla = Talla::find($id);
 
-        if (!$talla) {
+        if (! $talla) {
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Talla no encontrada.',
@@ -232,7 +232,7 @@ class TallaController extends Controller
         }
 
         try {
-            $talla->estado_talla = !$talla->estado_talla;
+            $talla->estado_talla = ! $talla->estado_talla;
             $talla->save();
 
             return response()->json([
@@ -253,7 +253,7 @@ class TallaController extends Controller
     {
         $talla = Talla::withCount('variaciones')->find($id);
 
-        if (!$talla) {
+        if (! $talla) {
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Talla no encontrada.',

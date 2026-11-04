@@ -2,18 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Talla;
+use App\Models\VariacionTalla;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use App\Models\VariacionTalla;
-use App\Models\Talla;
-
 
 class VariacionTallaController extends Controller
 {
-
-/*  ╔══════════════ Crear Talla Variación ══════════════╗
-    ╚═══════════════════════════════════════════════════╝ */
+    /*  ╔══════════════ Crear Talla Variación ══════════════╗
+        ╚═══════════════════════════════════════════════════╝ */
 
     public function CrearVariacionTalla(Request $request)
     {
@@ -31,20 +29,20 @@ class VariacionTallaController extends Controller
                 [
                     'id_variacion' => [
                         'required',
-                        'exists:producto_variaciones,id_variacion'
+                        'exists:producto_variaciones,id_variacion',
                     ],
                     'id_talla' => [
                         'required',
-                        'exists:tallas,id_talla'
+                        'exists:tallas,id_talla',
                     ],
                     'stock' => [
                         'required',
                         'integer',
-                        'min:0'
+                        'min:0',
                     ],
                     'sku' => ['nullable', 'string', 'max:100', 'unique:variacion_tallas,sku'],
                     'precio_compra' => ['nullable', 'numeric', 'min:0'],
-                    'precio_venta' => ['nullable', 'numeric', 'min:0']
+                    'precio_venta' => ['nullable', 'numeric', 'min:0'],
                 ],
                 [
                     'id_variacion.required' => 'La variación es obligatoria.',
@@ -53,14 +51,14 @@ class VariacionTallaController extends Controller
                     'id_talla.exists' => 'La talla seleccionada no existe.',
                     'stock.required' => 'El stock es obligatorio.',
                     'stock.integer' => 'El stock debe ser un número entero.',
-                    'stock.min' => 'El stock no puede ser negativo.'
+                    'stock.min' => 'El stock no puede ser negativo.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -75,7 +73,7 @@ class VariacionTallaController extends Controller
             if (($stockAsignadoProducto + $stockNuevo) > $stockRealProducto) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'El stock de todas las tallas y colores no puede exceder el stock real del producto.'
+                    'mensaje' => 'El stock de todas las tallas y colores no puede exceder el stock real del producto.',
                 ], 422);
             }
 
@@ -95,21 +93,20 @@ class VariacionTallaController extends Controller
             return response()->json([
                 'success' => true,
                 'mensaje' => 'Talla agregada correctamente',
-                'variacion_talla' => $variacionTalla
+                'variacion_talla' => $variacionTalla,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al agregar talla',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔══════════════ Editar Talla Variación ═════════════╗
-    ╚═══════════════════════════════════════════════════╝ */
+    /*  ╔══════════════ Editar Talla Variación ═════════════╗
+        ╚═══════════════════════════════════════════════════╝ */
 
     public function EditarVariacionTalla($id)
     {
@@ -117,30 +114,29 @@ class VariacionTallaController extends Controller
 
             $variacion_talla = VariacionTalla::with(['variacion.producto', 'talla'])->find($id);
 
-            if (!$variacion_talla) {
+            if (! $variacion_talla) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Talla de variación no encontrada'
+                    'mensaje' => 'Talla de variación no encontrada',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'variacion_talla' => $variacion_talla
+                'variacion_talla' => $variacion_talla,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener talla de variación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔════════════ Actualizar Talla Variación ═══════════╗
-    ╚══════════════════════════════════════════════════╝ */
+    /*  ╔════════════ Actualizar Talla Variación ═══════════╗
+        ╚══════════════════════════════════════════════════╝ */
 
     public function ActualizarVariacionTalla(Request $request, $id)
     {
@@ -148,10 +144,10 @@ class VariacionTallaController extends Controller
 
             $variacion_talla = VariacionTalla::find($id);
 
-            if (!$variacion_talla) {
+            if (! $variacion_talla) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Talla de variación no encontrada'
+                    'mensaje' => 'Talla de variación no encontrada',
                 ], 404);
             }
 
@@ -166,30 +162,30 @@ class VariacionTallaController extends Controller
                 [
                     'id_talla' => [
                         'required',
-                        'exists:tallas,id_talla'
+                        'exists:tallas,id_talla',
                     ],
                     'stock' => [
                         'required',
                         'integer',
-                        'min:0'
+                        'min:0',
                     ],
-                    'sku' => ['nullable', 'string', 'max:100', 'unique:variacion_tallas,sku,' . $variacion_talla->id_variacion_talla . ',id_variacion_talla'],
+                    'sku' => ['nullable', 'string', 'max:100', 'unique:variacion_tallas,sku,'.$variacion_talla->id_variacion_talla.',id_variacion_talla'],
                     'precio_compra' => ['nullable', 'numeric', 'min:0'],
-                    'precio_venta' => ['nullable', 'numeric', 'min:0']
+                    'precio_venta' => ['nullable', 'numeric', 'min:0'],
                 ],
                 [
                     'id_talla.required' => 'La talla es obligatoria.',
                     'id_talla.exists' => 'La talla seleccionada no existe.',
                     'stock.required' => 'El stock es obligatorio.',
                     'stock.integer' => 'El stock debe ser un número entero.',
-                    'stock.min' => 'El stock no puede ser negativo.'
+                    'stock.min' => 'El stock no puede ser negativo.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -208,7 +204,7 @@ class VariacionTallaController extends Controller
             if (($stockEnOtrasTallas + $stockNuevo) > $stockRealProducto) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'El stock de todas las tallas y colores no puede exceder el stock real del producto.'
+                    'mensaje' => 'El stock de todas las tallas y colores no puede exceder el stock real del producto.',
                 ], 422);
             }
 
@@ -224,7 +220,7 @@ class VariacionTallaController extends Controller
 
             $variacion_talla->id_talla = $request->id_talla;
             $variacion_talla->stock = $stockNuevo;
-            if ($request->has('sku') && !$request->filled('sku')) {
+            if ($request->has('sku') && ! $request->filled('sku')) {
                 $variacion_talla->sku = $this->generarSku(
                     $producto->nombre_producto,
                     $variacion_talla->variacion->color,
@@ -241,27 +237,30 @@ class VariacionTallaController extends Controller
                     $variacion_talla->id_variacion_talla
                 );
             }
-            if ($request->has('precio_compra')) $variacion_talla->precio_compra = $request->precio_compra;
-            if ($request->has('precio_venta')) $variacion_talla->precio_venta = $request->precio_venta;
+            if ($request->has('precio_compra')) {
+                $variacion_talla->precio_compra = $request->precio_compra;
+            }
+            if ($request->has('precio_venta')) {
+                $variacion_talla->precio_venta = $request->precio_venta;
+            }
             $variacion_talla->save();
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Talla de variación actualizada correctamente'
+                'mensaje' => 'Talla de variación actualizada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al actualizar talla de variación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-/*  ╔════════════ Mostrar Tallas Variación ════════════╗
-    ╚══════════════════════════════════════════════════╝ */
+    /*  ╔════════════ Mostrar Tallas Variación ════════════╗
+        ╚══════════════════════════════════════════════════╝ */
 
     public function MostrarVariacionTalla()
     {
@@ -281,14 +280,14 @@ class VariacionTallaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'variaciones_tallas' => $variaciones_tallas
+                'variaciones_tallas' => $variaciones_tallas,
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener tallas de variación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -298,10 +297,10 @@ class VariacionTallaController extends Controller
         try {
             $variacion_talla = VariacionTalla::find($id);
 
-            if (!$variacion_talla) {
+            if (! $variacion_talla) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Talla de variación no encontrada'
+                    'mensaje' => 'Talla de variación no encontrada',
                 ], 404);
             }
 
@@ -309,29 +308,33 @@ class VariacionTallaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Talla quitada de la variación correctamente'
+                'mensaje' => 'Talla quitada de la variación correctamente',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'mensaje' => 'Error al quitar talla de la variación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
 
     private function skuBase(string $producto, string $color, string $talla): string
     {
-        $base = Str::upper(Str::slug($producto . '-' . $color . '-' . $talla));
+        $base = Str::upper(Str::slug($producto.'-'.$color.'-'.$talla));
+
         return substr($base ?: 'VARIANTE', 0, 85);
     }
 
     private function skuCoincideConGenerado(string $sku, string $producto, string $color, string $talla): bool
     {
-        if ($sku === '') return false;
+        if ($sku === '') {
+            return false;
+        }
 
         $base = preg_quote($this->skuBase($producto, $color, $talla), '/');
-        return preg_match('/^' . $base . '(?:-\d+)?$/i', trim($sku)) === 1;
+
+        return preg_match('/^'.$base.'(?:-\d+)?$/i', trim($sku)) === 1;
     }
 
     private function generarSku(string $producto, string $color, string $talla, ?int $idExcluir = null): string
@@ -345,10 +348,9 @@ class VariacionTallaController extends Controller
                 $query->where('id_variacion_talla', '!=', $idExcluir);
             })
             ->exists()) {
-            $sku = $base . '-' . $sufijo++;
+            $sku = $base.'-'.$sufijo++;
         }
 
         return $sku;
     }
-
 } // Fin de controlador

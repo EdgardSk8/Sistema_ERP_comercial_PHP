@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Medida;
 use App\Models\TipoMedida;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class MedidasController extends Controller
 {
-
     /* ══════════ MOSTRAR MEDIDAS ══════════ */
     public function MostrarMedidas()
     {
@@ -19,7 +18,7 @@ class MedidasController extends Controller
 
             return response()->json([
                 'success' => true,
-                'medidas' => $medidas
+                'medidas' => $medidas,
             ], 200);
 
         } catch (\Exception $e) {
@@ -27,7 +26,7 @@ class MedidasController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener las medidas',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -42,13 +41,13 @@ class MedidasController extends Controller
                     'id_tipo_medida' => $request->id_tipo_medida,
                     'nombre_medida' => $request->nombre_medida,
                     'abreviatura_medida' => $request->abreviatura_medida,
-                    'orden_medida' => $request->orden_medida
+                    'orden_medida' => $request->orden_medida,
                 ],
                 [
                     'id_tipo_medida' => ['required', 'exists:tipos_medidas,id_tipo_medida'],
                     'nombre_medida' => ['required', 'unique:medidas,nombre_medida', 'max:100'],
                     'abreviatura_medida' => ['required', 'unique:medidas,abreviatura_medida', 'max:20'],
-                    'orden_medida' => ['required', 'integer', 'min:1']
+                    'orden_medida' => ['required', 'integer', 'min:1'],
                 ],
                 [
                     'id_tipo_medida.required' => 'Debe seleccionar un tipo de medida.',
@@ -64,14 +63,14 @@ class MedidasController extends Controller
 
                     'orden_medida.required' => 'El orden es obligatorio.',
                     'orden_medida.integer' => 'El orden debe ser un número entero.',
-                    'orden_medida.min' => 'El orden debe ser mayor a cero.'
+                    'orden_medida.min' => 'El orden debe ser mayor a cero.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -80,12 +79,12 @@ class MedidasController extends Controller
                 'nombre_medida' => $request->nombre_medida,
                 'abreviatura_medida' => $request->abreviatura_medida,
                 'orden_medida' => $request->orden_medida,
-                'estado_medida' => true
+                'estado_medida' => true,
             ]);
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Medida creada correctamente'
+                'mensaje' => 'Medida creada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
@@ -93,7 +92,7 @@ class MedidasController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al crear la medida',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -105,16 +104,16 @@ class MedidasController extends Controller
 
             $medida = Medida::with('tipomedida')->find($id);
 
-            if (!$medida) {
+            if (! $medida) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Medida no encontrada'
+                    'mensaje' => 'Medida no encontrada',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'medida' => $medida
+                'medida' => $medida,
             ], 200);
 
         } catch (\Exception $e) {
@@ -122,7 +121,7 @@ class MedidasController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener la medida',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -134,10 +133,10 @@ class MedidasController extends Controller
 
             $medida = Medida::find($id);
 
-            if (!$medida) {
+            if (! $medida) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Medida no encontrada'
+                    'mensaje' => 'Medida no encontrada',
                 ], 404);
             }
 
@@ -147,7 +146,7 @@ class MedidasController extends Controller
                     'nombre_medida' => $request->nombre_medida,
                     'abreviatura_medida' => $request->abreviatura_medida,
                     'orden_medida' => $request->orden_medida,
-                    'estado_medida' => $request->estado_medida
+                    'estado_medida' => $request->estado_medida,
                 ],
                 [
                     'id_tipo_medida' => ['required', 'exists:tipos_medidas,id_tipo_medida'],
@@ -155,17 +154,17 @@ class MedidasController extends Controller
                     'nombre_medida' => [
                         'required',
                         "unique:medidas,nombre_medida,$id,id_medida",
-                        'max:100'
+                        'max:100',
                     ],
 
                     'abreviatura_medida' => [
                         'required',
                         "unique:medidas,abreviatura_medida,$id,id_medida",
-                        'max:20'
+                        'max:20',
                     ],
 
                     'orden_medida' => ['required', 'integer', 'min:1'],
-                    'estado_medida' => ['required', 'boolean']
+                    'estado_medida' => ['required', 'boolean'],
                 ],
                 [
                     'id_tipo_medida.required' => 'Debe seleccionar un tipo de medida.',
@@ -183,14 +182,14 @@ class MedidasController extends Controller
                     'orden_medida.integer' => 'El orden debe ser un número entero.',
                     'orden_medida.min' => 'El orden debe ser mayor a cero.',
 
-                    'estado_medida.boolean' => 'El estado debe ser verdadero o falso.'
+                    'estado_medida.boolean' => 'El estado debe ser verdadero o falso.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -203,7 +202,7 @@ class MedidasController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Medida actualizada correctamente'
+                'mensaje' => 'Medida actualizada correctamente',
             ], 200);
 
         } catch (\Exception $e) {
@@ -211,7 +210,7 @@ class MedidasController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al actualizar la medida',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -223,19 +222,19 @@ class MedidasController extends Controller
 
             $medida = Medida::find($id);
 
-            if (!$medida) {
+            if (! $medida) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Medida no encontrada'
+                    'mensaje' => 'Medida no encontrada',
                 ], 404);
             }
 
-            $medida->estado_medida = !$medida->estado_medida;
+            $medida->estado_medida = ! $medida->estado_medida;
             $medida->save();
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Estado de la medida actualizado'
+                'mensaje' => 'Estado de la medida actualizado',
             ], 200);
 
         } catch (\Exception $e) {
@@ -243,7 +242,7 @@ class MedidasController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al cambiar el estado de la medida',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -270,7 +269,6 @@ class MedidasController extends Controller
 
             ->get();
 
-
         return response()->json([
 
             'results' => $tipos->map(function ($tipo) {
@@ -279,14 +277,13 @@ class MedidasController extends Controller
 
                     'id' => $tipo->id_tipo_medida,
 
-                    'text' => $tipo->nombre_tipo_medida
+                    'text' => $tipo->nombre_tipo_medida,
 
                 ];
 
-            })
+            }),
 
         ]);
 
     }
-    
 }

@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Caja;
+use App\Models\Cuenta;
+use App\Models\MovimientoCaja;
+use App\Models\MovimientoCuenta;
+use App\Models\TransferenciaCajaCuenta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Cuenta;
-use App\Models\MovimientoCuenta;
-use App\Models\Caja;
-use App\Models\MovimientoCaja;
-use App\Models\TransferenciaCajaCuenta;
 
 class TransferenciaCajaCuentaController extends Controller
 {
-    
     /* ╔══════ Transferir Caja a Cuenta ══════╗ */
     public function TransferenciaCajaCuenta(Request $request)
     {
@@ -20,17 +19,17 @@ class TransferenciaCajaCuentaController extends Controller
 
             return DB::transaction(function () use ($request) {
 
-                $idCaja    = $request->id_caja;
-                $idCuenta  = $request->id_cuenta;
-                $monto     = floatval($request->monto);
+                $idCaja = $request->id_caja;
+                $idCuenta = $request->id_cuenta;
+                $monto = floatval($request->monto);
                 $idUsuario = session('usuario.id');
 
                 // ✅ Validaciones básicas
-                if (!$idCaja || !$idCuenta || $monto <= 0) {
-                    throw new \Exception("Datos inválidos");
+                if (! $idCaja || ! $idCuenta || $monto <= 0) {
+                    throw new \Exception('Datos inválidos');
                 }
 
-                $caja   = Caja::findOrFail($idCaja);
+                $caja = Caja::findOrFail($idCaja);
                 $cuenta = Cuenta::findOrFail($idCuenta);
 
                 // ✅ Calcular saldo de caja
@@ -45,50 +44,50 @@ class TransferenciaCajaCuentaController extends Controller
                 $saldoCaja = ($caja->monto_inicial ?? 0) + $ingresos - $salidas;
 
                 if ($saldoCaja < $monto) {
-                    throw new \Exception("Saldo insuficiente en caja");
+                    throw new \Exception('Saldo insuficiente en caja');
                 }
 
                 /* =====================================================
                    1. CREAR TRANSFERENCIA (PRIMERO)
                 ===================================================== */
                 $transferencia = TransferenciaCajaCuenta::create([
-                    'id_caja_origen'   => $idCaja,
-                    'id_cuenta_destino'=> $idCuenta,
-                    'monto'            => $monto,
-                    'concepto'         => 'Transferencia de Caja a Cuenta',
-                    'id_usuario'       => $idUsuario,
-                    'fecha'            => now()
+                    'id_caja_origen' => $idCaja,
+                    'id_cuenta_destino' => $idCuenta,
+                    'monto' => $monto,
+                    'concepto' => 'Transferencia de Caja a Cuenta',
+                    'id_usuario' => $idUsuario,
+                    'fecha' => now(),
                 ]);
 
                 /* =====================================================
                    2. MOVIMIENTO CAJA (SALIDA)
                 ===================================================== */
                 MovimientoCaja::create([
-                    'id_caja'                     => $idCaja,
-                    'tipo_movimiento_caja'       => 'SALIDA',
-                    'concepto_movimiento_caja'   => 'Transferencia de Caja hacia Cuenta: ' . $cuenta->nombre_cuenta,
-                    'monto_movimiento_caja'      => $monto,
-                    'fecha_movimiento_caja'      => now(),
-                    'id_usuario'                 => $idUsuario,
-                    'id_cuenta_destino'          => $idCuenta,
+                    'id_caja' => $idCaja,
+                    'tipo_movimiento_caja' => 'SALIDA',
+                    'concepto_movimiento_caja' => 'Transferencia de Caja hacia Cuenta: '.$cuenta->nombre_cuenta,
+                    'monto_movimiento_caja' => $monto,
+                    'fecha_movimiento_caja' => now(),
+                    'id_usuario' => $idUsuario,
+                    'id_cuenta_destino' => $idCuenta,
 
                     // 🔥 CLAVE
-                    'id_transferencia'           => $transferencia->id_transferencia
+                    'id_transferencia' => $transferencia->id_transferencia,
                 ]);
 
                 /* =====================================================
                    3. MOVIMIENTO CUENTA (INGRESO)
                 ===================================================== */
                 MovimientoCuenta::create([
-                    'id_cuenta'      => $idCuenta,
-                    'tipo_movimiento'=> 'INGRESO',
-                    'descripcion'    => 'Transferencia desde Caja #' . $idCaja . ' hacia ' . $cuenta->nombre_cuenta,
-                    'monto'          => $monto,
-                    'fecha'          => now(),
-                    'id_usuario'     => $idUsuario,
+                    'id_cuenta' => $idCuenta,
+                    'tipo_movimiento' => 'INGRESO',
+                    'descripcion' => 'Transferencia desde Caja #'.$idCaja.' hacia '.$cuenta->nombre_cuenta,
+                    'monto' => $monto,
+                    'fecha' => now(),
+                    'id_usuario' => $idUsuario,
 
                     // 🔥 CLAVE
-                    'id_transferencia' => $transferencia->id_transferencia
+                    'id_transferencia' => $transferencia->id_transferencia,
                 ]);
 
                 /* =====================================================
@@ -99,7 +98,7 @@ class TransferenciaCajaCuentaController extends Controller
                 return response()->json([
                     'success' => true,
                     'mensaje' => 'Transferencia realizada correctamente',
-                    'id_transferencia' => $transferencia->id_transferencia
+                    'id_transferencia' => $transferencia->id_transferencia,
                 ]);
             });
 
@@ -107,7 +106,7 @@ class TransferenciaCajaCuentaController extends Controller
 
             return response()->json([
                 'success' => false,
-                'mensaje' => $e->getMessage()
+                'mensaje' => $e->getMessage(),
             ], 500);
         }
     }
@@ -143,26 +142,26 @@ class TransferenciaCajaCuentaController extends Controller
                 $saldoCaja = $caja->monto_inicial + $ingresos - $salidas;
 
                 return [
-                    'numero_caja'       => $caja->id_caja,
-                    'fecha_cierre'      => $caja->fecha_cierre,
-                    'monto_inicial'     => $caja->monto_inicial,
-                    'monto_final'       => $caja->monto_final,
+                    'numero_caja' => $caja->id_caja,
+                    'fecha_cierre' => $caja->fecha_cierre,
+                    'monto_inicial' => $caja->monto_inicial,
+                    'monto_final' => $caja->monto_final,
                     'monto_transferido' => $transferido,
-                    'saldo_caja'        => $saldoCaja,
-                    'nombre_cuenta'     => $cuenta?->nombre_cuenta ?? null,
-                    'saldo_cuenta'      => $cuenta?->saldo_actual ?? null
+                    'saldo_caja' => $saldoCaja,
+                    'nombre_cuenta' => $cuenta?->nombre_cuenta ?? null,
+                    'saldo_cuenta' => $cuenta?->saldo_actual ?? null,
                 ];
             });
 
             return response()->json([
-                'data' => $data
+                'data' => $data,
             ]);
 
         } catch (\Exception $e) {
 
             return response()->json([
                 'error' => true,
-                'mensaje' => $e->getMessage()
+                'mensaje' => $e->getMessage(),
             ], 500);
         }
     }
@@ -173,9 +172,9 @@ class TransferenciaCajaCuentaController extends Controller
         try {
 
             $transferencias = TransferenciaCajaCuenta::with([
-                    'cuentaDestino',
-                    'usuario'
-                ])
+                'cuentaDestino',
+                'usuario',
+            ])
                 ->where('id_caja_origen', $id_caja)
                 ->orderBy('id_transferencia', 'desc')
                 ->get();
@@ -196,14 +195,14 @@ class TransferenciaCajaCuentaController extends Controller
                 'success' => true,
                 'data' => $data,
                 'total' => $data->sum('monto'),
-                'cantidad' => $data->count()
+                'cantidad' => $data->count(),
             ]);
 
         } catch (\Exception $e) {
 
             return response()->json([
                 'success' => false,
-                'mensaje' => $e->getMessage()
+                'mensaje' => $e->getMessage(),
             ], 500);
         }
     }

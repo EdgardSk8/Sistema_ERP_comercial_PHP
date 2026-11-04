@@ -780,9 +780,11 @@ function compraHTML(compra) {
             <ul class="perfil-compra__items">${articulos}</ul>
 
             <footer class="perfil-compra__pie">
-                <span>${escapar(compra.metodo_pago)}</span>
-                ${compra.descuento_venta > 0 ? `<span>Descuento: - ${moneda(compra.descuento_venta)}</span>` : ''}
-                <strong>Total: ${moneda(compra.total_venta)}</strong>
+                <span class="perfil-compra__metodo">${escapar(compra.metodo_pago)}</span>
+                <div class="perfil-compra__totales">
+                    ${compra.descuento_venta > 0 ? `<span>Descuento: - ${moneda(compra.descuento_venta)}</span>` : ''}
+                    <strong>Total: ${moneda(compra.total_venta)}</strong>
+                </div>
             </footer>
         </article>`;
 }

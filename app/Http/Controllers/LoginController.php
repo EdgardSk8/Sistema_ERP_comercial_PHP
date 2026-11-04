@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Credenciales;
+use App\Models\Usuario;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\DB;
-
-use App\Models\Usuario;
-use App\Models\Credenciales;
+use Illuminate\Support\Facades\Validator;
 
 class LoginController extends Controller
 {
@@ -17,7 +16,7 @@ class LoginController extends Controller
     {
         $nombreEmpresa = Credenciales::query()->value('nombre_empresa');
         $logoEmpresa = Credenciales::query()->value('logo_empresa');
-        if ($logoEmpresa && !filter_var($logoEmpresa, FILTER_VALIDATE_URL)) {
+        if ($logoEmpresa && ! filter_var($logoEmpresa, FILTER_VALIDATE_URL)) {
             $logoEmpresa = asset($logoEmpresa);
         }
 
@@ -31,43 +30,43 @@ class LoginController extends Controller
             // VALIDACIÓN
             $validator = Validator::make($request->all(), [
                 'nombre_usuario' => 'required',
-                'password' => 'required'
+                'password' => 'required',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             // BUSCAR USUARIO
             $usuario = Usuario::select(
-                    'usuarios.*',
-                    'roles.nombre_rol'
-                )
+                'usuarios.*',
+                'roles.nombre_rol'
+            )
                 ->join('roles', 'usuarios.id_rol_usuario', '=', 'roles.id_rol')
                 ->where('nombre_usuario', $request->nombre_usuario)
                 ->first();
 
-            if (!$usuario) {
+            if (! $usuario) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Usuario no existe'
+                    'mensaje' => 'Usuario no existe',
                 ], 401);
             }
 
-            if (!$usuario->estado_usuario) {
+            if (! $usuario->estado_usuario) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Usuario inactivo'
+                    'mensaje' => 'Usuario inactivo',
                 ], 403);
             }
 
-            if (!Hash::check($request->password, $usuario->password_hash_usuario)) {
+            if (! Hash::check($request->password, $usuario->password_hash_usuario)) {
                 return response()->json([
                     'success' => false,
-                    'mensaje' => 'Credenciales incorrectas'
+                    'mensaje' => 'Credenciales incorrectas',
                 ], 401);
             }
 
@@ -76,7 +75,7 @@ class LoginController extends Controller
                 'id' => $usuario->id_usuario,
                 'nombre' => $usuario->nombre_usuario,
                 'id_rol' => $usuario->id_rol_usuario,
-                'rol' => $usuario->nombre_rol
+                'rol' => $usuario->nombre_rol,
             ]);
 
             // 🔥 PERMISOS (IMPORTANTE)
@@ -91,14 +90,14 @@ class LoginController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => '¡Bienvenido, ' . $usuario->nombre_usuario . '!'
+                'mensaje' => '¡Bienvenido, '.$usuario->nombre_usuario.'!',
             ]);
 
         } catch (\Exception $e) {
 
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Error en login'
+                'mensaje' => 'Error en login',
             ], 500);
         }
     }
@@ -111,7 +110,7 @@ class LoginController extends Controller
 
         return response()->json([
             'success' => true,
-            'mensaje' => 'Sesión cerrada'
+            'mensaje' => 'Sesión cerrada',
         ]);
     }
 
@@ -119,10 +118,10 @@ class LoginController extends Controller
     {
         $usuario = session('usuario');
 
-        if (!$usuario) {
+        if (! $usuario) {
             return response()->json([
                 'success' => false,
-                'message' => 'No autenticado'
+                'message' => 'No autenticado',
             ], 401);
         }
 
@@ -133,8 +132,7 @@ class LoginController extends Controller
                 'nombre' => $usuario['nombre'] ?? null,
                 'id_rol' => $usuario['id_rol'] ?? null,
                 'rol' => $usuario['rol'] ?? null,
-            ]
+            ],
         ]);
     }
-
 }

@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Venta;
-use App\Models\Producto;
-use App\Models\MovimientoInventario;
-use App\Models\Cliente;
-use App\Models\Usuario;
 use App\Models\Caja;
+use App\Models\Cliente;
+use App\Models\MovimientoInventario;
+use App\Models\Producto;
+use App\Models\Usuario;
+use App\Models\Venta;
+use Illuminate\Http\Request;
 
 class ReporteController extends Controller
 {
-    
     public function ReporteVentas(Request $request)
     {
         try {
@@ -22,12 +21,12 @@ class ReporteController extends Controller
             // =====================================
 
             $fechaInicio = $request->fecha_inicio;
-            $fechaFin    = $request->fecha_fin;
+            $fechaFin = $request->fecha_fin;
 
             $limite = $request->limite;
 
             // si viene vacío o no numérico, no aplicar límite
-            if (!is_numeric($limite) || (int)$limite <= 0) {
+            if (! is_numeric($limite) || (int) $limite <= 0) {
                 $limite = null;
             } else {
                 $limite = (int) $limite;
@@ -43,30 +42,24 @@ class ReporteController extends Controller
                 'metodoPago',
                 'detalles' => function ($q) {
                     $q->select('id_venta', 'cantidad_venta');
-                }
+                },
             ])
+                ->when($fechaInicio && $fechaFin, function ($query) use ($fechaInicio, $fechaFin) {
 
-            ->when($fechaInicio && $fechaFin, function ($query)
-            use ($fechaInicio, $fechaFin) {
+                    $query->whereBetween(
+                        'fecha_venta',
+                        [
+                            $fechaInicio.' 00:00:00',
+                            $fechaFin.' 23:59:59',
+                        ]
+                    );
 
-                $query->whereBetween(
-                    'fecha_venta',
-                    [
-                        $fechaInicio . ' 00:00:00',
-                        $fechaFin . ' 23:59:59'
-                    ]
-                );
-
-            })
-
-            ->orderByDesc('id_venta')
-
-            ->when($limite, function ($query) use ($limite) {
-                $query->limit((int) $limite);
-            })
-
-
-            ->get();
+                })
+                ->orderByDesc('id_venta')
+                ->when($limite, function ($query) use ($limite) {
+                    $query->limit((int) $limite);
+                })
+                ->get();
 
             // =====================================
             // SOLO ACTIVAS
@@ -88,81 +81,57 @@ class ReporteController extends Controller
 
                 return [
 
-                    'id_venta' =>
-                        $venta->id_venta,
+                    'id_venta' => $venta->id_venta,
 
-                    'numero_factura' =>
-                        $venta->numero_factura,
+                    'numero_factura' => $venta->numero_factura,
 
-                    'fecha_venta' =>
+                    'fecha_venta' => \Carbon\Carbon::parse(
+                        $venta->fecha_venta
+                    )->format('d/m/Y h:i A'),
 
-                        \Carbon\Carbon::parse(
-                            $venta->fecha_venta
-                        )->format('d/m/Y h:i A'),
-
-                    'cliente' =>
-
-                        $venta->cliente
-                            ->nombre_cliente
+                    'cliente' => $venta->cliente
+                        ->nombre_cliente
 
                         ?? 'Consumidor Final',
 
-
-                    'usuario' =>
-
-                        $venta->usuario
-                            ->nombre_usuario
+                    'usuario' => $venta->usuario
+                        ->nombre_usuario
 
                         ?? '-',
 
-                    'productos_vendidos' =>
-                        $productosVendidos,
+                    'productos_vendidos' => $productosVendidos,
 
-                    'subtotal' =>
+                    'subtotal' => 'C$ '.number_format(
+                        $venta->subtotal_venta,
+                        2
+                    ),
 
-                        'C$ ' . number_format(
-                            $venta->subtotal_venta,
-                            2
-                        ),
+                    'impuesto' => 'C$ '.number_format(
+                        $venta->impuesto_venta,
+                        2
+                    ),
 
-                    'impuesto' =>
+                    'total' => 'C$ '.number_format(
+                        $venta->total_venta,
+                        2
+                    ),
 
-                        'C$ ' . number_format(
-                            $venta->impuesto_venta,
-                            2
-                        ),
-
-                    'total' =>
-
-                        'C$ ' . number_format(
-                            $venta->total_venta,
-                            2
-                        ),
-
-                    'metodo_pago' =>
-
-                        $venta->metodoPago
-                            ->nombre_metodo_pago
+                    'metodo_pago' => $venta->metodoPago
+                        ->nombre_metodo_pago
 
                         ?? '-',
 
-                    'monto_recibido' =>
+                    'monto_recibido' => 'C$ '.number_format(
+                        $venta->monto_recibido,
+                        2
+                    ),
 
-                        'C$ ' . number_format(
-                            $venta->monto_recibido,
-                            2
-                        ),
+                    'vuelto' => 'C$ '.number_format(
+                        $venta->vuelto,
+                        2
+                    ),
 
-                    'vuelto' =>
-
-                        'C$ ' . number_format(
-                            $venta->vuelto,
-                            2
-                        ),
-
-                    'estado' =>
-
-                        $venta->estado_venta
+                    'estado' => $venta->estado_venta
                             ? 'Activa'
                             : 'Anulada',
 
@@ -185,68 +154,68 @@ class ReporteController extends Controller
                 'columnas' => [
 
                     [
-                        'data'  => 'id_venta',
-                        'title' => 'ID'
+                        'data' => 'id_venta',
+                        'title' => 'ID',
                     ],
 
                     [
-                        'data'  => 'numero_factura',
-                        'title' => 'Factura'
+                        'data' => 'numero_factura',
+                        'title' => 'Factura',
                     ],
 
                     [
-                        'data'  => 'fecha_venta',
-                        'title' => 'Fecha Venta'
+                        'data' => 'fecha_venta',
+                        'title' => 'Fecha Venta',
                     ],
 
                     [
-                        'data'  => 'cliente',
-                        'title' => 'Cliente'
+                        'data' => 'cliente',
+                        'title' => 'Cliente',
                     ],
 
                     [
-                        'data'  => 'usuario',
-                        'title' => 'Usuario'
+                        'data' => 'usuario',
+                        'title' => 'Usuario',
                     ],
 
                     [
-                        'data'  => 'productos_vendidos',
-                        'title' => 'Prod'
+                        'data' => 'productos_vendidos',
+                        'title' => 'Prod',
                     ],
 
                     [
-                        'data'  => 'subtotal',
-                        'title' => 'Subtotal'
+                        'data' => 'subtotal',
+                        'title' => 'Subtotal',
                     ],
 
                     [
-                        'data'  => 'impuesto',
-                        'title' => 'Imp'
+                        'data' => 'impuesto',
+                        'title' => 'Imp',
                     ],
 
                     [
-                        'data'  => 'total',
-                        'title' => 'Total'
+                        'data' => 'total',
+                        'title' => 'Total',
                     ],
 
                     [
-                        'data'  => 'metodo_pago',
-                        'title' => 'Método Pago'
+                        'data' => 'metodo_pago',
+                        'title' => 'Método Pago',
                     ],
 
                     [
-                        'data'  => 'monto_recibido',
-                        'title' => 'Recibido'
+                        'data' => 'monto_recibido',
+                        'title' => 'Recibido',
                     ],
 
                     [
-                        'data'  => 'vuelto',
-                        'title' => 'Vuelto'
+                        'data' => 'vuelto',
+                        'title' => 'Vuelto',
                     ],
 
                     [
-                        'data'  => 'estado',
-                        'title' => 'Estado'
+                        'data' => 'estado',
+                        'title' => 'Estado',
                     ],
 
                 ],
@@ -263,76 +232,62 @@ class ReporteController extends Controller
 
                 'tfoot' => [
 
-                    'total_ventas' =>
-                        $ventas->count(),
+                    'total_ventas' => $ventas->count(),
 
-                    'ventas_activas' =>
-                        $ventasActivas->count(),
+                    'ventas_activas' => $ventasActivas->count(),
 
-                    'ventas_canceladas' =>
-                        $ventas
-                            ->where('estado_venta', 0)
-                            ->count(),
+                    'ventas_canceladas' => $ventas
+                        ->where('estado_venta', 0)
+                        ->count(),
 
-                    'productos_vendidos' =>
+                    'productos_vendidos' => $ventas->sum(function ($venta) {
 
-                        $ventas->sum(function ($venta) {
+                        return $venta->detalles
+                            ->sum('cantidad_venta');
 
-                            return $venta->detalles
-                                ->sum('cantidad_venta');
+                    }),
 
-                        }),
+                    'subtotal_general' => number_format(
 
-                    'subtotal_general' =>
+                        $ventasActivas
+                            ->sum('subtotal_venta'),
 
-                        number_format(
+                        2
 
-                            $ventasActivas
-                                ->sum('subtotal_venta'),
+                    ),
 
-                            2
+                    'impuesto_general' => number_format(
 
-                        ),
+                        $ventasActivas
+                            ->sum('impuesto_venta'),
 
-                    'impuesto_general' =>
+                        2
 
-                        number_format(
+                    ),
 
-                            $ventasActivas
-                                ->sum('impuesto_venta'),
+                    'total_general' => 'C$'.number_format(
 
-                            2
+                        $ventasActivas
+                            ->sum('total_venta'),
 
-                        ),
+                        2
 
-                    'total_general' =>
+                    ),
 
-                        'C$' . number_format(
+                    'ticket_promedio' => 'C$'.number_format(
 
-                            $ventasActivas
-                                ->sum('total_venta'),
+                        $ventasActivas->count() > 0
 
-                            2
+                            ? $ventasActivas
+                                ->avg('total_venta')
 
-                        ),
+                            : 0,
 
-                    'ticket_promedio' =>
+                        2
 
-                        'C$' . number_format(
+                    ),
 
-                            $ventasActivas->count() > 0
-
-                                ? $ventasActivas
-                                    ->avg('total_venta')
-
-                                : 0,
-
-                            2
-
-                        ),
-
-                ]
-                
+                ],
 
             ]);
 
@@ -342,11 +297,9 @@ class ReporteController extends Controller
 
                 'success' => false,
 
-                'mensaje' =>
-                    'Error al generar reporte de ventas',
+                'mensaje' => 'Error al generar reporte de ventas',
 
-                'error' =>
-                    $e->getMessage()
+                'error' => $e->getMessage(),
 
             ], 500);
 
@@ -362,12 +315,12 @@ class ReporteController extends Controller
             // =====================================
 
             $fechaInicio = $request->fecha_inicio;
-            $fechaFin    = $request->fecha_fin;
+            $fechaFin = $request->fecha_fin;
 
             $limite = $request->limite;
 
             // si viene vacío o no numérico, no aplicar límite
-            if (!is_numeric($limite) || (int)$limite <= 0) {
+            if (! is_numeric($limite) || (int) $limite <= 0) {
                 $limite = null;
             } else {
                 $limite = (int) $limite;
@@ -380,27 +333,23 @@ class ReporteController extends Controller
             $productos = Producto::with([
                 'categoria',
                 'ubicacion',
-                'impuesto'
+                'impuesto',
             ])
+                ->when($fechaInicio && $fechaFin, function ($query) use ($fechaInicio, $fechaFin) {
 
-            ->when($fechaInicio && $fechaFin, function ($query)
-            use ($fechaInicio, $fechaFin) {
+                    $query->whereBetween(
+                        'fecha_creacion_producto',
+                        [
+                            $fechaInicio.' 00:00:00',
+                            $fechaFin.' 23:59:59',
+                        ]
+                    );
 
-                $query->whereBetween(
-                    'fecha_creacion_producto',
-                    [
-                        $fechaInicio . ' 00:00:00',
-                        $fechaFin . ' 23:59:59'
-                    ]
-                );
-
-            })
-
-            ->orderByDesc('id_producto')
+                })
+                ->orderByDesc('id_producto')
 
             // ->limit($limite)
-
-            ->get();
+                ->get();
 
             // =====================================
             // DATOS
@@ -475,87 +424,62 @@ class ReporteController extends Controller
 
                 return [
 
-                    'id_producto' =>
-                        $producto->id_producto,
+                    'id_producto' => $producto->id_producto,
 
-                    'nombre_producto' =>
-                        $producto->nombre_producto,
+                    'nombre_producto' => $producto->nombre_producto,
 
-                    'categoria' =>
-
-                        $producto->categoria
-                            ->nombre_categoria
+                    'categoria' => $producto->categoria
+                        ->nombre_categoria
 
                         ?? 'Sin Categoria',
 
-                    'ubicacion' =>
-
-                        $producto->ubicacion
-                            ->nombre_ubicacion
+                    'ubicacion' => $producto->ubicacion
+                        ->nombre_ubicacion
 
                         ?? '-',
 
-                    'impuesto' =>
+                    'impuesto' => $porcentajeImpuesto.' %',
 
-                        $porcentajeImpuesto . ' %',
+                    'precio_compra' => 'C$ '.number_format(
+                        $precioCompra,
+                        2
+                    ),
 
-                    'precio_compra' =>
+                    'precio_venta_sin_iva' => 'C$ '.number_format(
+                        $precioVentaSinIVA,
+                        2
+                    ),
 
-                        'C$ ' . number_format(
-                            $precioCompra,
-                            2
-                        ),
+                    'precio_venta_con_iva' => 'C$ '.number_format(
+                        $precioVentaConIVA,
+                        2
+                    ),
 
-                    'precio_venta_sin_iva' =>
+                    'porcentaje_ganancia' => number_format(
+                        $porcentajeGanancia,
+                        2
+                    ).'%',
 
-                        'C$ ' . number_format(
-                            $precioVentaSinIVA,
-                            2
-                        ),
+                    'ganancia_unidad' => 'C$ '.number_format(
+                        $gananciaPorUnidad,
+                        2
+                    ),
 
-                    'precio_venta_con_iva' =>
+                    'stock_actual' => $producto->stock_actual,
 
-                        'C$ ' . number_format(
-                            $precioVentaConIVA,
-                            2
-                        ),
+                    'valor_inventario_compra' => 'C$ '.number_format(
+                        $valorInventarioCompra,
+                        2
+                    ),
 
-                    'porcentaje_ganancia' =>
+                    'valor_inventario_venta' => 'C$ '.number_format(
+                        $valorInventarioVenta,
+                        2
+                    ),
 
-                        number_format(
-                            $porcentajeGanancia,
-                            2
-                        ) . '%',
-
-                    'ganancia_unidad' =>
-
-                        'C$ ' . number_format(
-                            $gananciaPorUnidad,
-                            2
-                        ),
-
-                    'stock_actual' =>
-                        $producto->stock_actual,
-
-                    'valor_inventario_compra' =>
-
-                        'C$ ' . number_format(
-                            $valorInventarioCompra,
-                            2
-                        ),
-
-                    'valor_inventario_venta' =>
-
-                        'C$ ' . number_format(
-                            $valorInventarioVenta,
-                            2
-                        ),
-
-                    'fecha_entrada' =>
-
-                        \Carbon\Carbon::parse(
-                            $producto->fecha_creacion_producto
-                        )->format('d/m/Y'),
+                    'fecha_entrada' => \Carbon\Carbon::parse(
+                        $producto->fecha_creacion_producto
+                    )->format('d/m/Y'),
 
                 ];
 
@@ -596,71 +520,71 @@ class ReporteController extends Controller
                 'columnas' => [
 
                     [
-                        'data'  => 'id_producto',
-                        'title' => 'ID'
+                        'data' => 'id_producto',
+                        'title' => 'ID',
                     ],
 
                     [
-                        'data'  => 'nombre_producto',
-                        'title' => 'Producto'
+                        'data' => 'nombre_producto',
+                        'title' => 'Producto',
                     ],
 
                     [
-                        'data'  => 'categoria',
-                        'title' => 'Categoría'
+                        'data' => 'categoria',
+                        'title' => 'Categoría',
                     ],
 
                     [
-                        'data'  => 'ubicacion',
-                        'title' => 'Ubicación'
+                        'data' => 'ubicacion',
+                        'title' => 'Ubicación',
                     ],
 
                     [
-                        'data'  => 'impuesto',
-                        'title' => 'TASA'
+                        'data' => 'impuesto',
+                        'title' => 'TASA',
                     ],
 
                     [
-                        'data'  => 'precio_compra',
-                        'title' => 'P. Compra'
+                        'data' => 'precio_compra',
+                        'title' => 'P. Compra',
                     ],
 
                     [
-                        'data'  => 'precio_venta_sin_iva',
-                        'title' => 'P. Venta'
+                        'data' => 'precio_venta_sin_iva',
+                        'title' => 'P. Venta',
                     ],
 
                     [
-                        'data'  => 'precio_venta_con_iva',
-                        'title' => 'V. Final'
+                        'data' => 'precio_venta_con_iva',
+                        'title' => 'V. Final',
                     ],
 
                     [
-                        'data'  => 'porcentaje_ganancia',
-                        'title' => '% Gan'
+                        'data' => 'porcentaje_ganancia',
+                        'title' => '% Gan',
                     ],
                     [
-                        'data'  => 'ganancia_unidad',
-                        'title' => 'Gan/U'
+                        'data' => 'ganancia_unidad',
+                        'title' => 'Gan/U',
                     ],
                     [
-                        'data'  => 'stock_actual',
-                        'title' => 'Stock'
-                    ],
-
-                    [
-                        'data'  => 'valor_inventario_compra',
-                        'title' => 'Inversion Total'
+                        'data' => 'stock_actual',
+                        'title' => 'Stock',
                     ],
 
                     [
-                        'data'  => 'valor_inventario_venta',
-                        'title' => 'Ganancia Total'
+                        'data' => 'valor_inventario_compra',
+                        'title' => 'Inversion Total',
                     ],
 
                     [
-                        'data'  => 'fecha_entrada',
-                        'title' => 'Fecha Ent'
+                        'data' => 'valor_inventario_venta',
+                        'title' => 'Ganancia Total',
+                    ],
+
+                    [
+                        'data' => 'fecha_entrada',
+                        'title' => 'Fecha Ent',
                     ],
 
                 ],
@@ -677,35 +601,27 @@ class ReporteController extends Controller
 
                 'tfoot' => [
 
-                    'total_productos' =>
-                        $productos->count(),
+                    'total_productos' => $productos->count(),
 
-                    'stock_total' =>
-                        $productos->sum('stock_actual'),
+                    'stock_total' => $productos->sum('stock_actual'),
 
-                    'valor_total_compra' =>
+                    'valor_total_compra' => number_format(
+                        $valorTotalCompra,
+                        2
+                    ),
 
-                        number_format(
-                            $valorTotalCompra,
-                            2
-                        ),
+                    'valor_total_venta' => number_format(
+                        $valorTotalVenta,
+                        2
+                    ),
 
-                    'valor_total_venta' =>
+                    'ganancia_potencial' => number_format(
+                        $valorTotalVenta -
+                        $valorTotalCompra,
+                        2
+                    ),
 
-                        number_format(
-                            $valorTotalVenta,
-                            2
-                        ),
-
-                    'ganancia_potencial' =>
-
-                        number_format(
-                            $valorTotalVenta -
-                            $valorTotalCompra,
-                            2
-                        )
-
-                ]
+                ],
 
             ]);
 
@@ -715,16 +631,15 @@ class ReporteController extends Controller
 
                 'success' => false,
 
-                'mensaje' =>
-                    'Error al generar reporte inventario',
+                'mensaje' => 'Error al generar reporte inventario',
 
-                'error' =>
-                    $e->getMessage()
+                'error' => $e->getMessage(),
 
             ], 500);
 
         }
     }
+
     public function ReporteMovimientoInventario(Request $request)
     {
         try {
@@ -734,12 +649,12 @@ class ReporteController extends Controller
             // =====================================
 
             $fechaInicio = $request->fecha_inicio;
-            $fechaFin    = $request->fecha_fin;
+            $fechaFin = $request->fecha_fin;
 
-             $limite = $request->limite;
+            $limite = $request->limite;
 
             // si viene vacío o no numérico, no aplicar límite
-            if (!is_numeric($limite) || (int)$limite <= 0) {
+            if (! is_numeric($limite) || (int) $limite <= 0) {
                 $limite = null;
             } else {
                 $limite = (int) $limite;
@@ -751,27 +666,22 @@ class ReporteController extends Controller
 
             $movimientos = MovimientoInventario::with([
                 'producto',
-                'usuario'
+                'usuario',
             ])
+                ->when($fechaInicio && $fechaFin, function ($query) use ($fechaInicio, $fechaFin) {
 
-            ->when($fechaInicio && $fechaFin, function ($query)
-            use ($fechaInicio, $fechaFin) {
+                    $query->whereBetween(
+                        'fecha_movimiento',
+                        [
+                            $fechaInicio.' 00:00:00',
+                            $fechaFin.' 23:59:59',
+                        ]
+                    );
 
-                $query->whereBetween(
-                    'fecha_movimiento',
-                    [
-                        $fechaInicio . ' 00:00:00',
-                        $fechaFin . ' 23:59:59'
-                    ]
-                );
-
-            })
-
-            ->orderByDesc('id_movimiento_inventario')
-
-            ->limit($limite)
-
-            ->get();
+                })
+                ->orderByDesc('id_movimiento_inventario')
+                ->limit($limite)
+                ->get();
 
             // =====================================
             // DATOS
@@ -783,47 +693,36 @@ class ReporteController extends Controller
 
                 return [
 
-                    'id_movimiento' =>
-                        $movimiento->id_movimiento_inventario,
+                    'id_movimiento' => $movimiento->id_movimiento_inventario,
 
-                    'producto' =>
-                        $movimiento->producto->nombre_producto ?? '-',
+                    'producto' => $movimiento->producto->nombre_producto ?? '-',
 
-                    'tipo_movimiento' =>
-                        $movimiento->tipo_movimiento,
+                    'tipo_movimiento' => $movimiento->tipo_movimiento,
 
-                    'cantidad_movimiento' =>
-                        $movimiento->cantidad_movimiento,
+                    'cantidad_movimiento' => $movimiento->cantidad_movimiento,
 
-                    'stock_resultante' =>
-                        $movimiento->stock_resultante,
+                    'stock_resultante' => $movimiento->stock_resultante,
 
-                    'motivo_movimiento' =>
-                        $movimiento->motivo_movimiento ?? '-',
+                    'motivo_movimiento' => $movimiento->motivo_movimiento ?? '-',
 
-                    'tipo_referencia' =>
-                        $movimiento->tipo_referencia ?? '-',
+                    'tipo_referencia' => $movimiento->tipo_referencia ?? '-',
 
-                    'precio_unitario' =>
-                        $movimiento->precio_unitario !== null
-                            ? 'C$ ' . number_format($precioUnitario, 2)
+                    'precio_unitario' => $movimiento->precio_unitario !== null
+                            ? 'C$ '.number_format($precioUnitario, 2)
                             : '-',
 
-                    'total_movimiento' =>
-                        $movimiento->precio_unitario !== null
-                            ? 'C$ ' . number_format(
+                    'total_movimiento' => $movimiento->precio_unitario !== null
+                            ? 'C$ '.number_format(
                                 $precioUnitario * $movimiento->cantidad_movimiento,
                                 2
                             )
                             : '-',
 
-                    'usuario' =>
-                        $movimiento->usuario->nombre_usuario ?? '-',
+                    'usuario' => $movimiento->usuario->nombre_usuario ?? '-',
 
-                    'fecha_movimiento' =>
-                        \Carbon\Carbon::parse(
-                            $movimiento->fecha_movimiento
-                        )->format('d/m/Y h:i A'),
+                    'fecha_movimiento' => \Carbon\Carbon::parse(
+                        $movimiento->fecha_movimiento
+                    )->format('d/m/Y h:i A'),
 
                 ];
 
@@ -881,25 +780,20 @@ class ReporteController extends Controller
 
                 'tfoot' => [
 
-                    'total_movimientos' =>
-                        $movimientos->count(),
+                    'total_movimientos' => $movimientos->count(),
 
-                    'total_entradas' =>
-                        $movimientos->where('tipo_movimiento', 'ENTRADA')
-                            ->sum('cantidad_movimiento'),
+                    'total_entradas' => $movimientos->where('tipo_movimiento', 'ENTRADA')
+                        ->sum('cantidad_movimiento'),
 
-                    'total_salidas' =>
-                        $movimientos->where('tipo_movimiento', 'SALIDA')
-                            ->sum('cantidad_movimiento'),
+                    'total_salidas' => $movimientos->where('tipo_movimiento', 'SALIDA')
+                        ->sum('cantidad_movimiento'),
 
-                    'total_ajustes' =>
-                        $movimientos->where('tipo_movimiento', 'AJUSTE')
-                            ->sum('cantidad_movimiento'),
+                    'total_ajustes' => $movimientos->where('tipo_movimiento', 'AJUSTE')
+                        ->sum('cantidad_movimiento'),
 
-                    'valor_total_movimientos' =>
-                        number_format($totalValor, 2),
+                    'valor_total_movimientos' => number_format($totalValor, 2),
 
-                ]
+                ],
 
             ]);
 
@@ -908,10 +802,8 @@ class ReporteController extends Controller
             return response()->json([
 
                 'success' => false,
-                'mensaje' =>
-                    'Error al generar reporte de movimientos inventario',
-                'error' =>
-                    $e->getMessage()
+                'mensaje' => 'Error al generar reporte de movimientos inventario',
+                'error' => $e->getMessage(),
 
             ], 500);
         }
@@ -922,22 +814,22 @@ class ReporteController extends Controller
         try {
 
             $fechaInicio = $request->fecha_inicio;
-            $fechaFin    = $request->fecha_fin;
+            $fechaFin = $request->fecha_fin;
 
             $limite = $request->limite;
 
             // si viene vacío o no numérico, no aplicar límite
-            if (!is_numeric($limite) || (int)$limite <= 0) {
+            if (! is_numeric($limite) || (int) $limite <= 0) {
                 $limite = null;
             } else {
                 $limite = (int) $limite;
             }
 
             $clientes = Cliente::with([
-                'ventas.metodoPago'
+                'ventas.metodoPago',
             ])
-            ->orderByDesc('id_cliente')
-            ->limit($limite)->get();
+                ->orderByDesc('id_cliente')
+                ->limit($limite)->get();
 
             $datos = $clientes->map(function ($cliente) use ($fechaInicio, $fechaFin) {
 
@@ -948,8 +840,8 @@ class ReporteController extends Controller
                 if ($fechaInicio && $fechaFin) {
 
                     if (
-                        $cliente->fecha_creacion_cliente < $fechaInicio . ' 00:00:00' ||
-                        $cliente->fecha_creacion_cliente > $fechaFin . ' 23:59:59'
+                        $cliente->fecha_creacion_cliente < $fechaInicio.' 00:00:00' ||
+                        $cliente->fecha_creacion_cliente > $fechaFin.' 23:59:59'
                     ) {
                         return null;
                     }
@@ -1007,61 +899,48 @@ class ReporteController extends Controller
 
                 return [
 
-                    'id_cliente' =>
-                        $cliente->id_cliente,
+                    'id_cliente' => $cliente->id_cliente,
 
-                    'nombre_cliente' =>
-                        $cliente->nombre_cliente,
+                    'nombre_cliente' => $cliente->nombre_cliente,
 
-                    'telefono_cliente' =>
-                        $cliente->telefono_cliente ?? '-',
+                    'telefono_cliente' => $cliente->telefono_cliente ?? '-',
 
-                    'correo_cliente' =>
-                        $cliente->correo_cliente ?? '-',
+                    'correo_cliente' => $cliente->correo_cliente ?? '-',
 
-                    'estado_cliente' =>
-                        $cliente->estado_cliente ? 'Activo' : 'Inactivo',
+                    'estado_cliente' => $cliente->estado_cliente ? 'Activo' : 'Inactivo',
 
-                    'compras_realizadas' =>
-                        $comprasRealizadas,
+                    'compras_realizadas' => $comprasRealizadas,
 
-                    'total_gastado' =>
-                        'C$ ' . number_format($totalGastado, 2),
+                    'total_gastado' => 'C$ '.number_format($totalGastado, 2),
 
-                    'ticket_promedio' =>
-                        'C$ ' . number_format($ticketPromedio, 2),
+                    'ticket_promedio' => 'C$ '.number_format($ticketPromedio, 2),
 
-                    'metodo_pago_favorito' =>
-                        $metodoFavorito,
+                    'metodo_pago_favorito' => $metodoFavorito,
 
-                    'primera_compra' =>
-                        $primeraCompra
+                    'primera_compra' => $primeraCompra
                             ? \Carbon\Carbon::parse($primeraCompra->fecha_venta)
                                 ->format('d/m/Y')
                             : '-',
 
-                    'ultima_compra' =>
-                        $ultimaCompra
+                    'ultima_compra' => $ultimaCompra
                             ? \Carbon\Carbon::parse($ultimaCompra->fecha_venta)
                                 ->format('d/m/Y')
                             : '-',
 
-                    'fecha_registro' =>
-                        \Carbon\Carbon::parse($cliente->fecha_creacion_cliente)
-                            ->format('d/m/Y'),
+                    'fecha_registro' => \Carbon\Carbon::parse($cliente->fecha_creacion_cliente)
+                        ->format('d/m/Y'),
 
                 ];
 
             })
 
             // quitar nulls del filtro
-            ->filter()
-            ->values()
-
-            ->sortByDesc(function ($cliente) {
-                return (float) str_replace(',', '', $cliente['total_gastado']);
-            })
-            ->values();
+                ->filter()
+                ->values()
+                ->sortByDesc(function ($cliente) {
+                    return (float) str_replace(',', '', $cliente['total_gastado']);
+                })
+                ->values();
 
             return response()->json([
 
@@ -1087,24 +966,20 @@ class ReporteController extends Controller
 
                 'tfoot' => [
 
-                    'total_clientes' =>
-                        $clientes->count(),
+                    'total_clientes' => $clientes->count(),
 
-                    'clientes_activos' =>
-                        $clientes->where('estado_cliente', 1)->count(),
+                    'clientes_activos' => $clientes->where('estado_cliente', 1)->count(),
 
-                    'ingresos_totales' =>
-                        number_format(
-                            $clientes->sum(function ($cliente) {
-                                return $cliente->ventas->sum('total_venta');
-                            }),
-                            2
-                        ),
+                    'ingresos_totales' => number_format(
+                        $clientes->sum(function ($cliente) {
+                            return $cliente->ventas->sum('total_venta');
+                        }),
+                        2
+                    ),
 
-                    'cliente_top' =>
-                        $datos->first()['nombre_cliente'] ?? '-'
+                    'cliente_top' => $datos->first()['nombre_cliente'] ?? '-',
 
-                ]
+                ],
 
             ]);
 
@@ -1114,7 +989,7 @@ class ReporteController extends Controller
 
                 'success' => false,
                 'mensaje' => 'Error al generar reporte de clientes',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
 
             ], 500);
         }
@@ -1125,12 +1000,12 @@ class ReporteController extends Controller
         try {
 
             $fechaInicio = $request->fecha_inicio;
-            $fechaFin    = $request->fecha_fin;
+            $fechaFin = $request->fecha_fin;
 
             $limite = $request->limite;
 
             // si viene vacío o no numérico, no aplicar límite
-            if (!is_numeric($limite) || (int)$limite <= 0) {
+            if (! is_numeric($limite) || (int) $limite <= 0) {
                 $limite = null;
             } else {
                 $limite = (int) $limite;
@@ -1138,14 +1013,13 @@ class ReporteController extends Controller
 
             $usuarios = Usuario::with([
                 'rol',
-                'ventas.metodoPago'
+                'ventas.metodoPago',
             ])
-            ->orderByDesc('id_usuario')
-            ->limit($limite)
-            ->get();
+                ->orderByDesc('id_usuario')
+                ->limit($limite)
+                ->get();
 
-            $datos = $usuarios->map(function ($usuario)
-            use ($fechaInicio, $fechaFin) {
+            $datos = $usuarios->map(function ($usuario) use ($fechaInicio, $fechaFin) {
 
                 // =====================================
                 // FILTRO POR FECHA DE REGISTRO
@@ -1154,8 +1028,8 @@ class ReporteController extends Controller
                 if ($fechaInicio && $fechaFin) {
 
                     if (
-                        $usuario->fecha_creacion_usuario < $fechaInicio . ' 00:00:00' ||
-                        $usuario->fecha_creacion_usuario > $fechaFin . ' 23:59:59'
+                        $usuario->fecha_creacion_usuario < $fechaInicio.' 00:00:00' ||
+                        $usuario->fecha_creacion_usuario > $fechaFin.' 23:59:59'
                     ) {
                         return null;
                     }
@@ -1228,69 +1102,54 @@ class ReporteController extends Controller
 
                 return [
 
-                    'id_usuario' =>
-                        $usuario->id_usuario,
+                    'id_usuario' => $usuario->id_usuario,
 
-                    'nombre_completo' =>
-                        $usuario->nombre_completo_usuario,
+                    'nombre_completo' => $usuario->nombre_completo_usuario,
 
-                    'nombre_usuario' =>
-                        $usuario->nombre_usuario,
+                    'nombre_usuario' => $usuario->nombre_usuario,
 
-                    'rol' =>
-                        $usuario->rol->nombre_rol ?? '-',
+                    'rol' => $usuario->rol->nombre_rol ?? '-',
 
-                    'estado' =>
-                        $usuario->estado_usuario ? 'Activo' : 'Inactivo',
+                    'estado' => $usuario->estado_usuario ? 'Activo' : 'Inactivo',
 
-                    'ventas_realizadas' =>
-                        $ventasRealizadas,
+                    'ventas_realizadas' => $ventasRealizadas,
 
-                    'facturas_anuladas' =>
-                        $facturasAnuladas,
+                    'facturas_anuladas' => $facturasAnuladas,
 
-                    'dinero_generado' =>
-                        'C$ ' . number_format($dineroGenerado, 2),
+                    'dinero_generado' => 'C$ '.number_format($dineroGenerado, 2),
 
-                    'ticket_promedio' =>
-                        'C$ ' . number_format($ticketPromedio, 2),
+                    'ticket_promedio' => 'C$ '.number_format($ticketPromedio, 2),
 
-                    'metodo_mas_usado' =>
-                        $metodoMasUsado,
+                    'metodo_mas_usado' => $metodoMasUsado,
 
-                    'primera_venta' =>
-                        $primeraVenta
+                    'primera_venta' => $primeraVenta
                             ? \Carbon\Carbon::parse($primeraVenta->fecha_venta)
                                 ->format('d/m/Y')
                             : '-',
 
-                    'ultima_venta' =>
-                        $ultimaVenta
+                    'ultima_venta' => $ultimaVenta
                             ? \Carbon\Carbon::parse($ultimaVenta->fecha_venta)
                                 ->format('d/m/Y')
                             : '-',
 
-                    'fecha_registro' =>
-                        \Carbon\Carbon::parse($usuario->fecha_creacion_usuario)
-                            ->format('d/m/Y'),
+                    'fecha_registro' => \Carbon\Carbon::parse($usuario->fecha_creacion_usuario)
+                        ->format('d/m/Y'),
 
                 ];
 
             })
 
             // quitar nulls por filtro de registro
-            ->filter()
-            ->values()
+                ->filter()
+                ->values()
 
             // =====================================
             // ORDENAR TOP VENDEDORES
             // =====================================
-
-            ->sortByDesc(function ($usuario) {
-                return (float) str_replace(',', '', $usuario['dinero_generado']);
-            })
-
-            ->values();
+                ->sortByDesc(function ($usuario) {
+                    return (float) str_replace(',', '', $usuario['dinero_generado']);
+                })
+                ->values();
 
             return response()->json([
 
@@ -1317,32 +1176,26 @@ class ReporteController extends Controller
 
                 'tfoot' => [
 
-                    'usuarios_totales' =>
-                        $usuarios->count(),
+                    'usuarios_totales' => $usuarios->count(),
 
-                    'usuarios_activos' =>
-                        $usuarios->where('estado_usuario', 1)->count(),
+                    'usuarios_activos' => $usuarios->where('estado_usuario', 1)->count(),
 
-                    'ventas_totales' =>
-                        $datos->sum('ventas_realizadas'),
+                    'ventas_totales' => $datos->sum('ventas_realizadas'),
 
-                    'facturas_anuladas_totales' =>
-                        $datos->sum('facturas_anuladas'),
+                    'facturas_anuladas_totales' => $datos->sum('facturas_anuladas'),
 
-                    'dinero_total_generado' =>
-                        number_format(
-                            $usuarios->sum(function ($usuario) {
-                                return $usuario->ventas
-                                    ->where('estado_venta', 1)
-                                    ->sum('total_venta');
-                            }),
-                            2
-                        ),
+                    'dinero_total_generado' => number_format(
+                        $usuarios->sum(function ($usuario) {
+                            return $usuario->ventas
+                                ->where('estado_venta', 1)
+                                ->sum('total_venta');
+                        }),
+                        2
+                    ),
 
-                    'mejor_vendedor' =>
-                        $datos->first()['nombre_completo'] ?? '-'
+                    'mejor_vendedor' => $datos->first()['nombre_completo'] ?? '-',
 
-                ]
+                ],
 
             ]);
 
@@ -1352,7 +1205,7 @@ class ReporteController extends Controller
 
                 'success' => false,
                 'mensaje' => 'Error al generar reporte de usuarios',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
 
             ], 500);
         }
@@ -1363,12 +1216,12 @@ class ReporteController extends Controller
         try {
 
             $fechaInicio = $request->fecha_inicio;
-            $fechaFin    = $request->fecha_fin;
+            $fechaFin = $request->fecha_fin;
 
             $limite = $request->limite;
 
             // si viene vacío o no numérico, no aplicar límite
-            if (!is_numeric($limite) || (int)$limite <= 0) {
+            if (! is_numeric($limite) || (int) $limite <= 0) {
                 $limite = null;
             } else {
                 $limite = (int) $limite;
@@ -1376,22 +1229,20 @@ class ReporteController extends Controller
 
             $cajas = Caja::with([
                 'usuario',
-                'movimientos'
+                'movimientos',
             ])
+                ->when($fechaInicio && $fechaFin, function ($query) use ($fechaInicio, $fechaFin) {
 
-            ->when($fechaInicio && $fechaFin, function ($query)
-            use ($fechaInicio, $fechaFin) {
+                    $query->whereBetween(
+                        'fecha_apertura',
+                        [
+                            $fechaInicio.' 00:00:00',
+                            $fechaFin.' 23:59:59',
+                        ]
+                    );
 
-                $query->whereBetween(
-                    'fecha_apertura',
-                    [
-                        $fechaInicio . ' 00:00:00',
-                        $fechaFin . ' 23:59:59'
-                    ]
-                );
-
-            })->orderByDesc('id_caja')
-            ->limit($limite)->get();
+                })->orderByDesc('id_caja')
+                ->limit($limite)->get();
 
             $datos = $cajas->map(function ($caja) {
 
@@ -1404,7 +1255,7 @@ class ReporteController extends Controller
                 if ($caja->fecha_cierre) {
 
                     $inicio = \Carbon\Carbon::parse($caja->fecha_apertura);
-                    $fin    = \Carbon\Carbon::parse($caja->fecha_cierre);
+                    $fin = \Carbon\Carbon::parse($caja->fecha_cierre);
 
                     $diff = $inicio->diff($fin);
 
@@ -1425,22 +1276,16 @@ class ReporteController extends Controller
 
                 return [
 
-                    'id_caja' =>
-                        $caja->id_caja,
+                    'id_caja' => $caja->id_caja,
 
-                    'usuario' =>
-                        $caja->usuario->nombre_completo_usuario
+                    'usuario' => $caja->usuario->nombre_completo_usuario
                         ?? '-',
 
-                    'fecha_apertura' =>
+                    'fecha_apertura' => \Carbon\Carbon::parse(
+                        $caja->fecha_apertura
+                    )->format('d/m/Y h:i A'),
 
-                        \Carbon\Carbon::parse(
-                            $caja->fecha_apertura
-                        )->format('d/m/Y h:i A'),
-
-                    'fecha_cierre' =>
-
-                        $caja->fecha_cierre
+                    'fecha_cierre' => $caja->fecha_cierre
 
                             ? \Carbon\Carbon::parse(
                                 $caja->fecha_cierre
@@ -1448,26 +1293,22 @@ class ReporteController extends Controller
 
                             : 'Caja Abierta',
 
-                    'duracion_sesion' =>
-                        $duracionSesion,
+                    'duracion_sesion' => $duracionSesion,
 
-                    'monto_inicial' =>
-                       'C$ ' . number_format(
-                            $caja->monto_inicial,
-                            2
-                        ),
+                    'monto_inicial' => 'C$ '.number_format(
+                        $caja->monto_inicial,
+                        2
+                    ),
 
-                    'monto_final' =>
+                    'monto_final' => $caja->monto_final !== null
 
-                        $caja->monto_final !== null
-
-                            ? 'C$ ' . number_format(
+                            ? 'C$ '.number_format(
                                 $caja->monto_final,
                                 2
                             )
 
                             : '-',
-                                /*
+                    /*
                     'monto_teorico' =>
 
                         $caja->monto_teorico !== null
@@ -1503,17 +1344,14 @@ class ReporteController extends Controller
 
                             */
 
-                    'total_ingresos' =>
-                        'C$ ' . number_format($ingresos, 2),
+                    'total_ingresos' => 'C$ '.number_format($ingresos, 2),
 
-                    'total_salidas' =>
-                        'C$ ' . number_format($salidas, 2),
+                    'total_salidas' => 'C$ '.number_format($salidas, 2),
 
-                    'balance_caja' =>
-                        'C$ ' . number_format(
-                            $ingresos - $salidas,
-                            2
-                        ),
+                    'balance_caja' => 'C$ '.number_format(
+                        $ingresos - $salidas,
+                        2
+                    ),
 
                 ];
 
@@ -1530,38 +1368,38 @@ class ReporteController extends Controller
                 'columnas' => [
 
                     [
-                        'data'  => 'id_caja',
-                        'title' => 'ID'
+                        'data' => 'id_caja',
+                        'title' => 'ID',
                     ],
 
                     [
-                        'data'  => 'usuario',
-                        'title' => 'Usuario'
+                        'data' => 'usuario',
+                        'title' => 'Usuario',
                     ],
 
                     [
-                        'data'  => 'fecha_apertura',
-                        'title' => 'Fecha Apertura'
+                        'data' => 'fecha_apertura',
+                        'title' => 'Fecha Apertura',
                     ],
 
                     [
-                        'data'  => 'fecha_cierre',
-                        'title' => 'Fecha Cierre'
+                        'data' => 'fecha_cierre',
+                        'title' => 'Fecha Cierre',
                     ],
 
                     [
-                        'data'  => 'duracion_sesion',
-                        'title' => 'Duracion'
+                        'data' => 'duracion_sesion',
+                        'title' => 'Duracion',
                     ],
 
                     [
-                        'data'  => 'monto_inicial',
-                        'title' => 'Monto Ini'
+                        'data' => 'monto_inicial',
+                        'title' => 'Monto Ini',
                     ],
-                    
+
                     [
-                        'data'  => 'monto_final',
-                        'title' => 'Monto Fin'
+                        'data' => 'monto_final',
+                        'title' => 'Monto Fin',
                     ],
                     /*
                     [
@@ -1580,18 +1418,18 @@ class ReporteController extends Controller
                     ],
                     */
                     [
-                        'data'  => 'total_ingresos',
-                        'title' => 'Ingresos'
+                        'data' => 'total_ingresos',
+                        'title' => 'Ingresos',
                     ],
 
                     [
-                        'data'  => 'total_salidas',
-                        'title' => 'Salidas'
+                        'data' => 'total_salidas',
+                        'title' => 'Salidas',
                     ],
 
                     [
-                        'data'  => 'balance_caja',
-                        'title' => 'Balance'
+                        'data' => 'balance_caja',
+                        'title' => 'Balance',
                     ],
 
                 ],
@@ -1608,62 +1446,55 @@ class ReporteController extends Controller
 
                 'tfoot' => [
 
-                    'total_cajas' =>
-                        $cajas->count(),
+                    'total_cajas' => $cajas->count(),
 
-                    'total_ingresos' =>
+                    'total_ingresos' => number_format(
 
-                        number_format(
+                        $cajas->sum(function ($caja) {
 
-                            $cajas->sum(function ($caja) {
+                            return $caja->movimientos
+                                ->where(
+                                    'tipo_movimiento_caja',
+                                    'INGRESO'
+                                )
+                                ->sum(
+                                    'monto_movimiento_caja'
+                                );
 
-                                return $caja->movimientos
-                                    ->where(
-                                        'tipo_movimiento_caja',
-                                        'INGRESO'
-                                    )
-                                    ->sum(
-                                        'monto_movimiento_caja'
-                                    );
+                        }),
 
-                            }),
+                        2
 
-                            2
+                    ),
 
-                        ),
+                    'total_salidas' => 'C$ '.number_format(
 
-                    'total_salidas' =>
+                        $cajas->sum(function ($caja) {
 
-                        'C$ ' . number_format(
+                            return $caja->movimientos
+                                ->where(
+                                    'tipo_movimiento_caja',
+                                    'SALIDA'
+                                )
+                                ->sum(
+                                    'monto_movimiento_caja'
+                                );
 
-                            $cajas->sum(function ($caja) {
+                        }),
 
-                                return $caja->movimientos
-                                    ->where(
-                                        'tipo_movimiento_caja',
-                                        'SALIDA'
-                                    )
-                                    ->sum(
-                                        'monto_movimiento_caja'
-                                    );
+                        2
 
-                            }),
+                    ),
 
-                            2
+                    'diferencia_total' => number_format(
 
-                        ),
+                        $cajas->sum('diferencia'),
 
-                    'diferencia_total' =>
+                        2
 
-                        number_format(
+                    ),
 
-                            $cajas->sum('diferencia'),
-
-                            2
-
-                        )
-
-                ]
+                ],
 
             ]);
 
@@ -1673,15 +1504,12 @@ class ReporteController extends Controller
 
                 'success' => false,
 
-                'mensaje' =>
-                    'Error al generar reporte de cajas',
+                'mensaje' => 'Error al generar reporte de cajas',
 
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
 
             ], 500);
 
         }
     }
-
-
 }

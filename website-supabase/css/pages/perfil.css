@@ -1021,6 +1021,174 @@ html { scroll-behavior: smooth; }
     cursor: progress;
 }
 
+/* ── Cupones ────────────────────────────────────────────────── */
+.perfil-cupon__form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: var(--e-3);
+}
+
+.perfil-cupon__campo {
+    flex: 1;
+    min-width: 0;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--borde);
+    border-radius: var(--r-pill);
+    background: var(--superficie);
+    font-size: .82rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.perfil-cupon__campo:focus-visible { outline: 2px solid var(--acento); outline-offset: 1px; }
+
+.perfil-cupon__form .btn-primario { padding: 0 20px; }
+
+.perfil-cupon {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--e-3);
+    padding: var(--e-4);
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-left: 3px solid var(--acento);
+    border-radius: var(--r-md);
+    box-shadow: var(--sombra-suave);
+}
+
+.perfil-cupon__datos { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.perfil-cupon__codigo {
+    display: inline-block;
+    align-self: flex-start;
+    padding: 2px 8px;
+    border: 1px dashed var(--primario-hondo);
+    border-radius: var(--r-sm);
+    font-size: .74rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+}
+
+.perfil-cupon__meta { font-size: .72rem; color: var(--texto-suave); }
+
+.perfil-cupon__valor {
+    padding: 4px 10px;
+    border-radius: var(--r-pill);
+    background: var(--acento);
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* ── Modal de confirmación (perfil) ─────────────────────────── */
+body.sin-scroll {
+    overflow: hidden;
+}
+
+.modal-perfil {
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+    display: grid;
+    place-items: center;
+    padding: var(--e-4);
+    opacity: 0;
+    transition: opacity .18s ease;
+}
+
+.modal-perfil.is-visible {
+    opacity: 1;
+}
+
+.modal-perfil__fondo {
+    position: absolute;
+    inset: 0;
+    background: rgba(17, 17, 17, .48);
+    backdrop-filter: blur(2px);
+}
+
+.modal-perfil__caja {
+    position: relative;
+    width: min(400px, 100%);
+    padding: var(--e-5);
+    text-align: center;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-lg);
+    box-shadow: 0 18px 48px rgba(17, 17, 17, .22);
+    transform: translateY(10px) scale(.98);
+    transition: transform .18s ease;
+}
+
+.modal-perfil.is-visible .modal-perfil__caja {
+    transform: translateY(0) scale(1);
+}
+
+.modal-perfil__icono {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    margin: 0 auto var(--e-3);
+    border-radius: var(--r-pill);
+    background: rgba(230, 81, 63, .12);
+    color: var(--acento);
+    font-size: 1.25rem;
+}
+
+.modal-perfil__titulo {
+    margin: 0 0 var(--e-2);
+    font-family: var(--fuente-titulo);
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.modal-perfil__texto {
+    margin: 0 0 var(--e-4);
+    font-size: .86rem;
+    line-height: 1.5;
+    color: var(--texto-suave);
+}
+
+.modal-perfil__texto strong {
+    color: var(--secundario);
+}
+
+.modal-perfil__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--e-2);
+}
+
+.modal-perfil__acciones .btn-secundario,
+.modal-perfil__peligro {
+    flex: 1 1 140px;
+}
+
+.modal-perfil__peligro {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 42px;
+    border: 1px solid var(--acento);
+    border-radius: var(--r-pill);
+    background: var(--acento);
+    color: #fff;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .18s ease;
+}
+
+.modal-perfil__peligro:hover {
+    opacity: .88;
+}
+
 .perfil-btn-icono {
     display: grid;
     place-items: center;
@@ -1147,10 +1315,18 @@ html { scroll-behavior: smooth; }
 .perfil-compra__pie {
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
     gap: var(--e-3);
     font-size: .8rem;
     color: var(--texto-suave);
+}
+
+.perfil-compra__totales {
+    display: flex;
+    align-items: center;
+    gap: var(--e-3);
+    margin-left: auto;
 }
 
 .perfil-compra__pie strong {

@@ -105,6 +105,29 @@ const Carrito = (() => {
         guardar(leer().filter(item => item.clave !== clave));
     }
 
+    /* Refresca precio, stock, categoría... de los artículos ya guardados. */
+    function actualizarDatos(mapa) {
+        const items = leer();
+        let cambios = false;
+
+        items.forEach((item) => {
+            const nuevo = mapa[item.clave];
+            if (!nuevo) return;
+
+            ['precio', 'stock', 'nombre', 'categoria', 'imagen'].forEach((campo) => {
+                if (nuevo[campo] === undefined) return;
+                if (nuevo[campo] === item[campo]) return;
+
+                item[campo] = nuevo[campo];
+                cambios = true;
+            });
+        });
+
+        if (cambios) guardar(items);
+
+        return cambios;
+    }
+
     function vaciar() {
         guardar([]);
     }
@@ -117,7 +140,7 @@ const Carrito = (() => {
         });
     }
 
-    return { items, agregar, cambiarCantidad, quitar, vaciar, subtotal, cantidadTotal, actualizarBadges, claveDe };
+    return { items, agregar, cambiarCantidad, quitar, vaciar, subtotal, cantidadTotal, actualizarBadges, claveDe, actualizarDatos };
 })();
 
 /* ── Aviso flotante ──────────────────────────────────────────── */
@@ -176,19 +199,34 @@ function tiendaToast(mensaje, tipo = 'exito') {
 }
 
 /* ── Descuento del cliente para precios mostrados ───────────── */
-function descuentoClienteActivo() {
+/* El 10% de bienvenida solo aplica a la categoría Zapatos. */
+function esCategoriaZapatos(categoria) {
+    const limpia = String(categoria || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+
+    return limpia === 'zapatos';
+}
+
+function descuentoClienteActivo(categoria) {
     const descuento = window.clienteTienda?.descuento;
 
     if (!descuento || !['porcentaje', 'monto'].includes(descuento.tipo) || Number(descuento.valor) <= 0) {
         return null;
     }
 
+    if (descuento.primera_compra && categoria !== undefined && !esCategoriaZapatos(categoria)) {
+        return null;
+    }
+
     return descuento;
 }
 
-function precioConDescuento(precio) {
+function precioConDescuento(precio, categoria) {
     const base = Number(precio) || 0;
-    const descuento = descuentoClienteActivo();
+    const descuento = descuentoClienteActivo(categoria);
 
     if (!descuento || base <= 0) return base;
 
@@ -200,6 +238,7 @@ function precioConDescuento(precio) {
     return Math.max(0, Math.round(final * 100) / 100);
 }
 
+window.esCategoriaZapatos = esCategoriaZapatos;
 window.descuentoClienteActivo = descuentoClienteActivo;
 window.precioConDescuento = precioConDescuento;
 

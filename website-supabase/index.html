@@ -28,7 +28,7 @@
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
   <link href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261103e">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261103m">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261102d">
 </head>
 <body>
@@ -131,6 +131,32 @@
     </ul>
   </section>
 
+  <!-- ── Promociones (destacadas arriba) ───────────────────── -->
+  <section class="promos" id="promos" hidden>
+    <div class="contenedor">
+      <div class="seccion__cabecera">
+        <h2 class="seccion__titulo">Promociones</h2>
+        <a class="seccion__enlace" href="#catalogo">Ver catálogo</a>
+      </div>
+
+      <div class="promos__grid" id="promosGrid"></div>
+    </div>
+  </section>
+
+  <!-- ── Categorías (arriba de los filtros) ────────────────── -->
+  <div class="contenedor">
+    <section class="seccion" id="categorias">
+      <div class="seccion__cabecera">
+        <h2 class="seccion__titulo">Categorías</h2>
+        <a class="seccion__enlace" href="#catalogo">Ver todo</a>
+      </div>
+
+      <div class="cat-grid" id="catGrid">
+        <p class="catalogo-vacio">Cargando categorías…</p>
+      </div>
+    </section>
+  </div>
+
   <!-- ── Buscador ──────────────────────────────────────────── -->
   <div class="contenedor">
     <form class="buscador" role="search" onsubmit="return false;">
@@ -188,18 +214,6 @@
 
   <main class="contenedor">
 
-    <!-- ── Categorías (círculos) ────────────────────────────── -->
-    <section class="seccion" id="categorias">
-      <div class="seccion__cabecera">
-        <h2 class="seccion__titulo">Categorías</h2>
-        <a class="seccion__enlace" href="#catalogo">Ver todo</a>
-      </div>
-
-      <div class="cat-grid" id="catGrid">
-        <p class="catalogo-vacio">Cargando categorías…</p>
-      </div>
-    </section>
-
     <!-- ── Catálogo ─────────────────────────────────────────── -->
     <section class="seccion" id="catalogo">
       <div class="seccion__cabecera">
@@ -212,17 +226,6 @@
       </div>
     </section>
   </main>
-
-  <!-- ── Fotos de productos y descuentos ────────────────────── -->
-  <section class="promos" id="promos" hidden>
-    <div class="contenedor">
-      <div class="seccion__cabecera">
-        <h2 class="seccion__titulo">Promociones</h2>
-      </div>
-
-      <div class="promos__grid" id="promosGrid"></div>
-    </div>
-  </section>
 
   <footer class="pie">
     <div class="contenedor">
@@ -302,12 +305,12 @@
   <!-- ── Scripts ────────────────────────────────────────────── -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
-  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261102h" defer></script>
+  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261103d" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261103c" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261103c" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261103h" defer></script>
   <script src="/tienda/recursos/js/core/categorias.js?v=20261030o" defer></script>
-  <script src="/tienda/recursos/js/pages/tienda.js?v=20261103b" defer></script>
+  <script src="/tienda/recursos/js/pages/tienda.js?v=20261103f" defer></script>
   <script src="/tienda/recursos/js/components/promos.js?v=20261103c" defer></script>
   <script src="/tienda/recursos/js/components/mapa.js?v=20261102d" defer></script>
 </body>

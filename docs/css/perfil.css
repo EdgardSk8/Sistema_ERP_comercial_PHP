@@ -405,10 +405,18 @@ html { scroll-behavior: smooth; }
 .perfil-compra__pie {
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
     gap: var(--e-3);
     font-size: .8rem;
     color: var(--texto-suave);
+}
+
+.perfil-compra__totales {
+    display: flex;
+    align-items: center;
+    gap: var(--e-3);
+    margin-left: auto;
 }
 
 .perfil-compra__pie strong {

@@ -113,8 +113,8 @@ function tarjetaProducto(variante, indice = 0) {
     const agotado = Number(variante.stock || 0) <= 0;
     const enlace = `/producto?p=${encodeURIComponent(variante.id)}&color=${encodeURIComponent(variante.color || '')}`;
     const precioBase = Number(variante.precio) || 0;
-    const descuento = window.descuentoClienteActivo?.();
-    const precioFinal = window.precioConDescuento?.(precioBase) ?? precioBase;
+    const descuento = window.descuentoClienteActivo?.(variante.categoria);
+    const precioFinal = window.precioConDescuento?.(precioBase, variante.categoria) ?? precioBase;
     const tieneDescuento = Boolean(descuento && precioFinal < precioBase);
 
     return `
@@ -188,10 +188,57 @@ function iniciarCatalogo(productos, tallasReferencia) {
     const filtrosResumen = document.getElementById('filtrosResumen');
     const filtrosAyuda = document.getElementById('filtrosAyuda');
 
+    /* ── Abrir/cerrar filtros (animación 0.5 s) ───────────────── */
+    let filtrosCerrando = false;
+
+    const cerrarFiltros = () => {
+        if (!filtrosCaja?.open || filtrosCerrando) return;
+
+        const panel = filtrosCaja.querySelector('.filtros__panel');
+        const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (!panel || sinMovimiento) {
+            filtrosCaja.open = false;
+            return;
+        }
+
+        filtrosCerrando = true;
+        filtrosCaja.classList.add('filtros--cerrando');
+
+        const terminar = () => {
+            filtrosCaja.classList.remove('filtros--cerrando');
+            filtrosCaja.open = false;
+            filtrosCerrando = false;
+        };
+
+        panel.addEventListener('animationend', terminar, { once: true });
+        window.setTimeout(terminar, 600);
+    };
+
+    filtrosCaja?.querySelector('.filtros__boton')?.addEventListener('click', (evento) => {
+        if (!filtrosCaja.open) return;
+
+        evento.preventDefault();
+        cerrarFiltros();
+    });
+
+    document.addEventListener('click', (evento) => {
+        if (!filtrosCaja?.open) return;
+        if (filtrosCaja.contains(evento.target)) return;
+
+        cerrarFiltros();
+    });
+
+    document.addEventListener('keydown', (evento) => {
+        if (evento.key === 'Escape') cerrarFiltros();
+    });
+
     /* ── Filtro por talla (Select2, 36 a 44) ──────────────────── */
     const TALLAS_FILTRO = Array.from({ length: 9 }, (_, indice) => String(36 + indice));
     const selectTallas = document.getElementById('filtroTallas');
     let tallasSeleccionadas = [];
+    /* Cambio pendiente hasta pulsar "Aplicar filtro". */
+    let tallasPendientes = null;
 
     const tallasCatalogo = new Set(
         variantes.flatMap(variante => (variante.tallas || []).map(talla => String(talla)))
@@ -276,6 +323,12 @@ function iniciarCatalogo(productos, tallasReferencia) {
     };
 
     const aplicarRango = () => {
+        /* Las tallas elegidas se confirman aquí, no al seleccionarlas. */
+        if (tallasPendientes !== null) {
+            tallasSeleccionadas = tallasPendientes;
+            tallasPendientes = null;
+        }
+
         const min = valorMin();
         const max = valorMax();
 
@@ -284,7 +337,7 @@ function iniciarCatalogo(productos, tallasReferencia) {
         precioMax = max < LIMITE_MAX ? max : null;
 
         actualizarResumen();
-        pintar();
+        pintar(true);
     };
 
     // Círculos de categoría (con "Todos" para quitar el filtro y "Favoritos"
@@ -421,16 +474,15 @@ function iniciarCatalogo(productos, tallasReferencia) {
         aplicarRango();
 
         // Se cierra el desplegable para ver los resultados (el rango queda en el botón).
-        if (filtrosCaja) filtrosCaja.open = false;
+        cerrarFiltros();
     });
 
     document.getElementById('btnLimpiarFiltros')?.addEventListener('click', () => {
         if (precioMinInput) precioMinInput.value = String(LIMITE_MIN);
         if (precioMaxInput) precioMaxInput.value = String(LIMITE_MAX);
         pintarSlider();
-        aplicarRango();
 
-        // Limpia las tallas seleccionadas.
+        // Limpia las tallas seleccionadas (y las pendientes).
         if (selectTallas) {
             if (window.jQuery && window.jQuery.fn.select2) {
                 window.jQuery(selectTallas).val(null).trigger('change');
@@ -440,16 +492,15 @@ function iniciarCatalogo(productos, tallasReferencia) {
         }
 
         tallasSeleccionadas = [];
-        actualizarResumen();
-        pintar();
+        tallasPendientes = null;
+
+        aplicarRango();
     });
 
-    /* Cambio de tallas: se aplica al instante y actualiza el resumen. */
+    /* Cambio de tallas: queda pendiente hasta pulsar "Aplicar filtro". */
     if (selectTallas) {
         const alCambiarTallas = () => {
-            tallasSeleccionadas = leerTallas();
-            actualizarResumen();
-            pintar();
+            tallasPendientes = leerTallas();
         };
 
         if (window.jQuery && window.jQuery.fn.select2) {

@@ -77,6 +77,9 @@
 .pedidos-btn-rechazar:disabled{background:transparent;border-color:var(--border);color:var(--text-soft);opacity:1;cursor:not-allowed}
 .pedidos-btn-guardar{margin-left:auto;border:1px solid var(--verde);background:var(--verde);color:var(--text-on-accent)}
 .pedidos-btn-guardar:hover{background:var(--verde-hover);border-color:var(--verde-hover);color:var(--text-on-accent)}
+.pedidos-btn-whatsapp{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #25d366;background:#25d366;color:#fff;font-size:12px;font-weight:600;padding:.3rem .6rem;border-radius:5px}
+.pedidos-btn-whatsapp:hover{background:#1eb257;border-color:#1eb257;color:#fff}
+.pedidos-btn-whatsapp:disabled{opacity:.65;cursor:not-allowed}
 
 @media(max-width:1100px){
   .pedidos-toolbar-busqueda{flex:1 1 100%;margin-left:0}

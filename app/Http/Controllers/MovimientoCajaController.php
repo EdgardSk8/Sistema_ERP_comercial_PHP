@@ -1,15 +1,13 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\MovimientoCaja;
 
-use Illuminate\Http\Request;
+use App\Models\MovimientoCaja;
 
 class MovimientoCajaController extends Controller
 {
-    
-/*  ╔═════ Mostrar Movimientos de Caja ═════╗ 
-    ╚═══════════════════════════════════════╝ */
+    /*  ╔═════ Mostrar Movimientos de Caja ═════╗
+        ╚═══════════════════════════════════════╝ */
     public function MostrarMovimientosCaja()
     {
         try {
@@ -28,15 +26,15 @@ class MovimientoCajaController extends Controller
                 'movimientos_caja.id_cuenta_destino',
                 'cuentas.nombre_cuenta as cuenta_destino'
             )
-            ->join('cajas', 'movimientos_caja.id_caja', '=', 'cajas.id_caja')
-            ->join('usuarios', 'movimientos_caja.id_usuario', '=', 'usuarios.id_usuario')
-            ->leftJoin('cuentas', 'movimientos_caja.id_cuenta_destino', '=', 'cuentas.id_cuenta')
-            ->orderBy('movimientos_caja.fecha_movimiento_caja', 'desc')
-            ->get();
+                ->join('cajas', 'movimientos_caja.id_caja', '=', 'cajas.id_caja')
+                ->join('usuarios', 'movimientos_caja.id_usuario', '=', 'usuarios.id_usuario')
+                ->leftJoin('cuentas', 'movimientos_caja.id_cuenta_destino', '=', 'cuentas.id_cuenta')
+                ->orderBy('movimientos_caja.fecha_movimiento_caja', 'desc')
+                ->get();
 
             return response()->json([
                 'success' => true,
-                'movimientos' => $movimientos
+                'movimientos' => $movimientos,
             ], 200);
 
         } catch (\Exception $e) {
@@ -44,10 +42,9 @@ class MovimientoCajaController extends Controller
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener movimientos de caja',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
 
         }
     }
-
 }

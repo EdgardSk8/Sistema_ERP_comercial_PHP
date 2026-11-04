@@ -27,7 +27,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261103e">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261103m">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261102d">
 </head>
 <body>
@@ -110,6 +110,9 @@
       <h1 class="carrito__titulo">Mi carrito</h1>
       <span class="carrito__unidades" id="carritoUnidades"></span>
     </div>
+
+    <!-- Columna principal: artículos, entrega y pago -->
+    <div class="carrito__principal">
 
     <!-- Lista de artículos -->
     <section id="carritoLista" aria-live="polite"></section>
@@ -243,6 +246,8 @@
       </p>
     </section>
 
+    </div><!-- /.carrito__principal -->
+
     <!-- Estado vacío -->
     <div class="carrito-vacio" id="carritoVacio" hidden>
       <i class="bi bi-bag"></i>
@@ -254,6 +259,26 @@
     <!-- Resumen -->
     <aside class="resumen" id="carritoResumen" hidden>
       <h2 class="resumen__titulo">Resumen del pedido</h2>
+
+      <!-- Descuentos: el cliente elige uno, no se acumulan -->
+      <div class="resumen__descuentos" id="carritoDescuentos" hidden>
+        <p class="resumen__descuentos-titulo">Descuento a aplicar</p>
+        <div class="resumen__descuentos-lista" id="carritoDescuentoOpciones" role="radiogroup" aria-label="Descuento a aplicar"></div>
+
+        <form class="resumen__cupon" id="formCupon" autocomplete="off">
+          <input class="resumen__cupon-campo" id="cuponCodigo" type="text" placeholder="Código de cupón"
+                 aria-label="Código de cupón" maxlength="40">
+          <button class="resumen__cupon-btn" type="submit">Canjear</button>
+        </form>
+
+        <p class="resumen__descuentos-nota">La promoción aplica a su producto y tu bienvenida se mantiene en el resto de zapatos.</p>
+      </div>
+
+      <div class="resumen__aviso-dto" id="carritoAvisoDescuento" hidden>
+        <i class="bi bi-percent" aria-hidden="true"></i>
+        <p>Inicia sesión para aplicar tu descuento de bienvenida y las promociones.</p>
+        <a class="resumen__aviso-dto-link" href="/tienda/login">Iniciar sesión</a>
+      </div>
 
       <div class="resumen__fila">
         <span>Subtotal</span>
@@ -277,18 +302,21 @@
       <button type="button" class="btn-primario resumen__btn" id="btnFinalizar">
         Finalizar compra
       </button>
+      <a class="resumen__wa" id="btnWhatsappCarrito" href="https://wa.me/50584774288" target="_blank" rel="noopener">
+        <i class="bi bi-whatsapp" aria-hidden="true"></i> Pedir por WhatsApp
+      </a>
       <button type="button" class="resumen__vaciar" id="btnVaciar">
         Vaciar carrito
       </button>
     </aside>
   </main>
 
-  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261102h" defer></script>
+  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261103d" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261103c" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261103c" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261103h" defer></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
-  <script src="/tienda/recursos/js/pages/carrito-vista.js?v=20261103b" defer></script>
+  <script src="/tienda/recursos/js/pages/carrito-vista.js?v=20261103q" defer></script>
 </body>
 </html>

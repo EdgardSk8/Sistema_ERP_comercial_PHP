@@ -29,8 +29,8 @@
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261103e">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261103m">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261103m">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261103p">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261103e">
 </head>
 <body>
@@ -134,6 +134,9 @@
         </a>
         <a class="perfil-nav__item" href="#descuentos" data-seccion="descuentos">
           <i class="bi bi-ticket-perforated"></i> Descuento
+        </a>
+        <a class="perfil-nav__item" href="#cupones" data-seccion="cupones">
+          <i class="bi bi-ticket-perforated"></i> Cupones
         </a>
         <a class="perfil-nav__item" href="#configuracion" data-seccion="configuracion">
           <i class="bi bi-gear"></i> Configuración
@@ -515,6 +518,27 @@
         </div>
       </section>
 
+      <!-- Sección: Cupones -->
+      <section class="perfil-seccion" id="cupones">
+        <header class="perfil-seccion__cabecera">
+          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
+          <h2 class="perfil-seccion__titulo">Cupones</h2>
+          <p class="perfil-seccion__texto">Cada cupón se usa una sola vez y tiene fecha de expiración.</p>
+        </header>
+
+        <div class="perfil-seccion__cuerpo">
+          <form class="perfil-cupon__form" id="formCuponPerfil" autocomplete="off">
+            <input class="perfil-cupon__campo" id="cuponPerfilCodigo" type="text" maxlength="40"
+                   placeholder="Código de cupón" aria-label="Código de cupón">
+            <button class="btn-primario" type="submit">Canjear</button>
+          </form>
+
+          <div class="perfil-lista" id="listaCupones">
+            <p class="perfil-vacio">Cargando cupones…</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Sección: Configuración -->
       <section class="perfil-seccion" id="configuracion">
         <header class="perfil-seccion__cabecera">
@@ -569,15 +593,15 @@
     </div>
   </main>
 
-  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261102h" defer></script>
+  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261103d" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261103c" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261103f" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261103h" defer></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js" defer></script>
   <script src="/tienda/recursos/js/core/cedula-nicaragua.js" defer></script>
-  <script src="/tienda/recursos/js/pages/perfil.js?v=20261103t" defer></script>
+  <script src="/tienda/recursos/js/pages/perfil.js?v=20261103w" defer></script>
 </body>
 </html>

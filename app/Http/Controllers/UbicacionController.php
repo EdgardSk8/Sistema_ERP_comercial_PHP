@@ -14,13 +14,13 @@ class UbicacionController extends Controller
         try {
             return response()->json([
                 'success' => true,
-                'ubicaciones' => Ubicacion::orderBy('nombre_ubicacion')->get()
+                'ubicaciones' => Ubicacion::orderBy('nombre_ubicacion')->get(),
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al obtener las ubicaciones',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -31,20 +31,20 @@ class UbicacionController extends Controller
             $request->only(['nombre_ubicacion', 'descripcion_ubicacion']),
             [
                 'nombre_ubicacion' => ['required', 'string', 'max:100', 'unique:ubicaciones,nombre_ubicacion'],
-                'descripcion_ubicacion' => ['nullable', 'string', 'max:150']
+                'descripcion_ubicacion' => ['nullable', 'string', 'max:150'],
             ],
             [
                 'nombre_ubicacion.required' => 'El nombre de la ubicación es obligatorio.',
                 'nombre_ubicacion.unique' => 'Ya existe una ubicación con ese nombre.',
                 'nombre_ubicacion.max' => 'El nombre no puede exceder 100 caracteres.',
-                'descripcion_ubicacion.max' => 'La descripción no puede exceder 150 caracteres.'
+                'descripcion_ubicacion.max' => 'La descripción no puede exceder 150 caracteres.',
             ]
         );
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -52,18 +52,18 @@ class UbicacionController extends Controller
             Ubicacion::create([
                 'nombre_ubicacion' => $validator->validated()['nombre_ubicacion'],
                 'descripcion_ubicacion' => $validator->validated()['descripcion_ubicacion'] ?? null,
-                'estado_ubicacion' => true
+                'estado_ubicacion' => true,
             ]);
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Ubicación creada correctamente.'
+                'mensaje' => 'Ubicación creada correctamente.',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al crear la ubicación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -72,16 +72,16 @@ class UbicacionController extends Controller
     {
         $ubicacion = Ubicacion::find($id);
 
-        if (!$ubicacion) {
+        if (! $ubicacion) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Ubicación no encontrada.'
+                'mensaje' => 'Ubicación no encontrada.',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'ubicacion' => $ubicacion
+            'ubicacion' => $ubicacion,
         ]);
     }
 
@@ -89,10 +89,10 @@ class UbicacionController extends Controller
     {
         $ubicacion = Ubicacion::find($id);
 
-        if (!$ubicacion) {
+        if (! $ubicacion) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Ubicación no encontrada.'
+                'mensaje' => 'Ubicación no encontrada.',
             ], 404);
         }
 
@@ -103,22 +103,22 @@ class UbicacionController extends Controller
                     'required',
                     'string',
                     'max:100',
-                    Rule::unique('ubicaciones', 'nombre_ubicacion')->ignore($ubicacion->id_ubicacion, 'id_ubicacion')
+                    Rule::unique('ubicaciones', 'nombre_ubicacion')->ignore($ubicacion->id_ubicacion, 'id_ubicacion'),
                 ],
-                'descripcion_ubicacion' => ['nullable', 'string', 'max:150']
+                'descripcion_ubicacion' => ['nullable', 'string', 'max:150'],
             ],
             [
                 'nombre_ubicacion.required' => 'El nombre de la ubicación es obligatorio.',
                 'nombre_ubicacion.unique' => 'Ya existe una ubicación con ese nombre.',
                 'nombre_ubicacion.max' => 'El nombre no puede exceder 100 caracteres.',
-                'descripcion_ubicacion.max' => 'La descripción no puede exceder 150 caracteres.'
+                'descripcion_ubicacion.max' => 'La descripción no puede exceder 150 caracteres.',
             ]
         );
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -130,13 +130,13 @@ class UbicacionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Ubicación actualizada correctamente.'
+                'mensaje' => 'Ubicación actualizada correctamente.',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al actualizar la ubicación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }
@@ -145,15 +145,15 @@ class UbicacionController extends Controller
     {
         $ubicacion = Ubicacion::find($id);
 
-        if (!$ubicacion) {
+        if (! $ubicacion) {
             return response()->json([
                 'success' => false,
-                'mensaje' => 'Ubicación no encontrada.'
+                'mensaje' => 'Ubicación no encontrada.',
             ], 404);
         }
 
         try {
-            $ubicacion->estado_ubicacion = !$ubicacion->estado_ubicacion;
+            $ubicacion->estado_ubicacion = ! $ubicacion->estado_ubicacion;
             $ubicacion->save();
 
             return response()->json([
@@ -161,13 +161,13 @@ class UbicacionController extends Controller
                 'estado_ubicacion' => $ubicacion->estado_ubicacion,
                 'mensaje' => $ubicacion->estado_ubicacion
                     ? 'Ubicación reactivada correctamente.'
-                    : 'Ubicación dada de baja correctamente.'
+                    : 'Ubicación dada de baja correctamente.',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => true,
                 'mensaje' => 'Error al cambiar el estado de la ubicación',
-                'detalle' => $e->getMessage()
+                'detalle' => $e->getMessage(),
             ], 500);
         }
     }

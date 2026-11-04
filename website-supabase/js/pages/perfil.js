@@ -208,6 +208,7 @@ function iniciarCuenta() {
     conectarFondosAvatar();
     conectarMarco();
     conectarDescuento();
+    conectarCupones();
     conectarDirecciones();
     conectarFavoritos();
     conectarDeseos();
@@ -1317,7 +1318,9 @@ function pedidoHTML(pedido) {
 
             <footer class="perfil-compra__pie">
                 <span>${escapar(METODOS_PAGO_WEB[pedido.metodo_pago_web] || pedido.metodo_pago_web || '—')}</span>
-                <strong>Total: ${moneda(pedido.total_pedido)}</strong>
+                <div class="perfil-compra__totales">
+                    <strong>Total: ${moneda(pedido.total_pedido)}</strong>
+                </div>
             </footer>
 
             ${(comprobante || cancelar)
@@ -1343,7 +1346,8 @@ function conectarPedidos() {
         const boton = evento.target.closest('[data-cancelar-pedido]');
         if (!boton) return;
 
-        if (!window.confirm('¿Cancelar este pedido?')) return;
+        const factura = boton.closest('.perfil-compra')?.querySelector('.perfil-compra__factura')?.textContent?.trim() || '';
+        if (!(await confirmarCancelacionPedido(factura))) return;
 
         boton.disabled = true;
         boton.textContent = 'Cancelando…';
@@ -1357,6 +1361,55 @@ function conectarPedidos() {
             boton.textContent = 'Cancelar pedido';
             mostrarError(error);
         }
+    });
+}
+
+/* Modal de confirmación para cancelar un pedido */
+function confirmarCancelacionPedido(factura) {
+    return new Promise((resolve) => {
+        document.getElementById('modalCancelarPedido')?.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'modalCancelarPedido';
+        modal.className = 'modal-perfil';
+        modal.innerHTML = `
+            <div class="modal-perfil__fondo" data-modal-cerrar></div>
+            <div class="modal-perfil__caja" role="dialog" aria-modal="true" aria-labelledby="modalCancelarTitulo">
+                <span class="modal-perfil__icono"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+                <h3 class="modal-perfil__titulo" id="modalCancelarTitulo">¿Cancelar este pedido?</h3>
+                <p class="modal-perfil__texto">
+                    ${factura ? `El pedido <strong>${escapar(factura)}</strong> quedará cancelado.` : 'El pedido quedará cancelado.'}
+                    Esta acción no se puede revertir.
+                </p>
+                <div class="modal-perfil__acciones">
+                    <button type="button" class="btn-secundario" data-modal-cerrar>Volver</button>
+                    <button type="button" class="modal-perfil__peligro" data-modal-aceptar>Sí, cancelar</button>
+                </div>
+            </div>`;
+
+        const cerrar = (resultado) => {
+            modal.classList.remove('is-visible');
+            document.removeEventListener('keydown', alPresionarTecla);
+            setTimeout(() => modal.remove(), 180);
+            resolve(resultado);
+        };
+
+        const alPresionarTecla = (evento) => {
+            if (evento.key === 'Escape') cerrar(false);
+        };
+
+        modal.addEventListener('click', (evento) => {
+            if (evento.target.closest('[data-modal-aceptar]')) return cerrar(true);
+            if (evento.target.closest('[data-modal-cerrar]')) cerrar(false);
+        });
+
+        document.addEventListener('keydown', alPresionarTecla);
+        document.body.appendChild(modal);
+        document.body.classList.add('sin-scroll');
+
+        modal.addEventListener('transitionend', () => document.body.classList.remove('sin-scroll'), { once: true });
+        requestAnimationFrame(() => modal.classList.add('is-visible'));
+        modal.querySelector('[data-modal-aceptar]').focus();
     });
 }
 
@@ -1718,8 +1771,10 @@ function compraHTML(compra) {
 
             <footer class="perfil-compra__pie">
                 <span>${escapar(compra.metodo_pago)}</span>
-                ${compra.descuento_venta > 0 ? `<span>Descuento: - ${moneda(compra.descuento_venta)}</span>` : ''}
-                <strong>Total: ${moneda(compra.total_venta)}</strong>
+                <div class="perfil-compra__totales">
+                    ${compra.descuento_venta > 0 ? `<span>Descuento: - ${moneda(compra.descuento_venta)}</span>` : ''}
+                    <strong>Total: ${moneda(compra.total_venta)}</strong>
+                </div>
             </footer>
         </article>`;
 }
@@ -1860,6 +1915,93 @@ function conectarDescuento() {
             mostrarError(error);
         } finally {
             bloquearBoton(boton, false);
+        }
+    });
+}
+
+/* ── Cupones ─────────────────────────────────────────────────── */
+
+async function cargarCuponesPerfil() {
+    const lista = porId('listaCupones');
+    if (!lista) return;
+
+    if (!window.clienteTienda) {
+        lista.innerHTML = '<p class="perfil-vacio">Inicia sesión para ver tus cupones.</p>';
+        return;
+    }
+
+    try {
+        const datos = await window.TiendaAPI.get('/tienda/api/cupones');
+        pintarCuponesPerfil(datos?.cupones || []);
+    } catch {
+        lista.innerHTML = '<p class="perfil-vacio">No se pudieron cargar tus cupones.</p>';
+    }
+}
+
+function pintarCuponesPerfil(cupones) {
+    const lista = porId('listaCupones');
+    if (!lista) return;
+
+    if (!cupones.length) {
+        lista.innerHTML = '<p class="perfil-vacio">No tienes cupones disponibles. Canjea uno con su código.</p>';
+        return;
+    }
+
+    lista.innerHTML = cupones.map((cupon) => `
+        <div class="perfil-cupon">
+            <div class="perfil-cupon__datos">
+                <strong>${escapar(cupon.nombre || 'Cupón')}</strong>
+                <span class="perfil-cupon__codigo">${escapar(cupon.codigo)}</span>
+                <span class="perfil-cupon__meta">
+                    ${cupon.categoria ? `Solo ${escapar(cupon.categoria)} · ` : ''}Vence ${formatearFecha(cupon.fecha_fin)}
+                </span>
+            </div>
+
+            <span class="perfil-cupon__valor">${escapar(cupon.etiqueta || '')}</span>
+
+            <button type="button" class="perfil-btn-icono" data-copiar-cupon="${escapar(cupon.codigo)}"
+                    aria-label="Copiar código ${escapar(cupon.codigo)}">
+                <i class="bi bi-clipboard"></i>
+            </button>
+        </div>`).join('');
+
+    lista.querySelectorAll('[data-copiar-cupon]').forEach((boton) => {
+        boton.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(boton.dataset.copiarCupon);
+                window.tiendaToast?.('Código copiado.', 'exito');
+            } catch {
+                window.tiendaToast?.('No se pudo copiar el código.', 'aviso');
+            }
+        });
+    });
+}
+
+function conectarCupones() {
+    cargarCuponesPerfil();
+
+    document.addEventListener('tienda:sesion', () => cargarCuponesPerfil());
+
+    porId('formCuponPerfil')?.addEventListener('submit', async (evento) => {
+        evento.preventDefault();
+
+        const campo = porId('cuponPerfilCodigo');
+        const codigo = String(campo?.value || '').trim();
+
+        if (!codigo) {
+            tiendaToast('Escribe el código del cupón.', 'aviso');
+            return;
+        }
+
+        try {
+            const datos = await window.TiendaAPI.post('/tienda/api/cupones/canjear', { codigo });
+            tiendaToast(datos?.mensaje || 'Cupón agregado a tu cuenta.', 'exito');
+
+            if (campo) campo.value = '';
+
+            await cargarCuponesPerfil();
+        } catch (error) {
+            mostrarError(error);
         }
     });
 }
