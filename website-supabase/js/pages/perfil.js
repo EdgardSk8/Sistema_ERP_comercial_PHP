@@ -251,7 +251,7 @@ function conectarMenuPerfil() {
 
         temporizador = window.setTimeout(() => {
             fondo.hidden = true;
-        }, 260);
+        }, 500);
     }
 
     boton.addEventListener('click', () => {

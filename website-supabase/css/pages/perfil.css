@@ -1969,7 +1969,7 @@ html.tema-navidad .app-header #btnMenuPerfil:hover {
         opacity: 0;
         pointer-events: none;
         transform: translate(100%, -6px);
-        transition: transform .28s cubic-bezier(.4, 0, .2, 1), opacity .2s ease;
+        transition: transform .5s cubic-bezier(.4, 0, .2, 1), opacity .5s ease;
         will-change: transform;
     }
 
@@ -2024,7 +2024,7 @@ html.tema-navidad .app-header #btnMenuPerfil:hover {
         z-index: 1055;
         background: rgba(24, 18, 12, .25);
         opacity: 0;
-        transition: opacity .25s ease;
+        transition: opacity .5s ease;
     }
 
     .perfil-nav-fondo[hidden] {
@@ -2288,30 +2288,4 @@ html.tema-navidad .app-header #btnMenuPerfil:hover {
     height: 2px;
     border-radius: 2px;
     background: currentColor;
-}
-
-/* Despliegue vertical suave de .5s */
-.perfil__menu {
-    animation: perfilMenuDespliegue .5s cubic-bezier(.4, 0, .2, 1) both;
-}
-
-.perfil__menu--saliendo {
-    animation: perfilMenuCierre .5s cubic-bezier(.4, 0, .2, 1) forwards;
-}
-
-@keyframes perfilMenuDespliegue {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes perfilMenuCierre {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(-10px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .perfil__menu,
-    .perfil__menu--saliendo {
-        animation: none;
-    }
 }
