@@ -502,7 +502,7 @@ html { scroll-behavior: smooth; }
 /* ── Direcciones: GPS, mapa y nombres rápidos ───────────────── */
 
 .dir-campo {
-    margin-bottom: var(--e-3);
+    /* margin-bottom: var(--e-3); */
 }
 
 .dir-chips {

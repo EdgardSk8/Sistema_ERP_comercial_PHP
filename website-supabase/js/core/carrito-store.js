@@ -393,14 +393,18 @@ function cerrarMenuPerfil(menu) {
         return;
     }
 
-    // Se desliza hacia la derecha y, al terminar, se cierra.
+    // Se desliza y, al terminar su animación, se cierra.
     panel.classList.add('perfil__menu--saliendo');
+
+    const duracion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 0
+        : Math.round((parseFloat(getComputedStyle(panel).animationDuration) || 0.18) * 1000);
 
     clearTimeout(menu._cerrarTimer);
     menu._cerrarTimer = setTimeout(() => {
         menu.open = false;
         panel.classList.remove('perfil__menu--saliendo');
-    }, 180);
+    }, duracion);
 }
 
 function cerrarMenusHeader(excepto = null) {
@@ -416,10 +420,15 @@ document.addEventListener('click', (event) => {
         // Controlamos la apertura y el cierre para poder animar ambos.
         event.preventDefault();
 
-        if (menu.open) {
+        const panel = menu.querySelector('.perfil__menu');
+        const cerrando = panel?.classList.contains('perfil__menu--saliendo');
+
+        if (menu.open && !cerrando) {
             cerrarMenuPerfil(menu);
         } else {
             cerrarMenusHeader(menu);
+            clearTimeout(menu._cerrarTimer);
+            panel?.classList.remove('perfil__menu--saliendo');
             menu.open = true;
         }
         return;

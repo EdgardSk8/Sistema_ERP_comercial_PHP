@@ -29,9 +29,9 @@
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261103m">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261103p">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261103e">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261105e">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261105v">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261105a">
 </head>
 <body>
 
@@ -74,10 +74,11 @@
 
         <!-- Cliente con sesión: menú de la cuenta -->
         <details class="perfil" id="menuPerfil" hidden>
-          <summary class="icono-btn perfil__boton perfil__boton--avatar" aria-label="Mi cuenta" data-avatar>
-            <span class="perfil__avatar-mini" aria-hidden="true">
-              <img data-avatar-img alt="" hidden>
-              <span data-avatar-iniciales>?</span>
+          <summary class="icono-btn perfil__boton" aria-label="Mi cuenta">
+            <span class="perfil__hamburguesa" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
             </span>
           </summary>
 
@@ -103,14 +104,25 @@
             </a>
           </div>
         </details>
+
+        <button type="button" class="icono-btn menu-perfil-btn" id="btnMenuPerfil" hidden
+                aria-label="Abrir menú de mi cuenta" aria-controls="navPerfil" aria-expanded="false">
+          <span class="perfil__hamburguesa" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+        </button>
       </div>
     </div>
   </header>
 
   <!-- ── Página de perfil: sidebar + una sola hoja con secciones ── -->
+  <div class="perfil-nav-fondo" id="fondoMenuPerfil" hidden></div>
+
   <main class="contenedor perfil-pagina">
 
-    <aside class="perfil-nav" aria-label="Opciones de la cuenta">
+    <aside class="perfil-nav" id="navPerfil" aria-label="Opciones de la cuenta">
       <p class="perfil-nav__titulo">Mi cuenta</p>
 
       <nav class="perfil-nav__lista">
@@ -288,70 +300,95 @@
           <div id="direccionesContenido" hidden>
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
               <span class="perfil-seccion__texto">Tus direcciones guardadas</span>
-              <button type="button" class="btn-primario" id="btnNuevaDireccion">Agregar dirección</button>
+              <button type="button" class="btn-primario" id="btnNuevaDireccion">
+                <i class="bi bi-plus-lg"></i> Agregar dirección
+              </button>
             </div>
 
-            <form id="formDireccion" class="perfil-card mb-3" hidden>
-              <input type="hidden" id="direccionId">
-              <input type="hidden" id="direccionLat">
-              <input type="hidden" id="direccionLng">
+            <div class="dir-form-desplegable" id="formDireccionDesplegable" inert>
+              <div class="dir-form-desplegable__cuerpo">
+                <form id="formDireccion" class="perfil-card mb-3">
+                  <input type="hidden" id="direccionId">
+                  <input type="hidden" id="direccionLat">
+                  <input type="hidden" id="direccionLng">
+                  <input type="hidden" id="direccionMaps">
 
-              <div class="dir-campo">
-                <label class="form-label" for="direccionNombre">Nombre</label>
-                <input class="form-control" id="direccionNombre" maxlength="80" placeholder="Casa, Trabajo, etc." required>
+                  
 
-                <div class="dir-chips" role="group" aria-label="Nombre rápido de la dirección">
-                  <button type="button" class="dir-chip" data-nombre="Casa"><i class="bi bi-house"></i> Casa</button>
-                  <button type="button" class="dir-chip" data-nombre="Trabajo"><i class="bi bi-briefcase"></i> Trabajo</button>
-                  <button type="button" class="dir-chip" data-nombre="Otro"><i class="bi bi-geo"></i> Otro</button>
-                </div>
-              </div>
+                  <div class="dir-campo">
+                    <span class="form-label d-block">Tipo de dirección</span>
 
-              <div class="dir-ubicacion">
-                <button type="button" class="btn-primario dir-gps" id="btnUbicacion">
-                  <i class="bi bi-crosshair"></i> Usar mi ubicación actual
-                </button>
-                <p class="dir-gps__estado" id="estadoUbicacion" hidden></p>
+                    <div class="dir-opciones" role="radiogroup" aria-label="Tipo de dirección">
+                      <label class="dir-opcion">
+                        <input type="radio" name="direccionTipo" value="Casa" checked>
+                        <span class="dir-opcion__texto"><i class="bi bi-house"></i> Casa</span>
+                      </label>
 
-                <div class="dir-mapa" id="vistaUbicacion" hidden>
-                  <iframe id="mapaUbicacion" title="Ubicación de la dirección" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                      <label class="dir-opcion">
+                        <input type="radio" name="direccionTipo" value="Trabajo">
+                        <span class="dir-opcion__texto"><i class="bi bi-briefcase"></i> Trabajo</span>
+                      </label>
 
-                  <div class="dir-mapa__pie">
-                    <span id="coordsUbicacion"></span>
-                    <a id="enlaceUbicacion" href="#" target="_blank" rel="noopener noreferrer">Abrir en Google Maps</a>
+                      <button type="button" class="btn-secundario dir-gps" id="btnUbicacion">
+                        <i class="bi bi-crosshair"></i> Ubicación actual
+                      </button>
+
+                      <label class="dir-opcion">
+                        <input type="radio" name="direccionTipo" value="Otro">
+                        <span class="dir-opcion__texto"><i class="bi bi-geo"></i> Otro</span>
+                      </label>
+                    </div>
+
+                    <div class="dir-ubicacion">
+                      <p class="dir-gps__estado" id="estadoUbicacion" hidden></p>
+
+                      <div class="dir-mapa" id="vistaUbicacion" hidden>
+                        <iframe id="mapaUbicacion" title="Ubicación de la dirección" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+
+                        <div class="dir-mapa__pie">
+                          <span id="coordsUbicacion"></span>
+                          <a id="enlaceUbicacion" href="#" target="_blank" rel="noopener noreferrer">Abrir en Google Maps</a>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="dir-nombre-desplegable" id="direccionNombreDesplegable" inert>
+                      <div class="dir-nombre-desplegable__cuerpo">
+                        <label class="form-label" for="direccionNombre">Nombre de la dirección</label>
+                        <input class="form-control" id="direccionNombre" maxlength="80" placeholder="Ej.: Casa de mi mamá">
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <details class="dir-pegar">
-                  <summary>O pegar un link de Google Maps</summary>
-                  <input class="form-control mt-2" id="direccionMaps" type="url" maxlength="500" placeholder="https://maps.google.com/...">
-                </details>
-              </div>
+                  <div class="row g-1">
+                    <div class="col-12">
+                      <label class="form-label" for="direccionReferencia">Referencia <span class="dir-etiqueta">(preferencial)</span></label>
+                      <textarea class="form-control" id="direccionReferencia" rows="1" maxlength="500" placeholder="Casa color turquesa con portón negro..."></textarea>
+                    </div>
 
-              <div class="row g-3 mt-1">
-                <div class="col-12">
-                  <label class="form-label" for="direccionReferencia">Referencia</label>
-                  <textarea class="form-control" id="direccionReferencia" rows="2" maxlength="500" placeholder="Casa color turquesa con portón negro..."></textarea>
-                </div>
+                    <div class="col-12">
+                      <label class="form-label" for="direccionManual">Dirección escrita <span class="dir-etiqueta">(opcional)</span></label>
+                      <textarea class="form-control" id="direccionManual" rows="1" maxlength="500" placeholder="Se llena con tu ubicación; puedes ajustarla..."></textarea>
+                    </div>
 
-                <div class="col-12">
-                  <label class="form-label" for="direccionManual">Dirección escrita</label>
-                  <textarea class="form-control" id="direccionManual" rows="2" maxlength="500" placeholder="Se llena con tu ubicación; puedes ajustarla..."></textarea>
-                </div>
-
-                <div class="col-12">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="direccionPredeterminada">
-                    <label class="form-check-label" for="direccionPredeterminada">Usar como dirección predeterminada</label>
+                    <div class="col-12">
+                      <label class="perfil-switch dir-switch">
+                        <input type="checkbox" id="direccionPredeterminada" role="switch">
+                        <span class="perfil-switch__pista" aria-hidden="true">
+                          <span class="perfil-switch__bola"></span>
+                        </span>
+                        <span class="perfil-switch__texto">Usar como dirección predeterminada</span>
+                      </label>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div class="d-flex flex-wrap gap-2 mt-3">
-                <button class="btn-primario" type="submit">Guardar dirección</button>
-                <button class="btn-secundario" type="button" id="btnCancelarDireccion">Cancelar</button>
+                  <div class="d-flex flex-wrap gap-2 mt-3">
+                    <button class="btn-primario" type="submit">Guardar dirección</button>
+                    <button class="btn-secundario" type="button" id="btnCancelarDireccion">Cancelar</button>
+                  </div>
+                </form>
               </div>
-            </form>
+            </div>
 
             <div id="listaDirecciones" class="perfil-lista"></div>
           </div>
@@ -396,13 +433,24 @@
           </div>
 
           <div id="deseosContenido" hidden>
-            <div class="perfil-card perfil-deseo-catalogo-card">
-              <div class="perfil-deseo-filtro">
-                <label for="filtroColoresDeseos" class="visually-hidden">Filtrar por color</label>
-                <select id="filtroColoresDeseos" class="form-select form-select-sm"></select>
-              </div>
+            <button type="button" class="perfil-deseo-toggle" id="btnCatalogoDeseos"
+              aria-expanded="false" aria-controls="deseoCatalogoDesplegable">
+              <i class="bi bi-grid" aria-hidden="true"></i>
+              <span id="btnCatalogoDeseosTexto">Ver catálogo de pares</span>
+              <i class="bi bi-chevron-down perfil-deseo-toggle__flecha" aria-hidden="true"></i>
+            </button>
 
-              <div id="deseoCatalogo" class="perfil-deseo-catalogo"></div>
+            <div class="perfil-deseo-desplegable" id="deseoCatalogoDesplegable" inert>
+              <div class="perfil-deseo-desplegable__cuerpo">
+                <div class="perfil-card perfil-deseo-catalogo-card" id="deseoCatalogoCard">
+                  <div class="perfil-deseo-filtro">
+                    <label for="filtroColoresDeseos" class="visually-hidden">Filtrar por color</label>
+                    <select id="filtroColoresDeseos" class="form-select form-select-sm"></select>
+                  </div>
+
+                  <div id="deseoCatalogo" class="perfil-deseo-catalogo"></div>
+                </div>
+              </div>
             </div>
 
             <div id="deseoSeleccion" class="perfil-card perfil-deseo-seleccion" hidden>
@@ -635,7 +683,7 @@
     </div>
   </main>
 
-  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261103d" defer></script>
+  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261105c" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261104a" defer></script>
   <script src="/tienda/recursos/js/core/supabase-api.js?v=20261105a" defer></script>
@@ -644,6 +692,6 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js" defer></script>
   <script src="/tienda/recursos/js/core/cedula-nicaragua.js" defer></script>
-  <script src="/tienda/recursos/js/pages/perfil.js?v=20261105b" defer></script>
+  <script src="/tienda/recursos/js/pages/perfil.js?v=20261105h" defer></script>
 </body>
 </html>

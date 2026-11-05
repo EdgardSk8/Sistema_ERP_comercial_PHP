@@ -215,8 +215,70 @@ function iniciarCuenta() {
     conectarFavoritos();
     conectarDeseos();
     conectarPedidos();
+    conectarMenuPerfil();
     conectarSesion();
     cargarCuenta();
+}
+
+/* ── Menú lateral del perfil (móvil) ─────────────────────────── */
+function conectarMenuPerfil() {
+    const boton = porId('btnMenuPerfil');
+    const panel = porId('navPerfil');
+    const fondo = porId('fondoMenuPerfil');
+
+    if (!boton || !panel || !fondo) return;
+
+    let temporizador = 0;
+
+    function abrir() {
+        window.clearTimeout(temporizador);
+
+        fondo.hidden = false;
+        panel.classList.add('is-abierto');
+        boton.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('menu-perfil-abierto');
+
+        window.requestAnimationFrame(() => fondo.classList.add('is-visible'));
+    }
+
+    function cerrar() {
+        if (!panel.classList.contains('is-abierto')) return;
+
+        panel.classList.remove('is-abierto');
+        fondo.classList.remove('is-visible');
+        boton.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('menu-perfil-abierto');
+
+        temporizador = window.setTimeout(() => {
+            fondo.hidden = true;
+        }, 260);
+    }
+
+    boton.addEventListener('click', () => {
+        if (panel.classList.contains('is-abierto')) {
+            cerrar();
+            return;
+        }
+
+        abrir();
+    });
+
+    fondo.addEventListener('click', cerrar);
+
+    /* Al elegir una opción navega a la sección y cierra el panel. */
+    panel.addEventListener('click', (evento) => {
+        if (evento.target.closest('.perfil-nav__item')) cerrar();
+    });
+
+    document.addEventListener('keydown', (evento) => {
+        if (evento.key === 'Escape') cerrar();
+    });
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 900) cerrar();
+    });
+
+    window.addEventListener('hashchange', cerrar);
 }
 
 function localeEspanol() {
@@ -290,6 +352,7 @@ function alternarCuenta(autenticado) {
     const visibilidad = {
         perfilInvitado: !autenticado,
         perfilLogueado: autenticado,
+        btnMenuPerfil: autenticado,
         direccionesInvitado: !autenticado,
         direccionesContenido: autenticado,
         favoritosInvitado: !autenticado,
@@ -420,7 +483,7 @@ function conectarAvatar() {
         try {
             const datos = await window.TiendaAPI.put('/tienda/api/perfil/avatar', {
                 avatar_color: color,
-            }, { cargando: true });
+            });
 
             if (datos?.cliente) {
                 window.clienteTienda = datos.cliente;
@@ -498,7 +561,7 @@ function conectarFondosAvatar() {
         try {
             const datos = await window.TiendaAPI.put('/tienda/api/perfil/avatar', {
                 avatar_fondo: fondo,
-            }, { cargando: true });
+            });
 
             if (datos?.cliente) {
                 window.clienteTienda = datos.cliente;
@@ -846,6 +909,8 @@ function ajustarFormPassword() {
 
 /* ── Direcciones ─────────────────────────────────────────────── */
 
+let temporizadorCierreDireccion = 0;
+
 function conectarDirecciones() {
     porId('btnNuevaDireccion')?.addEventListener('click', () => abrirFormDireccion());
     porId('btnCancelarDireccion')?.addEventListener('click', cerrarFormDireccion);
@@ -853,8 +918,10 @@ function conectarDirecciones() {
     porId('listaDirecciones')?.addEventListener('click', manejarAccionDireccion);
     porId('btnUbicacion')?.addEventListener('click', usarUbicacionActual);
 
-    document.querySelectorAll('.dir-chip').forEach((chip) => {
-        chip.addEventListener('click', () => seleccionarNombreRapido(chip));
+    document.querySelectorAll('input[name="direccionTipo"]').forEach((radio) => {
+        radio.addEventListener('change', () => {
+            if (radio.checked) seleccionarTipoDireccion(radio.value, { enfocar: true });
+        });
     });
 }
 
@@ -917,11 +984,13 @@ function direccionHTML(direccion) {
 
 function abrirFormDireccion(direccion = null) {
     const formulario = porId('formDireccion');
-    if (!formulario) return;
+    const panel = porId('formDireccionDesplegable');
+    if (!formulario || !panel) return;
+
+    window.clearTimeout(temporizadorCierreDireccion);
 
     formulario.reset();
     porId('direccionId').value = direccion?.id_direccion_cliente || '';
-    porId('direccionNombre').value = direccion?.nombre_direccion || '';
     porId('direccionMaps').value = direccion?.ubicacion_maps || '';
     porId('direccionReferencia').value = direccion?.referencia_direccion || '';
     porId('direccionManual').value = direccion?.direccion_manual || '';
@@ -936,31 +1005,72 @@ function abrirFormDireccion(direccion = null) {
         limpiarUbicacion();
     }
 
-    marcarChipNombre(direccion?.nombre_direccion || '');
+    marcarTipoDireccion(direccion?.nombre_direccion || '');
     mostrarEstadoUbicacion('');
 
-    formulario.hidden = false;
-    formulario.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    panel.inert = false;
+    panel.classList.add('is-abierto');
+    desplazarFormDireccion(panel);
 }
 
 function cerrarFormDireccion() {
     const formulario = porId('formDireccion');
-    if (!formulario) return;
+    const panel = porId('formDireccionDesplegable');
+    if (!formulario || !panel) return;
 
-    formulario.reset();
-    porId('direccionId').value = '';
-    limpiarUbicacion();
-    marcarChipNombre('');
-    mostrarEstadoUbicacion('');
-    formulario.hidden = true;
+    panel.classList.remove('is-abierto');
+    panel.inert = true;
+
+    /* La limpieza espera al cierre para no vaciar los campos a la vista. */
+    window.clearTimeout(temporizadorCierreDireccion);
+    temporizadorCierreDireccion = window.setTimeout(() => {
+        if (panel.classList.contains('is-abierto')) return;
+
+        formulario.reset();
+        porId('direccionId').value = '';
+        limpiarUbicacion();
+        marcarTipoDireccion('');
+        mostrarEstadoUbicacion('');
+    }, 500);
+}
+
+function desplazarFormDireccion(panel) {
+    let desplazado = false;
+
+    const desplazar = () => {
+        if (desplazado) return;
+
+        desplazado = true;
+        panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        desplazar();
+        return;
+    }
+
+    panel.addEventListener('transitionend', (evento) => {
+        if (evento.propertyName === 'grid-template-rows') desplazar();
+    }, { once: true });
+
+    window.setTimeout(desplazar, 600);
 }
 
 async function guardarDireccion(evento) {
     evento.preventDefault();
 
     const id = porId('direccionId').value;
+    const tipo = document.querySelector('input[name="direccionTipo"]:checked')?.value || 'Casa';
+    const nombre = tipo === 'Otro' ? porId('direccionNombre').value.trim() : tipo;
+
+    if (!nombre) {
+        tiendaToast('Escribe el nombre de la dirección.', 'aviso');
+        porId('direccionNombre').focus();
+        return;
+    }
+
     const datos = {
-        nombre_direccion: porId('direccionNombre').value.trim(),
+        nombre_direccion: nombre,
         ubicacion_maps: porId('direccionMaps').value.trim(),
         referencia_direccion: porId('direccionReferencia').value.trim(),
         direccion_manual: porId('direccionManual').value.trim(),
@@ -990,17 +1100,38 @@ async function guardarDireccion(evento) {
     }
 }
 
-function seleccionarNombreRapido(chip) {
-    const nombre = chip.dataset.nombre || '';
+function seleccionarTipoDireccion(tipo, { enfocar = false } = {}) {
+    const otro = tipo === 'Otro';
+    const desplegable = porId('direccionNombreDesplegable');
+    const nombre = porId('direccionNombre');
 
-    porId('direccionNombre').value = nombre;
-    marcarChipNombre(nombre);
+    if (desplegable) {
+        desplegable.classList.toggle('is-abierto', otro);
+        desplegable.inert = !otro;
+    }
+
+    if (nombre) {
+        nombre.setAttribute('aria-required', String(otro));
+
+        if (otro) {
+            if (enfocar) nombre.focus();
+        } else {
+            nombre.value = '';
+        }
+    }
 }
 
-function marcarChipNombre(nombre) {
-    document.querySelectorAll('.dir-chip').forEach((chip) => {
-        chip.classList.toggle('is-activo', chip.dataset.nombre === nombre);
+function marcarTipoDireccion(nombre) {
+    const tipo = ['Casa', 'Trabajo'].includes(nombre) ? nombre : (nombre ? 'Otro' : 'Casa');
+
+    document.querySelectorAll('input[name="direccionTipo"]').forEach((radio) => {
+        radio.checked = radio.value === tipo;
     });
+
+    const campoNombre = porId('direccionNombre');
+    if (campoNombre) campoNombre.value = tipo === 'Otro' ? nombre : '';
+
+    seleccionarTipoDireccion(tipo);
 }
 
 function mostrarEstadoUbicacion(texto, tipo = '') {
@@ -1608,29 +1739,59 @@ function confirmarCancelacionPedido(factura) {
 
 /* ── Lista de deseos ─────────────────────────────────────────── */
 
+async function solicitudesDeseos() {
+    const datos = await window.TiendaAPI.get('/tienda/api/deseos');
+    const deseos = datos.deseos || [];
+
+    const solicitados = new Set(
+        deseos
+            .filter((deseo) => deseo.estado === 'pendiente')
+            .map((deseo) => `${Number(deseo.id_variacion)}-${String(deseo.talla).trim()}`)
+    );
+
+    return { deseos, solicitados };
+}
+
 async function cargarDeseos() {
-    const catalogo = porId('deseoCatalogo');
     const lista = porId('listaDeseos');
     const vacio = porId('deseosVacio');
-    if (!catalogo || !lista || !vacio) return;
+    if (!lista || !vacio) return;
 
     try {
-        const [opciones, deseos] = await Promise.all([
+        const { deseos, solicitados } = await solicitudesDeseos();
+
+        deseosSolicitados = solicitados;
+        pintarDeseos(deseos);
+
+        /* El catálogo solo se refresca si el usuario ya lo abrió. */
+        if (catalogoDeseosCargado) renderDeseosCatalogo();
+    } catch (error) {
+        mostrarError(error);
+    }
+}
+
+async function cargarCatalogoDeseos() {
+    const catalogo = porId('deseoCatalogo');
+    if (!catalogo || catalogoDeseosCargado || catalogoDeseosCargando) return;
+
+    catalogoDeseosCargando = true;
+    catalogo.innerHTML = '<p class="tallas__vacio">Cargando catálogo…</p>';
+
+    try {
+        const [opciones, solicitudes] = await Promise.all([
             window.TiendaAPI.get('/tienda/api/deseos/opciones'),
-            window.TiendaAPI.get('/tienda/api/deseos'),
+            solicitudesDeseos(),
             cargarEquivalenciasCmDeseo(),
         ]);
 
-        const solicitados = new Set(
-            (deseos.deseos || [])
-                .filter((deseo) => deseo.estado === 'pendiente')
-                .map((deseo) => `${Number(deseo.id_variacion)}-${String(deseo.talla).trim()}`)
-        );
-
-        pintarOpcionesDeseos(opciones.opciones || [], solicitados);
-        pintarDeseos(deseos.deseos || []);
+        deseosSolicitados = solicitudes.solicitados;
+        pintarOpcionesDeseos(opciones.opciones || [], solicitudes.solicitados);
+        catalogoDeseosCargado = true;
     } catch (error) {
+        catalogo.innerHTML = '<p class="tallas__vacio">No se pudo cargar el catálogo.</p>';
         mostrarError(error);
+    } finally {
+        catalogoDeseosCargando = false;
     }
 }
 
@@ -1667,6 +1828,8 @@ let deseosVariantes = [];
 let deseosSolicitados = new Set();
 let filtroColorDeseo = '';
 let filtroDeseosListo = false;
+let catalogoDeseosCargado = false;
+let catalogoDeseosCargando = false;
 
 function inicializarFiltroDeseos() {
     const select = porId('filtroColoresDeseos');
@@ -1856,7 +2019,32 @@ async function solicitarDeseo() {
     }
 }
 
+function conectarCatalogoDeseos() {
+    const boton = porId('btnCatalogoDeseos');
+    const panel = porId('deseoCatalogoDesplegable');
+    if (!boton || !panel) return;
+
+    const texto = porId('btnCatalogoDeseosTexto');
+
+    boton.addEventListener('click', async () => {
+        const abrir = !panel.classList.contains('is-abierto');
+
+        panel.classList.toggle('is-abierto', abrir);
+        panel.inert = !abrir;
+        boton.classList.toggle('is-abierto', abrir);
+        boton.setAttribute('aria-expanded', String(abrir));
+
+        if (texto) {
+            texto.textContent = abrir ? 'Ocultar catálogo de pares' : 'Ver catálogo de pares';
+        }
+
+        /* Se carga al abrir para no traer todo el catálogo si el usuario no lo pide. */
+        if (abrir) await cargarCatalogoDeseos();
+    });
+}
+
 function conectarDeseos() {
+    conectarCatalogoDeseos();
     porId('btnSolicitarDeseo')?.addEventListener('click', solicitarDeseo);
 
     porId('deseoCatalogo')?.addEventListener('click', (evento) => {

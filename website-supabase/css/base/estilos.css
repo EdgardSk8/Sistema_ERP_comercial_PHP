@@ -994,7 +994,7 @@ button { font-family: inherit; }
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
-  transition: border-color .18s ease, box-shadow .18s ease;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease, transform .12s ease;
 }
 
 .btn-primario {
@@ -1024,6 +1024,7 @@ button { font-family: inherit; }
 .btn-primario:active,
 .btn-secundario:active {
   box-shadow: none;
+  transform: scale(.97);
 }
 
 .btn-primario:focus-visible,

@@ -137,13 +137,14 @@ html.tema-navidad .acceso__logo {
 /* ── Botones ────────────────────────────────────────────────── */
 
 html.tema-navidad .btn-primario {
-    border-color: var(--nav-verde);
-    background: linear-gradient(180deg, var(--nav-verde-claro), var(--nav-verde));
+    border-color: var(--nav-verde-claro);
+    background: var(--nav-verde-claro);
     color: #ffffff;
 }
 
 html.tema-navidad .btn-primario:hover {
     opacity: 1;
+    border-color: var(--nav-verde);
     background: var(--nav-verde);
 }
 
