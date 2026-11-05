@@ -42,6 +42,15 @@ Abre `http://127.0.0.1:8090/tienda`.
 1. Importa el repositorio y selecciona `website-supabase` como directorio raíz.
 2. `vercel.json` ya contiene las rewrites.
 
+### ⚠️ Caché de los scripts (importante)
+
+Los HTML cargan los JS con `?v=AAAAMMDDx`. **Cada vez que cambies un archivo de `js/`,
+sube su versión en los HTML** (ej. `supabase-api.js?v=20261103h` → `?v=20261105a`).
+
+Si no se sube, los navegadores que ya visitaron la tienda siguen ejecutando el código viejo
+y los arreglos "no se ven" aunque ya estén desplegados. Pasó con el arreglo de contraseñas:
+el cambio estaba en `supabase-api.js` pero la versión seguía en `20261103h`.
+
 ## 4. Configurar Supabase Auth
 
 En el panel de Supabase:

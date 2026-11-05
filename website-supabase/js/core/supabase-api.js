@@ -148,14 +148,16 @@
     function cuentaTienePassword() {
         if (!usuarioActual) return false;
 
-        const proveedores = usuarioActual.app_metadata?.providers || [];
-        const identidades = usuarioActual.identities || [];
+        const app = usuarioActual.app_metadata || {};
+        const proveedores = [...(app.providers || []), app.provider].filter(Boolean);
+        const identidades = Array.isArray(usuarioActual.identities) ? usuarioActual.identities : [];
 
         /* La identidad de correo es la única prueba real de que existe contraseña. */
         if (proveedores.includes('email')) return true;
         if (identidades.some((identidad) => identidad.provider === 'email')) return true;
 
-        /* Cuenta solo con Google (u otro proveedor): todavía no tiene contraseña. */
+        /* Cuenta solo con Google (u otro proveedor): todavía no tiene contraseña,
+           aunque los metadatos digan lo contrario (cuentas antiguas). */
         if (proveedores.length || identidades.length) return false;
 
         /* Respaldo para sesiones antiguas sin metadatos de proveedor. */
@@ -200,6 +202,8 @@
                 usuarioActual?.user_metadata?.descuento_primera_compra_usado === true
                 || texto(usuarioActual?.user_metadata?.descuento_primera_compra_usado) === 'true'
             ),
+            password_set: usuarioActual?.user_metadata?.password_set === true
+                || texto(usuarioActual?.user_metadata?.password_set) === 'true',
             ...datosAvatar(),
         };
     }

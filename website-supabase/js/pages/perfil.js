@@ -168,6 +168,8 @@ function mostrarError(error) {
         return;
     }
 
+    console.error('Error en la tienda:', error);
+
     const errores = error?.data?.errors;
 
     if (errores) {
@@ -765,6 +767,8 @@ function conectarFormularios() {
     porId('formPassword')?.addEventListener('submit', async (evento) => {
         evento.preventDefault();
 
+        /* OJO: evento.currentTarget se pierde después del await. */
+        const formulario = evento.currentTarget;
         const nueva = porId('passwordNueva').value;
         const confirmacion = porId('passwordNuevaConfirm').value;
         const problema = validarPassword(nueva, confirmacion);
@@ -775,7 +779,7 @@ function conectarFormularios() {
             return;
         }
 
-        const boton = evento.currentTarget.querySelector('button[type="submit"]');
+        const boton = formulario.querySelector('button[type="submit"]');
         const texto = boton?.textContent;
         bloquearBoton(boton, true);
 
@@ -786,7 +790,7 @@ function conectarFormularios() {
                 password_nueva_confirmation: porId('passwordNuevaConfirm').value,
             }, { cargando: true });
 
-            evento.currentTarget.reset();
+            formulario.reset();
             tiendaToast(datos?.mensaje || 'Contraseña actualizada correctamente.');
             ajustarFormPassword();
             refrescarDescuento();
@@ -808,18 +812,23 @@ function ajustarFormPassword() {
     const ayuda = porId('passwordAyuda');
     const aviso = porId('avisoPassword');
 
-    if (columna) columna.hidden = !tiene;
-    if (aviso) aviso.hidden = tiene;
+    /* Ya creó una contraseña antes (aunque la cuenta siga siendo de Google). */
+    const yaTiene = Boolean(window.clienteTienda?.password_set);
 
-    if (titulo) titulo.textContent = tiene ? 'Cambiar contraseña' : 'Crear contraseña';
+    if (columna) columna.hidden = !tiene;
+    if (aviso) aviso.hidden = tiene || yaTiene;
+
+    if (titulo) titulo.textContent = (tiene || yaTiene) ? 'Cambiar contraseña' : 'Crear contraseña';
 
     if (ayuda) {
         ayuda.textContent = tiene
             ? 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.'
-            : 'Tu cuenta entra con Google. Crea una contraseña (mín. 8, mayúscula, minúscula y número) para entrar también con tu correo.';
+            : (yaTiene
+                ? 'Escribe tu nueva contraseña (mín. 8, mayúscula, minúscula y número).'
+                : 'Tu cuenta entra con Google. Crea una contraseña (mín. 8, mayúscula, minúscula y número) para entrar también con tu correo.');
     }
 
-    if (!tiene) {
+    if (!tiene && !yaTiene) {
         let avisar = false;
 
         try {
