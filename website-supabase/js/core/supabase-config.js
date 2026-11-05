@@ -12,6 +12,7 @@ window.TIENDA_DELIVERY = {
     precioPorKm: 15,
     redondeo: 5,
     minimo: 30,
+    maximoKm: 20,
     origen: {
         lat: 12.423534455595828,
         lng: -86.84733917589323,

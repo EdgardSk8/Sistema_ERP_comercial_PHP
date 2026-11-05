@@ -19,6 +19,7 @@ use App\Http\Controllers\CompraController;
 use App\Http\Controllers\CredencialesController;
 use App\Http\Controllers\CuentaController;
 use App\Http\Controllers\CuentaPorCobrarController;
+use App\Http\Controllers\CuponDescuentoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FacturacionController;
 use App\Http\Controllers\GastoController;
@@ -78,6 +79,7 @@ Route::view('/ubicaciones', 'ubicaciones.Ubicaciones')->middleware('permiso:vist
 Route::view('/roles', 'roles.Roles')->middleware('permiso:vista_roles')->name('roles');
 Route::view('/permisos', 'permisos.Permisos')->middleware('permiso:vista_permisos')->name('permisos');
 Route::view('/categorias', 'categorias.Categorias')->middleware('permiso:vista_categorias')->name('categorias');
+Route::view('/cupones-descuentos', 'cuponesdescuentos.CuponesDescuentos')->middleware('permiso:vista_cupones_descuentos')->name('cupones-descuentos');
 Route::view('/clientes', 'clientes.Clientes')->middleware('permiso:vista_clientes')->name('clientes');
 Route::view('/compras/crear', 'compras.CrearCompra')->middleware('permiso:vista_crear_compras')->name('crear.compras');
 Route::view('/compras', 'compras.Compras')->middleware('permiso:vista_compras')->name('compras');
@@ -334,6 +336,16 @@ Route::get('/pedidos-web/mostrar', [PedidoWebController::class, 'Mostrar'])->mid
 Route::get('/pedidos-web/{id}/detalle', [PedidoWebController::class, 'Detalle'])->middleware('permiso:mostrar_pedidos_web');
 Route::post('/pedidos-web/{id}/estado', [PedidoWebController::class, 'CambiarEstado'])->middleware('permiso:actualizar_pedidos_web');
 Route::view('/pedidos-web', 'pedidosweb.PedidosWeb')->middleware('permiso:vista_pedidos_web')->name('pedidos-web');
+
+/*  ╔═════════════ CUPONES Y DESCUENTOS ═════════════════╗
+    ╚════════════════════════════════════════════════════╝ */
+
+Route::get('/cupones-descuentos/mostrar', [CuponDescuentoController::class, 'Mostrar'])->middleware('permiso:mostrar_cupones_descuentos');
+Route::get('/cupones-descuentos/clientes', [CuponDescuentoController::class, 'Clientes'])->middleware('permiso:asignar_cupones_descuentos');
+Route::get('/cupones-descuentos/{id}/detalle', [CuponDescuentoController::class, 'Detalle'])->middleware('permiso:mostrar_cupones_descuentos');
+Route::post('/cupones-descuentos/crear', [CuponDescuentoController::class, 'Crear'])->middleware('permiso:crear_cupones_descuentos');
+Route::put('/cupones-descuentos/{id}/actualizar', [CuponDescuentoController::class, 'Actualizar'])->middleware('permiso:editar_cupones_descuentos');
+Route::post('/cupones-descuentos/{id}/asignar', [CuponDescuentoController::class, 'Asignar'])->middleware('permiso:asignar_cupones_descuentos');
 
 Route::post('/caja/abrir', [CajaController::class, 'AbrirCaja'])->middleware('permiso:abrir_caja');
 Route::post('/caja/cerrar', [CajaController::class, 'CerrarCaja'])->middleware('permiso:cerrar_caja');

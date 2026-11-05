@@ -17,6 +17,7 @@ export default defineConfig({
                 'resources/css/compras/Compras.css',
                 'resources/css/cuentasporcobrar/CuentasPorCobrar.css',
                 'resources/css/pedidosweb/PedidosWeb.css',
+                'resources/css/cuponesdescuentos/CuponesDescuentos.css',
                 'resources/css/promociones/Promociones.css',
                 'resources/css/dashboard/Dashboard.css',
                 'resources/css/facturacion/Facturacion.css',

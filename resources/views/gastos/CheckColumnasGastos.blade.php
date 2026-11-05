@@ -60,4 +60,8 @@
     <input type="checkbox" id="toggleInactivosGastos" class="togglecheck" hidden checked>
     <label for="toggleInactivosGastos" class="toggle-btn"> Ocultar inactivos </label>
 
+    <button type="button" class="btn-recargar ms-auto" id="recargarGastos" data-tabla="#tablaGastos"
+            title="Actualizar" aria-label="Actualizar tabla">
+        <i class="ph ph-arrows-clockwise"></i>
+    </button>
 </div>

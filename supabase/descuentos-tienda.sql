@@ -139,6 +139,7 @@ declare
     v_total numeric(10, 2);
 
     v_metodo varchar(20);
+    v_metodo_entrega varchar(20) := 'delivery';
     v_hora_preferida time;
     v_lat double precision;
     v_lng double precision;
@@ -149,6 +150,7 @@ declare
     v_precio_km constant numeric := 15;
     v_redondeo constant numeric := 5;
     v_minimo constant numeric := 30;
+    v_maximo_km constant double precision := 20;
 
     v_descuento_tipo varchar(20);
     v_descuento_valor numeric(10, 2);
@@ -218,6 +220,13 @@ begin
     ));
 
     v_envio := greatest(v_minimo, floor((v_km * v_precio_km) / v_redondeo) * v_redondeo);
+
+    /* Radio máximo de delivery: fuera de 20 km solo se envía por Cargo Trans / encomienda.
+       Se compara con 2 decimales para no rechazar direcciones justo en el límite. */
+    if round(v_km::numeric, 2) > v_maximo_km then
+        v_metodo_entrega := 'encomienda';
+        v_envio := 0;
+    end if;
 
     insert into public.pedidos_web (
         id_cliente,
@@ -477,6 +486,7 @@ begin
            impuesto_pedido = v_impuesto,
            costo_envio_pedido = v_envio,
            distancia_km = round(v_km::numeric, 2),
+           metodo_entrega_web = v_metodo_entrega,
            total_pedido = v_total,
            uso_descuento_bienvenida = v_uso_bienvenida,
            cupon_pedido = v_cupon.codigo_cupon
@@ -556,6 +566,8 @@ begin
             'subtotal_pedido', v_pedido.subtotal_pedido,
             'descuento_pedido', v_pedido.descuento_pedido,
             'costo_envio_pedido', v_pedido.costo_envio_pedido,
+            'metodo_entrega', v_pedido.metodo_entrega_web,
+            'distancia_km', v_pedido.distancia_km,
             'total_pedido', v_pedido.total_pedido
         )
     );

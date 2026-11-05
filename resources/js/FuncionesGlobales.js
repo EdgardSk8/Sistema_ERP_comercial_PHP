@@ -868,3 +868,47 @@ window.fetch = function (recurso, opciones = {}) {
 
 /* -------------------------------------------------------------------------------- */
 
+/*  ╔══════════════════════════════════════════════════════════╗
+    ║  Botón de recarga compartido (CheckColumnas)             ║
+    ║  Estilo único en css/BtnRecargar.css                     ║
+    ╚══════════════════════════════════════════════════════════╝ */
+
+window.recargarTablaDeBoton = function (boton) {
+    const selector = boton?.dataset?.tabla;
+    const $ = window.jQuery;
+
+    if (!selector || !$ || !$.fn?.DataTable) return false;
+
+    const tabla = document.querySelector(selector);
+
+    if (!tabla || !$.fn.DataTable.isDataTable(tabla)) return false;
+
+    const api = $(tabla).DataTable();
+
+    /* Solo las tablas con ajax vuelven a pedir datos al servidor. */
+    if (!api.settings()[0]?.ajax) return false;
+
+    api.ajax.reload(null, false);
+
+    return true;
+};
+
+document.addEventListener('click', function (evento) {
+    const boton = evento.target.closest('.btn-recargar');
+
+    if (!boton) return;
+
+    /* Reinicia la animación aunque se pulse varias veces seguidas. */
+    boton.classList.remove('is-girando');
+    void boton.offsetWidth;
+    boton.classList.add('is-girando');
+    boton.disabled = true;
+
+    window.setTimeout(function () {
+        boton.classList.remove('is-girando');
+        boton.disabled = false;
+    }, 700);
+
+    window.recargarTablaDeBoton(boton);
+});
+

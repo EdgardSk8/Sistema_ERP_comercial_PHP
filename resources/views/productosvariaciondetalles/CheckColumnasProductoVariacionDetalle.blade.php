@@ -8,4 +8,9 @@
             <li><label class="dropdown-item"><input type="checkbox" class="form-check-input me-2 toggle-col" data-column="1" checked>Variaciones</label></li>
         </ul>
     </div>
+
+    <button type="button" class="btn-recargar ms-auto" id="recargarProductoVariacionDetalle" data-tabla="#tablaProductoVariacionDetalle"
+            title="Actualizar" aria-label="Actualizar tabla">
+        <i class="ph ph-arrows-clockwise"></i>
+    </button>
 </div>

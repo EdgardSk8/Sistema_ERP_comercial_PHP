@@ -1,0 +1,598 @@
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  Cupones y descuentos · estilos del módulo                   ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+.cupones-page {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cupones-herramientas {
+    margin-bottom: 10px;
+}
+
+.cupones-herramientas__busqueda {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cupones-herramientas__busqueda .form-control {
+    min-width: 220px;
+}
+
+/* ── Barra superior ─────────────────────────────────────────── */
+.cupones-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+}
+
+.cupones-toolbar-info {
+    display: grid;
+    gap: 2px;
+}
+
+.cupones-toolbar-titulo {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.cupones-toolbar-sub {
+    font-size: 11.5px;
+    color: var(--text-soft);
+}
+
+.cupones-toolbar-resumen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cupones-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    min-width: 72px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface-muted);
+    font-family: inherit;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.cupones-chip:hover {
+    background: var(--surface-hover);
+    border-color: color-mix(in srgb, var(--verde) 35%, var(--border));
+}
+
+.cupones-chip.is-activo {
+    border-color: var(--verde);
+    background: var(--verde-soft);
+    box-shadow: inset 0 0 0 1px var(--verde);
+}
+
+.cupones-chip > span {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--text-soft);
+}
+
+.cupones-chip > strong {
+    font-size: 13px;
+    color: var(--text);
+}
+
+.cupones-chip[data-filtro="fidelidad"] > strong {
+    color: var(--azul);
+}
+
+.cupones-chip[data-filtro="usados"] > strong {
+    color: var(--success-text, #16A34A);
+}
+
+/* ── Tarjetas de descuentos ─────────────────────────────────── */
+.cupones-descuentos {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.cupones-descuento-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+}
+
+.cupones-descuento-card__icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border-radius: 10px;
+    background: var(--verde-soft);
+    color: var(--success-text, #16A34A);
+    font-size: 19px;
+}
+
+.cupones-descuento-card__texto {
+    display: grid;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.cupones-descuento-card__texto strong {
+    font-size: 12.5px;
+    color: var(--text);
+}
+
+.cupones-descuento-card__texto span {
+    font-size: 10.5px;
+    color: var(--text-soft);
+}
+
+.cupones-descuento-card__valores {
+    display: flex;
+    gap: 14px;
+}
+
+.cupones-descuento-card__valores div {
+    display: grid;
+    justify-items: center;
+    gap: 1px;
+}
+
+.cupones-descuento-card__valores strong {
+    font-size: 16px;
+    color: var(--text);
+}
+
+.cupones-descuento-card__valores small {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-soft);
+}
+
+/* ── Tabla ──────────────────────────────────────────────────── */
+.cupones-tabla-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.cupones-tabla-card .table {
+    margin: 0;
+}
+
+.cupones-tabla-card thead th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--text-soft);
+    background: var(--surface-muted);
+}
+
+.cupones-tabla-card tbody td {
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+.cupones-tabla-card tbody td.dataTables_empty {
+    padding: 30px 12px;
+    text-align: center;
+    color: var(--text-soft);
+}
+
+.cupones-codigo {
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: .02em;
+}
+
+.cupones-origen {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--verde-soft);
+    color: var(--success-text, #16A34A);
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+.cupones-valor,
+.cupones-usos {
+    font-weight: 600;
+}
+
+.cupones-clientes {
+    font-size: 11px;
+    color: var(--text-soft);
+}
+
+.cupones-vigencia {
+    display: grid;
+    gap: 1px;
+}
+
+.cupones-vigencia strong {
+    font-size: 11px;
+}
+
+.cupones-vigencia span {
+    font-size: 10px;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+.cupones-vigencia.is-vencido strong,
+.cupones-vigencia.is-vencido span {
+    color: var(--danger-text);
+}
+
+/* ── Detalle del cupón ──────────────────────────────────────── */
+.cupones-modal .modal-header {
+    padding: 12px 16px;
+}
+
+.cupones-modal .modal-body {
+    padding: 14px 16px 16px;
+}
+
+.cupones-detalle {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 9px 16px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+}
+
+.cupones-detalle__dato {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 1px 5px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.cupones-detalle__dato--ancho {
+    grid-column: 1 / -1;
+}
+
+.cupones-detalle__dato span {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-soft);
+    white-space: nowrap;
+}
+
+.cupones-detalle__dato span::after {
+    content: ':';
+}
+
+.cupones-detalle__dato strong {
+    min-width: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    overflow-wrap: anywhere;
+}
+
+.cupones-detalle__descripcion {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--text-soft);
+}
+
+.cupones-detalle__descripcion:empty {
+    display: none;
+}
+
+.cupones-detalle__subtitulo {
+    margin: 12px 0 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-soft);
+}
+
+.cupones-modal .table-sm > :not(caption) > * > * {
+    padding: 5px 8px;
+}
+
+.cupones-modal .modal-body > .table-responsive {
+    margin-bottom: 0;
+}
+
+/* ── Botones del módulo ─────────────────────────────────────── */
+.cupones-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 31px;
+    padding: 0 11px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.cupones-btn i {
+    font-size: 14px;
+}
+
+.cupones-btn--primario {
+    border-color: var(--verde);
+    background: var(--verde);
+    color: #fff;
+}
+
+.cupones-btn--primario:hover {
+    border-color: color-mix(in srgb, var(--verde) 82%, #000);
+    background: color-mix(in srgb, var(--verde) 82%, #000);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--verde) 30%, transparent);
+}
+
+.cupones-btn--secundario:hover {
+    background: var(--surface-hover);
+}
+
+.cupones-btn--sm {
+    height: 26px;
+    padding: 0 9px;
+    font-size: 11px;
+}
+
+.cupones-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.cupones-acciones {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+/* ── Formulario de cupón ────────────────────────────────────── */
+.cupones-form {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 9px 12px;
+}
+
+.cupones-form__campo {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.cupones-form__campo .form-label {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-soft);
+}
+
+.cupones-form__campo--ancho {
+    grid-column: 1 / -1;
+}
+
+.cupones-form__estado {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 9px;
+    border-top: 1px solid var(--border);
+}
+
+.cupones-form__estado .form-check-input:checked,
+.cupones-cliente .form-check-input:checked {
+    background-color: var(--verde);
+    border-color: var(--verde);
+}
+
+.cupones-form__error {
+    font-size: 11.5px;
+    color: var(--danger-text);
+}
+
+.cupones-form__error:empty {
+    display: none;
+}
+
+/* ── Asignar clientes ───────────────────────────────────────── */
+.cupones-asignar {
+    display: grid;
+    gap: 8px;
+}
+
+.cupones-asignar__barra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.cupones-asignar__barra .form-control {
+    max-width: 240px;
+}
+
+.cupones-asignar__todos {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 11.5px;
+    color: var(--text-soft);
+    cursor: pointer;
+}
+
+.cupones-asignar__todos .form-check-input {
+    margin: 0;
+}
+
+.cupones-asignar__nota {
+    font-size: 10.5px;
+    color: var(--text-soft);
+}
+
+.cupones-clientes-lista {
+    display: grid;
+    gap: 4px;
+    max-height: 246px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.cupones-cliente {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 9px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    cursor: pointer;
+}
+
+.cupones-cliente:hover {
+    background: var(--surface-hover);
+}
+
+.cupones-cliente.is-asignado {
+    background: var(--surface-muted);
+    cursor: default;
+}
+
+.cupones-cliente .form-check-input {
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.cupones-cliente__texto {
+    display: grid;
+    gap: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.cupones-cliente__texto strong {
+    font-size: 11.5px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cupones-cliente__texto small {
+    font-size: 10px;
+    color: var(--text-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cupones-cliente__badge {
+    flex: 0 0 auto;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--success-text, #16A34A);
+}
+
+.cupones-asignar__vacio {
+    padding: 24px 12px;
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--text-soft);
+}
+
+.cupones-asignar__pie {
+    justify-content: space-between;
+}
+
+.cupones-asignar__conteo {
+    font-size: 11.5px;
+    color: var(--text-soft);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .cupones-descuentos {
+        grid-template-columns: 1fr;
+    }
+
+    .cupones-chip {
+        flex: 1 1 44%;
+    }
+}
+
+@media (max-width: 992px) {
+    .cupones-detalle,
+    .cupones-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .cupones-herramientas__busqueda .form-control {
+        min-width: 140px;
+    }
+}
+
+@media (max-width: 560px) {
+    .cupones-detalle,
+    .cupones-form {
+        grid-template-columns: 1fr;
+    }
+}

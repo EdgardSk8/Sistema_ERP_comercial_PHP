@@ -104,7 +104,8 @@ En el panel de Supabase:
 - **Cambio de contraseña:** al crear o cambiar la contraseña se guarda `password_set` en `user_metadata`; en el siguiente cambio el formulario pide la contraseña actual.
 - **Errores al usuario:** `tiendaToast` filtra mensajes técnicos (TypeError, `Cannot read properties`, fallos de red, AuthApiError, etc.) y muestra un aviso genérico en su lugar.
 - **Precios con descuento:** `descuentoClienteActivo()` y `precioConDescuento()` en `carrito-store.js`. El catálogo y la ficha muestran precio original tachado, precio final y badge con el descuento. El carrito y los estados de venta (online, billetera móvil, efectivo) se manejan aparte.
-- **Delivery en el carrito:** configuración en `js/core/supabase-config.js` (`window.TIENDA_DELIVERY`): C$15 por km, redondeo a la baja a múltiplo de C$5 y **tarifa mínima de C$30**. El carrito usa un selector Select2 con las direcciones del cliente, calcula la distancia desde la tienda y muestra el cálculo, el redondeo y la tarifa mínima. La dirección y sus coordenadas se recuerdan en `localStorage`.
+- **Delivery en el carrito:** configuración en `js/core/supabase-config.js` (`window.TIENDA_DELIVERY`): C$15 por km, redondeo a la baja a múltiplo de C$5, **tarifa mínima de C$30** y **radio máximo de 20 km**. El carrito usa un selector Select2 con las direcciones del cliente, calcula la distancia desde la tienda y muestra el cálculo, el redondeo y la tarifa mínima. La dirección y sus coordenadas se recuerdan en `localStorage`.
+- **Fuera de 20 km no hay delivery:** el carrito avisa que el pedido viaja por **Cargo Trans / encomienda**, deja el envío en C$0 (se paga en la transportadora) y el pedido se guarda con `metodo_entrega_web = 'encomienda'`. El servidor (`web_crear_pedido`) recalcula la distancia y decide el método, así que no se puede forzar `delivery` desde el navegador. El ERP muestra el método y la distancia en el detalle del pedido web.
 
 ## 9. Optimización de carga
 

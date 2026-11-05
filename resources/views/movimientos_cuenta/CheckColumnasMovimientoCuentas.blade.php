@@ -57,4 +57,8 @@
 
     
 
+    <button type="button" class="btn-recargar ms-auto" id="recargarMovimientosCuenta" data-tabla="#tablaMovimientosCuenta"
+            title="Actualizar" aria-label="Actualizar tabla">
+        <i class="ph ph-arrows-clockwise"></i>
+    </button>
 </div>

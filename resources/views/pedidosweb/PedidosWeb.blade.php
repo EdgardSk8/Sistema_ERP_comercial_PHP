@@ -178,6 +178,7 @@
                                 <strong>Cliente:</strong> <span id="clienteDetallePedidoWeb">—</span><br>
                                 <strong>Teléfono:</strong> <span id="telefonoDetallePedidoWeb">—</span><br>
                                 <strong>Método de pago:</strong> <span id="metodoDetallePedidoWeb">—</span><br>
+                                <strong>Entrega:</strong> <span id="tipoEntregaDetallePedidoWeb">—</span><br>
                                 <strong>Dirección:</strong> <span id="direccionDetallePedidoWeb">—</span><br>
                                 <strong>Referencia:</strong> <span id="referenciaDetallePedidoWeb">—</span>
                             </div>

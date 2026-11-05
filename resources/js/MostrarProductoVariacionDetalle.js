@@ -348,6 +348,11 @@
         return cargarDatos();
     }
 
+    /* Botón de recarga del CheckColumnas: esta tabla no usa ajax. */
+    document.getElementById('recargarProductoVariacionDetalle')?.addEventListener('click', () => {
+        recargarDatos();
+    });
+
     $tabla.off('click.detalle', '.verImagenesVariacion').on('click.detalle', '.verImagenesVariacion', function () {
         const variacion = filas.find(fila => String(fila.id_variacion) === String($(this).data('id')));
         if (!variacion) return;

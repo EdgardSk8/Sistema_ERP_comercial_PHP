@@ -1,0 +1,60 @@
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  Botón de recarga · estilo único para todas las tablas       ║
+   ║  Se usa en los CheckColumnas: <button class="btn-recargar">   ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+.btn-recargar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 31px;
+    height: 31px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--verde);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.btn-recargar i {
+    pointer-events: none;
+}
+
+.btn-recargar:hover {
+    border-color: color-mix(in srgb, var(--verde) 55%, var(--border));
+    background: var(--verde-soft);
+    color: color-mix(in srgb, var(--verde) 82%, #000);
+}
+
+.btn-recargar:active {
+    transform: scale(.94);
+}
+
+.btn-recargar:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--verde) 55%, transparent);
+    outline-offset: 2px;
+}
+
+.btn-recargar:disabled {
+    opacity: .65;
+    cursor: progress;
+}
+
+/* Giro al presionar: la clase la pone FuncionesGlobales.js */
+.btn-recargar.is-girando i {
+    animation: btn-recargar-giro .65s cubic-bezier(.45, 0, .2, 1);
+}
+
+@keyframes btn-recargar-giro {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

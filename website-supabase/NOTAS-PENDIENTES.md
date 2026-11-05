@@ -50,7 +50,7 @@
 - [ ] Punto de origen del cálculo (tienda física, bodega) y dónde se configura.
 - [ ] Fórmula: ¿`base + (km × tarifa)` o solo `km × tarifa`? ¿Redondeo?
 - [ ] Distancia en línea recta (Haversine) o por ruta real (API de mapas).
-- [ ] Radio máximo de entrega y qué pasa si el cliente está fuera.
+- [x] **Radio máximo de entrega: 20 km.** Más lejos no hay delivery: el pedido se envía por **Cargo Trans / encomienda** (`metodo_entrega_web = 'encomienda'`), el envío se paga en la transportadora y el pedido no cobra costo de envío.
 - [ ] Envío gratis por monto mínimo (¿aplica también a envíos lejanos?).
 - [ ] Retiro en tienda (costo C$ 0) como alternativa.
 - [ ] Qué pasa si el cliente no marca ubicación o la dirección no tiene coordenadas.

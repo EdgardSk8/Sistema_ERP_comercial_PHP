@@ -157,6 +157,7 @@ const modulos = [
     ['#tablaUbicaciones', () => import('./MostrarUbicaciones')],
     ['#tablaCuentasPorCobrar', () => import('./CuentasPorCobrar')],
     ['#tablaPedidosWeb', () => import('./MostrarPedidosWeb')],
+    ['#tablaCupones', () => import('./MostrarCuponesDescuentos')],
     ['#manualNav', () => import('./Manual')]
 
 

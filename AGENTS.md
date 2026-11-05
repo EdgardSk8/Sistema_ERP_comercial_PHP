@@ -146,6 +146,11 @@ if ($validator->fails()) {
 - Cada vista define un elemento `#titulo` con el encabezado del módulo (lo lee el JS).
 - CSS por módulo vía `@vite([...])`; el layout carga `variables.css`, `app.css` y `principal/principal.css`.
 - Fragmentos auxiliares (impresión, modales) van en la misma carpeta del módulo (p. ej. `cajas/ArqueoImpresion.blade.php`).
+- **Botón de recarga de tablas**: cada `CheckColumnas*.blade.php` incluye
+  `<button type="button" class="btn-recargar" id="recargarX" data-tabla="#tablaX">`.
+  El estilo vive **solo** en `resources/css/BtnRecargar.css` (importado desde `app.css`) y el
+  comportamiento (giro del icono + `DataTable().ajax.reload()`) en `FuncionesGlobales.js`.
+  No dupliques estilos ni listeners por módulo; solo cambia `id` y `data-tabla`.
 
 ### 4.7 JavaScript (`resources/js`)
 

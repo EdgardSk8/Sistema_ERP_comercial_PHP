@@ -104,6 +104,10 @@ create policy web_pedido_estados_select on public.pedido_web_estados
 -- 4) Crear pedido desde la tienda
 --    Precio, stock y envío se recalculan en el servidor.
 --    El pedido queda: solicitado + pago pendiente.
+--    OJO: la versión vigente de esta función (descuentos, cupones, bienvenida
+--    y radio máximo de delivery de 20 km con encomienda) está en
+--    supabase/descuentos-tienda.sql. Este bloque quedó como referencia
+--    histórica; no lo reapliques sin traer esos cambios.
 create or replace function public.web_crear_pedido(p_datos jsonb)
 returns jsonb
 language plpgsql
@@ -393,6 +397,8 @@ select coalesce(jsonb_agg(jsonb_build_object(
     'estado_pedido', p.estado_pedido,
     'estado_pago', p.estado_pago,
     'metodo_pago_web', p.metodo_pago_web,
+    'metodo_entrega_web', p.metodo_entrega_web,
+    'distancia_km', p.distancia_km,
     'subtotal_pedido', p.subtotal_pedido,
     'descuento_pedido', p.descuento_pedido,
     'costo_envio_pedido', p.costo_envio_pedido,

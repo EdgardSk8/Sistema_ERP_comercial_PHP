@@ -75,5 +75,9 @@
     <input type="checkbox" id="toggleFooter" class="togglecheck" hidden>
     <label for="toggleFooter" class="toggle-btn"> Mostrar filtros </label>
 
+    <button type="button" class="btn-recargar ms-auto" id="recargarCompras" data-tabla="#tablaCompras"
+            title="Actualizar" aria-label="Actualizar tabla">
+        <i class="ph ph-arrows-clockwise"></i>
+    </button>
 </div>
 

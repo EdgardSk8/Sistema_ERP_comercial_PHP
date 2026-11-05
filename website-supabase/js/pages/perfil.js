@@ -1250,7 +1250,9 @@ const WHATSAPP_TIENDA = '50584774288';
 
 const ESTADOS_PEDIDO_CANCELADOS = ['cancelado', 'rechazado', 'devuelto'];
 const ESTADOS_PEDIDO_SOLICITADOS = ['solicitado'];
-const ESTADOS_PEDIDO_ACTIVOS = ['aceptado', 'preparando', 'listo_retiro', 'enviado'];
+/* "Activos" incluye los recién solicitados: si no, el cliente que acaba de
+   comprar entra a Mis pedidos y no ve nada. */
+const ESTADOS_PEDIDO_ACTIVOS = ['solicitado', 'aceptado', 'preparando', 'listo_retiro', 'enviado'];
 const ESTADOS_PEDIDO_ENTREGADOS = ['entregado'];
 const ESTADOS_PAGO_PENDIENTES = ['pendiente', 'en_revision', 'parcial'];
 
@@ -1439,7 +1441,13 @@ function pedidoHTML(pedido) {
         ? `<span>Tu hora preferida: <strong>${formatearHora(pedido.hora_entrega_preferida)}</strong></span>`
         : '';
 
-    const fechas = [entrega, canceladoFecha, horaPreferida].filter(Boolean).join('');
+    const kmEntrega = Number(pedido.distancia_km);
+    const distancia = Number.isFinite(kmEntrega) && kmEntrega > 0 ? ` · ${kmEntrega.toFixed(1)} km` : '';
+    const tipoEntrega = pedido.metodo_entrega_web === 'encomienda'
+        ? `<span>Entrega: <strong>Cargo Trans / Encomienda</strong>${distancia}</span>`
+        : (distancia ? `<span>Entrega: <strong>Delivery</strong>${distancia}</span>` : '');
+
+    const fechas = [entrega, tipoEntrega, canceladoFecha, horaPreferida].filter(Boolean).join('');
 
     const exito = estaEntregado
         ? `<div class="perfil-pedido__exito">

@@ -31,4 +31,9 @@
         <input type="checkbox" id="toggleInactivosUbicaciones" class="togglecheck" hidden checked>
         <label for="toggleInactivosUbicaciones" class="toggle-btn">Ocultar inactivos</label>
     </div>
+
+    <button type="button" class="btn-recargar ms-auto" id="recargarUbicaciones" data-tabla="#tablaUbicaciones"
+            title="Actualizar" aria-label="Actualizar tabla">
+        <i class="ph ph-arrows-clockwise"></i>
+    </button>
 </div>

@@ -94,6 +94,16 @@ export default function initPedidosWeb() {
     const estadoPedidoTexto = (estado) => ESTADOS_PEDIDO[estado] || estado || '—';
     const estadoPagoTexto = (estado) => ESTADOS_PAGO[estado] || estado || '—';
 
+    /* Fuera del radio de delivery el pedido viaja por Cargo Trans / encomienda. */
+    function textoEntregaPedido(pedido) {
+        const km = Number(pedido?.distancia_km);
+        const distancia = Number.isFinite(km) && km > 0 ? ` · ${km.toFixed(1)} km` : '';
+
+        return (pedido?.metodo_entrega_web === 'encomienda'
+            ? 'Cargo Trans / Encomienda'
+            : 'Delivery') + distancia;
+    }
+
     function formatearHora(hora) {
         if (!hora) return '—';
 
@@ -492,6 +502,7 @@ export default function initPedidosWeb() {
                 document.getElementById('clienteDetallePedidoWeb').textContent = pedido.nombre_cliente || '—';
                 document.getElementById('telefonoDetallePedidoWeb').textContent = pedido.telefono_contacto || pedido.telefono_cliente || '—';
                 document.getElementById('metodoDetallePedidoWeb').textContent = METODOS_PAGO[pedido.metodo_pago_web] || pedido.metodo_pago_web || '—';
+                document.getElementById('tipoEntregaDetallePedidoWeb').textContent = textoEntregaPedido(pedido);
                 document.getElementById('subtotalDetallePedidoWeb').textContent = moneda(pedido.subtotal_pedido);
                 document.getElementById('descuentoDetallePedidoWeb').textContent = moneda(pedido.descuento_pedido);
                 document.getElementById('envioDetallePedidoWeb').textContent = moneda(pedido.costo_envio_pedido);

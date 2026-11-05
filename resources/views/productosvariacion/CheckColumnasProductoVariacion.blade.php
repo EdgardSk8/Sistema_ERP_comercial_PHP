@@ -68,4 +68,8 @@
 
     </div>
 
+    <button type="button" class="btn-recargar ms-auto" id="recargarProductoVariaciones" data-tabla="#tablaProductoVariaciones"
+            title="Actualizar" aria-label="Actualizar tabla">
+        <i class="ph ph-arrows-clockwise"></i>
+    </button>
 </div>

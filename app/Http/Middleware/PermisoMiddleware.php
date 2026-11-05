@@ -26,6 +26,7 @@ class PermisoMiddleware
         'promociones' => 'vista_promociones',
         'ventas' => 'vista_ventas',
         'pedidos_web' => 'vista_pedidos_web',
+        'cupones' => 'vista_cupones_descuentos',
         'compras' => 'vista_compras',
         'inventario' => 'vista_movimientos_inventario',
         'cajas' => 'vista_cajas',

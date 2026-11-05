@@ -489,12 +489,29 @@ function calcularEnvio(direccion) {
     const precioPorKm = Number(DELIVERY_CONFIG.precioPorKm) || 0;
     const paso = Number(DELIVERY_CONFIG.redondeo) || 5;
     const minimo = Number(DELIVERY_CONFIG.minimo) || 0;
+    const maximoKm = Number(DELIVERY_CONFIG.maximoKm) || 0;
     const bruto = km * precioPorKm;
     const redondeado = Math.max(0, Math.floor(bruto / paso) * paso);
-    const final = Math.max(minimo, redondeado);
-    const aplicoMinimo = final > redondeado;
+    /* Fuera del radio de delivery solo se envía por Cargo Trans / encomienda.
+       Se compara con 2 decimales (los mismos que guarda el servidor) para que
+       una dirección justo en el límite no caiga por ruido de punto flotante. */
+    const kmLimite = Math.round(km * 100) / 100;
+    const excede = maximoKm > 0 && kmLimite > maximoKm;
+    const final = excede ? 0 : Math.max(minimo, redondeado);
+    const aplicoMinimo = !excede && final > redondeado;
 
-    return { km, bruto, redondeado, final, paso, minimo, aplicoMinimo };
+    return {
+        km,
+        bruto,
+        redondeado,
+        final,
+        paso,
+        minimo,
+        maximoKm,
+        excede,
+        metodoEntrega: excede ? 'encomienda' : 'delivery',
+        aplicoMinimo,
+    };
 }
 
 function pintarDetalleResumen() {
@@ -521,8 +538,19 @@ function pintarDetalleResumen() {
         return;
     }
 
-    const { km, bruto, final, aplicoMinimo } = envioDetalle;
+    const { km, bruto, final, aplicoMinimo, excede, maximoKm } = envioDetalle;
     const precioPorKm = Number(DELIVERY_CONFIG.precioPorKm) || 0;
+
+    if (excede) {
+        detalle.textContent = `${formatearKm(km)} km · fuera del radio de delivery (${formatearKm(maximoKm)} km): se envía por Cargo Trans / encomienda.`;
+
+        if (envioNodo) {
+            envioNodo.textContent = 'Encomienda';
+            envioNodo.classList.remove('resumen__gratis');
+        }
+
+        return;
+    }
 
     detalle.textContent = aplicoMinimo
         ? `${formatearKm(km)} km × ${moneda(precioPorKm)} = ${moneda(bruto)} → ${moneda(final)} (tarifa mínima)`
@@ -553,8 +581,20 @@ function pintarEntregaInfo(mensaje = '') {
         return;
     }
 
-    const { km, bruto, redondeado, final, paso, minimo, aplicoMinimo } = envioDetalle;
+    const { km, bruto, redondeado, final, paso, minimo, aplicoMinimo, excede, maximoKm } = envioDetalle;
     const precioPorKm = Number(DELIVERY_CONFIG.precioPorKm) || 0;
+
+    if (excede) {
+        info.innerHTML = `
+            <div class="carrito-entrega__linea"><span>Distancia</span><strong>${formatearKm(km)} km</strong></div>
+            <div class="carrito-entrega__linea carrito-entrega__linea--final"><span>Entrega</span><strong>Cargo Trans / Encomienda</strong></div>
+            <p class="carrito-entrega__redondeo">
+                Estás a más de ${formatearKm(maximoKm)} km, así que no hacemos delivery a domicilio.
+                Tu pedido viaja por Cargo Trans o encomienda y el costo del envío se paga en la transportadora al retirarlo.
+            </p>
+        `;
+        return;
+    }
 
     info.innerHTML = `
         <div class="carrito-entrega__linea"><span>Distancia</span><strong>${formatearKm(km)} km</strong></div>
@@ -1018,7 +1058,11 @@ function actualizarWhatsappCarrito(items, subtotal, descuento, total) {
 
     lineas.push('', `Subtotal: ${moneda(subtotal)}`);
     if (descuento > 0) lineas.push(`Descuento: - ${moneda(descuento)}`);
-    if (envio > 0) lineas.push(`Envío: ${moneda(envio)}`);
+    if (envio > 0) {
+        lineas.push(`Envío: ${moneda(envio)}`);
+    } else if (envioDetalle?.excede) {
+        lineas.push('Entrega: Cargo Trans / Encomienda (envío por cobrar en la transportadora)');
+    }
     lineas.push(`Total: ${moneda(total)}`);
 
     boton.href = `https://wa.me/${WHATSAPP_TIENDA}?text=${encodeURIComponent(lineas.join('\n'))}`;
@@ -1251,6 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const datos = await window.TiendaAPI.post('/tienda/api/pedidos', {
                 metodo_pago: metodoPagoSeleccionado(),
+                metodo_entrega: envioDetalle?.metodoEntrega || 'delivery',
                 descuento_modo: descuentoModo,
                 cupon_codigo: descuentoModo.startsWith('cupon:') ? descuentoModo.slice(6) : null,
                 hora_entrega_preferida: document.getElementById('carritoHoraEntrega')?.value || null,
