@@ -1,6 +1,7 @@
 /* ╔══════════════════════════════════════════════════════════════╗
    ║  Tienda · Fotos de productos y descuentos                     ║
    ║  Se muestran al final del catálogo y de la ficha de producto  ║
+   ║  Carrusel horizontal con Splide (arrastrar y flechas)         ║
    ║  Configuración: data/promociones.json                         ║
    ╚══════════════════════════════════════════════════════════════╝ */
 
@@ -9,6 +10,9 @@
     const contenedor = document.getElementById('promosGrid');
 
     if (!seccion || !contenedor) return;
+
+    const carruselRaiz = contenedor.closest('.splide');
+    let carrusel = null;
 
     const escapar = (valor) => String(valor ?? '')
         .replace(/&/g, '&amp;')
@@ -44,7 +48,7 @@
         aviso.innerHTML = `
             <span class="promos-aviso__sello" aria-hidden="true">
                 <strong>10%</strong>
-                <small>Dcto</small>
+                <small>Descuento</small>
             </span>
             <div class="promos-aviso__texto">
                 <span class="promos-aviso__etiqueta">Solo por registrarte</span>
@@ -56,7 +60,8 @@
             </a>
         `;
 
-        contenedor.parentNode.insertBefore(aviso, contenedor);
+        const ancla = carruselRaiz || contenedor;
+        ancla.parentNode.insertBefore(aviso, ancla);
     }
 
     montarAvisoRegistro();
@@ -68,6 +73,45 @@
     }
 
     document.addEventListener('tienda:sesion', (evento) => aplicarSesion(evento.detail?.cliente));
+
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║  Carrusel horizontal con Splide                          ║
+       ╚══════════════════════════════════════════════════════════╝ */
+
+    function montarCarrusel() {
+        if (!carruselRaiz || typeof Splide === 'undefined') return;
+
+        if (carrusel) {
+            carrusel.destroy(true);
+            carrusel = null;
+        }
+
+        if (!contenedor.children.length) return;
+
+        /*
+           autoWidth respeta el ancho de cada tarjeta definido en CSS:
+           se ven varias promociones y la siguiente asoma al deslizar.
+        */
+        carrusel = new Splide(carruselRaiz, {
+            autoWidth: true,
+            perMove: 1,
+            gap: '12px',
+            pagination: false,
+            drag: 'free',
+            snap: true,
+            speed: 400,
+            focus: 0,
+            omitEnd: true,
+            i18n: {
+                prev: 'Promociones anteriores',
+                next: 'Promociones siguientes',
+                slideLabel: '%s de %s',
+            },
+            breakpoints: { 768: { arrows: false } },
+        });
+
+        carrusel.mount();
+    }
 
     function tarjeta(foto, indice) {
         const titulo = foto.titulo
@@ -102,6 +146,10 @@
         const extras = externo ? ' target="_blank" rel="noopener noreferrer"' : '';
 
         return `<a class="promo" href="${escapar(foto.enlace)}"${extras}>${contenido}</a>`;
+    }
+
+    function diapositiva(foto, indice) {
+        return `<li class="splide__slide">${tarjeta(foto, indice)}</li>`;
     }
 
     function urlImagenPromocion(nombre) {
@@ -155,8 +203,9 @@
             const promocionesErp = await cargarDesdeErp();
 
             if (promocionesErp.length) {
-                contenedor.innerHTML = promocionesErp.map(tarjeta).join('');
+                contenedor.innerHTML = promocionesErp.map(diapositiva).join('');
                 seccion.hidden = false;
+                montarCarrusel();
                 return;
             }
 
@@ -175,8 +224,9 @@
 
             if (!fotos.length) return;
 
-            contenedor.innerHTML = fotos.map(tarjeta).join('');
+            contenedor.innerHTML = fotos.map(diapositiva).join('');
             seccion.hidden = false;
+            montarCarrusel();
         } catch (error) {
             console.warn('No se pudieron cargar las promociones.', error);
         }

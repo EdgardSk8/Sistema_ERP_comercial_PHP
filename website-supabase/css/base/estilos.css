@@ -1506,19 +1506,47 @@ button { font-family: inherit; }
 .promos { padding: var(--e-6) 0 var(--e-5); }
 .promos[hidden] { display: none; }
 
-.promos__grid {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(270px, 340px);
-  gap: var(--e-3);
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+.promos__carrusel { --promo-ancho: 270px; }
+
+.promos__carrusel .splide__track {
+  padding: 4px 0 8px;
 }
 
-.promos__grid::-webkit-scrollbar { display: none; }
+.promos__carrusel .splide__slide {
+  display: flex;
+  width: var(--promo-ancho);
+}
+
+.promos__carrusel .splide__slide .promo { width: 100%; }
+
+.promos__carrusel .splide__arrow {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+  opacity: 1;
+}
+
+.promos__carrusel .splide__arrow--prev { left: 10px; }
+.promos__carrusel .splide__arrow--next { right: 10px; }
+.promos__carrusel .splide__arrow:disabled { opacity: .35; cursor: default; }
+
+.promos__carrusel .splide__arrow svg {
+  width: 15px;
+  height: 15px;
+  fill: var(--secundario);
+}
+
+.promos__carrusel .splide__arrow:hover:not(:disabled) {
+  background: var(--secundario);
+  border-color: var(--secundario);
+  opacity: 1;
+}
+
+.promos__carrusel .splide__arrow:hover:not(:disabled) svg { fill: var(--primario); }
+.promos__carrusel .splide__arrow:focus-visible { outline: 2px solid var(--secundario); outline-offset: 2px; }
+.promos__carrusel .splide__slide:focus-visible { outline: 2px solid var(--secundario); outline-offset: -2px; }
 
 .promo {
   display: block;
@@ -1528,7 +1556,6 @@ button { font-family: inherit; }
   border-radius: var(--r-lg);
   background: var(--superficie);
   box-shadow: var(--sombra-suave);
-  scroll-snap-align: start;
   transition: transform .2s ease, box-shadow .2s ease;
 }
 
@@ -1708,7 +1735,7 @@ button { font-family: inherit; }
 }
 
 @media (min-width: 992px) {
-  .promos__grid { grid-auto-columns: minmax(340px, 430px); }
+  .promos__carrusel { --promo-ancho: 340px; }
   .badge-promocion { padding: 4px 10px; font-size: .64rem; letter-spacing: .03em; }
 }
 

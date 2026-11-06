@@ -10,14 +10,13 @@ function porId(id) {
 
 function mostrarError(error) {
     const errores = error?.data?.errors;
+    const primero = errores ? Object.values(errores)[0] : '';
+    const mensaje = (Array.isArray(primero) ? primero[0] : primero)
+        || error?.message
+        || 'Ocurrió un error inesperado.';
 
-    if (errores) {
-        const primero = Object.values(errores)[0];
-        tiendaToast(Array.isArray(primero) ? primero[0] : primero, 'aviso');
-        return;
-    }
-
-    tiendaToast(error?.message || 'Ocurrió un error inesperado.', 'aviso');
+    tiendaToast(mensaje, 'aviso');
+    window.Chiky?.error(mensaje);
 }
 
 function bloquearBoton(boton, bloqueado) {
@@ -58,6 +57,63 @@ function destinoSeguro() {
     return destinoInterno(destino, urlTienda('perfil'));
 }
 
+/* Recorrido de bienvenida: primero Google (lo más simple), luego las opciones manuales. */
+function iniciarGuiaAcceso() {
+    if (!window.Chiky) return;
+
+    window.Chiky.guiar([
+        {
+            element: '[data-chiky]',
+            popover: {
+                title: 'Soy Chiky',
+                description: '¡Hola! Soy Chiky, tu asistente virtual. Te muestro cómo entrar o crear tu cuenta en unos segundos.',
+                side: 'bottom',
+                align: 'start',
+            },
+        },
+        {
+            element: '#formLogin',
+            popover: {
+                title: 'Entrar a mano',
+                description: 'Si ya tienes cuenta, escribe tu correo y tu contraseña y pulsa Entrar. Si la olvidaste, usa el enlace de abajo.',
+                side: 'top',
+            },
+        },
+        {
+            element: '.acceso__tabs',
+            popover: {
+                title: 'Dos caminos',
+                description: 'Puedes cambiar entre Iniciar sesión y Crear cuenta cuando quieras. Mira cómo se crea una.',
+                side: 'bottom',
+            },
+        },
+        {
+            element: '#panelRegistro',
+            alEntrar: () => {
+                document.querySelector('[data-vista="registro"]')?.click();
+                setTimeout(() => window.Chiky?.refrescarGuia(), 80);
+            },
+            popover: {
+                title: 'Crear tu cuenta',
+                description: 'Solo necesitas tu nombre, un correo y una contraseña. Después confirmas el correo y ya puedes comprar.',
+                side: 'top',
+            },
+        },
+        {
+            element: '.acceso__social-btn--google',
+            alEntrar: () => {
+                document.querySelector('[data-vista="login"]')?.click();
+                setTimeout(() => window.Chiky?.refrescarGuia(), 80);
+            },
+            popover: {
+                title: 'Lo más simple: Google',
+                description: 'Este mismo botón crea tu cuenta la primera vez y también inicia sesión las siguientes. Sin recordar otra contraseña.',
+                side: 'bottom',
+            },
+        },
+    ], { clave: 'chiky_guia_login' });
+}
+
 function iniciarAcceso() {
     iniciarTabs();
     iniciarLogin();
@@ -71,7 +127,10 @@ function iniciarAcceso() {
     }
 
     window.sesionTiendaPromise?.then((sesion) => {
-        if (!sesion?.autenticado) return;
+        if (!sesion?.autenticado) {
+            iniciarGuiaAcceso();
+            return;
+        }
 
         /* Cuenta de Google sin contraseña: se le invita a crearla. */
         const sinPassword = typeof window.cuentaTienePassword === 'function'
@@ -97,7 +156,9 @@ function iniciarAcceso() {
         }
 
         window.location.href = destinoSeguro();
-    });
+    }).catch(() => iniciarGuiaAcceso());
+
+    if (!window.sesionTiendaPromise) iniciarGuiaAcceso();
 
     /* Confirmación de correo: Supabase devuelve #type=signup en el enlace. */
     const confirmado = new URLSearchParams(window.location.search).get('confirmado') === '1'
@@ -192,6 +253,7 @@ function iniciarTabs() {
             }
 
             animarCambioPanel(paneles, altoAnterior);
+            window.Chiky?.paso(vista === 'registro' ? 'registro' : 'login');
         });
 
         boton.addEventListener('keydown', (evento) => {
@@ -254,7 +316,6 @@ function iniciarRegistro() {
             const datos = await window.TiendaAPI.post('/tienda/api/auth/registro', {
                 nombre_cliente: porId('registroNombre').value.trim(),
                 correo_cliente: porId('registroCorreo').value.trim(),
-                telefono_cliente: porId('registroTelefono').value.trim(),
                 password: porId('registroPassword').value,
                 password_confirmation: porId('registroPasswordConfirm').value,
             }, { cargando: true });
@@ -262,6 +323,7 @@ function iniciarRegistro() {
             tiendaToast(datos.mensaje || 'Cuenta creada correctamente.');
 
             if (!datos.cliente) {
+                window.Chiky?.paso('registroCreado');
                 const correo = porId('registroCorreo')?.value.trim();
 
                 document.querySelector('[data-vista="login"]')?.click();

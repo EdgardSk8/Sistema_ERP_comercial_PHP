@@ -156,12 +156,10 @@
         if (proveedores.includes('email')) return true;
         if (identidades.some((identidad) => identidad.provider === 'email')) return true;
 
-        /* Cuenta solo con Google (u otro proveedor): todavía no tiene contraseña,
-           aunque los metadatos digan lo contrario (cuentas antiguas). */
-        if (proveedores.length || identidades.length) return false;
+        /* Marca que escribe el perfil al crear la contraseña (cuentas de Google). */
+        if (usuarioActual.user_metadata?.password_set === true) return true;
 
-        /* Respaldo para sesiones antiguas sin metadatos de proveedor. */
-        return usuarioActual.user_metadata?.password_set === true;
+        return false;
     }
 
     function marcarPasswordLocal() {
@@ -975,6 +973,17 @@
             let mensaje = crudo || 'No se pudo actualizar la contraseña.';
 
             if (/different|same password/i.test(crudo)) {
+                if (!tienePassword) {
+                    /* La cuenta ya tenía contraseña y coincide con la ingresada:
+                       se da por creada en lugar de mostrar un error. */
+                    marcarPasswordLocal();
+
+                    return {
+                        success: true,
+                        mensaje: 'Tu contraseña ya estaba creada. Ya puedes entrar también con tu correo.',
+                    };
+                }
+
                 mensaje = 'La nueva contraseña debe ser diferente a la actual.';
             } else if (/already has a password|already set/i.test(crudo)) {
                 mensaje = 'Tu cuenta ya tiene contraseña. Ingresa la contraseña actual para cambiarla.';

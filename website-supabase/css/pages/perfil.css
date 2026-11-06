@@ -663,16 +663,17 @@ html { scroll-behavior: smooth; }
     height: 32px;
     border: 0;
     border-radius: 50%;
-    background: transparent;
-    color: var(--secundario);
+    background: var(--secundario);
+    color: var(--primario);
     cursor: pointer;
+    box-shadow: 0 1px 3px rgba(12, 61, 36, .25);
     transition: background .15s ease, color .15s ease;
 }
 
 .campo-password__ojo:hover,
 .campo-password__ojo:focus-visible {
-    background: rgba(12, 61, 36, .1);
-    color: var(--secundario);
+    background: #2E3239;
+    color: var(--primario);
 }
 
 .campo-password__ojo i {

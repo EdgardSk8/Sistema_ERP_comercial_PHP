@@ -520,6 +520,7 @@ with propias as (
     from public.ventas v
     join public.clientes c on c.id_cliente = v.id_cliente
     where c.auth_id = auth.uid()
+      and v.estado_venta is distinct from false
     order by v.fecha_venta desc
     limit 50
 )

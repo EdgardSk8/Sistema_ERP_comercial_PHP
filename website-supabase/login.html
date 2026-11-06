@@ -26,10 +26,12 @@
   <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/driver.js@1.3.6/dist/driver.css" rel="stylesheet">
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261105p">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261106a">
   <link rel="stylesheet" href="/tienda/recursos/css/pages/login.css?v=20261105a">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261105b">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261107d">
 </head>
 <body class="pagina-login">
 
@@ -65,6 +67,8 @@
         </p>
       </div>
 
+      <div data-chiky class="chiky-montaje"></div>
+
       <div class="acceso__contenido">
         <div class="acceso__tabs" role="tablist" aria-label="Acceso a la cuenta">
         <button class="acceso__tab is-activo" type="button" id="tabLogin" data-vista="login" role="tab" aria-selected="true" aria-controls="panelLogin" tabindex="0">
@@ -91,7 +95,7 @@
             </div>
 
             <div class="d-flex justify-content-end mt-0 mb-2">
-              <a class="small text-decoration-none" href="/ayuda">¿Olvidaste tu contraseña?</a>
+              <a class="small text-decoration-none acceso__recuperar" href="/ayuda">¿Olvidaste tu contraseña?</a>
             </div>
 
             <button class="btn-primario w-100" type="submit">Entrar</button>
@@ -119,11 +123,6 @@
               <div class="col-md-6">
                 <label class="form-label" for="registroCorreo">Correo</label>
                 <input class="form-control" id="registroCorreo" name="correo_cliente" type="email" maxlength="100" autocomplete="email" required>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label" for="registroTelefono">Teléfono</label>
-                <input class="form-control" id="registroTelefono" name="telefono_cliente" maxlength="20" autocomplete="tel">
               </div>
 
               <div class="col-md-6">
@@ -163,6 +162,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261104a" defer></script>
   <script src="/tienda/recursos/js/core/supabase-api.js?v=20261105g" defer></script>
-  <script src="/tienda/recursos/js/pages/login.js?v=20261101a" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.6/dist/driver.js.iife.js" defer></script>
+  <script src="/tienda/recursos/js/components/chiky.js?v=20261107d" defer></script>
+  <script src="/tienda/recursos/js/pages/login.js?v=20261106c" defer></script>
 </body>
 </html>

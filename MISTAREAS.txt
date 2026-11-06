@@ -7,6 +7,4 @@ se necesita pensar que se hara en ese caso
 
 WEBSITE
 
-1- No esta funcionando el crear contrasenia en los usuarios les
- da un error, en el perfil del website al querer canjear el 10% de descuento debienvenida
-
+1. Guided Tour (Recorrido guiado)

@@ -1,0 +1,218 @@
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  Chiky · tarjeta del asistente virtual                         ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+.chiky-montaje {
+  position: fixed;
+  top: calc(var(--alto-header) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1040;
+  width: min(920px, calc(100vw - 24px));
+}
+
+.chiky {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px 8px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-media);
+  cursor: pointer;
+  transition: box-shadow .18s ease;
+}
+
+.chiky:hover { box-shadow: var(--sombra-media); }
+.chiky:active { box-shadow: var(--sombra-suave); }
+
+.chiky[hidden] { display: none; }
+
+.chiky[data-tono="exito"] { box-shadow: inset 3px 0 0 #198754, var(--sombra-media); }
+.chiky[data-tono="error"] { box-shadow: inset 3px 0 0 var(--acento), var(--sombra-media); }
+
+.chiky__avatar {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--primario-medio);
+  object-fit: contain;
+  padding: 3px;
+}
+
+.chiky__contenido {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.chiky__nombre {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--secundario);
+}
+
+/* La barra va sin el rol para gastar menos texto. */
+.chiky__nombre span { display: none; }
+
+.chiky__mensaje {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: .82rem;
+  line-height: 1.35;
+  color: var(--secundario);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.chiky__acciones {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin: 0;
+}
+
+.chiky__acciones[hidden] { display: none; }
+
+.chiky__btn {
+  padding: 5px 12px;
+  border: 1px solid var(--secundario);
+  border-radius: var(--r-pill);
+  background: var(--secundario);
+  color: var(--primario);
+  font-size: .74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease;
+}
+
+.chiky__btn:hover { background: var(--primario-hondo); border-color: var(--primario-hondo); color: var(--secundario); }
+.chiky__btn--secundario { background: transparent; color: var(--secundario); border-color: var(--borde); }
+.chiky__btn--secundario:hover { background: rgba(12, 61, 36, .06); border-color: var(--borde); color: var(--secundario); }
+.chiky__btn:focus-visible { outline: 2px solid var(--secundario); outline-offset: 2px; }
+
+.chiky__cerrar {
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--secundario);
+  opacity: .45;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chiky__cerrar:hover { opacity: 1; background: rgba(12, 61, 36, .06); }
+.chiky__cerrar:focus-visible { outline: 2px solid var(--secundario); outline-offset: 2px; opacity: 1; }
+
+/* Sombra temporal sobre el contenedor al que Chiky lleva. */
+.chiky-sombra { position: relative; }
+
+.chiky-sombra::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: chiky-sombra 1.8s ease;
+}
+
+/* Foco tipo driver.js: oscurece el entorno dejando libre el elemento. */
+.chiky-foco {
+  position: absolute;
+  z-index: 1030;
+  pointer-events: none;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow:
+    0 0 0 3px rgba(227, 179, 65, .9),
+    0 0 0 9999px rgba(12, 61, 36, .55);
+  transition: opacity .25s ease;
+}
+
+.chiky-foco--oculto { opacity: 0; }
+
+@keyframes chiky-sombra {
+  0%, 100% { box-shadow: inset 0 0 0 0 rgba(227, 179, 65, 0); background-color: transparent; }
+  20%, 65% { box-shadow: inset 0 0 0 3px rgba(227, 179, 65, .55); background-color: rgba(227, 179, 65, .10); }
+}
+
+/* Campo que Chiky señala al ayudar a completar el perfil. */
+.chiky-resalta { animation: chiky-resalta 2.2s ease; }
+
+@keyframes chiky-resalta {
+  0%, 100% { box-shadow: none; }
+  20%, 60% { box-shadow: 0 0 0 .2rem rgba(227, 179, 65, .55); }
+}
+
+@media (max-width: 767.98px) {
+  .chiky-montaje { top: calc(var(--alto-header) + 6px); width: calc(100vw - 16px); }
+  .chiky { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 8px; padding: 8px; }
+  .chiky__avatar { width: 34px; height: 34px; border-radius: 10px; }
+  .chiky__contenido { flex-wrap: wrap; gap: 4px 8px; }
+  .chiky__acciones { order: 2; }
+  .chiky__mensaje { order: 3; flex-basis: 100%; white-space: normal; }
+}
+
+/* ── driver.js con los colores del sitio ────────────────────── */
+.driver-popover {
+  max-width: 320px;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sombra-media);
+  font-family: var(--fuente);
+}
+
+.driver-popover-title {
+  font-size: .95rem;
+  color: var(--secundario);
+}
+
+.driver-popover-description {
+  font-size: .84rem;
+  line-height: 1.45;
+  color: var(--secundario);
+}
+
+.driver-popover-progress-text {
+  font-size: .7rem;
+  color: var(--secundario);
+  opacity: .6;
+}
+
+.driver-popover-footer button {
+  padding: 6px 12px;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--secundario);
+  font-size: .76rem;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+.driver-popover-footer .driver-popover-next-btn,
+.driver-popover-footer .driver-popover-done-btn {
+  border-color: var(--secundario);
+  background: var(--secundario);
+  color: var(--primario);
+}
+
+.driver-popover-footer button:hover {
+  border-color: var(--primario-hondo);
+  background: var(--primario-hondo);
+  color: var(--secundario);
+}
+
+.driver-popover-close-btn { color: var(--secundario); }

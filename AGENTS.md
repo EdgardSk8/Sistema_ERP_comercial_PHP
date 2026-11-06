@@ -180,6 +180,16 @@ const modulos = [
 - CSS por módulo en `resources/css/<modulo>/`.
 - Layout con Bootstrap 5; prefiere utilidades de Bootstrap antes de CSS propio.
 
+### 4.9 Librerías de front-end (referencia local)
+
+Las versiones fijadas y el subconjunto de API que usa el proyecto están en
+`referencia/librerias/` (una chuleta corta por librería: Bootstrap, DataTables, Select2,
+Flatpickr, Chart.js, Splide, Turbo, supabase-js e iconos).
+
+1. Antes de tocar una librería, lee **solo** su chuleta; no la documentación completa.
+2. Busca primero el patrón ya usado en `resources/js` o `website-supabase/js`.
+3. Versiones: `config/assets.php` (ERP) y la etiqueta `<script>`/`<link>` + `?v=` (tienda).
+
 ---
 
 ## 5. Estilo de código
@@ -196,6 +206,7 @@ const modulos = [
 
 **Hacer:**
 - Antes de explorar para ubicar una vista, modal, botón o ID, consulta `MAPA-PROYECTO.md` (se regenera con `scripts/generar-mapa.ps1`).
+- Antes de usar una librería de front-end, lee su chuleta en `referencia/librerias/` y copia el patrón existente; no consultes la documentación completa.
 - Replicar el patrón de módulo completo: ruta + permiso + método de controlador + vista Blade + `init...()` en `resources/js` + registro en `app.js` + CSS.
 - Validar en el backend siempre; devolver `{ success: false, errors }` con `422`.
 - Usar transacciones en operaciones que tocan varias tablas (ventas, movimientos, caja, inventario).
@@ -209,6 +220,17 @@ const modulos = [
 - No comprometer `.env`, credenciales, claves, respaldos ni datos reales. La configuración local va en `.env` (base en `.env.example`).
 - No reescribir archivos completos para cambios pequeños; haz ediciones puntuales.
 - No cambiar el stack frontend (Bootstrap/jQuery/Turbo) por otro framework.
+
+### 6.1 Modo de trabajo eficiente (velocidad y tokens)
+
+- Delegar con `explore` solo para localizar código en varios archivos o entender estructura;
+  con `task`, procesos de salida extensa (tests, build, lint) devolviendo solo lo relevante.
+- Editar directamente; no delegar trabajo que se resuelve en pocas llamadas.
+- `grep` específico antes de leer; leer solo las secciones necesarias; no repetir lecturas ni
+  verificaciones ya correctas.
+- Tras editar: **una** verificación relevante.
+- Sin snapshots, capturas, informes extensos ni descargas de dependencias salvo que haga falta.
+- Preferir la solución simple y mantenible. La velocidad nunca justifica perder calidad o seguridad.
 
 ---
 
