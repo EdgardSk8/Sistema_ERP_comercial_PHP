@@ -2,14 +2,16 @@ export default function initTipoGasto() {
 
     document.getElementById('titulo').textContent = 'CLASIFICACION DE GASTOS';
 
-    $.fn.dataTable.ext.search.push( // Check de tipos de gasto inactivos
-        function(settings, data, dataIndex) {
-            const ocultar = $('#toggleInactivosTipoGasto').is(':checked');
-            if (!ocultar) return true; // no filtrar si el checkbox está desmarcado
-            const estado = data[2]; // columna "estado_tipo_gasto"
-            return estado.includes('Activo'); // solo mostrar activos
-        }
-    );
+    window.registrarFiltroDataTable('tipos-gasto-inactivos', function (settings, data) {
+
+        if (settings.nTable?.id !== 'tablaTipoGasto') return true;
+
+        const ocultar = $('#toggleInactivosTipoGasto').is(':checked');
+        if (!ocultar) return true; // no filtrar si el checkbox está desmarcado
+
+        const estado = data[2]; // columna "estado_tipo_gasto"
+        return String(estado || '').includes('Activo');
+    });
 
     $('#toggleInactivosTipoGasto').on('change', function() { tabla.draw(); });
 

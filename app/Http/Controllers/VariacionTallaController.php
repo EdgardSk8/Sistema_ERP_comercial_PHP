@@ -4,9 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Talla;
 use App\Models\VariacionTalla;
+use App\Support\CacheVariaciones;
+use App\Support\SkuVariacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class VariacionTallaController extends Controller
 {
@@ -32,7 +33,7 @@ class VariacionTallaController extends Controller
                         'exists:producto_variaciones,id_variacion',
                     ],
                     'id_talla' => [
-                        'required',
+                        'nullable',
                         'exists:tallas,id_talla',
                     ],
                     'stock' => [
@@ -47,7 +48,6 @@ class VariacionTallaController extends Controller
                 [
                     'id_variacion.required' => 'La variación es obligatoria.',
                     'id_variacion.exists' => 'La variación seleccionada no existe.',
-                    'id_talla.required' => 'La talla es obligatoria.',
                     'id_talla.exists' => 'La talla seleccionada no existe.',
                     'stock.required' => 'El stock es obligatorio.',
                     'stock.integer' => 'El stock debe ser un número entero.',
@@ -63,8 +63,26 @@ class VariacionTallaController extends Controller
             }
 
             $variacion = \App\Models\ProductoVariacion::with('producto')->findOrFail($request->id_variacion);
-            $talla = Talla::findOrFail($request->id_talla);
+            $idTalla = $request->filled('id_talla') ? (int) $request->id_talla : null;
+            $talla = $idTalla ? Talla::findOrFail($idTalla) : null;
             $stockNuevo = (int) $request->stock;
+
+            // Postgres no compara dos NULL en el índice único: se valida aquí.
+            $duplicada = VariacionTalla::where('id_variacion', $request->id_variacion)
+                ->when($idTalla === null,
+                    fn ($query) => $query->whereNull('id_talla'),
+                    fn ($query) => $query->where('id_talla', $idTalla))
+                ->exists();
+
+            if ($duplicada) {
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => $idTalla === null
+                        ? 'Este color ya tiene una fila sin talla. Edita la existente.'
+                        : 'Esa talla ya está asignada a este color.',
+                ], 422);
+            }
+
             $stockRealProducto = (int) ($variacion->producto->stock_actual ?? 0);
             $stockAsignadoProducto = (int) VariacionTalla::whereHas('variacion', function ($query) use ($variacion) {
                 $query->where('id_producto', $variacion->id_producto);
@@ -79,16 +97,18 @@ class VariacionTallaController extends Controller
 
             $sku = $request->filled('sku')
                 ? strtoupper(trim($request->sku))
-                : $this->generarSku($variacion->producto->nombre_producto, $variacion->color, $talla->talla);
+                : $this->generarSku($variacion->producto->nombre_producto, $variacion->color, $talla->talla ?? SkuVariacion::TALLA_UNICA);
 
             $variacionTalla = VariacionTalla::create([
                 'id_variacion' => $request->id_variacion,
-                'id_talla' => $request->id_talla,
+                'id_talla' => $idTalla,
                 'stock' => $stockNuevo,
                 'sku' => $sku,
                 'precio_compra' => $request->filled('precio_compra') ? $request->precio_compra : $variacion->producto->precio_compra,
                 'precio_venta' => $request->filled('precio_venta') ? $request->precio_venta : $variacion->producto->precio_venta,
             ]);
+
+            CacheVariaciones::olvidarDetalle();
 
             return response()->json([
                 'success' => true,
@@ -161,7 +181,7 @@ class VariacionTallaController extends Controller
                 ],
                 [
                     'id_talla' => [
-                        'required',
+                        'nullable',
                         'exists:tallas,id_talla',
                     ],
                     'stock' => [
@@ -174,7 +194,6 @@ class VariacionTallaController extends Controller
                     'precio_venta' => ['nullable', 'numeric', 'min:0'],
                 ],
                 [
-                    'id_talla.required' => 'La talla es obligatoria.',
                     'id_talla.exists' => 'La talla seleccionada no existe.',
                     'stock.required' => 'El stock es obligatorio.',
                     'stock.integer' => 'El stock debe ser un número entero.',
@@ -191,8 +210,27 @@ class VariacionTallaController extends Controller
 
             $variacion_talla->load('variacion.producto', 'talla');
             $tallaAnterior = $variacion_talla->talla;
-            $tallaNueva = Talla::findOrFail($request->id_talla);
+            $idTalla = $request->filled('id_talla') ? (int) $request->id_talla : null;
+            $tallaNueva = $idTalla ? Talla::findOrFail($idTalla) : null;
             $producto = $variacion_talla->variacion->producto;
+
+            // Postgres no compara dos NULL en el índice único: se valida aquí.
+            $duplicada = VariacionTalla::where('id_variacion', $variacion_talla->id_variacion)
+                ->where('id_variacion_talla', '!=', $variacion_talla->id_variacion_talla)
+                ->when($idTalla === null,
+                    fn ($query) => $query->whereNull('id_talla'),
+                    fn ($query) => $query->where('id_talla', $idTalla))
+                ->exists();
+
+            if ($duplicada) {
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => $idTalla === null
+                        ? 'Este color ya tiene otra fila sin talla.'
+                        : 'Esa talla ya está asignada a este color.',
+                ], 422);
+            }
+
             $stockNuevo = (int) $request->stock;
             $stockRealProducto = (int) ($producto->stock_actual ?? 0);
             $stockEnOtrasTallas = (int) VariacionTalla::whereHas('variacion', function ($query) use ($producto) {
@@ -208,23 +246,23 @@ class VariacionTallaController extends Controller
                 ], 422);
             }
 
-            $tallaCambio = (int) $variacion_talla->id_talla !== (int) $tallaNueva->id_talla;
+            $tallaCambio = (int) $variacion_talla->id_talla !== (int) $idTalla;
             $skuActual = (string) ($variacion_talla->sku ?? '');
             $skuEnviado = $request->input('sku');
             $skuAutogenerado = $this->skuCoincideConGenerado(
                 $skuActual,
                 $producto->nombre_producto,
                 $variacion_talla->variacion->color,
-                $tallaAnterior->talla ?? ''
+                $tallaAnterior->talla ?? SkuVariacion::TALLA_UNICA
             );
 
-            $variacion_talla->id_talla = $request->id_talla;
+            $variacion_talla->id_talla = $idTalla;
             $variacion_talla->stock = $stockNuevo;
             if ($request->has('sku') && ! $request->filled('sku')) {
                 $variacion_talla->sku = $this->generarSku(
                     $producto->nombre_producto,
                     $variacion_talla->variacion->color,
-                    $tallaNueva->talla,
+                    $tallaNueva->talla ?? SkuVariacion::TALLA_UNICA,
                     $variacion_talla->id_variacion_talla
                 );
             } elseif ($request->filled('sku') && strtoupper(trim($skuEnviado)) !== strtoupper(trim($skuActual))) {
@@ -233,17 +271,19 @@ class VariacionTallaController extends Controller
                 $variacion_talla->sku = $this->generarSku(
                     $producto->nombre_producto,
                     $variacion_talla->variacion->color,
-                    $tallaNueva->talla,
+                    $tallaNueva->talla ?? SkuVariacion::TALLA_UNICA,
                     $variacion_talla->id_variacion_talla
                 );
             }
-            if ($request->has('precio_compra')) {
+            if ($request->filled('precio_compra')) {
                 $variacion_talla->precio_compra = $request->precio_compra;
             }
-            if ($request->has('precio_venta')) {
+            if ($request->filled('precio_venta')) {
                 $variacion_talla->precio_venta = $request->precio_venta;
             }
             $variacion_talla->save();
+
+            CacheVariaciones::olvidarDetalle();
 
             return response()->json([
                 'success' => true,
@@ -306,6 +346,8 @@ class VariacionTallaController extends Controller
 
             $variacion_talla->delete();
 
+            CacheVariaciones::olvidarDetalle();
+
             return response()->json([
                 'success' => true,
                 'mensaje' => 'Talla quitada de la variación correctamente',
@@ -319,38 +361,13 @@ class VariacionTallaController extends Controller
         }
     }
 
-    private function skuBase(string $producto, string $color, string $talla): string
-    {
-        $base = Str::upper(Str::slug($producto.'-'.$color.'-'.$talla));
-
-        return substr($base ?: 'VARIANTE', 0, 85);
-    }
-
     private function skuCoincideConGenerado(string $sku, string $producto, string $color, string $talla): bool
     {
-        if ($sku === '') {
-            return false;
-        }
-
-        $base = preg_quote($this->skuBase($producto, $color, $talla), '/');
-
-        return preg_match('/^'.$base.'(?:-\d+)?$/i', trim($sku)) === 1;
+        return SkuVariacion::coincideConGenerado($sku, $producto, $color, $talla);
     }
 
     private function generarSku(string $producto, string $color, string $talla, ?int $idExcluir = null): string
     {
-        $base = $this->skuBase($producto, $color, $talla);
-        $sku = $base;
-        $sufijo = 1;
-
-        while (VariacionTalla::where('sku', $sku)
-            ->when($idExcluir !== null, function ($query) use ($idExcluir) {
-                $query->where('id_variacion_talla', '!=', $idExcluir);
-            })
-            ->exists()) {
-            $sku = $base.'-'.$sufijo++;
-        }
-
-        return $sku;
+        return SkuVariacion::generar($producto, $color, $talla, $idExcluir);
     }
 } // Fin de controlador

@@ -4,19 +4,13 @@ export default function initMostrarGastos() {
 
     /* ═════════════ FILTRO INACTIVOS ═════════════ */
 
-    const filtrosDataTable = $.fn.dataTable.ext.search;
-    for (let i = filtrosDataTable.length - 1; i >= 0; i--) {
-        if (filtrosDataTable[i]._filtroInactivosGastos) filtrosDataTable.splice(i, 1);
-    }
-
     const filtrarGastosInactivos = function (settings, data) {
         if (settings.nTable.id !== 'tablaGastos') return true;
         const ocultar = $('#toggleInactivosGastos').is(':checked');
         if (!ocultar) return true;
         return String(data[7] ?? '').includes('Activo');
     };
-    filtrarGastosInactivos._filtroInactivosGastos = true;
-    filtrosDataTable.push(filtrarGastosInactivos);
+    window.registrarFiltroDataTable('gastos-inactivos', filtrarGastosInactivos);
 
     $('#toggleInactivosGastos').off('change.toggleInactivosGastos').on('change.toggleInactivosGastos', function () { tabla.draw(); });
 

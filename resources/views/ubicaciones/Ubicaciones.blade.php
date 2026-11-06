@@ -1,4 +1,7 @@
 <turbo-frame id="contenido-dinamico">
+
+    @include('catalogos._tabs', ['activo' => 'ubicaciones'])
+
     @include('ubicaciones.CheckColumnasUbicacion')
     @include('ubicaciones.CrearUbicacion')
     @include('ubicaciones.EditarUbicacion')

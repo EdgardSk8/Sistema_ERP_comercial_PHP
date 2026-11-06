@@ -109,13 +109,47 @@ function estrellasTarjeta(calificacion) {
 }
 
 /* ── Render de tarjeta ───────────────────────────────────────── */
+
+/* Promoción del producto: mismas reglas de texto que las tarjetas de promos. */
+function textoPromocion(promocion) {
+    const valor = Number(promocion?.valor) || 0;
+    if (!promocion || valor <= 0) return '';
+
+    if (promocion.tipo === 'porcentaje') return `${Math.round(valor)}% DESCUENTO`;
+    if (promocion.tipo === 'monto') return `-C$ ${valor.toFixed(2)}`;
+    if (promocion.tipo === 'precio') return `Ahora C$ ${valor.toFixed(2)}`;
+
+    return '';
+}
+
+function precioConPromocion(precioBase, promocion) {
+    const base = Number(precioBase) || 0;
+    const valor = Number(promocion?.valor) || 0;
+    if (!promocion || base <= 0 || valor <= 0) return base;
+
+    if (promocion.tipo === 'porcentaje') return Math.max(0, Math.round(base * (1 - valor / 100) * 100) / 100);
+    if (promocion.tipo === 'monto') return Math.max(0, base - valor);
+    if (promocion.tipo === 'precio') return valor;
+
+    return base;
+}
+
 function tarjetaProducto(variante, indice = 0) {
     const agotado = Number(variante.stock || 0) <= 0;
     const enlace = `/producto?p=${encodeURIComponent(variante.id)}&color=${encodeURIComponent(variante.color || '')}`;
     const precioBase = Number(variante.precio) || 0;
+
+    /* La promoción del producto manda sobre el 10% de bienvenida. */
+    const promocion = variante.promocion || null;
+    const precioPromocion = precioConPromocion(precioBase, promocion);
+    const selloPromocion = precioPromocion < precioBase ? textoPromocion(promocion) : '';
+
     const descuento = window.descuentoClienteActivo?.(variante.categoria);
-    const precioFinal = window.precioConDescuento?.(precioBase, variante.categoria) ?? precioBase;
+    const precioFinal = selloPromocion
+        ? precioPromocion
+        : (window.precioConDescuento?.(precioBase, variante.categoria) ?? precioBase);
     const tieneDescuento = Boolean(descuento && precioFinal < precioBase);
+    const precioRebajado = precioFinal < precioBase;
 
     return `
         <a class="card-producto" href="${escapar(enlace)}" style="--i:${indice}">
@@ -124,18 +158,20 @@ function tarjetaProducto(variante, indice = 0) {
                      ${indice === 0 ? 'fetchpriority="high"' : 'loading="lazy" fetchpriority="low"'} decoding="async"
                      onerror="this.src='${IMAGEN_FALLBACK}'">
                 ${agotado ? '<span class="badge-agotado">Agotado</span>' : ''}
-                ${tieneDescuento && !agotado ? `<span class="badge-descuento">${escapar(descuento.etiqueta)} descuento</span>` : ''}
+                ${!agotado && selloPromocion ? `<span class="badge-promocion">${escapar(selloPromocion)}</span>` : ''}
+                ${!agotado && !selloPromocion && tieneDescuento ? `<span class="badge-descuento">${escapar(descuento.etiqueta)} descuento</span>` : ''}
                 <button class="btn-favorito" type="button" data-producto="${variante.id}" aria-label="Agregar a favoritos">
                     <i class="bi bi-heart"></i>
                 </button>
             </div>
             <div class="card-producto__info">
                 <h3 class="card-producto__nombre">${escapar(variante.nombre)}</h3>
+                ${variante.marca ? `<span class="card-producto__marca">${escapar(variante.marca)}</span>` : ''}
                 ${estrellasTarjeta(variante.calificacion)}
                 <span class="card-producto__categoria">${escapar(variante.categoria)}</span>
                 <span class="card-producto__color">${escapar(variante.color || 'Único')}</span>
                 <div class="card-producto__precios">
-                    ${tieneDescuento
+                    ${precioRebajado
                         ? `<span class="precio precio--antes">${moneda(precioBase)}</span>
                            <span class="precio precio--dto">${moneda(precioFinal)}</span>`
                         : `<span class="precio">${moneda(precioBase)}</span>`}
@@ -173,6 +209,10 @@ function iniciarCatalogo(productos, tallasReferencia) {
     const variantes = desagruparPorColor(productos);
     const categorias = [...new Set(variantes.map(variante => variante.categoria).filter(Boolean))];
 
+    /* "Zapatos Segunda Mano" siempre al final de la lista de categorías */
+    categorias.sort((a, b) => Number(normalizar(a).includes('segunda mano'))
+        - Number(normalizar(b).includes('segunda mano')));
+
     let categoriaActual = '';
 
     /* ── Filtro por rango de precio (slider doble) ────────────── */
@@ -194,7 +234,7 @@ function iniciarCatalogo(productos, tallasReferencia) {
     const cerrarFiltros = () => {
         if (!filtrosCaja?.open || filtrosCerrando) return;
 
-        const panel = filtrosCaja.querySelector('.filtros__panel');
+        const panel = filtrosCaja.querySelector('.filtros__cortina');
         const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (!panel || sinMovimiento) {
@@ -224,7 +264,18 @@ function iniciarCatalogo(productos, tallasReferencia) {
 
     document.addEventListener('click', (evento) => {
         if (!filtrosCaja?.open) return;
-        if (filtrosCaja.contains(evento.target)) return;
+
+        /* composedPath() conserva la ruta original aunque Select2 ya haya quitado el nodo (ej. la ×) */
+        const ruta = typeof evento.composedPath === 'function' ? evento.composedPath() : [];
+
+        if (ruta.includes(filtrosCaja) || filtrosCaja.contains(evento.target)) return;
+
+        /* El desplegable y los chips de Select2 pueden vivir fuera del panel: no deben cerrarlo */
+        const enSelect2 = ruta.some(nodo => nodo instanceof Element
+            && nodo.matches?.('.select2-container, .select2-dropdown'))
+            || evento.target.closest?.('.select2-container, .select2-dropdown');
+
+        if (enSelect2) return;
 
         cerrarFiltros();
     });
@@ -273,6 +324,155 @@ function iniciarCatalogo(productos, tallasReferencia) {
         ? Array.from(selectTallas.selectedOptions).map(opcion => opcion.value)
         : [];
 
+    /* ── Filtro por color (Select2 con buscador) ──────────────── */
+    const selectColores = document.getElementById('filtroColores');
+    let coloresSeleccionados = [];
+    /* Cambio pendiente hasta pulsar "Aplicar filtro". */
+    let coloresPendientes = null;
+
+    const coloresCatalogo = [...new Set(
+        variantes.map(variante => String(variante.color || 'Único').trim()).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, 'es'));
+
+    if (selectColores) {
+        selectColores.innerHTML = coloresCatalogo
+            .map(color => `<option value="${escapar(color)}">${escapar(color)}</option>`)
+            .join('');
+
+        if (window.jQuery && window.jQuery.fn.select2) {
+            window.jQuery(selectColores).select2({
+                placeholder: 'Todos los colores',
+                width: '100%',
+                closeOnSelect: true,
+                allowClear: true,
+            });
+        }
+    }
+
+    const leerColores = () => selectColores
+        ? Array.from(selectColores.selectedOptions).map(opcion => opcion.value)
+        : [];
+
+    /* ── Filtro por marca (Select2 con buscador) ──────────────── */
+    const selectMarcas = document.getElementById('filtroMarcas');
+    let marcasSeleccionadas = [];
+    let marcasPendientes = null;
+
+    const marcasCatalogo = [...new Set(
+        variantes.map(variante => String(variante.marca || '').trim()).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, 'es'));
+
+    if (selectMarcas) {
+        selectMarcas.innerHTML = marcasCatalogo
+            .map(marca => `<option value="${escapar(marca)}">${escapar(marca)}</option>`)
+            .join('');
+
+        if (window.jQuery && window.jQuery.fn.select2) {
+            window.jQuery(selectMarcas).select2({
+                placeholder: 'Todas las marcas',
+                width: '100%',
+                closeOnSelect: true,
+                allowClear: true,
+            });
+        }
+    }
+
+    const leerMarcas = () => selectMarcas
+        ? Array.from(selectMarcas.selectedOptions).map(opcion => opcion.value)
+        : [];
+
+    /* ── Filtros por atributo (Género, Tipo, ...) ─────────────── */
+    const contenedorAtributos = document.getElementById('filtrosAtributos');
+
+    /* { 'Género': ['Hombre'], 'Tipo': ['Zapatilla'] } */
+    let atributosSeleccionados = {};
+    let atributosPendientes = null;
+
+    const atributosCatalogo = new Map();
+
+    variantes.forEach(variante => {
+        (variante.atributos || []).forEach(atributo => {
+            if (!atributo?.atributo || !atributo?.valor) return;
+
+            if (!atributosCatalogo.has(atributo.atributo)) {
+                atributosCatalogo.set(atributo.atributo, new Set());
+            }
+
+            atributosCatalogo.get(atributo.atributo).add(atributo.valor);
+        });
+    });
+
+    const nombreAtributo = (texto) => `atributo_${normalizar(texto).replace(/[^a-z0-9]+/g, '_')}`;
+
+    /* Con pocos valores un botón es más rápido que abrir un selector. */
+    const MAX_VALORES_CHIPS = 3;
+
+    if (contenedorAtributos) {
+        [...atributosCatalogo.entries()]
+            .sort((a, b) => a[0].localeCompare(b[0], 'es'))
+            .forEach(([nombre, valores]) => {
+
+                const lista = [...valores].sort((a, b) => a.localeCompare(b, 'es'));
+                const bloque = document.createElement('div');
+
+                bloque.className = 'filtros__atributo';
+
+                if (lista.length <= MAX_VALORES_CHIPS) {
+
+                    bloque.innerHTML = `
+                        <span class="filtros__atributo__nombre">${escapar(nombre)}</span>
+                        <div class="filtros__chips" data-atributo="${escapar(nombre)}"
+                             role="group" aria-label="Filtrar por ${escapar(nombre)}">
+                            ${lista.map(valor => `
+                                <button type="button" class="filtros__chip" data-valor="${escapar(valor)}"
+                                        aria-pressed="false">${escapar(valor)}</button>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+
+                    const id = nombreAtributo(nombre);
+
+                    bloque.innerHTML = `
+                        <label class="filtros__atributo__nombre" for="${id}">${escapar(nombre)}</label>
+                        <select id="${id}" class="filtros__atributo__select" multiple="multiple"
+                                data-atributo="${escapar(nombre)}" aria-label="Filtrar por ${escapar(nombre)}">
+                            ${lista.map(valor => `<option value="${escapar(valor)}">${escapar(valor)}</option>`).join('')}
+                        </select>
+                    `;
+                }
+
+                contenedorAtributos.appendChild(bloque);
+            });
+
+        if (window.jQuery && window.jQuery.fn.select2) {
+            window.jQuery(contenedorAtributos).find('select').select2({
+                placeholder: 'Todos',
+                width: '100%',
+                closeOnSelect: true,
+                allowClear: true,
+            });
+        }
+    }
+
+    const leerAtributos = () => {
+        const elegidos = {};
+
+        contenedorAtributos?.querySelectorAll('select[data-atributo]').forEach(select => {
+            const valores = Array.from(select.selectedOptions).map(opcion => opcion.value);
+
+            if (valores.length) elegidos[select.dataset.atributo] = valores;
+        });
+
+        contenedorAtributos?.querySelectorAll('.filtros__chips[data-atributo]').forEach(grupo => {
+            const activo = grupo.querySelector('.filtros__chip[aria-pressed="true"]');
+
+            if (activo) elegidos[grupo.dataset.atributo] = [activo.dataset.valor];
+        });
+
+        return elegidos;
+    };
+
     let precioMin = null;
     let precioMax = null;
 
@@ -318,6 +518,18 @@ function iniciarCatalogo(productos, tallasReferencia) {
             partes.push(`Tallas ${tallasSeleccionadas.join(', ')}`);
         }
 
+        if (coloresSeleccionados.length) {
+            partes.push(`Colores ${coloresSeleccionados.join(', ')}`);
+        }
+
+        if (marcasSeleccionadas.length) {
+            partes.push(`Marcas ${marcasSeleccionadas.join(', ')}`);
+        }
+
+        Object.entries(atributosSeleccionados).forEach(([nombre, valores]) => {
+            partes.push(`${nombre} ${valores.join(', ')}`);
+        });
+
         filtrosResumen.hidden = !partes.length;
         filtrosResumen.textContent = partes.join(' · ');
     };
@@ -327,6 +539,22 @@ function iniciarCatalogo(productos, tallasReferencia) {
         if (tallasPendientes !== null) {
             tallasSeleccionadas = tallasPendientes;
             tallasPendientes = null;
+        }
+
+        /* Igual con los colores. */
+        if (coloresPendientes !== null) {
+            coloresSeleccionados = coloresPendientes;
+            coloresPendientes = null;
+        }
+
+        if (marcasPendientes !== null) {
+            marcasSeleccionadas = marcasPendientes;
+            marcasPendientes = null;
+        }
+
+        if (atributosPendientes !== null) {
+            atributosSeleccionados = atributosPendientes;
+            atributosPendientes = null;
         }
 
         const min = valorMin();
@@ -397,6 +625,13 @@ function iniciarCatalogo(productos, tallasReferencia) {
     const pintar = (animar = false) => {
         const termino = normalizar(buscador ? buscador.value : '');
 
+        const hayFiltro = Boolean(termino) || precioMin !== null || precioMax !== null
+            || tallasSeleccionadas.length > 0 || coloresSeleccionados.length > 0
+            || marcasSeleccionadas.length > 0 || Object.keys(atributosSeleccionados).length > 0;
+
+        /* Sin filtros ni categoría se ocultan los agotados; al filtrar se muestran, siempre al final */
+        const mostrarAgotados = hayFiltro || Boolean(categoriaActual);
+
         const lista = variantes.filter(variante => {
             const coincideCategoria = !categoriaActual
                 || (categoriaActual === CATEGORIA_FAVORITOS
@@ -410,12 +645,41 @@ function iniciarCatalogo(productos, tallasReferencia) {
                 && (precioMax === null || precio <= precioMax);
             const coincideTalla = !tallasSeleccionadas.length
                 || (variante.tallas || []).some(talla => tallasSeleccionadas.includes(String(talla)));
+            const coincideColor = !coloresSeleccionados.length
+                || coloresSeleccionados.includes(String(variante.color || 'Único').trim());
+            const coincideMarca = !marcasSeleccionadas.length
+                || marcasSeleccionadas.includes(String(variante.marca || '').trim());
+            const coincideAtributos = Object.entries(atributosSeleccionados).every(([nombre, valores]) => {
+                const atributo = (variante.atributos || []).find(item => item?.atributo === nombre);
 
-            return coincideCategoria && coincideTexto && coincidePrecio && coincideTalla;
+                return Boolean(atributo) && valores.includes(String(atributo.valor));
+            });
+
+            if (!(coincideCategoria && coincideTexto && coincidePrecio && coincideTalla && coincideColor
+                && coincideMarca && coincideAtributos)) return false;
+
+            return mostrarAgotados || Number(variante.stock) > 0;
         });
 
-        const hayFiltro = Boolean(termino) || precioMin !== null || precioMax !== null
-            || tallasSeleccionadas.length > 0;
+        /* "Zapatos Segunda Mano" siempre al fondo del catálogo. */
+        const esSegundaMano = (variante) => normalizar(variante.categoria || '').includes('segunda mano');
+
+        lista.sort((a, b) => {
+            const segundaA = esSegundaMano(a) ? 1 : 0;
+            const segundaB = esSegundaMano(b) ? 1 : 0;
+
+            if (segundaA !== segundaB) return segundaA - segundaB;
+
+            // Dentro de cada grupo, los agotados van al final (cuando se muestran).
+            if (mostrarAgotados) {
+                const agotadoA = Number(a.stock) > 0 ? 0 : 1;
+                const agotadoB = Number(b.stock) > 0 ? 0 : 1;
+
+                if (agotadoA !== agotadoB) return agotadoA - agotadoB;
+            }
+
+            return 0;
+        });
 
         const sinFavoritos = categoriaActual === CATEGORIA_FAVORITOS && !window.favoritosTienda?.size;
         const sinDeseos = categoriaActual === CATEGORIA_DESEOS && !deseosCatalogo.size;
@@ -456,7 +720,13 @@ function iniciarCatalogo(productos, tallasReferencia) {
         }
     };
 
-    buscador?.addEventListener('input', () => pintar());
+    /* El buscador espera a que dejes de escribir: evita re-renderizar en cada tecla */
+    let temporizadorBusqueda = 0;
+
+    buscador?.addEventListener('input', () => {
+        window.clearTimeout(temporizadorBusqueda);
+        temporizadorBusqueda = window.setTimeout(() => pintar(), 250);
+    });
 
     /* ── Eventos del slider de precio ─────────────────────────── */
     precioMinInput?.addEventListener('input', () => {
@@ -494,6 +764,46 @@ function iniciarCatalogo(productos, tallasReferencia) {
         tallasSeleccionadas = [];
         tallasPendientes = null;
 
+        // Limpia los colores seleccionados (y los pendientes).
+        if (selectColores) {
+            if (window.jQuery && window.jQuery.fn.select2) {
+                window.jQuery(selectColores).val(null).trigger('change');
+            } else {
+                Array.from(selectColores.options).forEach(opcion => { opcion.selected = false; });
+            }
+        }
+
+        coloresSeleccionados = [];
+        coloresPendientes = null;
+
+        // Limpia las marcas seleccionadas (y las pendientes).
+        if (selectMarcas) {
+            if (window.jQuery && window.jQuery.fn.select2) {
+                window.jQuery(selectMarcas).val(null).trigger('change');
+            } else {
+                Array.from(selectMarcas.options).forEach(opcion => { opcion.selected = false; });
+            }
+        }
+
+        marcasSeleccionadas = [];
+        marcasPendientes = null;
+
+        // Limpia los atributos seleccionados (y los pendientes).
+        contenedorAtributos?.querySelectorAll('select[data-atributo]').forEach(select => {
+            if (window.jQuery && window.jQuery.fn.select2) {
+                window.jQuery(select).val(null).trigger('change');
+            } else {
+                Array.from(select.options).forEach(opcion => { opcion.selected = false; });
+            }
+        });
+
+        contenedorAtributos?.querySelectorAll('.filtros__chips .filtros__chip').forEach(chip => {
+            chip.setAttribute('aria-pressed', 'false');
+        });
+
+        atributosSeleccionados = {};
+        atributosPendientes = null;
+
         aplicarRango();
     });
 
@@ -508,6 +818,62 @@ function iniciarCatalogo(productos, tallasReferencia) {
         } else {
             selectTallas.addEventListener('change', alCambiarTallas);
         }
+    }
+
+    /* Cambio de colores: también queda pendiente hasta "Aplicar filtro". */
+    if (selectColores) {
+        const alCambiarColores = () => {
+            coloresPendientes = leerColores();
+        };
+
+        if (window.jQuery && window.jQuery.fn.select2) {
+            window.jQuery(selectColores).on('change', alCambiarColores);
+        } else {
+            selectColores.addEventListener('change', alCambiarColores);
+        }
+    }
+
+    /* Cambio de marcas: igual, pendiente hasta "Aplicar filtro". */
+    if (selectMarcas) {
+        const alCambiarMarcas = () => {
+            marcasPendientes = leerMarcas();
+        };
+
+        if (window.jQuery && window.jQuery.fn.select2) {
+            window.jQuery(selectMarcas).on('change', alCambiarMarcas);
+        } else {
+            selectMarcas.addEventListener('change', alCambiarMarcas);
+        }
+    }
+
+    /* Cambio de atributos: pendiente hasta "Aplicar filtro". */
+    if (contenedorAtributos) {
+        const alCambiarAtributos = () => {
+            atributosPendientes = leerAtributos();
+        };
+
+        if (window.jQuery && window.jQuery.fn.select2) {
+            window.jQuery(contenedorAtributos).on('change', 'select[data-atributo]', alCambiarAtributos);
+        } else {
+            contenedorAtributos.addEventListener('change', alCambiarAtributos);
+        }
+
+        /* Los atributos con pocos valores son botones: uno solo activo a la vez. */
+        contenedorAtributos.addEventListener('click', (evento) => {
+
+            const chip = evento.target.closest('.filtros__chip');
+
+            if (!chip) return;
+
+            const grupo = chip.closest('.filtros__chips');
+            const yaActivo = chip.getAttribute('aria-pressed') === 'true';
+
+            grupo.querySelectorAll('.filtros__chip').forEach(boton => boton.setAttribute('aria-pressed', 'false'));
+
+            if (!yaActivo) chip.setAttribute('aria-pressed', 'true');
+
+            alCambiarAtributos();
+        });
     }
 
     pintarSlider();

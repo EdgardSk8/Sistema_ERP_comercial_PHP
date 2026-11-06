@@ -3,16 +3,16 @@ export default function initMostrarCliente() {
     document.getElementById('titulo').textContent = 'GESTION DE CLIENTES';
 
     // Filtro para ocultar clientes inactivos
-    $.fn.dataTable.ext.search.push(
+    window.registrarFiltroDataTable('clientes-inactivos', function (settings, data) {
 
-        function(settings, data, dataIndex) {
-            const ocultar = $('#toggleInactivosClientes').is(':checked');
-            if (!ocultar) return true;
-            const estado = data[10]; // columna estado_cliente
-            return estado.includes('Activo');
-        }
-        
-    );
+        if (settings.nTable?.id !== 'tablaClientes') return true;
+
+        const ocultar = $('#toggleInactivosClientes').is(':checked');
+        if (!ocultar) return true;
+
+        const estado = data[10]; // columna estado_cliente
+        return String(estado || '').includes('Activo');
+    });
 
     $('#toggleInactivosClientes').on('change', function() { tabla.draw(); });
 

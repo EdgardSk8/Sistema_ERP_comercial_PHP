@@ -41,8 +41,6 @@ html.tema-navidad ::selection {
 
 /* Fondo del login blanco con brillos rojo/verde más marcados */
 html.tema-navidad body.pagina-login {
-    --acceso-muted: #4f6f5d;
-    --acceso-enlace: #b3261e;
 
     background:
         radial-gradient(circle at 12% 8%, rgba(193, 18, 31, .16), transparent 34%),
@@ -185,10 +183,6 @@ html.tema-navidad .resenias__resumen,
 html.tema-navidad .filtros__panel {
     border-color: rgba(212, 175, 55, .38);
     box-shadow: 0 0 0 1px rgba(212, 175, 55, .16), var(--sombra-suave);
-}
-
-html.tema-navidad .card-producto:hover {
-    box-shadow: 0 0 0 2px rgba(212, 175, 55, .45), var(--sombra-media);
 }
 
 /* Relacionados: borde rojo y aire para el hover */
@@ -781,18 +775,6 @@ html.tema-navidad .resenias__form {
     background: var(--superficie);
 }
 
-html.tema-navidad .resenias__resumen {
-    box-shadow: 0 0 0 1px rgba(193, 18, 31, .12), var(--sombra-suave);
-}
-
-html.tema-navidad .resenias__nota {
-    color: var(--nav-rojo);
-}
-
-html.tema-navidad .resenias__fila-relleno {
-    background: var(--nav-rojo);
-}
-
 html.tema-navidad .resenias__campo {
     border-color: rgba(193, 18, 31, .25);
     background: #fffdfd;
@@ -804,13 +786,11 @@ html.tema-navidad .resenias__campo:focus {
 
 html.tema-navidad .resenias__invitado {
     border-color: rgba(193, 18, 31, .30);
-    background: var(--superficie);
 }
 
 html.tema-navidad .resenia {
     border-color: rgba(193, 18, 31, .22);
     border-left: 3px solid var(--nav-rojo);
-    background: var(--superficie);
 }
 
 html.tema-navidad .perfil-badge {

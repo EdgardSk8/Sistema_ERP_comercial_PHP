@@ -2,18 +2,16 @@ export default function initMostrarTiposMedidas() {
 
     document.getElementById('titulo').textContent = 'GESTIÓN DE TIPOS DE MEDIDA';
 
-    $.fn.dataTable.ext.search.push( // Check de tipos de medida inactivos
-        function(settings, data, dataIndex) {
+    window.registrarFiltroDataTable('tipos-medida-inactivos', function (settings, data) {
 
-            if (settings.nTable.id !== 'tablaTiposMedidas') return true;
+        if (settings.nTable?.id !== 'tablaTiposMedidas') return true;
 
-            const ocultar = $('#toggleInactivosTiposMedidas').is(':checked');
-            if (!ocultar) return true;
+        const ocultar = $('#toggleInactivosTiposMedidas').is(':checked');
+        if (!ocultar) return true;
 
-            const estado = data[3]; // Columna Estado
-            return estado.includes('Activo');
-        }
-    );
+        const estado = data[3]; // Columna Estado
+        return String(estado || '').includes('Activo');
+    });
 
     $('#toggleInactivosTiposMedidas').on('change', function () { tabla.draw(); });
 

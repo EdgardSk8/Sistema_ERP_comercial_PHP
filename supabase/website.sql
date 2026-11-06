@@ -222,11 +222,24 @@ with base as (
            p.precio_venta,
            p.imagen_producto,
            coalesce(i.porcentaje_impuesto, 0) as impuesto,
-           coalesce(c.nombre_categoria, 'General') as categoria
+           coalesce(c.nombre_categoria, 'General') as categoria,
+           coalesce(m.nombre_marca, '') as marca
     from public.productos p
     left join public.impuestos i on i.id_impuesto = p.id_impuesto
     left join public.categoria c on c.id_categoria = p.id_categoria
+    left join public.marcas m on m.id_marca = p.id_marca
     where p.estado_producto = true
+),
+atributos_agg as (
+    select pa.id_producto,
+           jsonb_agg(jsonb_build_object(
+               'atributo', a.nombre_atributo,
+               'valor', av.valor_atributo
+           ) order by a.nombre_atributo) as atributos
+    from public.producto_atributos pa
+    join public.atributos a on a.id_atributo = pa.id_atributo
+    join public.atributo_valores av on av.id_valor = pa.id_valor
+    group by pa.id_producto
 ),
 variaciones as (
     select v.id_variacion,
@@ -289,6 +302,20 @@ calif as (
     from public.resenias_productos
     where estado_resenia = true
     group by id_producto
+),
+/* Promoción activa por producto (la más reciente si hay varias). */
+promos as (
+    select distinct on (pr.id_producto)
+           pr.id_producto,
+           pr.tipo_descuento_promocion as tipo,
+           pr.valor_descuento_promocion as valor
+    from public.promociones pr
+    where pr.estado_promocion = true
+      and pr.tipo_descuento_promocion in ('porcentaje', 'monto', 'precio')
+      and coalesce(pr.valor_descuento_promocion, 0) > 0
+      and pr.fecha_inicio_promocion <= current_date
+      and (pr.fecha_fin_promocion is null or pr.fecha_fin_promocion >= current_date)
+    order by pr.id_producto, pr.fecha_inicio_promocion desc, pr.id_promocion desc
 )
 select coalesce(jsonb_agg(jsonb_build_object(
     'id', b.id_producto,
@@ -310,11 +337,19 @@ select coalesce(jsonb_agg(jsonb_build_object(
         'promedio', coalesce(cf.promedio, 0),
         'total', coalesce(cf.total, 0)
     ),
-    'stock', coalesce(ca.stock, 0)
+    'stock', coalesce(ca.stock, 0),
+    'marca', b.marca,
+    'atributos', coalesce(at.atributos, '[]'::jsonb),
+    'promocion', case
+        when pm.id_producto is null then null
+        else jsonb_build_object('tipo', pm.tipo, 'valor', pm.valor)
+    end
 ) order by b.nombre_producto), '[]'::jsonb)
 from base b
 left join colores_agg ca on ca.id_producto = b.id_producto
-left join calif cf on cf.id_producto = b.id_producto;
+left join calif cf on cf.id_producto = b.id_producto
+left join atributos_agg at on at.id_producto = b.id_producto
+left join promos pm on pm.id_producto = b.id_producto;
 $$;
 
 create or replace function public.web_producto(p_id integer)
@@ -331,11 +366,23 @@ with base as (
            p.precio_venta,
            p.imagen_producto,
            coalesce(i.porcentaje_impuesto, 0) as impuesto,
-           coalesce(c.nombre_categoria, 'General') as categoria
+           coalesce(c.nombre_categoria, 'General') as categoria,
+           coalesce(m.nombre_marca, '') as marca
     from public.productos p
     left join public.impuestos i on i.id_impuesto = p.id_impuesto
     left join public.categoria c on c.id_categoria = p.id_categoria
+    left join public.marcas m on m.id_marca = p.id_marca
     where p.id_producto = p_id and p.estado_producto = true
+),
+atributos_agg as (
+    select jsonb_agg(jsonb_build_object(
+               'atributo', a.nombre_atributo,
+               'valor', av.valor_atributo
+           ) order by a.nombre_atributo) as atributos
+    from public.producto_atributos pa
+    join public.atributos a on a.id_atributo = pa.id_atributo
+    join public.atributo_valores av on av.id_valor = pa.id_valor
+    where pa.id_producto = p_id
 ),
 variaciones as (
     select v.id_variacion,
@@ -416,7 +463,9 @@ select jsonb_build_object(
         'promedio', coalesce((select promedio from calif), 0),
         'total', coalesce((select total from calif), 0)
     ),
-    'variaciones', (select variaciones from vars_json)
+    'variaciones', (select variaciones from vars_json),
+    'marca', b.marca,
+    'atributos', coalesce((select atributos from atributos_agg), '[]'::jsonb)
 )
 from base b;
 $$;

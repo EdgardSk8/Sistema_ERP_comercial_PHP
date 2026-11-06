@@ -98,10 +98,15 @@ class FacturacionController extends Controller
 
                             $variantes = $p->variaciones->flatMap(function ($variacion) use ($p, $iva) {
                                 return $variacion->tallas->map(function ($variacionTalla) use ($p, $variacion, $iva) {
+
+                                    // Los productos sin tallas se muestran solo con su color.
+                                    $nombreTalla = $variacionTalla->talla?->talla;
+                                    $etiqueta = $p->nombre_producto.' · '.$variacion->color;
+
                                     return [
                                         'id_producto' => $p->id_producto,
                                         'id_variacion_talla' => $variacionTalla->id_variacion_talla,
-                                        'nombre_producto' => $p->nombre_producto.' · '.$variacion->color.' · '.($variacionTalla->talla->talla ?? 'Sin talla'),
+                                        'nombre_producto' => $nombreTalla ? $etiqueta.' · '.$nombreTalla : $etiqueta,
                                         'precio_venta' => $variacionTalla->precio_venta ?? $p->precio_venta,
                                         'precio_con_iva' => round(($variacionTalla->precio_venta ?? $p->precio_venta) * (1 + ($iva / 100)), 2),
                                         'iva' => $iva,
@@ -283,8 +288,12 @@ class FacturacionController extends Controller
                             $query->where('id_producto', $producto->id_producto)
                                 ->where('estado_variacion', 1);
                         })
-                        ->whereHas('talla', function ($query) {
-                            $query->where('estado_talla', 1);
+                        // Las variaciones sin talla (productos que no son ropa) también se venden.
+                        ->where(function ($query) {
+                            $query->whereNull('id_talla')
+                                ->orWhereHas('talla', function ($talla) {
+                                    $talla->where('estado_talla', 1);
+                                });
                         })
                         ->lockForUpdate()
                         ->first();
@@ -368,7 +377,10 @@ class FacturacionController extends Controller
                     'id_producto' => $producto->id_producto,
                     'id_variacion_talla' => $variacionTalla?->id_variacion_talla,
                     'descripcion_variacion' => $variacionTalla
-                        ? trim(($variacionTalla->variacion->color ?? '').' · '.($variacionTalla->talla->talla ?? ''))
+                        ? implode(' · ', array_filter([
+                            $variacionTalla->variacion->color ?? '',
+                            $variacionTalla->talla?->talla,
+                        ]))
                         : null,
                     'sku_variacion' => $variacionTalla?->sku,
                     'cantidad_venta' => $cantidad,
@@ -398,7 +410,7 @@ class FacturacionController extends Controller
                         ->decrement('stock', $cantidad);
 
                     if (! $actualizado) {
-                        $nombreTalla = $variacionTalla->talla->talla ?? 'seleccionada';
+                        $nombreTalla = $variacionTalla->talla?->talla ?? 'seleccionada';
                         throw new \Exception("La talla '{$nombreTalla}' ya no tiene existencias disponibles");
                     }
 
@@ -422,7 +434,10 @@ class FacturacionController extends Controller
                     'cantidad_movimiento' => $cantidad,
                     'stock_resultante' => $stockResultante,
                     'motivo_movimiento' => $variacionTalla
-                        ? 'Venta despacho - '.trim(($variacionTalla->variacion->color ?? '').' '.($variacionTalla->talla->talla ?? ''))
+                        ? 'Venta despacho - '.implode(' ', array_filter([
+                            $variacionTalla->variacion->color ?? '',
+                            $variacionTalla->talla?->talla,
+                        ]))
                         : 'Venta despacho realizada',
                     'id_referencia' => $venta->id_venta,
                     'tipo_referencia' => 'VENTA',

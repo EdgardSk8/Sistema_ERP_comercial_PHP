@@ -1,10 +1,10 @@
-﻿export default function initMostrarProductoVariacionDetalle() {
+export default function initMostrarProductoVariacionDetalle() {
 
     document.getElementById('titulo').textContent = 'GESTIÓN DE VARIACIONES DE PRODUCTOS, TALLAS E IMÁGENES';
 
     const $tabla = $('#tablaProductoVariacionDetalle');
     const $modalCrearImagen = $('#modalCrearVariacionImagen');
-    const $modalGaleriaImagenes = $('#modalGaleriaVariacionImagenes');
+    const $modalDetalle = $('#modalDetalleVariacion');
     const $modalEditarImagen = $('#modalEditarVariacionImagen');
     const $modalCrearTalla = $('#modalCrearVariacionTalla');
     const $modalEditarTalla = $('#modalEditarVariacionTalla');
@@ -21,6 +21,14 @@
     let filas = [];
     let previewImagenCrearUrls = [];
     let arrastreImagenGaleria = null;
+    /* Variación abierta en el modal de detalle. */
+    let variacionDetalleId = null;
+    /* Lista completa (sin filtrar por producto) para el alta de colores. */
+    let variacionesCrudas = [];
+
+    /* Cuando se llega desde Productos (?producto=ID) se muestra solo ese producto.
+       Se lee del atributo porque la navegación por turbo-frame no cambia la URL. */
+    const idProductoFiltro = $('#variacionesFiltro').data('producto') || null;
 
     if (!$tabla.length) return;
     if ($.fn.DataTable.isDataTable($tabla[0])) $tabla.DataTable().destroy();
@@ -38,6 +46,22 @@
 
     function escapar(valor) {
         return $('<div>').text(valor ?? '').html();
+    }
+
+    /* Círculo de carga mientras llegan los datos de la vista. */
+    const $cargando = $('#cargandoProductoVariacionDetalle');
+    let temporizadorCarga = 0;
+
+    function mostrarCargando() {
+        window.clearTimeout(temporizadorCarga);
+
+        // Solo aparece si la carga tarda: evita parpadeos en respuestas rápidas.
+        temporizadorCarga = window.setTimeout(() => $cargando.removeClass('d-none'), 120);
+    }
+
+    function ocultarCargando() {
+        window.clearTimeout(temporizadorCarga);
+        $cargando.addClass('d-none');
     }
 
     // Números sin decimales innecesarios: 5.00 → 5, 5.50 → 5.5
@@ -209,25 +233,46 @@
         });
     }
 
-    async function cargarDatos() {
-        try {
-            const [variacionesResponse, imagenesResponse, relacionesResponse, tallasResponse] = await Promise.all([
-                $.getJSON('/producto-variaciones/mostrar'),
-                $.getJSON('/variacion-imagenes/mostrar'),
-                $.getJSON('/variacion-tallas/mostrar'),
-                $.getJSON('/tallas/mostrar')
-            ]);
+    /* Productos que no son ropa: la variación se guarda sin talla. */
+    function configurarSinTalla(idCheckbox, selectoresDependientes) {
 
-            if (!variacionesResponse.success || !imagenesResponse.success || !relacionesResponse.success || !tallasResponse.success) {
-                throw new Error('No se pudieron cargar todos los datos del producto.');
+        const aplicar = () => {
+
+            const sinTalla = $(idCheckbox).is(':checked');
+
+            selectoresDependientes.forEach(selector => {
+                const $select = $(selector);
+
+                $select.prop('disabled', sinTalla);
+
+                if ($.fn.select2 && $select.hasClass('select2-hidden-accessible')) {
+                    $select.trigger('change.select2');
+                }
+            });
+        };
+
+        $(idCheckbox).off('change.sinTalla').on('change.sinTalla', aplicar);
+
+        return aplicar;
+    }
+
+    async function cargarDatos() {
+        mostrarCargando();
+
+        try {
+            // Una sola petición: antes eran 4 y el servidor las atendía en serie.
+            const respuesta = await $.getJSON('/producto-variaciones/detalle');
+
+            if (!respuesta.success) {
+                throw new Error('No se pudieron cargar los datos del producto.');
             }
 
-            tallas = tallasResponse.tallas || [];
+            tallas = respuesta.tallas || [];
             tiposTalla = tiposDesdeTallas();
             opcionesTallas();
 
-            const imagenes = imagenesResponse.imagenes || [];
-            const relaciones = relacionesResponse.variaciones_tallas || [];
+            const imagenes = respuesta.imagenes || [];
+            const relaciones = respuesta.variaciones_tallas || [];
             const tallasPorId = new Map(tallas.map(talla => [String(talla.id_talla), talla.talla]));
             const imagenesPorVariacion = new Map();
             const relacionesPorVariacion = new Map();
@@ -244,103 +289,120 @@
                 relacionesPorVariacion.get(idVariacion).push(relacion);
             });
 
-            filas = (variacionesResponse.variaciones || []).map(variacion => ({
+            filas = (respuesta.variaciones || []).map(variacion => ({
                 ...variacion,
                 nombre_producto: variacion.producto?.nombre_producto || `Producto ${variacion.id_producto}`,
                 imagenes: imagenesPorVariacion.get(String(variacion.id_variacion)) || [],
                 tallas: (relacionesPorVariacion.get(String(variacion.id_variacion)) || [])
                     .map(relacion => ({
                         ...relacion,
-                        nombre_talla: tallasPorId.get(String(relacion.id_talla)) || `Talla ${relacion.id_talla}`
+                        nombre_talla: relacion.id_talla == null
+                            ? 'Sin talla'
+                            : (tallasPorId.get(String(relacion.id_talla)) || `Talla ${relacion.id_talla}`)
                     }))
             }));
 
-            const agrupadas = new Map();
-            filas.forEach(variacion => {
-                const idProducto = String(variacion.id_producto);
-                if (!agrupadas.has(idProducto)) agrupadas.set(idProducto, {
-                    nombre_producto: variacion.nombre_producto,
-                    variaciones: []
-                });
-                agrupadas.get(idProducto).variaciones.push(variacion);
-            });
-            const filasAgrupadas = [...agrupadas.values()];
+            variacionesCrudas = respuesta.variaciones || [];
+
+            // Filtro por producto (al entrar desde el botón «Variantes» de Productos).
+            if (idProductoFiltro) {
+                filas = filas.filter(variacion => String(variacion.id_producto) === String(idProductoFiltro));
+            }
+
+            pintarFiltroProducto(variacionesCrudas);
 
             if (!tabla) {
+
                 tabla = $tabla.DataTable({
-    data: filasAgrupadas,
-    columns: [
-        { data: 'nombre_producto', render: data => escapar(data || '—') },
-        {
-            data: 'variaciones',
-            orderable: false,
-            render: variaciones => variaciones.map(variacion => `
-    <section class="p-2 ml-2 rounded small"
-        style="background:var(--celeste-soft); border:1px solid var(--celeste-soft-border);">
 
-        <div class="mb-2">
-            <strong>Color:</strong> ${escapar(variacion.color || 'Sin especificar')}
-        </div>
+                    data: filas,
 
-        <div class="d-flex flex-column gap-2">
-            ${variacion.tallas.length ? variacion.tallas.map(talla => {
-                const porcentajeImpuesto = Number(variacion.producto?.impuesto?.porcentaje_impuesto || 0);
-                const precioVentaBase = Number(talla.precio_venta ?? variacion.producto?.precio_venta ?? 0);
+                    deferRender: true,
 
-                return `
-                    <div class="d-flex flex-wrap align-items-center gap-3 p-2 rounded"
-                        style="background:var(--bs-body-bg); border:1px solid var(--celeste-soft-border);">
+                    columns: [
+                        {
+                            data: 'imagenes',
+                            orderable: false,
+                            className: 'variacion-tabla__celda-imagen text-center',
+                            render: imagenesVariacion => {
+                                const primera = imagenesVariacion[0];
 
-                        <span><strong>Talla:</strong> ${escapar(talla.nombre_talla)}</span>
-                        <span><strong>Stock:</strong> ${escapar(numeroCorto(talla.stock))}</span>
-                        <span><strong>SKU:</strong> ${escapar(talla.sku || '—')}</span>
-                        <span><strong>Compra:</strong> C$ ${Number(talla.precio_compra || 0).toFixed(2)}</span>
-                        <span><strong>Venta neta:</strong> C$ ${precioVentaBase.toFixed(2)}</span>
-                        <span><strong>Final:</strong> C$ ${(precioVentaBase * (1 + porcentajeImpuesto / 100)).toFixed(2)}</span>
+                                if (!primera) {
+                                    return '<span class="variacion-tabla__sin-imagen" title="Sin imágenes"><i class="ph ph-image"></i></span>';
+                                }
 
-                        <div class="d-flex align-items-center gap-1 ms-auto">
-                            <button class="btn-editar editarVariacionTalla"
-                                data-id="${talla.id_variacion_talla}" title="Editar talla y stock">
-                                <i class="ph ph-pencil-simple"></i>
-                            </button>
-                            <button class="btn-baja eliminarVariacionTalla"
-                                data-id="${talla.id_variacion_talla}" title="Quitar talla">
-                                <i class="ph ph-x"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('') : '<span>Sin tallas asignadas</span>'}
-        </div>
+                                // Miniatura de 96 px (~1 KB): se puede cargar siempre sin coste.
+                                return `<img class="variacion-tabla__imagen" src="/variacion-imagenes/miniatura/${primera.id_imagen}"
+                                             alt="Imagen de la variación"
+                                             title="${imagenesVariacion.length === 1 ? '1 imagen' : imagenesVariacion.length + ' imágenes'}"
+                                             decoding="async" width="34" height="34">`;
+                            }
+                        },
 
-        <div class="d-flex flex-wrap align-items-center justify-content-center gap-4 mt-2">
-            <button class="btn-transferir verImagenesVariacion"
-                data-id="${variacion.id_variacion}" title="Ver imágenes">
-                <i class="ph ph-images"></i> ${variacion.imagenes.length}
-                ${variacion.imagenes.length === 1 ? 'Imagen' : 'Imágenes'}
-            </button>
-            <button class="btn-alta agregarTallaVariacion"
-                data-id="${variacion.id_variacion}" title="Agregar talla">
-                <i class="ph ph-ruler"></i> Tallas
-            </button>
-        </div>
-    </section>
-`).join('')
-        }
-    ],
+                        { data: 'nombre_producto', render: data => escapar(data || '—') },
 
-    order: [[0, 'asc']],
-    drawCallback: function() {
-        AnimarFilasVisibles(this.api());
-    }
-});
+                        { data: 'color', render: data => `<span class="variacion-tabla__color">${escapar(data || 'Sin especificar')}</span>` },
+
+                        {
+                            data: 'tallas',
+                            orderable: false,
+                            render: tallasVariacion => tallasVariacion.length
+                                ? `<span class="variacion-tabla__tallas">${tallasVariacion.map(talla => escapar(talla.nombre_talla)).join(', ')}</span>`
+                                : '<span class="variacion-tabla__vacio">Sin tallas</span>'
+                        },
+
+                        {
+                            data: 'tallas',
+                            orderable: false,
+                            className: 'text-center',
+                            render: tallasVariacion => {
+                                const unidades = tallasVariacion.reduce((total, talla) => total + (Number(talla.stock) || 0), 0);
+
+                                return `<span class="variacion-tabla__unidades">${unidades}</span>`;
+                            }
+                        },
+
+                        {
+                            data: 'id_variacion',
+                            orderable: false,
+                            searchable: false,
+                            render: id => `
+                                <button type="button" class="btn-detalle detalleVariacion" data-id="${id}"
+                                        title="Ver tallas e imágenes">
+                                    <i class="ph ph-eye"></i>
+                                </button>
+                            `
+                        }
+                    ],
+
+                    order: [[1, 'asc']],
+
+                    createdRow: (fila, datos) => {
+                        fila.dataset.id = datos.id_variacion;
+                        fila.classList.add('variacion-fila');
+                    },
+
+                    drawCallback: function () {
+                        AnimarFilasVisibles(this.api());
+                    }
+                });
+
                 configurarToggleColumnas('tablaProductoVariacionDetalle');
+
             } else {
-                tabla.clear().rows.add(filasAgrupadas).draw(false);
+                tabla.clear().rows.add(filas).draw(false);
             }
+
+            // Si el modal de detalle está abierto, se refresca con los datos nuevos.
+            if (variacionDetalleId !== null && $modalDetalle.hasClass('show')) {
+                pintarDetalleVariacion(variacionDetalleId);
+            }
+
         } catch (error) {
             mostrarToast(error.message || 'Error al cargar imágenes y tallas', 'danger');
             console.error(error);
+        } finally {
+            ocultarCargando();
         }
     }
 
@@ -348,19 +410,181 @@
         return cargarDatos();
     }
 
+    /* Aviso de que la tabla está filtrada por un producto + opción de ver todos. */
+    function pintarFiltroProducto(variaciones) {
+
+        const contenedor = document.getElementById('variacionesFiltro');
+
+        if (!contenedor) return;
+
+        if (!idProductoFiltro) {
+            contenedor.classList.add('d-none');
+            contenedor.innerHTML = '';
+            return;
+        }
+
+        const producto = variaciones.find(variacion => String(variacion.id_producto) === String(idProductoFiltro))?.producto;
+
+        contenedor.classList.remove('d-none');
+        contenedor.innerHTML = `
+            <span class="variaciones-filtro__texto">
+                <i class="ph ph-funnel"></i>
+                Mostrando variantes de <strong>${escapar(producto?.nombre_producto || 'producto #' + idProductoFiltro)}</strong>
+            </span>
+            <span class="variaciones-filtro__acciones">
+                <a class="variaciones-filtro__volver" href="/productos" data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-arrow-left"></i> Volver a Productos
+                </a>
+                <a class="variaciones-filtro__ver-todos" href="/producto-variaciones-detalles"
+                   data-turbo-frame="contenido-dinamico">Ver todas las variantes</a>
+            </span>
+        `;
+    }
+
+    /* ── Nuevo color (antes era la pantalla «Variaciones de Productos») ── */
+    function abrirModalCrearColor(variaciones) {
+
+        const select = document.getElementById('color_id_producto');
+
+        const productos = new Map();
+
+        variaciones.forEach(variacion => {
+            const id = String(variacion.id_producto);
+            if (!productos.has(id)) productos.set(id, variacion.producto?.nombre_producto || `Producto ${id}`);
+        });
+
+        const opciones = [...productos.entries()]
+            .sort((a, b) => String(a[1]).localeCompare(String(b[1]), 'es'))
+            .map(([id, nombre]) => `<option value="${id}">${escapar(nombre)}</option>`)
+            .join('');
+
+        select.innerHTML = `<option value="">Seleccione un producto</option>${opciones}`;
+
+        // Si venimos filtrados por un producto, se deja seleccionado.
+        if (idProductoFiltro) select.value = String(idProductoFiltro);
+
+        $('#color_nombre').val('');
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalCrearColorVariacion')).show();
+    }
+
     /* Botón de recarga del CheckColumnas: esta tabla no usa ajax. */
     document.getElementById('recargarProductoVariacionDetalle')?.addEventListener('click', () => {
         recargarDatos();
     });
 
-    $tabla.off('click.detalle', '.verImagenesVariacion').on('click.detalle', '.verImagenesVariacion', function () {
-        const variacion = filas.find(fila => String(fila.id_variacion) === String($(this).data('id')));
+    /* Alta de color desde esta misma pantalla. */
+    $('#btnNuevoColorVariacion').off('click.color').on('click.color', () => {
+        abrirModalCrearColor(variacionesCrudas);
+    });
+
+    $('#formCrearColorVariacion').off('submit.color').on('submit.color', function (event) {
+
+        event.preventDefault();
+
+        const idProducto = $('#color_id_producto').val();
+        const color = $('#color_nombre').val().trim();
+
+        if (!idProducto) return mostrarToast('Selecciona un producto', 'warning');
+        if (!color) return mostrarToast('Escribe el nombre del color', 'warning');
+
+        const $boton = $(this).find('button[type="submit"]').prop('disabled', true);
+
+        $.ajax({
+            url: '/producto-variaciones/crear',
+            type: 'POST',
+            data: { id_producto: idProducto, color, _token: csrf() },
+            success: response => {
+                if (!response.success) return mostrarToast(response.mensaje || 'No se pudo agregar el color', 'danger');
+                mostrarToast(response.mensaje || 'Color agregado correctamente', 'success');
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalCrearColorVariacion')).hide();
+                recargarDatos();
+            },
+            error: xhr => mostrarError(xhr, 'Error al agregar el color'),
+            complete: () => $boton.prop('disabled', false),
+        });
+    });
+
+    /* ══════════════ MODAL DE DETALLE: TALLAS + IMÁGENES ══════════════ */
+
+    function pintarDetalleVariacion(idVariacion) {
+
+        const variacion = filas.find(fila => String(fila.id_variacion) === String(idVariacion));
+
         if (!variacion) return;
 
-        $('#galeria_variacion_titulo').text(`${variacion.nombre_producto} · ${variacion.color || 'Sin color'}`);
-        $('#galeria_variacion_subtitulo').text(variacion.imagenes.length
-            ? `${variacion.imagenes.length} ${variacion.imagenes.length === 1 ? 'imagen' : 'imágenes'} · arrastra una imagen para cambiar el orden`
-            : 'Este color todavía no tiene imágenes');
+        const cantidadTallas = variacion.tallas.length;
+        const unidades = variacion.tallas.reduce((total, talla) => total + (Number(talla.stock) || 0), 0);
+
+        $('#detalle_variacion_titulo').text(`${variacion.nombre_producto} · ${variacion.color || 'Sin color'}`);
+        $('#detalle_variacion_subtitulo').text(cantidadTallas
+            ? `${cantidadTallas} ${cantidadTallas === 1 ? 'talla' : 'tallas'} · ${unidades} unidades · arrastra una imagen para cambiar el orden`
+            : 'Este color todavía no tiene tallas');
+
+        $('#galeria_variacion_agregar').data('id', variacion.id_variacion);
+        $('#detalle_agregar_talla').data('id', variacion.id_variacion);
+
+        pintarTallasDetalle(variacion);
+        pintarGaleriaDetalle(variacion);
+    }
+
+    function pintarTallasDetalle(variacion) {
+
+        const contenedor = $('#detalle_variacion_tallas');
+        const impuesto = Number(variacion.producto?.impuesto?.porcentaje_impuesto || 0);
+
+        if (!variacion.tallas.length) {
+            contenedor.html('<p class="detalle-variacion__vacio">Este color todavía no tiene tallas.</p>');
+            return;
+        }
+
+        contenedor.html(`
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0 detalle-variacion__tabla">
+                    <thead>
+                        <tr>
+                            <th>Talla</th>
+                            <th>Stock</th>
+                            <th>SKU</th>
+                            <th>Compra</th>
+                            <th>Venta neta</th>
+                            <th>Final</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${variacion.tallas.map(talla => {
+
+                            const precioBase = Number(talla.precio_venta ?? variacion.producto?.precio_venta ?? 0);
+
+                            return `
+                                <tr>
+                                    <td><strong>${escapar(talla.nombre_talla)}</strong></td>
+                                    <td>${escapar(numeroCorto(talla.stock))}</td>
+                                    <td class="small">${escapar(talla.sku || '—')}</td>
+                                    <td>C$ ${Number(talla.precio_compra || 0).toFixed(2)}</td>
+                                    <td>C$ ${precioBase.toFixed(2)}</td>
+                                    <td>C$ ${(precioBase * (1 + impuesto / 100)).toFixed(2)}</td>
+                                    <td class="text-nowrap">
+                                        <button type="button" class="btn-editar editarVariacionTalla"
+                                            data-id="${talla.id_variacion_talla}" title="Editar talla y stock">
+                                            <i class="ph ph-pencil-simple"></i>
+                                        </button>
+                                        <button type="button" class="btn-baja eliminarVariacionTalla"
+                                            data-id="${talla.id_variacion_talla}" title="Quitar talla">
+                                            <i class="ph ph-x"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `);
+    }
+
+    function pintarGaleriaDetalle(variacion) {
 
         $('#galeria_variacion_contenido').html(variacion.imagenes.length ? variacion.imagenes.map(imagen => `
             <article class="variacion-imagen-item" data-id="${imagen.id_imagen}">
@@ -384,8 +608,108 @@
         `).join('') : '<p class="galeria-vacia">Este color todavía no tiene imágenes.</p>');
 
         $('#galeria_variacion_contenido').scrollLeft(0);
-        $('#galeria_variacion_agregar').data('id', variacion.id_variacion);
-        bootstrap.Modal.getOrCreateInstance($modalGaleriaImagenes[0]).show();
+    }
+
+    function abrirDetalleVariacion(idVariacion) {
+
+        const variacion = filas.find(fila => String(fila.id_variacion) === String(idVariacion));
+
+        if (!variacion) return;
+
+        variacionDetalleId = variacion.id_variacion;
+
+        pintarDetalleVariacion(variacion.id_variacion);
+
+        bootstrap.Modal.getOrCreateInstance($modalDetalle[0]).show();
+    }
+
+    /* Al cerrar el modal se olvida la variación abierta. */
+    $modalDetalle.off('hidden.bs.modal.detalle').on('hidden.bs.modal.detalle', () => {
+        variacionDetalleId = null;
+    });
+
+    /* ── Renombrar el color abierto ── */
+    $('#detalle_renombrar_color').off('click.color').on('click.color', () => {
+
+        const variacion = filas.find(fila => String(fila.id_variacion) === String(variacionDetalleId));
+
+        if (!variacion) return;
+
+        $('#editar_color_producto').text(variacion.nombre_producto);
+        $('#editar_color_nombre').val(variacion.color || '');
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarColorVariacion')).show();
+    });
+
+    $('#formEditarColorVariacion').off('submit.color').on('submit.color', function (event) {
+
+        event.preventDefault();
+
+        const variacion = filas.find(fila => String(fila.id_variacion) === String(variacionDetalleId));
+        const color = $('#editar_color_nombre').val().trim();
+
+        if (!variacion) return;
+        if (!color) return mostrarToast('Escribe el nombre del color', 'warning');
+
+        const $boton = $(this).find('button[type="submit"]').prop('disabled', true);
+
+        $.ajax({
+            url: `/producto-variaciones/actualizar/${variacion.id_variacion}`,
+            type: 'PUT',
+            data: {
+                color,
+                estado_variacion: variacion.estado_variacion ? 1 : 0,
+                _token: csrf(),
+            },
+            success: response => {
+                if (!response.success) return mostrarToast(response.mensaje || 'No se pudo renombrar el color', 'danger');
+                mostrarToast(response.mensaje || 'Color actualizado correctamente', 'success');
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarColorVariacion')).hide();
+                recargarDatos();
+            },
+            error: xhr => mostrarError(xhr, 'Error al renombrar el color'),
+            complete: () => $boton.prop('disabled', false),
+        });
+    });
+
+    /* ── Eliminar el color abierto ── */
+    $('#detalle_eliminar_color').off('click.color').on('click.color', () => {
+
+        const variacion = filas.find(fila => String(fila.id_variacion) === String(variacionDetalleId));
+
+        if (!variacion) return;
+
+        confirmarAccionVariacion({
+            titulo: 'Eliminar color',
+            mensaje: `¿Eliminar el color "${variacion.color}"? Se borrarán también sus tallas, su stock y sus imágenes.`,
+            textoConfirmar: 'Eliminar',
+            alConfirmar: finalizar => {
+                $.ajax({
+                    url: `/producto-variaciones/eliminar/${variacion.id_variacion}`,
+                    type: 'DELETE',
+                    data: { _token: csrf() },
+                    success: response => {
+                        if (!response.success) return mostrarToast(response.mensaje || 'No se pudo eliminar el color', 'danger');
+                        mostrarToast(response.mensaje || 'Color eliminado correctamente', 'success');
+                        bootstrap.Modal.getOrCreateInstance($modalDetalle[0]).hide();
+                        recargarDatos();
+                    },
+                    error: xhr => mostrarError(xhr, 'Error al eliminar el color'),
+                    complete: finalizar,
+                });
+            },
+        });
+    });
+
+    $tabla.off('click.detalle', '.detalleVariacion').on('click.detalle', '.detalleVariacion', function (event) {
+        event.stopPropagation();
+        abrirDetalleVariacion($(this).data('id'));
+    });
+
+    $tabla.off('click.detalle', 'tbody tr.variacion-fila').on('click.detalle', 'tbody tr.variacion-fila', function (event) {
+        if ($(event.target).closest('button, a').length) return;
+
+        abrirDetalleVariacion($(this).data('id'));
     });
 
     function guardarOrdenGaleria(arrastre) {
@@ -415,7 +739,7 @@
             complete: () => {
                 arrastre.contenedor.classList.remove('guardando-orden-imagenes');
                 recargarDatos().then(() => {
-                    $tabla.find(`.verImagenesVariacion[data-id="${arrastre.idVariacion}"]`).trigger('click');
+                    abrirDetalleVariacion(arrastre.idVariacion);
                 });
             }
         });
@@ -426,11 +750,11 @@
         arrastre.contenedor.classList.remove('arrastrando');
         arrastre.destino?.classList.remove('imagen-destino-arrastre');
         recargarDatos().then(() => {
-            $tabla.find(`.verImagenesVariacion[data-id="${arrastre.idVariacion}"]`).trigger('click');
+            abrirDetalleVariacion(arrastre.idVariacion);
         });
     }
 
-    $modalGaleriaImagenes.off('pointerdown.detalle', '.variacion-imagen-item')
+    $modalDetalle.off('pointerdown.detalle', '.variacion-imagen-item')
         .on('pointerdown.detalle', '.variacion-imagen-item', function (event) {
             // Los botones de editar/eliminar siguen funcionando con clic normal.
             if (event.target.closest('button, a, input')) return;
@@ -598,7 +922,7 @@
             $boton.prop('disabled', false).html(textoOriginal);
             this.value = '';
             recargarDatos().then(() => {
-                $tabla.find(`.verImagenesVariacion[data-id="${idVariacion}"]`).trigger('click');
+                abrirDetalleVariacion(idVariacion);
             });
         }
     });
@@ -612,7 +936,7 @@
         event.preventDefault();
     });
 
-    $modalGaleriaImagenes.off('click.detalle', '.reemplazarVariacionImagen').on('click.detalle', '.reemplazarVariacionImagen', function () {
+    $modalDetalle.off('click.detalle', '.reemplazarVariacionImagen').on('click.detalle', '.reemplazarVariacionImagen', function () {
         const input = document.getElementById('reemplazar_imagen_variacion');
         input.dataset.idImagen = $(this).data('id');
         input.dataset.idVariacion = $(this).data('variacion');
@@ -654,7 +978,7 @@
                 mostrarToast('Imagen reemplazada correctamente.', 'success');
                 input.value = '';
                 recargarDatos().then(() => {
-                    $tabla.find(`.verImagenesVariacion[data-id="${idVariacion}"]`).trigger('click');
+                    abrirDetalleVariacion(idVariacion);
                 });
             },
             error: xhr => mostrarError(xhr, 'Error al reemplazar la imagen.')
@@ -875,42 +1199,85 @@
                 if (!response.success) return mostrarToast(response.mensaje || 'No se pudo eliminar la imagen', 'danger');
                 mostrarToast(response.mensaje || 'Imagen eliminada correctamente', 'success');
                 recargarDatos().then(() => {
-                    if (idVariacion) $tabla.find(`.verImagenesVariacion[data-id="${idVariacion}"]`).trigger('click');
+                    if (idVariacion) abrirDetalleVariacion(idVariacion);
                 });
             },
             error: xhr => mostrarError(xhr, 'Error al eliminar la imagen')
         });
     });
 
-    $tabla.off('click.detalle', '.agregarTallaVariacion').on('click.detalle', '.agregarTallaVariacion', function () {
-        const idVariacion = $(this).data('id');
+    const aplicarSinTallaCrear = configurarSinTalla('#crear_sin_talla', ['#crear_id_tipo_talla_var', '#crear_id_talla']);
+    const aplicarSinTallaEditar = configurarSinTalla('#editar_sin_talla', ['#editar_id_tipo_talla_var', '#editar_id_talla']);
+
+    /* Variación a la que hay que volver cuando se cierre el alta de talla. */
+    let variacionParaCrearTalla = null;
+
+    function abrirModalCrearTalla(idVariacion) {
+
         const variacion = filas.find(item => String(item.id_variacion) === String(idVariacion));
+
         $('#formCrearVariacionTalla')[0].reset();
         $('#crear_talla_id_variacion').val(idVariacion);
         $('#crear_id_tipo_talla_var').val('').trigger('change');
         $('#crear_id_talla').val('').trigger('change.select2');
+        $('#crear_sin_talla').prop('checked', false);
+        aplicarSinTallaCrear();
         $('#crear_precio_compra_variacion').val(numeroCorto(variacion?.producto?.precio_compra));
         $('#crear_precio_venta_variacion').val(numeroCorto(variacion?.producto?.precio_venta));
         $('#crear_modo_precio_variacion').val('base');
         configurarLimiteStockInput('#crear_stock_variacion_talla', idVariacion);
         bootstrap.Modal.getOrCreateInstance($modalCrearTalla[0]).show();
+    }
+
+    /* Al cerrar el alta de talla se vuelve al detalle con los datos al día. */
+    $modalCrearTalla.off('hidden.bs.modal.volverDetalle').on('hidden.bs.modal.volverDetalle', () => {
+
+        const idVariacion = variacionParaCrearTalla;
+        variacionParaCrearTalla = null;
+
+        if (idVariacion === null || idVariacion === undefined) return;
+
+        recargarDatos().then(() => abrirDetalleVariacion(idVariacion));
+    });
+
+    $(document).off('click.detalle', '.agregarTallaVariacion').on('click.detalle', '.agregarTallaVariacion', function () {
+        const idVariacion = $(this).data('id');
+
+        // Sin el detalle abierto (uso aislado) se abre el alta directamente.
+        if (!$modalDetalle.hasClass('show')) {
+            variacionParaCrearTalla = null;
+            abrirModalCrearTalla(idVariacion);
+            return;
+        }
+
+        variacionParaCrearTalla = idVariacion;
+
+        // Se cierra el detalle y, al terminar su animación, se abre el alta.
+        $modalDetalle.one('hidden.bs.modal.crearTalla', () => abrirModalCrearTalla(idVariacion));
+        bootstrap.Modal.getOrCreateInstance($modalDetalle[0]).hide();
     });
 
     $('#formCrearVariacionTalla').off('submit.detalle').on('submit.detalle', function (event) {
         event.preventDefault();
         const idVariacion = $('#crear_talla_id_variacion').val();
+        const sinTalla = $('#crear_sin_talla').is(':checked');
         const idTipo = $('#crear_id_tipo_talla_var').val();
-        const idTalla = $('#crear_id_talla').val();
+        const idTalla = sinTalla ? '' : $('#crear_id_talla').val();
         const stock = Number($('#crear_stock_variacion_talla').val() || 0);
         const precioVentaBase = calcularPrecioBase(
             $('#crear_precio_venta_variacion').val(),
             idVariacion,
             $('#crear_modo_precio_variacion').val()
         );
-        const repetida = filas.some(fila => String(fila.id_variacion) === String(idVariacion) && fila.tallas.some(talla => String(talla.id_talla) === String(idTalla)));
-        if (!idTipo) return mostrarToast('Seleccione el tipo de talla', 'warning');
-        if (!idTalla) return mostrarToast('Seleccione una talla del catalogo', 'warning');
-        if (repetida) return mostrarToast('Esa talla ya está asignada a este color', 'warning');
+        const repetida = filas.some(fila => String(fila.id_variacion) === String(idVariacion)
+            && fila.tallas.some(talla => (sinTalla
+                ? talla.id_talla == null
+                : (talla.id_talla != null && String(talla.id_talla) === String(idTalla)))));
+        if (!sinTalla && !idTipo) return mostrarToast('Seleccione el tipo de talla', 'warning');
+        if (!sinTalla && !idTalla) return mostrarToast('Seleccione una talla del catalogo', 'warning');
+        if (repetida) return mostrarToast(sinTalla
+            ? 'Este color ya tiene una fila sin talla'
+            : 'Esa talla ya está asignada a este color', 'warning');
 
         const validacion = validarStockPorVariacion(idVariacion, stock);
         if (!validacion.ok) {
@@ -928,7 +1295,8 @@
                 stock: $('#crear_stock_variacion_talla').val(),
                 sku: $('#crear_sku_variacion').val(),
                 precio_compra: $('#crear_precio_compra_variacion').val(),
-                precio_venta: precioVentaBase.toFixed(2),
+                // 6 decimales: la base debe reproducir el precio final sin centavos fantasma.
+                precio_venta: $('#crear_precio_venta_variacion').val() === '' ? '' : precioVentaBase.toFixed(6),
                 _token: csrf()
             },
             headers: { 'X-CSRF-TOKEN': csrf() },
@@ -936,13 +1304,15 @@
                 if (!response.success) return mostrarToast(response.mensaje || 'No se pudo agregar la talla', 'danger');
                 mostrarToast(response.mensaje || 'Talla agregada correctamente', 'success');
                 bootstrap.Modal.getOrCreateInstance($modalCrearTalla[0]).hide();
-                recargarDatos();
+
+                // Si se venía del detalle, el evento hidden recarga y lo reabre.
+                if (variacionParaCrearTalla === null) recargarDatos();
             },
             error: xhr => mostrarError(xhr, 'Error al agregar la talla')
         });
     });
 
-    $tabla.off('click.detalle', '.editarVariacionTalla').on('click.detalle', '.editarVariacionTalla', function () {
+    $(document).off('click.detalle', '.editarVariacionTalla').on('click.detalle', '.editarVariacionTalla', function () {
         const id = $(this).data('id');
         $.get(`/variacion-tallas/editar/${id}`, response => {
             if (!response.success || !response.variacion_talla) return mostrarToast(response.mensaje || 'No se encontró la talla', 'danger');
@@ -951,6 +1321,9 @@
             const variacion = filas.find(item => String(item.id_variacion) === String(response.variacion_talla.id_variacion));
 
             const tallaEditada = tallas.find(talla => String(talla.id_talla) === String(response.variacion_talla.id_talla));
+            const sinTalla = response.variacion_talla.id_talla == null;
+            $('#editar_sin_talla').prop('checked', sinTalla);
+            aplicarSinTallaEditar();
             $('#editar_id_tipo_talla_var').val(tallaEditada ? tallaEditada.id_tipo_talla : '').trigger('change');
             $('#editar_id_talla').val(response.variacion_talla.id_talla).trigger('change.select2');
 
@@ -967,20 +1340,28 @@
     $('#formEditarVariacionTalla').off('submit.detalle').on('submit.detalle', function (event) {
         event.preventDefault();
         const id = $('#editar_id_variacion_talla').val();
+        const idVariacion = $('#editar_id_variacion_talla').data('variacion');
+        const sinTalla = $('#editar_sin_talla').is(':checked');
         const idTipo = $('#editar_id_tipo_talla_var').val();
-        const idTalla = $('#editar_id_talla').val();
+        const idTalla = sinTalla ? '' : $('#editar_id_talla').val();
         const stock = Number($('#editar_stock_variacion_talla').val() || 0);
         const precioVentaBase = calcularPrecioBase(
             $('#editar_precio_venta_variacion').val(),
-            $('#editar_id_variacion_talla').data('variacion'),
+            idVariacion,
             $('#editar_modo_precio_variacion').val()
         );
-        const repetida = filas.some(fila => String(fila.id_variacion) === String($('#editar_id_variacion_talla').data('variacion')) && fila.tallas.some(talla => String(talla.id_talla) === String(idTalla) && String(talla.id_variacion_talla) !== String(id)));
-        if (!idTipo) return mostrarToast('Seleccione el tipo de talla', 'warning');
-        if (!idTalla) return mostrarToast('Seleccione una talla del catalogo', 'warning');
-        if (repetida) return mostrarToast('Esa talla ya está asignada a este color', 'warning');
+        const repetida = filas.some(fila => String(fila.id_variacion) === String(idVariacion)
+            && fila.tallas.some(talla => String(talla.id_variacion_talla) !== String(id)
+                && (sinTalla
+                    ? talla.id_talla == null
+                    : (talla.id_talla != null && String(talla.id_talla) === String(idTalla)))));
+        if (!sinTalla && !idTipo) return mostrarToast('Seleccione el tipo de talla', 'warning');
+        if (!sinTalla && !idTalla) return mostrarToast('Seleccione una talla del catalogo', 'warning');
+        if (repetida) return mostrarToast(sinTalla
+            ? 'Este color ya tiene otra fila sin talla'
+            : 'Esa talla ya está asignada a este color', 'warning');
 
-        const validacion = validarStockPorVariacion($('#editar_id_variacion_talla').data('variacion'), stock, id);
+        const validacion = validarStockPorVariacion(idVariacion, stock, id);
         if (!validacion.ok) {
             mostrarToast(validacion.mensaje, 'warning');
             $('#editar_stock_variacion_talla').val(validacion.maximo ?? 0).trigger('input');
@@ -995,7 +1376,8 @@
                 stock: $('#editar_stock_variacion_talla').val(),
                 // El SKU no se envía: no es editable y el servidor lo regenera si cambia la talla.
                 precio_compra: $('#editar_precio_compra_variacion').val(),
-                precio_venta: precioVentaBase.toFixed(2),
+                // 6 decimales: la base debe reproducir el precio final sin centavos fantasma.
+                precio_venta: $('#editar_precio_venta_variacion').val() === '' ? '' : precioVentaBase.toFixed(6),
                 _token: csrf()
             },
             headers: { 'X-CSRF-TOKEN': csrf() },
@@ -1009,7 +1391,7 @@
         });
     });
 
-    $tabla.off('click.detalle', '.eliminarVariacionTalla').on('click.detalle', '.eliminarVariacionTalla', function () {
+    $(document).off('click.detalle', '.eliminarVariacionTalla').on('click.detalle', '.eliminarVariacionTalla', function () {
         const id = $(this).data('id');
 
         confirmarAccionVariacion({

@@ -6,6 +6,80 @@ Estados posibles: `ABIERTO`, `MITIGADO`, `CORREGIDO`, `SIN DATOS PARA PROBAR`.
 
 ---
 
+## Auditoría 2026-11-05 (detalle de variaciones: tallas, precios, impuesto, color)
+
+### 12. Precio base de la variación redondeado a 2 decimales → centavos fantasma — MEDIO · CORREGIDO (2026-11-05)
+
+- **Evidencia (código)**: `resources/js/MostrarProductoVariacionDetalle.js` enviaba
+  `precio_venta: precioVentaBase.toFixed(2)` (crear y editar), mientras
+  `variacion_tallas.precio_venta` es `numeric(12,6)` desde la migración `2026_10_15_000002`.
+- **Evidencia (recálculo)**: con IVA 15 % e importe "1000 incluido" la base real es
+  869.565217; guardada como 869.57 el final queda en **1,000.01** (esperado 1,000.00).
+- **Estado de los datos**: no reproducible con datos reales porque los 15 productos están en
+  *Exento 0 %*; se reprodujo creando una fila temporal con IVA 15 % (producto de prueba,
+  luego eliminado).
+- **Corrección**: el JS envía `toFixed(6)`. Verificado: base 869.565217 → final 1,000.00.
+
+### 13. Renombrar el color dejaba los SKU con el color viejo — MEDIO · CORREGIDO (2026-11-05)
+
+- **Evidencia (datos)**: `variacion_tallas.sku = NEXT-LINE-MAMON-CON-NEGRO-37` con
+  `producto_variaciones.color = 'Rosa Vieja con Negro'` (37 filas revisadas; 1 caso).
+- **Causa**: `ProductoVariacionController::ActualizarProductoVariacion` guardaba `color` sin
+  tocar los SKU, que se arman con producto + color + talla.
+- **Corrección**: `App\Support\SkuVariacion::regenerarPorCambioColor()` renombra solo los SKU
+  autogenerados (los escritos a mano se respetan). Verificado: `...-NEGRO-UNICA` →
+  `...-GRIS-GRAFITO-UNICA`.
+- **Pendiente**: el SKU histórico `...-MAMON-CON-NEGRO-...` se dejó intacto a propósito
+  (facturas y Kardex ya lo referencian).
+
+### 14. Color o talla duplicados devolvían error 500 con SQL crudo — MEDIO · CORREGIDO (2026-11-05)
+
+- **Evidencia (código)**: `producto_variaciones` tiene `unique(id_producto, color)` y
+  `variacion_tallas` `unique(id_variacion, id_talla)`; los controladores no validaban y la
+  excepción salía como HTTP 500 en `detalle`.
+- **Corrección**: regla `unique` en `ProductoVariacionController` (crear y actualizar) y
+  comprobación explícita en `VariacionTallaController` (crear y actualizar). Verificado: 422
+  con mensaje en español.
+
+### 15. Precio vacío al editar una talla se guardaba como 0 — BAJO · CORREGIDO (2026-11-05)
+
+- **Evidencia**: `$request->has('precio_venta')` es `true` con cadena vacía, y el JS enviaba
+  `Number('') → 0 → "0.00"`; el precio de la variación quedaba en 0 y Facturación lo usaría
+  como precio de catálogo.
+- **Corrección**: el JS no envía el precio cuando el campo está vacío y el controlador usa
+  `filled()` (conserva el valor actual); al crear, cae al precio del producto.
+  Verificado: precio 869.565217 se mantiene tras guardar con el campo vacío.
+
+### 16. Productos sin tallas (no ropa) no se podían vender por color — ALTO · CORREGIDO (2026-11-05)
+
+- **Evidencia**: `variacion_tallas.id_talla` era `NOT NULL`; el POS arma los ítems desde
+  `variacion->tallas` (`FacturacionController::MostrarProductosPOS`) y, sin tallas, caía al
+  producto base perdiendo el color y usando `productos.stock_actual`.
+- **Corrección**: migración `2026_11_05_000007` deja `id_talla` nullable; una fila por color
+  sin talla (SKU `...-UNICA`), validación de fila única por color, POS acepta variantes sin
+  talla y `web_producto` devuelve `Única`. La ficha web oculta el selector de tallas.
+- **Verificado** (producto de prueba, luego eliminado): POS muestra «Producto · Negro» con su
+  stock y SKU; `/producto?p=19` oculta tallas, preselecciona «Única» y **agrega al carrito**.
+- **Invariante 7**: Σ `variacion_tallas.stock` = `productos.stock_actual` en los 15 productos
+  reales (0 descuadres) después de los cambios.
+
+### 17. Cambiar la talla de una fila no deja rastro en el Kardex — MEDIO · ABIERTO
+
+- **Evidencia**: `VariacionTallaController::ActualizarVariacionTalla` modifica `stock` y
+  `id_talla` sin crear `movimientos_inventario`; el alta tampoco genera movimiento. El tope es
+  `productos.stock_actual` (Σ tallas ≤ stock del producto), así que mover stock entre tallas
+  no cambia el total, pero un cambio de talla sí altera la composición sin trazabilidad.
+- **Riesgo**: el Kardex no explica por qué una talla subió y otra bajó.
+- **Prueba necesaria**: con un producto de prueba, cambiar 2 unidades de la talla 40 a la 41 y
+  verificar si se espera un par de movimientos AJUSTE (decisión de negocio pendiente).
+
+### 18. Sin datos para probar
+
+- Productos con IVA 15 % / ISC 10 %: no existen (todos Exento). El cálculo final con impuesto
+  se verificó por recálculo, no desde la pantalla.
+
+---
+
 ## Auditoría 2026-10-15 (ventas, compras, cajas, cuentas, inventario)
 
 ### 1. `cajas` no tiene columna `saldo_actual` → compras con caja siempre rechazadas — CRÍTICO · CORREGIDO (2026-10-15)

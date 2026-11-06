@@ -35,15 +35,16 @@ export default function initMostrarProductos() {
 
         columns: [
 
-            { data: 'id_producto' },
+            /* Columnas ocultas por defecto: se marcan aquí para no redibujar al entrar. */
+            { data: 'id_producto', visible: false },
 
-            { data: 'imagen_producto', /* ══════ Imagen del Producto ══════ */
+            { data: 'imagen_producto', visible: false, /* ══════ Imagen del Producto ══════ */
                  render: function(data){
                     if(data){ 
-                        return `<img class="TablaImagenProducto" src="/imagenes/productos/${data}" width="30">`; 
+                        return `<img class="TablaImagenProducto" src="/imagenes/productos/${data}" width="30" loading="lazy" decoding="async">`; 
                     } 
                     else { 
-                        return `<img class="TablaImagenProducto" src="/img/noproducto.png" width="30">`; 
+                        return `<img class="TablaImagenProducto" src="/img/noproducto.png" width="30" loading="lazy" decoding="async">`; 
                     }
                 }
             },
@@ -51,6 +52,8 @@ export default function initMostrarProductos() {
             { data: 'nombre_producto' }, /*  ══════ Nombre Producto  ══════ */
 
             { data: 'categoria.nombre_categoria', defaultContent: '—' }, /*  ══════ Categoria  ══════*/
+
+            { data: 'marca.nombre_marca', defaultContent: '—' }, /*  ══════ Marca  ══════*/
 
             { data: 'medida.nombre_medida', defaultContent: '—'},
 
@@ -107,6 +110,14 @@ export default function initMostrarProductos() {
                             <i class="ph ph-eye"></i>
                         
                         </button>`;
+
+                        // Abre la pantalla de variantes filtrada por este producto.
+                        let botonVariantes = `<a class="btn-transferir variantesProducto"
+                            href="/producto-variaciones-detalles?producto=${data}"
+                            data-turbo-frame="contenido-dinamico"
+                            title="Variantes (colores, tallas e imágenes)">
+                            <i class="ph ph-squares-four"></i>
+                        </a>`;
                     
                         return `
 
@@ -118,6 +129,7 @@ export default function initMostrarProductos() {
 
                         ${botonEstado}
                         ${botonDetalles}
+                        ${botonVariantes}
                     `;
 
                 }
@@ -126,6 +138,9 @@ export default function initMostrarProductos() {
         drawCallback: function () { AnimarFilasVisibles(this.api()); }, order: [[0, 'asc']],
         initComplete: function () {
             ConfigurarFiltrosDataTable(this, { columnasSelect: [3], columnasIgnorar: [1, 7, 8, 9, 12, 13], opciones: opcionesFiltros });
+
+            // Se dejan listos los combos del modal mientras el usuario mira la tabla.
+            cargarFormularioProductos().catch(() => {});
         }
 
     }); // Fin de Funcion de inicializacion de tabla
@@ -135,18 +150,15 @@ export default function initMostrarProductos() {
 
 /* ════════════════ FILTROS (OCULTAR INACTIVOS) ════════════════ */
 
-    $.fn.dataTable.ext.search.push(
+// Se registra una sola vez y solo afecta a esta tabla: antes se acumulaba
+// un filtro por cada visita y se aplicaba también a otras tablas.
+window.registrarFiltroDataTable('productos-inactivos', function (settings, data) {
 
-        function(settings, data, dataIndex) {
+    if (settings.nTable?.id !== 'TablaMostrarProductos') return true;
+    if (! $('#toggleInactivosProductos').is(':checked')) return true;
 
-            const ocultar = $('#toggleInactivosProductos').is(':checked');
-            if (!ocultar) return true;
-
-            const estado = data[12]; // columna estado (IMPORTANTE)
-            return estado.includes('Activo');
-        }
-
-    );
+    return String(data[12] || '').includes('Activo');
+});
 
 /* ════════════════════════════════════════════════════════════════════════════════════════════════════════════════ */
 
@@ -228,6 +240,63 @@ export default function initMostrarProductos() {
     });
 
 
+    /* ════════════════ ATRIBUTOS DEL PRODUCTO ════════════════ */
+
+    // Pinta un select por atributo y marca el valor que ya tiene el producto.
+    function pintarAtributosProducto(atributos, seleccionados = []) {
+
+        const contenedor = $('#editar_atributos_producto');
+
+        contenedor.empty();
+
+        const valoresPorAtributo = {};
+
+        (seleccionados || []).forEach(item => {
+            valoresPorAtributo[Number(item.id_atributo)] = Number(item.id_valor);
+        });
+
+        (atributos || []).forEach(atributo => {
+
+            const valores = atributo.valores || [];
+
+            if (!valores.length) return;
+
+            const opciones = valores
+                .map(valor => `<option value="${valor.id_valor}">${valor.valor_atributo}</option>`)
+                .join('');
+
+            contenedor.append(`
+                <div class="col-md-3">
+                    <label class="form-label">${atributo.nombre_atributo}</label>
+                    <select class="form-select form-select-sm select-atributo-producto"
+                            data-id-atributo="${atributo.id_atributo}">
+                        <option value="">Sin especificar</option>
+                        ${opciones}
+                    </select>
+                </div>
+            `);
+
+            const idValor = valoresPorAtributo[Number(atributo.id_atributo)];
+
+            if (idValor) {
+                contenedor.find(`select[data-id-atributo="${atributo.id_atributo}"]`).val(String(idValor));
+            }
+        });
+    }
+
+    // Atributos elegidos en el formato que espera el controlador.
+    function obtenerAtributosSeleccionados() {
+
+        return $('#editar_atributos_producto .select-atributo-producto').map(function () {
+
+            return {
+                id_atributo: Number($(this).data('id-atributo')),
+                id_valor: Number($(this).val()) || 0
+            };
+
+        }).get().filter(atributo => atributo.id_valor > 0);
+    }
+
 /* ════════════════ ACCIÓN: BTN DE ACTUALIZAR PRODUCTO EDITADO ════════════════ */
 
     function enviarActualizacionProducto(formData, conAjusteVariacion = false) {
@@ -274,6 +343,7 @@ export default function initMostrarProductos() {
         const nombre = $('#editar_nombre_producto').val().trim();
         const descripcion = $('#editar_descripcion_producto').val().trim();
         const id_categoria = $('#editar_id_categoria').val();
+        const id_marca = $('#editar_id_marca').val();
         const id_ubicacion = $('#editar_id_ubicacion').val();
         const id_impuesto = $('#editar_id_impuesto').val();
         const precio_compra = $('#editar_precio_compra').val();
@@ -291,6 +361,8 @@ export default function initMostrarProductos() {
         formData.append('nombre_producto', nombre);
         formData.append('descripcion_producto', descripcion);
         formData.append('id_categoria', id_categoria);
+        formData.append('id_marca', id_marca || '');
+        formData.append('atributos', JSON.stringify(obtenerAtributosSeleccionados()));
         formData.append('id_ubicacion', id_ubicacion);
         formData.append('id_impuesto', id_impuesto);
         formData.append('precio_compra', precio_compra);
@@ -453,15 +525,39 @@ export default function initMostrarProductos() {
         enviarActualizacionProducto(formDataAjusteVariacionPendiente, true);
     });
 
+    /* ════════════ CACHÉ DE LOS COMBOS DEL FORMULARIO ════════════
+       Categorías, marcas, medidas… cambian poco y la consulta tarda ~800 ms:
+       se piden una vez y se reutilizan mientras se esté en esta pantalla. */
+
+    let formularioProductos = null;
+    let peticionFormulario = null;
+
+    function cargarFormularioProductos() {
+
+        if (formularioProductos) return Promise.resolve(formularioProductos);
+        if (peticionFormulario) return peticionFormulario;
+
+        peticionFormulario = $.getJSON('/productos/formulario?solo_activos=1')
+            .then(res => {
+                formularioProductos = res.data;
+                return formularioProductos;
+            })
+            .catch(error => {
+                peticionFormulario = null;
+                throw error;
+            });
+
+        return peticionFormulario;
+    }
+
     function abrirModalEditar(id) {
 
-        $.get('/productos/formulario?solo_activos=1', function(res){
-
-            const data = res.data;
+        cargarFormularioProductos().then(function(data){
 
             /* ══════════════════════════════════════════ */
 
             const selectCat = $('#editar_id_categoria');
+            const selectMar = $('#editar_id_marca');
             const selectUbic = $('#editar_id_ubicacion');
             const selectImp = $('#editar_id_impuesto');
             const selectMed = $('#editar_medida_producto');
@@ -472,13 +568,13 @@ export default function initMostrarProductos() {
 
             /* ══════════════════════════════════════════ */
 
-            [selectCat, selectUbic, selectImp, selectMed, selectMot].forEach(select => {
+            [selectCat, selectMar, selectUbic, selectImp, selectMed, selectMot].forEach(select => {
                 if (select.hasClass('select2-hidden-accessible')) { select.select2('destroy'); }
             });
 
             // ajustar_stock_actual
 
-            [selectCat, selectUbic, selectImp, selectMed, selectMot].forEach(select => {
+            [selectCat, selectMar, selectUbic, selectImp, selectMed, selectMot].forEach(select => {
                 select.select2({
                     width: '100%',
                     dropdownParent: $('#modalEditarProducto'),
@@ -489,6 +585,7 @@ export default function initMostrarProductos() {
             });
 
             selectCat.empty().append('<option value="" disabled selected>Seleccione</option>');
+            selectMar.empty().append('<option value="">Sin marca</option>');
             selectUbic.empty().append('<option value="">Seleccione</option>');
             selectImp.empty().append('<option value="" disabled selected>Seleccione</option>');
             selectMed.empty().append('<option value="" disabled selected>Seleccione</option>');
@@ -496,6 +593,7 @@ export default function initMostrarProductos() {
             /* ══════════════════════════════════════════════════════════════════════════════════════════ */
             
             data.categorias.forEach(cat => { selectCat.append(`<option value="${cat.id_categoria}">${cat.nombre_categoria}</option>`); });
+            (data.marcas || []).forEach(mar => { selectMar.append(`<option value="${mar.id_marca}">${mar.nombre_marca}</option>`); });
             data.ubicaciones.forEach(ubi => { selectUbic.append(`<option value="${ubi.id_ubicacion}">${ubi.nombre_ubicacion}</option>`); });
             
             data.impuestos.forEach(imp => {
@@ -555,9 +653,12 @@ export default function initMostrarProductos() {
 
                 // Seleccionar los valores correctos en los selects
                 selectCat.val(producto.id_categoria).trigger('change');
+                selectMar.val(producto.id_marca ? String(producto.id_marca) : '').trigger('change');
                 selectUbic.val(producto.id_ubicacion).trigger('change');
                 selectImp.val(producto.id_impuesto).trigger('change');
                 selectMed.val(producto.id_medida).trigger('change'); // si aplica
+
+                pintarAtributosProducto(data.atributos, producto.atributos);
 
                 // Preview de la imagen
                 if(producto.imagen_producto){
@@ -575,7 +676,7 @@ export default function initMostrarProductos() {
 
             }).fail(function(){ mostrarToast('Error al cargar los datos del producto', 'danger'); });
 
-        }).fail(function(){ mostrarToast('Error al cargar datos del formulario', 'danger'); });
+        }).catch(function(){ mostrarToast('Error al cargar datos del formulario', 'danger'); });
 
     } // FIN DE FUNCION ABRIR MODAL
 

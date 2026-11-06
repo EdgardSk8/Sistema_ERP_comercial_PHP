@@ -12,6 +12,7 @@ Route::get('/', function () {
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CajaController;
 use App\Http\Controllers\CargaVistaController;
+use App\Http\Controllers\CatalogoProductoController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ClienteWebController;
@@ -79,6 +80,7 @@ Route::view('/ubicaciones', 'ubicaciones.Ubicaciones')->middleware('permiso:vist
 Route::view('/roles', 'roles.Roles')->middleware('permiso:vista_roles')->name('roles');
 Route::view('/permisos', 'permisos.Permisos')->middleware('permiso:vista_permisos')->name('permisos');
 Route::view('/categorias', 'categorias.Categorias')->middleware('permiso:vista_categorias')->name('categorias');
+Route::view('/catalogos-producto', 'productos.Catalogos')->middleware('permiso:vista_catalogos_producto')->name('catalogos_producto');
 Route::view('/cupones-descuentos', 'cuponesdescuentos.CuponesDescuentos')->middleware('permiso:vista_cupones_descuentos')->name('cupones-descuentos');
 Route::view('/clientes', 'clientes.Clientes')->middleware('permiso:vista_clientes')->name('clientes');
 Route::view('/compras/crear', 'compras.CrearCompra')->middleware('permiso:vista_crear_compras')->name('crear.compras');
@@ -160,6 +162,19 @@ Route::post('/categorias/crear', [CategoriaController::class, 'CrearCategoria'])
 Route::get('/categorias/{id}/editar', [CategoriaController::class, 'EditarCategoria'])->middleware('permiso:editar_categorias');
 Route::put('/categorias/{id}/actualizar', [CategoriaController::class, 'ActualizarCategoria'])->middleware('permiso:actualizar_categorias');
 Route::post('/categorias/cambiar-estado/{id}', [CategoriaController::class, 'CambiarEstadoCategoria'])->middleware('permiso:cambiar_estado_categorias');
+
+/*  ╔═════════ Endpoint Catalogos Producto ══════════╗
+    ╚════════════════════════════════════════════════╝ */
+
+Route::get('/catalogos-producto/mostrar', [CatalogoProductoController::class, 'MostrarCatalogos'])->middleware('permiso:mostrar_catalogos_producto');
+
+Route::post('/catalogos-producto/marca/crear', [CatalogoProductoController::class, 'CrearMarca'])->middleware('permiso:crear_catalogos_producto');
+Route::put('/catalogos-producto/marca/{id}/actualizar', [CatalogoProductoController::class, 'ActualizarMarca'])->middleware('permiso:actualizar_catalogos_producto');
+Route::post('/catalogos-producto/marca/cambiar-estado/{id}', [CatalogoProductoController::class, 'CambiarEstadoMarca'])->middleware('permiso:cambiar_estado_catalogos_producto');
+
+Route::post('/catalogos-producto/atributo/crear', [CatalogoProductoController::class, 'CrearAtributo'])->middleware('permiso:crear_catalogos_producto');
+Route::put('/catalogos-producto/atributo/{id}/actualizar', [CatalogoProductoController::class, 'ActualizarAtributo'])->middleware('permiso:actualizar_catalogos_producto');
+Route::post('/catalogos-producto/atributo/cambiar-estado/{id}', [CatalogoProductoController::class, 'CambiarEstadoAtributo'])->middleware('permiso:cambiar_estado_catalogos_producto');
 
 /*  ╔════════════ Endpoint Impuestos ════════════╗
     ╚════════════════════════════════════════════╝ */
@@ -462,6 +477,7 @@ Route::put('/tallas/tipos/cambiar-estado/{id}', [TipoTallaController::class, 'Ca
    ╚════════════════════════════════════════════════╝ */
 
 Route::get('/producto-variaciones/mostrar', [ProductoVariacionController::class, 'MostrarProductoVariacion'])->middleware('permiso:mostrar_producto_variaciones');
+Route::get('/producto-variaciones/detalle', [ProductoVariacionController::class, 'MostrarDetalleVariaciones'])->middleware('permiso:mostrar_producto_variaciones');
 Route::get('/producto-variaciones/mostrar-producto', [ProductoVariacionController::class, 'MostrarProductosSelect'])->middleware('permiso:mostrar_productos_select_variaciones');
 Route::post('/producto-variaciones/crear', [ProductoVariacionController::class, 'CrearProductoVariacion'])->middleware('permiso:crear_producto_variaciones');
 Route::get('/producto-variaciones/editar/{id}', [ProductoVariacionController::class, 'EditarProductoVariacion'])->middleware('permiso:editar_producto_variaciones');
@@ -473,6 +489,7 @@ Route::delete('/producto-variaciones/eliminar/{id}', [ProductoVariacionControlle
    ╚══════════════════════════════════════════════╝ */
 
 Route::get('/variacion-imagenes/mostrar', [VariacionImagenController::class, 'MostrarVariacionImagen'])->middleware('permiso:mostrar_variacion_imagenes');
+Route::get('/variacion-imagenes/miniatura/{id}', [VariacionImagenController::class, 'Miniatura'])->middleware('permiso:mostrar_variacion_imagenes');
 Route::post('/variacion-imagenes/crear', [VariacionImagenController::class, 'CrearVariacionImagen'])->middleware('permiso:crear_variacion_imagenes');
 Route::get('/variacion-imagenes/editar/{id}', [VariacionImagenController::class, 'EditarVariacionImagen'])->middleware('permiso:editar_variacion_imagenes');
 Route::put('/variacion-imagenes/actualizar/{id}', [VariacionImagenController::class, 'ActualizarVariacionImagen'])->middleware('permiso:actualizar_variacion_imagenes');

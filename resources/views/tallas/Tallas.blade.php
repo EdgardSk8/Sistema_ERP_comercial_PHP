@@ -1,5 +1,7 @@
 <turbo-frame id="contenido-dinamico">
 
+
+    @include('catalogos._tabs', ['activo' => 'tallas'])
     @include('tallas.CheckColumnasTallas')
     @include('tallas.CrearTalla')
     @include('tallas.EditarTalla')

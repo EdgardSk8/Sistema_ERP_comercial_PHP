@@ -2,14 +2,16 @@ export default function initMostrarImpuestos() {
 
     document.getElementById('titulo').textContent = 'GESTION DE IMPUESTOS';
 
-    $.fn.dataTable.ext.search.push( // Check de impuestos inactivos
-        function(settings, data, dataIndex) {
-            const ocultar = $('#toggleInactivosImpuestos').is(':checked');
-            if (!ocultar) return true;
-            const estado = data[3]; // columna estado
-            return estado.includes('Activo');
-        }
-    );
+    window.registrarFiltroDataTable('impuestos-inactivos', function (settings, data) {
+
+        if (settings.nTable?.id !== 'tablaImpuestos') return true;
+
+        const ocultar = $('#toggleInactivosImpuestos').is(':checked');
+        if (!ocultar) return true;
+
+        const estado = data[3]; // columna estado
+        return String(estado || '').includes('Activo');
+    });
 
     $('#toggleInactivosImpuestos').on('change', function() { tabla.draw(); });
 

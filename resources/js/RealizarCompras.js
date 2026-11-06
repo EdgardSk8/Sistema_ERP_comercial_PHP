@@ -491,24 +491,30 @@ export default function initCompras() {
 
                 // SELECTORES
                 const selectCategoria = $('#crear_id_categoria');
+                const selectMarca = $('#crear_id_marca');
                 const selectUbicacion = $('#crear_id_ubicacion');
                 const selectImpuesto = $('#crear_id_impuesto');
                 const selectMedida = $('#crear_medida_producto');
 
                 // DESTRUIR SELECT2 SI YA EXISTE
-                [ selectCategoria, selectUbicacion, selectImpuesto, selectMedida
+                [ selectCategoria, selectMarca, selectUbicacion, selectImpuesto, selectMedida
                 ].forEach(select => { if(select.hasClass('select2-hidden-accessible')){ select.select2('destroy'); } });
 
                 // INICIALIZAR SELECT2
-                [ selectCategoria, selectUbicacion, selectImpuesto, selectMedida]
+                [ selectCategoria, selectMarca, selectUbicacion, selectImpuesto, selectMedida]
                 .forEach(select => { select.select2({ width: '100%', dropdownParent: $('#modalCrearProducto'), allowClear: false }); });
 
                 selectCategoria.empty().append('<option value="" disabled selected>Seleccione</option>');
+                selectMarca.empty().append('<option value="">Sin marca</option>');
                 selectUbicacion.empty().append('<option value="" disabled selected>Seleccione</option>');
                 selectImpuesto.empty().append('<option value="" disabled selected>Seleccione</option>');
                 selectMedida.empty().append('<option value="" disabled selected>Seleccione</option>');
 
                 data.categorias.forEach(cat => { selectCategoria.append(` <option value="${cat.id_categoria}"> ${cat.nombre_categoria} </option> `); });
+
+                (data.marcas || []).forEach(mar => { selectMarca.append(` <option value="${mar.id_marca}"> ${mar.nombre_marca} </option> `); });
+
+                pintarAtributosCrearProducto(data.atributos);
 
                 data.ubicaciones.forEach(ubi => {
                     selectUbicacion.append(` <option value="${ubi.id_ubicacion}"> ${ubi.nombre_ubicacion} </option> `);
@@ -750,9 +756,53 @@ export default function initCompras() {
 
     /* ---------------------------------------------------------------------------------------------------- */
 
+        /* ════════════════ ATRIBUTOS DEL PRODUCTO ════════════════ */
+
+        // Pinta un select por atributo dentro del modal de crear producto.
+        function pintarAtributosCrearProducto(atributos) {
+
+            const contenedor = $('#crear_atributos_producto');
+
+            contenedor.empty();
+
+            (atributos || []).forEach(atributo => {
+
+                const valores = atributo.valores || [];
+
+                if (!valores.length) return;
+
+                const opciones = valores
+                    .map(valor => `<option value="${valor.id_valor}">${valor.valor_atributo}</option>`)
+                    .join('');
+
+                contenedor.append(`
+                    <div class="col-md-3">
+                        <label class="form-label">${atributo.nombre_atributo}</label>
+                        <select class="form-select form-select-sm select-atributo-producto"
+                                data-id-atributo="${atributo.id_atributo}">
+                            <option value="">Sin especificar</option>
+                            ${opciones}
+                        </select>
+                    </div>
+                `);
+            });
+        }
+
+        // Atributos elegidos en el formato que espera el controlador.
+        function obtenerAtributosCrearProducto() {
+
+            return $('#crear_atributos_producto .select-atributo-producto').map(function () {
+
+                return {
+                    id_atributo: Number($(this).data('id-atributo')),
+                    id_valor: Number($(this).val()) || 0
+                };
+
+            }).get().filter(atributo => atributo.id_valor > 0);
+        }
+
         /* form.reset() no limpia los Select2: hay que vaciarlos y refrescar su vista. */
-        function limpiarModalCrearProducto() {
-            const formulario = document.getElementById('formCrearProducto');
+        function limpiarModalCrearProducto() {            const formulario = document.getElementById('formCrearProducto');
 
             if (formulario) formulario.reset();
 
@@ -775,6 +825,7 @@ export default function initCompras() {
             const nombre = $('#crear_nombre_producto').val().trim();
             const descripcion = $('#crear_descripcion_producto').val().trim();
             const categoria = $('#crear_id_categoria').val();
+            const marca = $('#crear_id_marca').val();
             const medida = $('#crear_medida_producto').val();
             const ubicacion = $('#crear_id_ubicacion').val();
             const impuesto = $('#crear_id_impuesto').val();
@@ -824,6 +875,8 @@ export default function initCompras() {
             formData.append('nombre_producto', nombre);
             formData.append('descripcion_producto', descripcion);
             formData.append('id_categoria', categoria);
+            formData.append('id_marca', marca || '');
+            formData.append('atributos', JSON.stringify(obtenerAtributosCrearProducto()));
             formData.append('id_ubicacion', ubicacion);
             formData.append('id_impuesto', impuesto);
             formData.append('precio_compra', precioCompra);

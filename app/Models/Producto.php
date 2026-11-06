@@ -16,6 +16,7 @@ class Producto extends Model
         'nombre_producto',
         'descripcion_producto',
         'id_categoria',
+        'id_marca',
         'id_medida',
         'id_impuesto',
         'id_ubicacion',
@@ -55,6 +56,16 @@ class Producto extends Model
     public function categoria()
     {
         return $this->belongsTo(Categoria::class, 'id_categoria');
+    }
+
+    public function marca()
+    {
+        return $this->belongsTo(Marca::class, 'id_marca', 'id_marca');
+    }
+
+    public function atributos()
+    {
+        return $this->hasMany(ProductoAtributo::class, 'id_producto', 'id_producto');
     }
 
     public function impuesto()

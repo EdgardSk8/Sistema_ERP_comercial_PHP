@@ -57,18 +57,12 @@ export default function initMostrarTallas() {
     $('#formCrearTalla').off('.tallas');
     $('#formEditarTalla').off('.tallas');
 
-    if (window.filtroTallasDataTable) {
-        const indice = $.fn.dataTable.ext.search.indexOf(window.filtroTallasDataTable);
-        if (indice !== -1) $.fn.dataTable.ext.search.splice(indice, 1);
-    }
-
-    window.filtroTallasDataTable = function (settings, data) {
+    window.registrarFiltroDataTable('tallas-inactivas', function (settings, data) {
         if (settings.nTable.id !== 'tablaTallas') return true;
         if (!$('#toggleInactivasTallas').is(':checked')) return true;
         const estado = $('<div>').html(data[3] || '').text().trim();
         return estado === 'Activa';
-    };
-    $.fn.dataTable.ext.search.push(window.filtroTallasDataTable);
+    });
 
     if ($.fn.DataTable.isDataTable($tabla[0])) $tabla.DataTable().destroy();
 

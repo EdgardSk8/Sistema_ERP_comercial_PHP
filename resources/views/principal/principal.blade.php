@@ -109,6 +109,15 @@
                 </a>
             @endif
 
+            @if(in_array('vista_promociones', session('permisos', [])))
+                <a href="{{ route('promociones') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-megaphone text-warning"></i>
+                    Promociones
+                </a>
+            @endif
+
             @if(in_array('vista_clientes', session('permisos', [])))
                 <a href="{{ route('clientes') }}"
                 class="sidebar-link"
@@ -272,75 +281,35 @@
                 </a>
             @endif
 
-            @if(in_array('vista_promociones', session('permisos', [])))
-                <a href="{{ route('promociones') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                    <i class="ph ph-megaphone text-warning"></i>
-                    Promociones
-                </a>
-            @endif
-
-            @if(in_array('vista_categorias', session('permisos', [])))
-                <a href="{{ route('categorias') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                    <i class="ph ph-tag text-warning"></i>
-                    Categorías
-                </a>
-            @endif
-
-            @if(in_array('vista_ubicaciones', session('permisos', [])))
-                <a href="{{ route('ubicaciones') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                    <i class="ph ph-map-pin text-success"></i>
-                    Ubicaciones
-                </a>
-            @endif
-
-            @if(in_array('vista_producto_variaciones', session('permisos', [])))
-                <a href="{{ route('producto-variaciones') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                    <i class="ph ph-squares-four text-success"></i>
-                    Variaciones de Productos
-                </a>
-            @endif
-
             @if(in_array('vista_producto_variaciones_detalle', session('permisos', [])))
                 <a href="{{ route('producto-variaciones-detalles') }}"
                 class="sidebar-link"
                 data-turbo-frame="contenido-dinamico">
-                    <i class="ph ph-list-dashes text-primary"></i>
-                    Detalle de Variación
+                    <i class="ph ph-squares-four text-success"></i>
+                    Variantes
                 </a>
             @endif
 
-            @if(in_array('vista_tallas', session('permisos', [])))
-                <a href="{{ route('tallas') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                    <i class="ph ph-ruler text-success"></i>
-                    Tallas
-                </a>
-            @endif
+            @php
+                // Catálogos: una sola entrada para los catálogos pequeños del inventario.
+                $rutasCatalogo = [
+                    'vista_categorias' => 'categorias',
+                    'vista_catalogos_producto' => 'catalogos_producto',
+                    'vista_ubicaciones' => 'ubicaciones',
+                    'vista_tallas' => 'tallas',
+                    'vista_tipos_medidas' => 'tipos.medidas',
+                    'vista_medidas' => 'medidas',
+                ];
+                $primeraRutaCatalogo = collect($rutasCatalogo)
+                    ->first(fn ($ruta, $permiso) => in_array($permiso, session('permisos', [])));
+            @endphp
 
-            @if(in_array('vista_tipos_medidas', session('permisos', [])))
-                <a href="{{ route('tipos.medidas') }}"
+            @if($primeraRutaCatalogo)
+                <a href="{{ route($primeraRutaCatalogo) }}"
                 class="sidebar-link"
                 data-turbo-frame="contenido-dinamico">
-                    <i class="ph ph-ruler text-primary"></i>
-                    Tipos de Medidas
-                </a>
-            @endif
-
-            @if(in_array('vista_medidas', session('permisos', [])))
-                <a href="{{ route('medidas') }}"
-                class="sidebar-link"
-                data-turbo-frame="contenido-dinamico">
-                    <i class="ph ph-ruler text-success"></i>
-                    Medidas
+                    <i class="ph ph-tag text-warning"></i>
+                    Catálogos
                 </a>
             @endif
 
@@ -349,7 +318,7 @@
                 class="sidebar-link"
                 data-turbo-frame="contenido-dinamico">
                    <i class="ph ph-arrows-left-right text-success"></i>
-                    Movimientos Inventario
+                    Kardex
                 </a>
             @endif
 

@@ -7,13 +7,15 @@ export default function initCuentas() {
 
 /* ═════════════ ( FILTRO ACTIVOS / INACTIVOS ) ═════════════ */
 
-    $.fn.dataTable.ext.search.push(function(settings, data) {
+    window.registrarFiltroDataTable('cuentas-inactivas', function (settings, data) {
+
+        if (settings.nTable?.id !== 'tablaCuentas') return true;
 
         const ocultar = $('#toggleInactivosCuentas').is(':checked');
         if (!ocultar) return true;
 
         const estado = data[4]; // Columna de estado
-        return estado.includes('Activo');
+        return String(estado || '').includes('Activo');
     });
 
     $('#toggleInactivosCuentas').on('change', function() { tabla.draw(); }); // Redibujar tabla ocultar inactivos

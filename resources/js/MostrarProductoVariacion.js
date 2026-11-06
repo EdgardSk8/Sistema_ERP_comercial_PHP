@@ -74,15 +74,14 @@ export default function initMostrarProductoVariaciones() {
         tabla.draw();
     });
 
-    $.fn.dataTable.ext.search.push(function(settings,data){
+    window.registrarFiltroDataTable('producto-variaciones-inactivas', function (settings, data) {
 
-        if(settings.nTable.id !== 'tablaProductoVariaciones') return true;
+        if (settings.nTable?.id !== 'tablaProductoVariaciones') return true;
 
         const ocultar = $('#toggleInactivosProductoVariaciones').is(':checked');
+        if (!ocultar) return true;
 
-        if(!ocultar) return true; 
-        
-        return data[2].includes('activo(s)');
+        return String(data[2] || '').includes('activo(s)');
     });
 
     // CARGAR PRODUCTOS EN LOS SELECTS

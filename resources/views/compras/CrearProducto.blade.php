@@ -57,6 +57,13 @@
                         </div>
 
                         <div class="col-md-3">
+                            <label class="form-label">Marca</label>
+                            <select id="crear_id_marca"
+                                    class="form-select form-select-sm">
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
                             <label class="form-label">Medida</label>
                             <select id="crear_medida_producto"
                                     class="form-select form-select-sm">
@@ -77,6 +84,13 @@
                                     class="form-select form-select-sm"
                                     required>
                             </select>
+                        </div>
+
+                        <!-- ================= ATRIBUTOS ================= -->
+
+                        <div class="col-12">
+                            <label class="form-label">Atributos</label>
+                            <div class="row g-2" id="crear_atributos_producto"></div>
                         </div>
 
                         <!-- ================= PRECIOS ================= -->

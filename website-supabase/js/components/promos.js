@@ -17,6 +17,58 @@
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║  Aviso de registro para visitantes sin sesión            ║
+       ╚══════════════════════════════════════════════════════════╝ */
+
+    /*
+       Arranca oculto: solo se muestra cuando la sesión ya se resolvió y no
+       hay cliente, para no enseñar la invitación a quien ya tiene cuenta.
+    */
+    function aplicarSesion(cliente) {
+        const aviso = document.getElementById('promosAviso');
+
+        if (aviso) aviso.hidden = Boolean(cliente);
+    }
+
+    function montarAvisoRegistro() {
+        if (document.getElementById('promosAviso')) return;
+
+        const destino = window.urlTienda ? window.urlTienda('login') : '/login';
+
+        const aviso = document.createElement('div');
+        aviso.className = 'promos-aviso';
+        aviso.id = 'promosAviso';
+        aviso.hidden = true;
+
+        aviso.innerHTML = `
+            <span class="promos-aviso__sello" aria-hidden="true">
+                <strong>10%</strong>
+                <small>Dcto</small>
+            </span>
+            <div class="promos-aviso__texto">
+                <span class="promos-aviso__etiqueta">Solo por registrarte</span>
+                <p class="promos-aviso__titulo">Regístrate y obtén 10% de descuento</p>
+                <p class="promos-aviso__detalle">Tu descuento de bienvenida se aplica en tu primera compra de zapatos.</p>
+            </div>
+            <a class="promos-aviso__btn" href="${escapar(destino)}">
+                Crear mi cuenta <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+        `;
+
+        contenedor.parentNode.insertBefore(aviso, contenedor);
+    }
+
+    montarAvisoRegistro();
+
+    if (window.sesionTiendaPromise) {
+        window.sesionTiendaPromise
+            .then((datos) => aplicarSesion(datos?.cliente))
+            .catch(() => aplicarSesion(null));
+    }
+
+    document.addEventListener('tienda:sesion', (evento) => aplicarSesion(evento.detail?.cliente));
+
     function tarjeta(foto, indice) {
         const titulo = foto.titulo
             ? `<span class="promo__titulo">${escapar(foto.titulo)}</span>`

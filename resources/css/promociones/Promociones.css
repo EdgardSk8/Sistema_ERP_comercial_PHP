@@ -188,6 +188,7 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--surface);
+    color: var(--text);
     text-align: left;
     cursor: pointer;
     transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;

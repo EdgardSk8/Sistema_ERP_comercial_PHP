@@ -2,14 +2,17 @@ export default function initMostrarCategorias() {
 
     document.getElementById('titulo').textContent = 'CATEGORIA DE PRODUCTOS';
 
-    $.fn.dataTable.ext.search.push( // Check de categorias inactivas
-        function(settings, data, dataIndex) {
-            const ocultar = $('#toggleInactivosCategorias').is(':checked');
-            if (!ocultar) return true;
-            const estado = data[3]; // columna estado_categoria
-            return estado.includes('Activo');
-        }
-    );
+    // Se registra una sola vez (antes se acumulaba un filtro por cada visita).
+    window.registrarFiltroDataTable('categorias-inactivas', function (settings, data) {
+
+        if (settings.nTable?.id !== 'tablaCategorias') return true;
+
+        const ocultar = $('#toggleInactivosCategorias').is(':checked');
+        if (!ocultar) return true;
+
+        const estado = data[3]; // columna estado_categoria
+        return String(estado || '').includes('Activo');
+    });
 
     $('#toggleInactivosCategorias').on('change', function() { tabla.draw(); });
 

@@ -14,6 +14,7 @@
                     <th>Imagen</th>
                     <th>Nombre</th>
                     <th>Categoría</th>
+                    <th>Marca</th>
                     <th>Medidas</th>
                     <th>P. Compra</th>
                     <th>P. Venta</th>
@@ -31,6 +32,7 @@
 
                 <tfoot>
                     <tr>
+                        <th></th>
                         <th></th>
                         <th></th>
                         <th></th>

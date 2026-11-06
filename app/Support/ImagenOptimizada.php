@@ -59,6 +59,34 @@ class ImagenOptimizada
     }
 
     /**
+     * Crea (o rehace) una miniatura cuadrada a partir de un archivo existente.
+     * Se usa en el listado del ERP para no descargar la foto completa.
+     */
+    public static function miniatura(string $origen, string $destino, int $lado = 96, int $calidad = 70): bool
+    {
+        if (! is_file($origen)) {
+            return false;
+        }
+
+        $directorio = dirname($destino);
+
+        if (! is_dir($directorio)) {
+            mkdir($directorio, 0777, true);
+        }
+
+        $formato = strtolower(pathinfo($destino, PATHINFO_EXTENSION)) ?: self::extensionSoportada();
+
+        // Sin orientate(): los WebP no llevan EXIF y exif_read_data lanza un aviso.
+        $imagen = Image::make($origen);
+        $imagen->fit($lado, $lado);
+
+        file_put_contents($destino, $imagen->encode($formato, $calidad)->getEncoded());
+        @chmod($destino, 0644);
+
+        return true;
+    }
+
+    /**
      * Recomprime un archivo existente conservando su ruta y su formato.
      * Útil para archivos ya subidos que pesan demasiado.
      */

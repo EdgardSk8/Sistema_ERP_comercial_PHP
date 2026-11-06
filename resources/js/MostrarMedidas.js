@@ -82,11 +82,14 @@ export default function initMostrarMedidas() {
 
     // EVENTO DE MOSTRAR ESTADOS
     $('#toggleInactivosMedidas').off('change').on('change',function(){ tabla.draw(); });
-    $.fn.dataTable.ext.search.push(function(settings,data){
-        if(settings.nTable.id !== 'tablaMedidas') return true;
+    window.registrarFiltroDataTable('medidas-inactivas', function (settings, data) {
+
+        if (settings.nTable?.id !== 'tablaMedidas') return true;
+
         const ocultar = $('#toggleInactivosMedidas').is(':checked');
-        if(!ocultar) return true; 
-        return data[5].includes('Activo');
+        if (!ocultar) return true;
+
+        return String(data[5] || '').includes('Activo');
     });
 
     // EVENTO PARA CARGAR LOS TIPOS DE MEDIDAS

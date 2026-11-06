@@ -18,6 +18,7 @@
 | Ventas | cuentas-por-cobrar | Cuentas por cobrar |
 | Ventas | pedidos-web | Pedidos web |
 | Ventas | cupones-descuentos | Cupones y descuentos |
+| Ventas | promociones | Promociones |
 | Ventas | clientes | Clientes |
 | Compras | crear.compras | Compras |
 | Compras | compras | Lista de Compras |
@@ -31,15 +32,8 @@
 | Gastos | tipos.gasto | Tipos de Gasto |
 | Gastos | movimientos.gastos | Movimiento Gastos |
 | Inventario | productos | Productos |
-| Inventario | promociones | Promociones |
-| Inventario | categorias | Categorías |
-| Inventario | ubicaciones | Ubicaciones |
-| Inventario | producto-variaciones | Variaciones de Productos |
-| Inventario | producto-variaciones-detalles | Detalle de Variación |
-| Inventario | tallas | Tallas |
-| Inventario | tipos.medidas | Tipos de Medidas |
-| Inventario | medidas | Medidas |
-| Inventario | movimientos.inventario | Movimientos Inventario |
+| Inventario | producto-variaciones-detalles | Variantes |
+| Inventario | movimientos.inventario | Kardex |
 | Administración | usuarios | Usuarios |
 | Administración | roles | Roles |
 | Administración | permisos | Permisos |
@@ -58,6 +52,7 @@
 |---|---|---|---|---|---|
 | cajas/ArqueoImpresion.blade.php |  |  |  |  |  |
 | cajas/Cajas.blade.php |  |  | modalEditarArqueo, modalArqueoMultiple | btnImprimirArqueo, btnArqueoHoy, btnArqueoSemana, btnLimpiarFiltros, btnArquearSeleccionadas, btnGuardarArqueo, btnGuardarArqueoMultiple | contenido-dinamico, tituloArqueos, btnImprimirArqueo, arqueoFechaInicio, arqueoFechaFin, btnArqueoHoy, btnArqueoSemana, btnLimpiarFiltros, arqueoTotalCajas, arqueoTotalTeorico, arqueoTotalReal, arqueoTotalDiferencia, arqueoSeleccionBarra, arqueoSeleccionarTodo, arqueoSeleccionCantidad, btnArquearSeleccionadas, tablaCajas, modalEditarArqueo, tituloModalArqueo, arqueoCajaEtiqueta |
+| catalogos/_tabs.blade.php |  |  |  |  |  |
 | categorias/Categorias.blade.php |  | categorias.CheckColumnasCategorias, categorias.CrearCategoria, categorias.EditarCategoria |  |  | contenido-dinamico, tablaCategorias |
 | categorias/CheckColumnasCategorias.blade.php |  |  |  | recargarCategorias | colNombre, colDescripcion, colFechaCreacion, colEstado, colAcciones, toggleInactivosCategorias, recargarCategorias |
 | categorias/CrearCategoria.blade.php |  |  | modalCrearCategoria | btnGuardarCategoria | modalCrearCategoria, formCrearCategoria, crear_nombre_categoria, crear_descripcion_categoria, btnGuardarCategoria |
@@ -68,7 +63,7 @@
 | compras/CheckColumnasCompras.blade.php |  |  |  | recargarCompras | colIdentificador, colFactura, colProveedor, colUsuario, colFecha, colSubtotal, colDescuento, colImpuesto, colTotal, colMetodoPago, colEstado, colDetalles, toggleFooter, recargarCompras |
 | compras/Compras.blade.php |  | compras.CheckColumnasCompras, compras.DetalleCompra |  |  | contenido-dinamico, tablaCompras |
 | compras/CrearCompra.blade.php |  | compras.CrearProducto |  | btnAgregar, btnLimpiar, btnRegistrar | contenido-dinamico, proveedor, numero_factura, tipo_factura, metodo_pago, cajacuentaselect, caja_select, cuenta, producto_select, cantidad, btnAgregar, tabla_carrito, subtotal, descuento, impuesto, chk_iva_incluido, total, btnLimpiar, btnRegistrar |
-| compras/CrearProducto.blade.php |  |  | modalCrearProducto | btnGuardarProducto | modalCrearProducto, formCrearProducto, crear_nombre_producto, crear_descripcion_producto, crear_id_categoria, crear_medida_producto, crear_id_ubicacion, crear_id_impuesto, crear_precio_compra, crear_check_venta, crear_redondeo_venta, crear_porcentaje_venta, crear_precio_venta, crear_ganancia_producto, crear_precio_venta_TOTAL, crear_stock_actual, crear_imagen_producto, preview_imagen_producto, btnGuardarProducto |
+| compras/CrearProducto.blade.php |  |  | modalCrearProducto | btnGuardarProducto | modalCrearProducto, formCrearProducto, crear_nombre_producto, crear_descripcion_producto, crear_id_categoria, crear_id_marca, crear_medida_producto, crear_id_ubicacion, crear_id_impuesto, crear_atributos_producto, crear_precio_compra, crear_check_venta, crear_redondeo_venta, crear_porcentaje_venta, crear_precio_venta, crear_ganancia_producto, crear_precio_venta_TOTAL, crear_stock_actual, crear_imagen_producto, preview_imagen_producto |
 | compras/DetalleCompra.blade.php |  |  | modalDetalleCompra | btnAnularCompra | modalDetalleCompra, facturaTituloCompra, btnAnularCompra, areaImprimirCompra, proveedorNombre, usuarioNombreCompra, fechaCompra, metodoPagoCompra, tablaDetallesCompra, subtotalCompra, descuentoCompra, impuestoCompra, totalCompra |
 | credenciales/Credenciales.blade.php |  | credenciales.EditarCredenciales | modalLogoEmpresa | btnEditar, btnCambiarLogo, btnEliminarLogo, btnGuardarLogo | contenido-dinamico, btnEditar, nombre_empresa, ruc_empresa, direccion_empresa, telefono_empresa, correo_empresa, tipo_cambio, logoEmpresaActual, sinLogoEmpresa, btnCambiarLogo, btnEliminarLogo, modalLogoEmpresa, formLogoEmpresa, logo_id_empresa, archivoLogoEmpresa, contenedorPreviewLogo, previewLogoEmpresa, btnGuardarLogo |
 | credenciales/EditarCredenciales.blade.php |  |  | modalEditarEmpresa | btnActualizarEmpresa | modalEditarEmpresa, formEditarEmpresa, editar_id_empresa, editar_nombre_empresa, editar_ruc_empresa, editar_direccion_empresa, editar_telefono_empresa, editar_correo_empresa, editar_tipo_cambio, editar_tarifa_km, editar_latitud_empresa, editar_longitud_empresa, btnActualizarEmpresa |
@@ -119,18 +114,19 @@
 | movimientos_gasto/Movimientos_Gastos.blade.php |  | movimientos_gasto.CheckColumnasMovimientosGastos |  |  | contenido-dinamico, tablaMovimientosGastos |
 | pedidosweb/PedidosWeb.blade.php | resources/css/pedidosweb/PedidosWeb.css |  | modalDetallePedidoWeb, modalConfirmarAccionPedidoWeb | recargarPedidosWeb, btnAceptarPedidoWeb, btnCancelarPedidoWeb, btnImprimirPedidoWeb, btnMarcarPagadoPedidoWeb, btnGuardarPedidoWeb, btnWhatsappPedidoWeb, confirmarAccionPedidoWeb | contenido-dinamico, resumenPedidosTotal, resumenPedidosSolicitados, resumenPedidosAceptados, resumenPedidosEnCamino, resumenPedidosEntregados, resumenPedidosCancelados, pedidoColNumero, pedidoColCliente, pedidoColProductos, pedidoColTotal, pedidoColEstado, pedidoColPago, pedidoColMetodoPago, pedidoColPreferida, pedidoColAceptado, pedidoColEntrega, pedidoColAcciones, filtroEstadoPedido, filtroEstadoPago |
 | permisos/Permisos.blade.php |  |  |  |  | contenido-dinamico, selectRol, buscarPermiso, estadoSinRol, contenedorPermisos |
-| productos/CheckColumnasProductos.blade.php |  |  |  | recargarProductos | colId, colImagen, colNombre, colCategoria, colPrecioCompra, colPrecioVenta, colGanancia, colGananciaPorcentaje, colImpuesto, colStock, colEstado, colAcciones, toggleInactivosProductos, toggleFooter, recargarProductos |
+| productos/Catalogos.blade.php |  |  | modalMarca, modalAtributo | btnNuevaMarca, btnNuevoAtributo, btnGuardarMarca, btnGuardarAtributo | contenido-dinamico, btnNuevaMarca, tablaMarcas, btnNuevoAtributo, tablaAtributos, modalMarca, tituloModalMarca, marca_id, marca_nombre, btnGuardarMarca, modalAtributo, tituloModalAtributo, atributo_id, atributo_nombre, atributo_valores, btnGuardarAtributo |
+| productos/CheckColumnasProductos.blade.php |  |  |  | recargarProductos | colId, colImagen, colNombre, colCategoria, colMarca, colMedida, colPrecioCompra, colPrecioVenta, colPrecioVentaFinal, colGanancia, colGananciaPorcentaje, colImpuesto, colStock, colEstado, colAcciones, toggleInactivosProductos, toggleFooter, recargarProductos |
 | productos/DetalleProducto.blade.php |  |  | modalDetalleProducto |  | modalDetalleProducto, detalle_imagen_producto, sin_imagen_texto, detalle_nombre_producto, detalle_descripcion_producto, detalle_categoria_producto, detalle_ubicacion_producto, detalle_impuesto_producto, detalle_precio_compra, detalle_precio_venta, detalle_stock_producto, detalle_fecha_producto, detalle_estado_producto |
-| productos/EditarProducto.blade.php |  |  | modalEditarProducto, modalDistribuirAjusteVariacion | btnActualizarProducto, btnConfirmarAjusteVariacion | modalEditarProducto, formEditarProducto, editar_id_producto, editar_nombre_producto, editar_descripcion_producto, editar_id_categoria, editar_medida_producto, editar_id_ubicacion, editar_id_impuesto, editar_precio_compra, editar_check_venta, editar_redondeo_venta, editar_porcentaje_venta, editar_precio_venta, editar_ganancia_producto, editar_precio_venta_TOTAL, editar_stock_actual, ajustar_stock_actual, editar_stock_motivo, editar_imagen_producto |
+| productos/EditarProducto.blade.php |  |  | modalEditarProducto, modalDistribuirAjusteVariacion | btnActualizarProducto, btnConfirmarAjusteVariacion | modalEditarProducto, formEditarProducto, editar_id_producto, editar_nombre_producto, editar_descripcion_producto, editar_id_categoria, editar_id_marca, editar_medida_producto, editar_id_ubicacion, editar_id_impuesto, editar_atributos_producto, editar_precio_compra, editar_check_venta, editar_redondeo_venta, editar_porcentaje_venta, editar_precio_venta, editar_ganancia_producto, editar_precio_venta_TOTAL, editar_stock_actual, ajustar_stock_actual |
 | productos/Productos.blade.php |  | productos.EditarProducto, productos.DetalleProducto, productos.CheckColumnasProductos |  |  | contenido-dinamico, TablaMostrarProductos |
 | productosvariacion/CheckColumnasProductoVariacion.blade.php |  |  |  | recargarProductoVariaciones | colProducto, colColor, colEstado, colAcciones, toggleInactivosProductoVariaciones, toggleFooter, recargarProductoVariaciones |
 | productosvariacion/CrearProductoVariacion.blade.php |  |  | modalCrearProductoVariacion |  | modalCrearProductoVariacion, formCrearProductoVariacion, crear_id_producto, crear_color |
 | productosvariacion/EditarProductoVariacion.blade.php |  |  | modalEditarProductoVariacion |  | modalEditarProductoVariacion, formEditarProductoVariacion, editar_id_variacion, editar_id_producto, editar_color |
 | productosvariacion/ProductoVariaciones.blade.php |  | productosvariacion.CheckColumnasProductoVariacion, productosvariacion.CrearProductoVariacion, productosvariacion.EditarProductoVariacion |  |  | contenido-dinamico, tablaProductoVariaciones |
-| productosvariaciondetalles/CheckColumnasProductoVariacionDetalle.blade.php |  |  |  | recargarProductoVariacionDetalle | CheckColumnasProductoVariacionDetalle, recargarProductoVariacionDetalle |
+| productosvariaciondetalles/CheckColumnasProductoVariacionDetalle.blade.php |  |  |  | btnNuevoColorVariacion, recargarProductoVariacionDetalle | CheckColumnasProductoVariacionDetalle, colVariacionImagenes, colVariacionProducto, colVariacionColor, colVariacionTallas, colVariacionUnidades, colVariacionAcciones, btnNuevoColorVariacion, recargarProductoVariacionDetalle |
 | productosvariaciondetalles/CrearVariacionImagen.blade.php |  |  | modalCrearVariacionImagen |  | modalCrearVariacionImagen, formCrearVariacionImagen, crear_id_variacion, crear_imagen, crear_preview_imagenes, crear_orden |
 | productosvariaciondetalles/EditarVariacionImagen.blade.php |  |  | modalEditarVariacionImagen |  | modalEditarVariacionImagen, formEditarVariacionImagen, editar_id_imagen, editar_id_variacion, editar_imagen, editar_preview_imagen, editar_orden |
-| productosvariaciondetalles/ProductoVariacionDetalle.blade.php |  | productosvariaciondetalles.CheckColumnasProductoVariacionDetalle, productosvariaciondetalles.CrearVariacionImagen, productosvariaciondetalles.EditarVariacionImagen | modalGaleriaVariacionImagenes, modalCrearVariacionTalla, modalEditarVariacionTalla | galeria_variacion_agregar | contenido-dinamico, tablaProductoVariacionDetalle, modalGaleriaVariacionImagenes, galeria_variacion_titulo, galeria_variacion_subtitulo, galeria_variacion_contenido, reemplazar_imagen_variacion, agregar_imagenes_variacion, galeria_variacion_agregar, modalCrearVariacionTalla, formCrearVariacionTalla, crear_talla_id_variacion, crear_id_tipo_talla_var, crear_id_talla, crear_stock_variacion_talla, crear_sku_variacion, crear_precio_compra_variacion, crear_precio_venta_variacion, crear_modo_precio_variacion, modalEditarVariacionTalla |
+| productosvariaciondetalles/ProductoVariacionDetalle.blade.php |  | productosvariaciondetalles.CheckColumnasProductoVariacionDetalle, productosvariaciondetalles.CrearVariacionImagen, productosvariaciondetalles.EditarVariacionImagen | modalDetalleVariacion, modalCrearColorVariacion, modalCrearVariacionTalla, modalEditarVariacionTalla | detalle_agregar_talla, galeria_variacion_agregar | contenido-dinamico, cargandoProductoVariacionDetalle, variacionesFiltro, tablaProductoVariacionDetalle, modalDetalleVariacion, detalle_variacion_titulo, detalle_variacion_subtitulo, detalle_agregar_talla, detalle_variacion_tallas, galeria_variacion_agregar, galeria_variacion_contenido, reemplazar_imagen_variacion, agregar_imagenes_variacion, modalCrearColorVariacion, formCrearColorVariacion, color_id_producto, color_nombre, modalCrearVariacionTalla, formCrearVariacionTalla, crear_talla_id_variacion |
 | promociones/Promociones.blade.php | resources/css/promociones/Promociones.css |  | modalPromocion, modalImagenPromocion | btnNuevaPromocion, btnGuardarPromocion | contenido-dinamico, btnNuevaPromocion, tablaPromociones, promocionesVacio, errorPromociones, modalPromocion, tituloModalPromocion, formPromocion, idPromocion, promocionProducto, promocionFiltroCategoria, promocionBuscarProducto, promocionProductos, promocionImagenPreview, promocionBadgePreview, promocionImagenTexto, promocionImagen, promocionFechaInicio, promocionFechaFin, promocionTipoDescuento |
 | proveedores/CheckColumnasProveedor.blade.php |  |  |  | recargarProveedores | colIdentificador, colNombre, colRuc, colTelefono, colCorreo, colDireccion, colEstado, colAcciones, toggleInactivosProveedores, recargarProveedores |
 | proveedores/CrearProveedor.blade.php |  |  | modalCrearProveedor | btnGuardarProveedor | modalCrearProveedor, formCrearProveedor, crear_nombre_proveedor, tipo_ruc, crear_ruc_proveedor, crear_telefono_proveedor, crear_correo_proveedor, crear_direccion_proveedor, btnGuardarProveedor |
@@ -195,6 +191,7 @@
 | #TablaMostrarProductos | resources/js/MostrarProducto.js |
 | #tablaPromociones | resources/js/MostrarPromociones.js |
 | #tablaCategorias | resources/js/MostrarCategoria.js |
+| #tablaMarcas | resources/js/MostrarCatalogos.js |
 | #tablaKardex | resources/js/Movimientos_Inventario.js |
 | #tablaUsuarios | resources/js/MostrarUsuarios.js |
 | #tablaRoles | resources/js/MostrarRoles.js |
@@ -229,6 +226,7 @@
 | Manual.js | initManual | #manualNav, #titulo, #manualVolverArriba |
 | MostrarCajas.js | initMostrarCajas | #titulo, #arqueoFechaInicio, #arqueoFechaFin, #modalEditarArqueo, #arqueoSeleccionarTodo, #arqueoSeleccionCantidad, #btnArquearSeleccionadas, #arqueoMultipleDetalle, #arqueoMultipleDiferencia, #btnGuardarArqueoMultiple, #arqueoMultipleReal, #arqueoMultipleCantidad |
 | MostrarCajaTransferencia.js | initCajaTransferencia | #titulo, #modalTransferir, #modalDetalleTransferencias |
+| MostrarCatalogos.js | initMostrarCatalogos | #titulo, #modalMarca, #modalAtributo |
 | MostrarCategoria.js | initMostrarCategorias | #titulo |
 | MostrarCliente.js | initMostrarCliente | #titulo |
 | MostrarCompras.js | initMostrarCompras | #titulo, #modalDetalleCompra |
@@ -242,7 +240,7 @@
 | MostrarPedidosWeb.js | initPedidosWeb | #tablaPedidosWeb, #titulo, #modalDetallePedidoWeb, #modalConfirmarAccionPedidoWeb, #fechaEntregaPedidoWeb, #resumenPedidosTotal, #resumenPedidosSolicitados, #resumenPedidosAceptados, #resumenPedidosEnCamino, #resumenPedidosEntregados, #resumenPedidosCancelados, #estadoVacioPedidos |
 | MostrarProducto.js | initMostrarProductos | #titulo, #modalDistribuirAjusteVariacion, #modalEditarProducto, #modalDetalleProducto |
 | MostrarProductoVariacion.js | initMostrarProductoVariaciones | #titulo, #formCrearProductoVariacion, #modalCrearProductoVariacion, #listaColoresEditarVariacion, #modalEditarProductoVariacion |
-| MostrarProductoVariacionDetalle.js | initMostrarProductoVariacionDetalle | #titulo, #recargarProductoVariacionDetalle, #agregar_imagenes_variacion, #reemplazar_imagen_variacion, #modalConfirmarAccionVariacion |
+| MostrarProductoVariacionDetalle.js | initMostrarProductoVariacionDetalle | #titulo, #variacionesFiltro, #color_id_producto, #modalCrearColorVariacion, #recargarProductoVariacionDetalle, #agregar_imagenes_variacion, #reemplazar_imagen_variacion, #modalConfirmarAccionVariacion |
 | MostrarPromociones.js | initPromociones | #tablaPromociones, #titulo, #modalPromocion, #modalImagenPromocion, #imagenPromocionGrande, #tituloImagenPromocion, #formPromocion, #tituloModalPromocion, #idPromocion, #promocionProducto, #promocionProductos, #promocionFechaInicio |
 | MostrarProveedor.js | initMostrarProveedores | #titulo |
 | MostrarRoles.js | initMostrarRoles | #titulo |

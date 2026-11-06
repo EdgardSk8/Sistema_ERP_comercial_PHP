@@ -470,11 +470,24 @@ window.configurarToggleColumnas = function (idTabla) {
 
     const tabla = $(`#${idTabla}`).DataTable();
 
+    let huboCambio = false;
+
     $('.toggle-col').each(function () {
-        tabla.column($(this).data('column')).visible(this.checked, false);
+        const columna = tabla.column($(this).data('column'));
+
+        if (columna.visible() !== this.checked) {
+            columna.visible(this.checked, false);
+            huboCambio = true;
+        }
     });
 
-    tabla.columns.adjust().draw(false);
+    // En tablas con datos del servidor, draw() vuelve a pedir la página:
+    // solo se redibuja si de verdad cambió alguna columna.
+    if (huboCambio) {
+        tabla.columns.adjust().draw(false);
+    } else {
+        tabla.columns.adjust();
+    }
 
     $('.toggle-col')
         .off('change.toggleCol')
@@ -486,6 +499,24 @@ window.configurarToggleColumnas = function (idTabla) {
 
             tabla.columns.adjust().draw(false);
         });
+};
+
+/* -------------------------------------------------------------------------------- */
+
+/**
+ * Registra un filtro global de DataTables una sola vez.
+ * Antes cada visita a un módulo añadía otro filtro idéntico y se iban acumulando.
+ */
+window.registrarFiltroDataTable = function (nombre, filtro) {
+
+    $.fn.dataTable.ext.search = $.fn.dataTable.ext.search
+        .filter(registrado => registrado.__filtroDataTable !== nombre);
+
+    filtro.__filtroDataTable = nombre;
+
+    $.fn.dataTable.ext.search.push(filtro);
+
+    return filtro;
 };
 
 /* -------------------------------------------------------------------------------- */

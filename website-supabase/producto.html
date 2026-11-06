@@ -27,8 +27,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261105f">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261105a">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261105p">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261105b">
 </head>
 <body class="pagina-producto">
 
@@ -109,6 +109,7 @@
 
     <!-- Título y descripción encima de la imagen grande -->
     <div class="producto__cabecera">
+      <p class="producto__marca" id="productoMarca" hidden></p>
       <div class="producto__titulo-fila">
         <h1 class="producto__nombre" id="productoNombre">Cargando…</h1>
         <button class="btn-compartir" type="button" id="btnCompartir" aria-label="Compartir producto">
@@ -153,6 +154,8 @@
       <div class="producto__aviso-dto" id="productoAvisoDescuento" hidden></div>
 
       <span class="producto__categoria" hidden>Categoría: <span id="productoCategoria">Cargando…</span></span>
+
+      <p class="producto__atributos" id="productoAtributos" hidden></p>
 
       <!-- Talla -->
       <div class="opcion opcion--tallas">
@@ -441,10 +444,10 @@
   <script src="/tienda/recursos/js/core/carrito-store.js?v=20261105c" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261104a" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261105a" defer></script>
-  <script src="/tienda/recursos/js/pages/producto.js?v=20261103c" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261105g" defer></script>
+  <script src="/tienda/recursos/js/pages/producto.js?v=20261103e" defer></script>
   <script src="/tienda/recursos/js/components/resenias.js?v=20261102h" defer></script>
-  <script src="/tienda/recursos/js/components/promos.js?v=20261103c" defer></script>
+  <script src="/tienda/recursos/js/components/promos.js?v=20261105b" defer></script>
   <script src="/tienda/recursos/js/components/mapa.js?v=20261102d" defer></script>
 </body>
 </html>

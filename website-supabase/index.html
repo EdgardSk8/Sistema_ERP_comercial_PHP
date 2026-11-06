@@ -28,8 +28,8 @@
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
   <link href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261105f">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261105a">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261105p">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261105b">
 </head>
 <body>
 
@@ -172,41 +172,69 @@
         <span class="filtros__resumen" id="filtrosResumen" hidden></span>
       </summary>
 
-      <div class="filtros__panel">
-        <div class="filtros__fila">
+      <div class="filtros__cortina">
+        <div class="filtros__cortina__cuerpo">
+          <div class="filtros__panel">
+            <div class="filtros__fila">
 
-          <div class="filtros__col">
-            <p class="filtros__titulo">Talla</p>
+              <div class="filtros__col">
+                <p class="filtros__titulo">Talla</p>
 
-            <select id="filtroTallas" class="filtros__tallas" multiple="multiple"
-                    aria-label="Filtrar por talla"></select>
-          </div>
+                <select id="filtroTallas" class="filtros__tallas" multiple="multiple"
+                        aria-label="Filtrar por talla"></select>
+              </div>
 
-          <div class="filtros__col">
-            <p class="filtros__titulo">Rango de precio</p>
+              <div class="filtros__col">
+                <p class="filtros__titulo">Color</p>
 
-            <div class="filtros__valores">
-              <span class="filtros__valor" id="precioMinEtiqueta">C$ 100.00</span>
-              <span class="filtros__valor" id="precioMaxEtiqueta">C$ 2,000.00</span>
+                <select id="filtroColores" class="filtros__colores" multiple="multiple"
+                        aria-label="Filtrar por color"></select>
+              </div>
+
+              <div class="filtros__col">
+                <p class="filtros__titulo">Rango de precio</p>
+
+                <div class="filtros__valores">
+                  <span class="filtros__valor" id="precioMinEtiqueta">C$ 100.00</span>
+                  <span class="filtros__valor" id="precioMaxEtiqueta">C$ 2,000.00</span>
+                </div>
+
+                <div class="filtros__slider" id="sliderPrecio">
+                  <div class="filtros__pista"></div>
+                  <div class="filtros__rango-activo" id="sliderRango"></div>
+                  <input type="range" id="precioMin" min="100" max="2000" step="100" value="100"
+                         aria-label="Precio mínimo">
+                  <input type="range" id="precioMax" min="100" max="2000" step="100" value="2000"
+                         aria-label="Precio máximo">
+                </div>
+              </div>
+
             </div>
 
-            <div class="filtros__slider" id="sliderPrecio">
-              <div class="filtros__pista"></div>
-              <div class="filtros__rango-activo" id="sliderRango"></div>
-              <input type="range" id="precioMin" min="100" max="2000" step="100" value="100"
-                     aria-label="Precio mínimo">
-              <input type="range" id="precioMax" min="100" max="2000" step="100" value="2000"
-                     aria-label="Precio máximo">
+            <p class="filtros__ayuda" id="filtrosAyuda"></p>
+
+            <div class="filtros__fila filtros__fila--marcas">
+
+              <div class="filtros__col">
+                <p class="filtros__titulo">Marca</p>
+
+                <select id="filtroMarcas" class="filtros__marcas" multiple="multiple"
+                        aria-label="Filtrar por marca"></select>
+              </div>
+
+              <div class="filtros__col">
+                <p class="filtros__titulo">Características</p>
+
+                <div class="filtros__atributos" id="filtrosAtributos"></div>
+              </div>
+
+            </div>
+
+            <div class="filtros__acciones">
+              <button type="button" class="filtros__limpiar" id="btnLimpiarFiltros">Limpiar</button>
+              <button type="button" class="filtros__aplicar" id="btnAplicarFiltros">Aplicar filtro</button>
             </div>
           </div>
-
-        </div>
-
-        <p class="filtros__ayuda" id="filtrosAyuda"></p>
-
-        <div class="filtros__acciones">
-          <button type="button" class="filtros__limpiar" id="btnLimpiarFiltros">Limpiar</button>
-          <button type="button" class="filtros__aplicar" id="btnAplicarFiltros">Aplicar filtro</button>
         </div>
       </div>
     </details>
@@ -311,10 +339,10 @@
   <script src="/tienda/recursos/js/core/carrito-store.js?v=20261105c" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261104a" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261105a" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261105g" defer></script>
   <script src="/tienda/recursos/js/core/categorias.js?v=20261030o" defer></script>
-  <script src="/tienda/recursos/js/pages/tienda.js?v=20261103f" defer></script>
-  <script src="/tienda/recursos/js/components/promos.js?v=20261103c" defer></script>
+  <script src="/tienda/recursos/js/pages/tienda.js?v=20261105j" defer></script>
+  <script src="/tienda/recursos/js/components/promos.js?v=20261105b" defer></script>
   <script src="/tienda/recursos/js/components/mapa.js?v=20261102d" defer></script>
 </body>
 </html>

@@ -8,6 +8,7 @@ import initMostrarTipoGastos from './MostrarTipoGasto'
 import initMovimientoGasto from './MostrarMovimientosGastos' 
 import initMostrarProductos from './MostrarProducto' 
 import initMostrarCategorias from './MostrarCategoria'
+import initMostrarCatalogos from './MostrarCatalogos'
 import initMovimientoInventario from './MovimientosInventario'
 import initMostrarUsuarios from './MostrarUsuarios'
 import initMostrarRoles from './MostrarRoles'
@@ -35,6 +36,7 @@ function InicializarMostrarTipoGastos() { if (!document.querySelector('#tablaTip
 function InicializarMovimientoGasto() { if (!document.querySelector('#tablaMovimientosGastos')) return; initMovimientoGasto() }
 function InicializarMostrarProductos() { if (!document.querySelector('#TablaMostrarProductos')) return; initMostrarProductos() }
 function InicializarMostrarCategorias() { if (!document.querySelector('#tablaCategorias')) return; initMostrarCategorias() }
+function InicializarMostrarCatalogos() { if (!document.querySelector('#tablaMarcas')) return; initMostrarCatalogos() }
 function InicializarMovimientoInventario() { if (!document.querySelector('#tablaKardex')) return; initMovimientoInventario() }
 function InicializarMostrarUsuarios() { if (!document.querySelector('#tablaUsuarios')) return; initMostrarUsuarios() }
 function InicializarMostrarRoles() { if (!document.querySelector('#tablaRoles')) return; initMostrarRoles() }
@@ -139,6 +141,7 @@ const modulos = [
     ['#TablaMostrarProductos', () => import('./MostrarProducto')],
     ['#tablaPromociones', () => import('./MostrarPromociones')],
     ['#tablaCategorias', () => import('./MostrarCategoria')],
+    ['#tablaMarcas', () => import('./MostrarCatalogos')],
     ['#tablaKardex', () => import('./Movimientos_Inventario')],
     ['#tablaUsuarios', () => import('./MostrarUsuarios')],
     ['#tablaRoles', () => import('./MostrarRoles')],

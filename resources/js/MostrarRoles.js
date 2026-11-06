@@ -2,18 +2,16 @@ export default function initMostrarRoles() {
 
     document.getElementById('titulo').textContent = 'GESTION DE ROLES';
 
-    $.fn.dataTable.ext.search.push( // Check de roles inactivos
+    window.registrarFiltroDataTable('roles-inactivos', function (settings, data) {
 
-        function(settings, data, dataIndex) {
+        if (settings.nTable?.id !== 'tablaRoles') return true;
 
-            const ocultar = $('#toggleInactivosRoles').is(':checked');
-            if (!ocultar) return true; 
-            const estado = data[3]; // columna "estado_rol" (índice 2)
-            return estado.includes('Activo'); 
+        const ocultar = $('#toggleInactivosRoles').is(':checked');
+        if (!ocultar) return true;
 
-        }
-
-    );
+        const estado = data[3]; // columna "estado_rol"
+        return String(estado || '').includes('Activo');
+    });
 
     $('#toggleInactivosRoles').on('change', function() { tabla.draw(); });
     

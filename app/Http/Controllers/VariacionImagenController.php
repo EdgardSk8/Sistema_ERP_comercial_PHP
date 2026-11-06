@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\VariacionImagen;
+use App\Support\CacheVariaciones;
 use App\Support\ImagenOptimizada;
+use App\Support\ImagenWeb;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -68,6 +70,8 @@ class VariacionImagenController extends Controller
                 'imagen' => $rutaImagen,
                 'orden' => $request->orden ?? 0,
             ]);
+
+            CacheVariaciones::olvidarDetalle();
 
             return response()->json([
                 'success' => true,
@@ -175,6 +179,9 @@ class VariacionImagenController extends Controller
             $imagen->orden = $request->orden;
             $imagen->save();
 
+            CacheVariaciones::olvidarDetalle();
+            $this->eliminarMiniatura($imagen->id_imagen);
+
             if ($rutaNueva) {
                 $this->eliminarArchivoImagen($rutaAnterior);
             }
@@ -239,6 +246,8 @@ class VariacionImagenController extends Controller
             $imagen->orden = $request->orden;
             $imagen->save();
 
+            CacheVariaciones::olvidarDetalle();
+
             return response()->json([
                 'success' => true,
                 'mensaje' => 'Orden de imagen actualizado correctamente',
@@ -289,6 +298,8 @@ class VariacionImagenController extends Controller
             }
         });
 
+        CacheVariaciones::olvidarDetalle();
+
         return response()->json([
             'success' => true,
             'mensaje' => 'Orden de imágenes actualizado correctamente.',
@@ -321,6 +332,38 @@ class VariacionImagenController extends Controller
         }
     }
 
+    /*  ╔═══════════ Miniatura de la Imagen Variación ═══════════╗
+        ╚════════════════════════════════════════════════════════╝ */
+
+    /**
+     * Sirve una miniatura de 96 px (se genera la primera vez y queda en disco).
+     * El listado del ERP la usa para no descargar la foto completa de cada color.
+     */
+    public function Miniatura(int|string $id)
+    {
+        $imagen = VariacionImagen::find($id);
+
+        if (! $imagen) {
+            abort(404);
+        }
+
+        $extension = ImagenOptimizada::extensionSoportada();
+        $rutaMiniatura = public_path('imagenes/productosvariaciones/miniaturas/'.$id.'.'.$extension);
+
+        if (! is_file($rutaMiniatura)) {
+
+            $origen = public_path(ltrim((string) $imagen->imagen, '/'));
+
+            if (! ImagenOptimizada::miniatura($origen, $rutaMiniatura)) {
+                abort(404);
+            }
+        }
+
+        return response()->file($rutaMiniatura, [
+            'Cache-Control' => 'public, max-age=2592000',
+        ]);
+    }
+
     public function EliminarVariacionImagen($id)
     {
         try {
@@ -335,7 +378,10 @@ class VariacionImagenController extends Controller
 
             $rutaImagen = $imagen->imagen;
             $imagen->delete();
+
+            CacheVariaciones::olvidarDetalle();
             $this->eliminarArchivoImagen($rutaImagen);
+            $this->eliminarMiniatura($id);
 
             return response()->json([
                 'success' => true,
@@ -365,7 +411,12 @@ class VariacionImagenController extends Controller
             'Variacion'.now()->format('YmdHis').'_'
         );
 
-        return 'imagenes/productosvariaciones/'.$nombreArchivo;
+        $rutaRelativa = 'imagenes/productosvariaciones/'.$nombreArchivo;
+
+        // Copia a la carpeta del website para que la tienda la vea.
+        ImagenWeb::sincronizar($rutaRelativa);
+
+        return $rutaRelativa;
     }
 
     private function eliminarArchivoImagen(?string $ruta): void
@@ -382,6 +433,20 @@ class VariacionImagenController extends Controller
         $archivo = public_path('imagenes/productosvariaciones/'.$nombreArchivo);
         if (File::exists($archivo)) {
             File::delete($archivo);
+        }
+
+        ImagenWeb::eliminar('imagenes/productosvariaciones/'.$nombreArchivo);
+    }
+
+    /** Borra la miniatura en caché para que se regenere con la imagen nueva. */
+    private function eliminarMiniatura(int|string $id): void
+    {
+        foreach (['webp', 'jpg'] as $extension) {
+            $ruta = public_path('imagenes/productosvariaciones/miniaturas/'.$id.'.'.$extension);
+
+            if (File::exists($ruta)) {
+                File::delete($ruta);
+            }
         }
     }
 } // Fin de controlador

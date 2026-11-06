@@ -2,16 +2,17 @@ export default function initMostrarUsuarios() {
 
     document.getElementById('titulo').textContent = 'GESTION DE USUARIOS';
 
-    $.fn.dataTable.ext.search.push( // Check de usuarios inactivos
+    window.registrarFiltroDataTable('usuarios-inactivos', function (settings, data) {
 
-    function(settings, data, dataIndex) {
+        if (settings.nTable?.id !== 'tablaUsuarios') return true;
 
         const ocultar = $('#toggleInactivosUsuarios').is(':checked');
         if (!ocultar) return true; // no filtrar si el checkbox está desmarcado
-        const estado = data[4]; // columna "estado_usuario" (índice 4)
-        return estado.includes('Activo'); // solo mostrar activos
 
-    }); $('#toggleInactivosUsuarios').on('change', function() { tabla.draw(); });
+        const estado = data[4]; // columna "estado_usuario" (índice 4)
+        return String(estado || '').includes('Activo');
+    });
+ $('#toggleInactivosUsuarios').on('change', function() { tabla.draw(); });
 
     // Inicializar DataTable
     const tabla = $('#tablaUsuarios').DataTable({

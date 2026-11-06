@@ -7,6 +7,7 @@ use App\Models\Producto;
 use App\Models\VariacionTalla;
 use App\Support\DataTableServidor;
 use App\Support\ImagenOptimizada;
+use App\Support\ImagenWeb;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -42,12 +43,21 @@ class ProductoController extends Controller
                 $idUbicacion = (int) $idUbicacion;
             }
 
+            // 🧹 La marca es OPCIONAL: mismo tratamiento que medida y ubicación.
+            $idMarca = $request->input('id_marca');
+            if (! is_numeric($idMarca) || (int) $idMarca <= 0) {
+                $idMarca = null;
+            } else {
+                $idMarca = (int) $idMarca;
+            }
+
             $validator = Validator::make(
                 [
                     'nombre_producto' => $request->nombre_producto,
                     'descripcion_producto' => $request->descripcion_producto,
                     'imagen_producto' => $request->imagen_producto,
                     'id_categoria' => $request->id_categoria,
+                    'id_marca' => $idMarca,
                     'id_impuesto' => $request->id_impuesto,
                     'id_ubicacion' => $idUbicacion,
                     'precio_compra' => $request->precio_compra,
@@ -61,6 +71,7 @@ class ProductoController extends Controller
                     'imagen_producto' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
 
                     'id_categoria' => 'required|exists:categoria,id_categoria',
+                    'id_marca' => 'nullable|exists:marcas,id_marca',
                     'id_impuesto' => 'required|exists:impuestos,id_impuesto',
                     'id_ubicacion' => 'nullable|exists:ubicaciones,id_ubicacion',
 
@@ -101,21 +112,31 @@ class ProductoController extends Controller
                     $ruta,
                     'ImagenProducto'
                 );
+
+                ImagenWeb::sincronizar('imagenes/productos/'.$nombreImagen);
             }
 
-            $producto = Producto::create([
-                'nombre_producto' => $request->nombre_producto,
-                'descripcion_producto' => $request->descripcion_producto,
-                'imagen_producto' => $nombreImagen,
-                'id_categoria' => $request->id_categoria,
-                'id_impuesto' => $request->id_impuesto,
-                'id_ubicacion' => $idUbicacion,
-                'precio_compra' => $request->precio_compra,
-                'precio_venta' => $request->precio_venta,
-                'stock_actual' => 0,
-                'id_medida' => $idMedida,
+            $producto = DB::transaction(function () use ($request, $nombreImagen, $idUbicacion, $idMedida, $idMarca) {
 
-            ]);
+                $producto = Producto::create([
+                    'nombre_producto' => $request->nombre_producto,
+                    'descripcion_producto' => $request->descripcion_producto,
+                    'imagen_producto' => $nombreImagen,
+                    'id_categoria' => $request->id_categoria,
+                    'id_marca' => $idMarca,
+                    'id_impuesto' => $request->id_impuesto,
+                    'id_ubicacion' => $idUbicacion,
+                    'precio_compra' => $request->precio_compra,
+                    'precio_venta' => $request->precio_venta,
+                    'stock_actual' => 0,
+                    'id_medida' => $idMedida,
+
+                ]);
+
+                $this->sincronizarAtributos($producto, $request->input('atributos'));
+
+                return $producto;
+            });
 
             return response()->json([
                 'success' => true,
@@ -141,23 +162,250 @@ class ProductoController extends Controller
     /*  ╔══════════ Editar Producto ══════════╗
         ╚═════════════════════════════════════╝ */
 
+    /**
+     * Datos del producto para los modales de edición y de detalles.
+     *
+     * Se resuelve con 3 consultas en vez de 11 cargas Eloquent: cada consulta
+     * a Supabase cuesta ~100-150 ms y el modal abría con más de 1 s de espera.
+     */
     public function EditarProducto(int|string $id)
     {
         try {
-            $producto = Producto::with([
-                'categoria',
-                'ubicacion',
-                'impuesto',
-                'medida',
-                'variaciones.tallas.talla',
-            ])->find($id);
 
-            if (! $producto) {
+            /* ═════════ 1) Producto + catálogos (una sola consulta) ═════════ */
+
+            $fila = DB::table('productos as p')
+                ->leftJoin('categoria as c', 'c.id_categoria', '=', 'p.id_categoria')
+                ->leftJoin('marcas as m', 'm.id_marca', '=', 'p.id_marca')
+                ->leftJoin('ubicaciones as u', 'u.id_ubicacion', '=', 'p.id_ubicacion')
+                ->leftJoin('impuestos as im', 'im.id_impuesto', '=', 'p.id_impuesto')
+                ->leftJoin('medidas as md', 'md.id_medida', '=', 'p.id_medida')
+                ->where('p.id_producto', $id)
+                ->first([
+                    'p.id_producto',
+                    'p.nombre_producto',
+                    'p.descripcion_producto',
+                    'p.id_categoria',
+                    'p.id_marca',
+                    'p.id_medida',
+                    'p.id_impuesto',
+                    'p.id_ubicacion',
+                    'p.imagen_producto',
+                    'p.precio_compra',
+                    'p.precio_venta',
+                    'p.stock_actual',
+                    'p.estado_producto',
+                    'p.fecha_creacion_producto',
+
+                    'c.nombre_categoria',
+                    'c.descripcion_categoria',
+                    'c.estado_categoria',
+                    'c.fecha_creacion_categoria',
+                    'c.id_tipo_talla',
+
+                    'm.nombre_marca',
+                    'm.slug_marca',
+                    'm.logo_marca',
+                    'm.estado_marca',
+                    'm.fecha_creacion_marca',
+
+                    'u.nombre_ubicacion',
+                    'u.descripcion_ubicacion',
+                    'u.estado_ubicacion',
+
+                    'im.nombre_impuesto',
+                    'im.porcentaje_impuesto',
+                    'im.estado_impuesto',
+                    'im.fecha_creacion_impuesto',
+
+                    'md.nombre_medida',
+                    'md.abreviatura_medida',
+                    'md.orden_medida',
+                    'md.id_tipo_medida',
+                    'md.estado_medida',
+                    'md.fecha_creacion_medida',
+                ]);
+
+            if (! $fila) {
                 return response()->json([
                     'success' => false,
                     'mensaje' => 'Producto no encontrado',
                 ], 404);
             }
+
+            $precioVenta = (float) $fila->precio_venta;
+            $precioCompra = (float) $fila->precio_compra;
+            $porcentajeImpuesto = (float) ($fila->porcentaje_impuesto ?? 0);
+
+            /* ═════════ 2) Atributos del producto ═════════ */
+
+            $atributos = DB::table('producto_atributos as pa')
+                ->leftJoin('atributo_valores as v', 'v.id_valor', '=', 'pa.id_valor')
+                ->where('pa.id_producto', $id)
+                ->orderBy('pa.id_producto_atributo')
+                ->get([
+                    'pa.id_producto_atributo',
+                    'pa.id_producto',
+                    'pa.id_atributo',
+                    'pa.id_valor',
+                    'v.id_valor as valor_id_valor',
+                    'v.id_atributo as valor_id_atributo',
+                    'v.valor_atributo',
+                    'v.orden_valor',
+                    'v.estado_valor',
+                ])
+                ->map(function ($atributo) {
+                    return [
+                        'id_producto_atributo' => $atributo->id_producto_atributo,
+                        'id_producto' => $atributo->id_producto,
+                        'id_atributo' => $atributo->id_atributo,
+                        'id_valor' => $atributo->id_valor,
+                        'valor' => $atributo->valor_id_valor === null ? null : [
+                            'id_valor' => $atributo->valor_id_valor,
+                            'id_atributo' => $atributo->valor_id_atributo,
+                            'valor_atributo' => $atributo->valor_atributo,
+                            'orden_valor' => $atributo->orden_valor,
+                            'estado_valor' => $atributo->estado_valor,
+                        ],
+                    ];
+                })
+                ->values();
+
+            /* ═════════ 3) Variaciones con sus tallas ═════════ */
+
+            $variaciones = [];
+
+            $filasVariaciones = DB::table('producto_variaciones as v')
+                ->leftJoin('variacion_tallas as vt', 'vt.id_variacion', '=', 'v.id_variacion')
+                ->leftJoin('tallas as t', 't.id_talla', '=', 'vt.id_talla')
+                ->where('v.id_producto', $id)
+                ->orderBy('v.id_variacion')
+                ->orderBy('vt.id_variacion_talla')
+                ->get([
+                    'v.id_variacion',
+                    'v.id_producto',
+                    'v.color',
+                    'v.estado_variacion',
+
+                    'vt.id_variacion_talla',
+                    'vt.id_talla',
+                    'vt.stock',
+                    'vt.sku',
+                    'vt.precio_compra as talla_precio_compra',
+                    'vt.precio_venta as talla_precio_venta',
+
+                    't.talla',
+                    't.estado_talla',
+                    't.id_tipo_talla',
+                    't.orden_talla',
+                ]);
+
+            foreach ($filasVariaciones as $filaVariacion) {
+
+                $idVariacion = (int) $filaVariacion->id_variacion;
+
+                if (! isset($variaciones[$idVariacion])) {
+                    $variaciones[$idVariacion] = [
+                        'id_variacion' => $filaVariacion->id_variacion,
+                        'id_producto' => $filaVariacion->id_producto,
+                        'color' => $filaVariacion->color,
+                        'estado_variacion' => $filaVariacion->estado_variacion,
+                        'tallas' => [],
+                    ];
+                }
+
+                // Un color sin tallas (producto sin variantes) llega con el join vacío.
+                if ($filaVariacion->id_variacion_talla === null) {
+                    continue;
+                }
+
+                $variaciones[$idVariacion]['tallas'][] = [
+                    'id_variacion_talla' => $filaVariacion->id_variacion_talla,
+                    'id_variacion' => $filaVariacion->id_variacion,
+                    'id_talla' => $filaVariacion->id_talla,
+                    'stock' => $filaVariacion->stock,
+                    'sku' => $filaVariacion->sku,
+                    'precio_compra' => $filaVariacion->talla_precio_compra,
+                    'precio_venta' => $filaVariacion->talla_precio_venta,
+                    'talla' => $filaVariacion->id_talla === null ? null : [
+                        'id_talla' => $filaVariacion->id_talla,
+                        'talla' => $filaVariacion->talla,
+                        'estado_talla' => $filaVariacion->estado_talla,
+                        'id_tipo_talla' => $filaVariacion->id_tipo_talla,
+                        'orden_talla' => $filaVariacion->orden_talla,
+                    ],
+                ];
+            }
+
+            /* ═════════ Respuesta con la misma forma que consumía la vista ═════════ */
+
+            $producto = [
+                'id_producto' => $fila->id_producto,
+                'nombre_producto' => $fila->nombre_producto,
+                'descripcion_producto' => $fila->descripcion_producto,
+                'id_categoria' => $fila->id_categoria,
+                'id_impuesto' => $fila->id_impuesto,
+                'id_ubicacion' => $fila->id_ubicacion,
+                'id_medida' => $fila->id_medida,
+                'imagen_producto' => $fila->imagen_producto,
+                'precio_compra' => $fila->precio_compra,
+                'precio_venta' => $fila->precio_venta,
+                'stock_actual' => $fila->stock_actual,
+                'estado_producto' => $fila->estado_producto,
+                'fecha_creacion_producto' => $fila->fecha_creacion_producto,
+                'id_marca' => $fila->id_marca,
+
+                'ganancia' => $precioVenta - $precioCompra,
+                'porcentaje_ganancia' => $precioCompra <= 0 ? 0 : round((($precioVenta - $precioCompra) / $precioCompra) * 100, 2),
+                'precio_venta_final' => round($precioVenta * (1 + ($porcentajeImpuesto / 100)), 2),
+                'medida_nombre' => $fila->nombre_medida,
+
+                'categoria' => $fila->id_categoria === null ? null : [
+                    'id_categoria' => $fila->id_categoria,
+                    'nombre_categoria' => $fila->nombre_categoria,
+                    'descripcion_categoria' => $fila->descripcion_categoria,
+                    'estado_categoria' => $fila->estado_categoria,
+                    'fecha_creacion_categoria' => $fila->fecha_creacion_categoria,
+                    'id_tipo_talla' => $fila->id_tipo_talla,
+                ],
+
+                'marca' => $fila->id_marca === null ? null : [
+                    'id_marca' => $fila->id_marca,
+                    'nombre_marca' => $fila->nombre_marca,
+                    'slug_marca' => $fila->slug_marca,
+                    'logo_marca' => $fila->logo_marca,
+                    'estado_marca' => $fila->estado_marca,
+                    'fecha_creacion_marca' => $fila->fecha_creacion_marca,
+                ],
+
+                'ubicacion' => $fila->id_ubicacion === null ? null : [
+                    'id_ubicacion' => $fila->id_ubicacion,
+                    'nombre_ubicacion' => $fila->nombre_ubicacion,
+                    'descripcion_ubicacion' => $fila->descripcion_ubicacion,
+                    'estado_ubicacion' => $fila->estado_ubicacion,
+                ],
+
+                'impuesto' => $fila->id_impuesto === null ? null : [
+                    'id_impuesto' => $fila->id_impuesto,
+                    'nombre_impuesto' => $fila->nombre_impuesto,
+                    'porcentaje_impuesto' => $fila->porcentaje_impuesto,
+                    'estado_impuesto' => $fila->estado_impuesto,
+                    'fecha_creacion_impuesto' => $fila->fecha_creacion_impuesto,
+                ],
+
+                'medida' => $fila->id_medida === null ? null : [
+                    'id_medida' => $fila->id_medida,
+                    'nombre_medida' => $fila->nombre_medida,
+                    'abreviatura_medida' => $fila->abreviatura_medida,
+                    'orden_medida' => $fila->orden_medida,
+                    'id_tipo_medida' => $fila->id_tipo_medida,
+                    'estado_medida' => $fila->estado_medida,
+                    'fecha_creacion_medida' => $fila->fecha_creacion_medida,
+                ],
+
+                'atributos' => $atributos,
+                'variaciones' => array_values($variaciones),
+            ];
 
             return response()->json([
                 'success' => true,
@@ -215,12 +463,21 @@ class ProductoController extends Controller
                 $idUbicacion = (int) $idUbicacion;
             }
 
+            // 🧹 La marca es OPCIONAL: mismo tratamiento que medida y ubicación.
+            $idMarca = $request->input('id_marca');
+            if (! is_numeric($idMarca) || (int) $idMarca <= 0) {
+                $idMarca = null;
+            } else {
+                $idMarca = (int) $idMarca;
+            }
+
             $validator = Validator::make(
                 [
                     'nombre_producto' => $request->nombre_producto,
                     'descripcion_producto' => $request->descripcion_producto,
                     'imagen_producto' => $request->file('imagen_producto'),
                     'id_categoria' => $request->id_categoria,
+                    'id_marca' => $idMarca,
                     'id_impuesto' => $request->id_impuesto,
                     'id_ubicacion' => $idUbicacion,
                     'precio_compra' => $request->precio_compra,
@@ -234,6 +491,7 @@ class ProductoController extends Controller
                     'imagen_producto' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
 
                     'id_categoria' => 'required|exists:categoria,id_categoria',
+                    'id_marca' => 'nullable|exists:marcas,id_marca',
                     'id_impuesto' => 'required|exists:impuestos,id_impuesto',
                     'id_ubicacion' => 'nullable|exists:ubicaciones,id_ubicacion',
 
@@ -356,12 +614,15 @@ class ProductoController extends Controller
                     'ImagenProducto'
                 );
 
+                ImagenWeb::sincronizar('imagenes/productos/'.$nombreImagen);
+
                 if (
                     $imagenAnterior &&
                     $imagenAnterior !== $nombreImagen &&
                     file_exists($ruta.'/'.$imagenAnterior)
                 ) {
                     @unlink($ruta.'/'.$imagenAnterior);
+                    ImagenWeb::eliminar('imagenes/productos/'.$imagenAnterior);
                 }
 
                 $producto->imagen_producto = $nombreImagen;
@@ -376,6 +637,7 @@ class ProductoController extends Controller
             $producto->nombre_producto = $request->nombre_producto;
             $producto->descripcion_producto = $request->descripcion_producto;
             $producto->id_categoria = $request->id_categoria;
+            $producto->id_marca = $idMarca;
             $producto->id_impuesto = $request->id_impuesto;
             $producto->id_ubicacion = $idUbicacion;
             $producto->precio_compra = $request->precio_compra;
@@ -384,6 +646,8 @@ class ProductoController extends Controller
             $producto->id_medida = $idMedida;
 
             $producto->save();
+
+            $this->sincronizarAtributos($producto, $request->input('atributos'));
 
             /*
             |--------------------------------------------------------------------------
@@ -518,6 +782,7 @@ class ProductoController extends Controller
                     'id_producto',
                     'nombre_producto',
                     'id_categoria',
+                    'id_marca',
                     'id_impuesto',
                     'id_ubicacion',
                     'id_medida',
@@ -529,6 +794,7 @@ class ProductoController extends Controller
                 ])
                 ->with([
                     'categoria:id_categoria,nombre_categoria',
+                    'marca:id_marca,nombre_marca',
                     'impuesto:id_impuesto,nombre_impuesto,porcentaje_impuesto',
                     'ubicacion:id_ubicacion,nombre_ubicacion',
                     'medida:id_medida,nombre_medida',
@@ -550,16 +816,18 @@ class ProductoController extends Controller
                     0 => ['col' => 'id_producto'],
                     2 => ['col' => 'nombre_producto', 'buscar' => true],
                     3 => ['rel' => 'categoria', 'col' => 'nombre_categoria', 'buscar' => true],
-                    4 => ['rel' => 'medida', 'col' => 'nombre_medida', 'buscar' => true],
-                    5 => ['col' => 'precio_compra'],
-                    6 => ['col' => 'precio_venta'],
-                    10 => ['rel' => 'impuesto', 'col' => 'porcentaje_impuesto'],
-                    11 => ['col' => 'stock_actual'],
-                    12 => ['col' => 'estado_producto'],
+                    4 => ['rel' => 'marca', 'col' => 'nombre_marca', 'buscar' => true],
+                    5 => ['rel' => 'medida', 'col' => 'nombre_medida', 'buscar' => true],
+                    6 => ['col' => 'precio_compra'],
+                    7 => ['col' => 'precio_venta'],
+                    11 => ['rel' => 'impuesto', 'col' => 'porcentaje_impuesto'],
+                    12 => ['col' => 'stock_actual'],
+                    13 => ['col' => 'estado_producto'],
                 ],
                 'orden' => [
                     3 => '(select nombre_categoria from categoria where categoria.id_categoria = productos.id_categoria)',
-                    4 => '(select nombre_medida from medidas where medidas.id_medida = productos.id_medida)',
+                    4 => '(select nombre_marca from marcas where marcas.id_marca = productos.id_marca)',
+                    5 => '(select nombre_medida from medidas where medidas.id_medida = productos.id_medida)',
                 ],
                 'ordenDefault' => ['columna' => 'id_producto', 'dir' => 'asc'],
                 'extras' => ['opciones' => $this->opcionesFiltrosProductos()],
@@ -589,6 +857,7 @@ class ProductoController extends Controller
 
             return [
                 3 => DB::table('categoria')->orderBy('nombre_categoria')->pluck('nombre_categoria')->all(),
+                4 => DB::table('marcas')->orderBy('nombre_marca')->pluck('nombre_marca')->all(),
             ];
 
         });
@@ -618,6 +887,10 @@ class ProductoController extends Controller
             $ubicaciones = \App\Models\Ubicacion::query();
             $impuestos = \App\Models\Impuesto::query();
             $medidas = \App\Models\Medida::with('tipomedida');
+            $marcas = \App\Models\Marca::query();
+            $atributos = \App\Models\Atributo::with(['valores' => function ($query) {
+                $query->where('estado_valor', true);
+            }]);
 
             // 🔘 Filtro opcional (estado = 1)
             if ($request->has('solo_activos') && $request->solo_activos) {
@@ -625,6 +898,8 @@ class ProductoController extends Controller
                 $ubicaciones->where('estado_ubicacion', 1);
                 $impuestos->where('estado_impuesto', 1);
                 $medidas->where('estado_medida', 1);
+                $marcas->where('estado_marca', 1);
+                $atributos->where('estado_atributo', 1);
             }
 
             // 📊 Ejecutar consultas
@@ -632,6 +907,8 @@ class ProductoController extends Controller
             $ubicaciones = $ubicaciones->orderBy('id_ubicacion', 'asc')->get();
             $impuestos = $impuestos->orderBy('id_impuesto', 'asc')->get();
             $medidas = $medidas->orderBy('orden_medida')->get();
+            $marcas = $marcas->orderBy('nombre_marca')->get();
+            $atributos = $atributos->orderBy('nombre_atributo')->get();
 
             // 📤 Respuesta
             return response()->json([
@@ -641,6 +918,8 @@ class ProductoController extends Controller
                     'ubicaciones' => $ubicaciones,
                     'impuestos' => $impuestos,
                     'medidas' => $medidas,
+                    'marcas' => $marcas,
+                    'atributos' => $atributos,
                 ],
             ], 200);
 
@@ -653,6 +932,64 @@ class ProductoController extends Controller
                 'mensaje' => 'Error al obtener datos del formulario de productos',
                 'detalle' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /*  ╔═══════ Atributos del Producto ═════╗
+        ╚════════════════════════════════════╝ */
+
+    /**
+     * Reemplaza los atributos del producto (uno por atributo).
+     *
+     * Acepta un arreglo o el JSON que envía el formulario por FormData.
+     * Si la clave no llega en la petición no se toca nada; si llega vacía se
+     * limpian los atributos del producto.
+     */
+    private function sincronizarAtributos(Producto $producto, mixed $atributos): void
+    {
+        if ($atributos === null || $atributos === '') {
+            return;
+        }
+
+        if (is_string($atributos)) {
+            $atributos = json_decode($atributos, true);
+        }
+
+        if (! is_array($atributos)) {
+            return;
+        }
+
+        DB::table('producto_atributos')->where('id_producto', $producto->id_producto)->delete();
+
+        $filas = [];
+
+        foreach ($atributos as $atributo) {
+            $idAtributo = (int) ($atributo['id_atributo'] ?? 0);
+            $idValor = (int) ($atributo['id_valor'] ?? 0);
+
+            if ($idAtributo <= 0 || $idValor <= 0) {
+                continue;
+            }
+
+            // El valor debe pertenecer al atributo: evita guardar combinaciones inválidas.
+            $pertenece = DB::table('atributo_valores')
+                ->where('id_valor', $idValor)
+                ->where('id_atributo', $idAtributo)
+                ->exists();
+
+            if (! $pertenece) {
+                continue;
+            }
+
+            $filas[$idAtributo] = [
+                'id_producto' => $producto->id_producto,
+                'id_atributo' => $idAtributo,
+                'id_valor' => $idValor,
+            ];
+        }
+
+        if ($filas) {
+            DB::table('producto_atributos')->insert(array_values($filas));
         }
     }
 }

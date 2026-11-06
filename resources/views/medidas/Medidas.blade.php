@@ -1,5 +1,7 @@
 <turbo-frame id="contenido-dinamico">
 
+
+    @include('catalogos._tabs', ['activo' => 'medidas'])
     @include('medidas.CheckColumnasMedidas')
     @include('medidas.CrearMedidas')
     @include('medidas.EditarMedidas')

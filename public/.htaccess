@@ -23,3 +23,20 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Las imágenes del catálogo no cambian: se cachean en el navegador.
+# (Sin esto, cada visita vuelve a descargar todas las miniaturas.)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/png  "access plus 30 days"
+    ExpiresByType image/gif  "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(webp|jpe?g|png|gif|svg)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+</IfModule>

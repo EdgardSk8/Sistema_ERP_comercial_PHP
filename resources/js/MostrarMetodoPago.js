@@ -8,9 +8,7 @@ export default function initMostrarMetodosPagos() {
 
     document.getElementById('titulo').textContent = 'METODOS DE PAGO';
 
-    if (!$.fn.dataTable.ext.search.includes(filtroMetodosPago)) {
-        $.fn.dataTable.ext.search.push(filtroMetodosPago);
-    }
+    window.registrarFiltroDataTable('metodos-pago-inactivos', filtroMetodosPago);
 
     $('#toggleInactivosMetodosPago').off('change.metodosPago').on('change.metodosPago', function() { tabla.draw(); });
 

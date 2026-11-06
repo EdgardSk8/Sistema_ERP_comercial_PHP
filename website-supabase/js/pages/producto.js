@@ -293,6 +293,13 @@ function pintarTallas() {
     const contenedor = $('productoTallas');
     const tallas = (variacionActual?.tallas || []).filter(talla => Number(talla.stock) > 0);
 
+    // Productos que no son ropa: una sola "talla" genérica → no se muestra el selector.
+    const bloqueTallas = contenedor?.closest('.opcion--tallas');
+    const soloTallaUnica = tallas.length === 1
+        && ['unica', 'unico', 'sin talla'].includes(normalizar(tallas[0].nombre));
+
+    if (bloqueTallas) bloqueTallas.hidden = soloTallaUnica;
+
     if (!tallas.length) {
         contenedor.innerHTML = '<span class="tallas__vacio">Sin tallas disponibles para este color.</span>';
         return;
@@ -578,6 +585,23 @@ async function cargarProducto() {
         actualizarMetaProducto();
         $('productoCategoria').textContent = producto.categoria;
         $('productoNombre').textContent = producto.nombre;
+
+        const marcaProducto = $('productoMarca');
+        if (marcaProducto) {
+            marcaProducto.textContent = producto.marca || '';
+            marcaProducto.hidden = !producto.marca;
+        }
+
+        const atributosProducto = $('productoAtributos');
+        if (atributosProducto) {
+            const listaAtributos = (producto.atributos || [])
+                .filter(atributo => atributo?.atributo && atributo?.valor)
+                .map(atributo => `${atributo.atributo}: ${atributo.valor}`);
+
+            atributosProducto.textContent = listaAtributos.join(' · ');
+            atributosProducto.hidden = !listaAtributos.length;
+        }
+
         $('productoDescripcion').textContent = producto.descripcion || 'Producto disponible en nuestra tienda.';
 
         if (!producto.variaciones?.length) {

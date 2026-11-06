@@ -2,15 +2,16 @@ export default function initMostrarProveedores() {
 
     document.getElementById('titulo').textContent = 'REGISTRO DE PROVEEDORES';
 
-    $.fn.dataTable.ext.search.push( // Check de proveedores inactivos
-        function(settings, data, dataIndex) {
-            const ocultar = $('#toggleInactivosProveedores').is(':checked');
-            if (!ocultar) return true;
+    window.registrarFiltroDataTable('proveedores-inactivos', function (settings, data) {
 
-            const estado = data[6]; // columna estado_proveedor
-            return estado.includes('Activo');
-        }
-    );
+        if (settings.nTable?.id !== 'tablaProveedores') return true;
+
+        const ocultar = $('#toggleInactivosProveedores').is(':checked');
+        if (!ocultar) return true;
+
+        const estado = data[6]; // columna estado_proveedor
+        return String(estado || '').includes('Activo');
+    });
 
     $('#toggleInactivosProveedores').on('change', function() { tabla.draw(); });
 

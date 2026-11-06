@@ -1,5 +1,7 @@
 <turbo-frame id="contenido-dinamico">
 
+
+    @include('catalogos._tabs', ['activo' => 'categorias'])
     @include('categorias.CheckColumnasCategorias')
     @include('categorias.CrearCategoria') {{-- MODAL CREAR CATEGORIA --}}
     @include('categorias.EditarCategoria') {{-- MODAL EDITAR CATEGORIA --}}

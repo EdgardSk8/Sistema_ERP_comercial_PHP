@@ -2,12 +2,8 @@ COLA DE TAREAS POR CUMPLIR,
 
 TAREAS ERP
 
-1- me gustaria crear descuentos de vez en cuando y tambien cupones,
- tipo descuentos (10% de descuento en la compra de 2 productos) y
-  cupones (cupon para 2 pares, paga uno al precio normal y el 
-  segundo a mitad de precio) algo asi, y tambien asignar a 
-  usuarios descuento o cupones, es decir, yo mismo asginarselos,
-   que no ocurra todo en la vista de clientes
+1- cuando se compran productos hay gastos que asumir como transporte y etc
+se necesita pensar que se hara en ese caso
 
 WEBSITE
 

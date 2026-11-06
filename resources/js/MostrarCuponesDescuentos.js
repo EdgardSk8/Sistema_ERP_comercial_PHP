@@ -148,7 +148,7 @@ export default function initCuponesDescuentos() {
         },
     });
 
-    $.fn.dataTable.ext.search.push((settings, data, index) => {
+    window.registrarFiltroDataTable('cupones-filtro', (settings, data, index) => {
         if (settings.nTable.id !== 'tablaCupones') return true;
 
         const fila = settings.aoData[index]?._aData || {};
