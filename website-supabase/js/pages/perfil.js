@@ -58,6 +58,10 @@ function iniciarPerfil() {
             if (!destino) return;
 
             evento.preventDefault();
+
+            /* Si había una guía abierta, se cierra al navegar. */
+            window.Chiky?.cerrarGuia?.();
+
             alinearArriba(destino);
             activar(destino);
 
@@ -271,9 +275,15 @@ function conectarMenuPerfil() {
 
     fondo.addEventListener('click', cerrar);
 
-    /* Al elegir una opción navega a la sección y cierra el panel. */
+    /* El resumen de Chiky solo despliega; las opciones y los temas sí cierran el panel. */
     panel.addEventListener('click', (evento) => {
-        if (evento.target.closest('.perfil-nav__item')) cerrar();
+        if (evento.target.closest('.perfil-ayuda > summary')) return;
+
+        const opcion = evento.target.closest('a.perfil-nav__item')
+            || evento.target.closest('.perfil-ayuda__tema')
+            || evento.target.closest('.perfil-ayuda__atajo');
+
+        if (opcion) cerrar();
     });
 
     document.addEventListener('keydown', (evento) => {
@@ -281,7 +291,7 @@ function conectarMenuPerfil() {
     });
 
     window.addEventListener('resize', () => {
-        if (window.innerWidth > 900) cerrar();
+        if (window.innerWidth > 767) cerrar();
     });
 
     window.addEventListener('hashchange', cerrar);
@@ -506,15 +516,15 @@ function ajustarTemasAyuda(cliente = window.clienteTienda) {
 
     if (botonDescuento) botonDescuento.hidden = !disponible;
     if (botonFidelidad) botonFidelidad.hidden = !usado;
+
+    /* La tarjeta de Chiky solo aparece mientras tenga el 10% de bienvenida. */
+    window.Chiky?.soloSi(() => Boolean(window.clienteTienda?.descuento?.primera_compra));
 }
 
 /* Menú: cada pregunta abre a Chiky y la lleva a guiar por la pantalla. */
 function conectarAyudaChiky() {
     document.querySelectorAll('#ayudaChiky [data-ayuda]').forEach((boton) => {
-        boton.addEventListener('click', () => {
-            window.Chiky?.mostrar();
-            atenderAyudaChiky(boton.dataset.ayuda);
-        });
+        boton.addEventListener('click', () => atenderAyudaChiky(boton.dataset.ayuda));
     });
 }
 
@@ -587,22 +597,29 @@ function conectarDesplegableAyuda() {
 }
 
 function abrirDesplegable(lista, alTerminar) {
+    clearTimeout(lista._temporizador);
+
     lista.style.maxHeight = '0px';
     lista.style.opacity = '0';
 
+    const alto = lista.scrollHeight;
+
     requestAnimationFrame(() => {
         lista.style.transition = 'max-height .5s ease, opacity .5s ease';
-        lista.style.maxHeight = `${lista.scrollHeight}px`;
+        lista.style.maxHeight = `${alto}px`;
         lista.style.opacity = '1';
-
-        setTimeout(() => {
-            lista.style.cssText = '';
-            alTerminar?.();
-        }, 500);
     });
+
+    /* El cierre del estilo no depende del frame: si rAF se pausa, igual termina. */
+    lista._temporizador = setTimeout(() => {
+        lista.style.cssText = '';
+        alTerminar?.();
+    }, 500);
 }
 
 function cerrarDesplegable(detalle, lista, alTerminar) {
+    clearTimeout(lista._temporizador);
+
     lista.style.maxHeight = `${lista.scrollHeight}px`;
     lista.style.opacity = '1';
 
@@ -610,13 +627,13 @@ function cerrarDesplegable(detalle, lista, alTerminar) {
         lista.style.transition = 'max-height .5s ease, opacity .5s ease';
         lista.style.maxHeight = '0px';
         lista.style.opacity = '0';
-
-        setTimeout(() => {
-            detalle.open = false;
-            lista.style.cssText = '';
-            alTerminar?.();
-        }, 500);
     });
+
+    lista._temporizador = setTimeout(() => {
+        detalle.open = false;
+        lista.style.cssText = '';
+        alTerminar?.();
+    }, 500);
 }
 
 function atenderAyudaChiky(tema) {
@@ -692,6 +709,8 @@ function atenderAyudaChiky(tema) {
     }
 
     if (tema === 'pedidos') {
+        window.Chiky?.mostrar();
+
         recorrerPasos([
             {
                 elemento: cabeceraSeccion('pedidos'),
@@ -713,24 +732,8 @@ function atenderAyudaChiky(tema) {
         return;
     }
 
-    /* Cómo comprar: se explica y queda el botón para ir al catálogo. */
-    window.Chiky.decir('Elige tus zapatos en el catálogo, agrégalos al carrito y confirma el pedido.');
-    window.Chiky.accion('Ir al catálogo', () => {
-        window.location.href = '/tienda#catalogo';
-    });
-
-    recorrerPasos([
-        {
-            elemento: cabeceraSeccion('favoritos'),
-            titulo: 'Guarda lo que te gusta',
-            mensaje: 'Toca el corazón de un zapato y queda aquí para después.',
-        },
-        {
-            elemento: cabeceraSeccion('deseos'),
-            titulo: '¿No está tu talla?',
-            mensaje: 'Pídelo en la Lista de deseos y te avisamos cuando llegue.',
-        },
-    ].filter((paso) => paso.elemento));
+    /* Cómo comprar se retiró: no hace falta ese aviso. */
+    return;
 }
 
 function cabeceraSeccion(id) {
@@ -788,11 +791,13 @@ function explicarSeccion(id) {
 
 /* «¿Cómo uso mi 10%?» cambia según el estado del descuento. */
 function ayudaDescuento() {
+    window.Chiky?.mostrar();
+
     const descuento = window.clienteTienda?.descuento;
     const vigencia = descuento?.primera_compra ? vigenciaDescuento(descuento.expira) : '';
 
     if (descuento?.primera_compra) {
-        window.Chiky?.decir(`¡Felicidades! Ya puedes usar tu 10% en zapatos.${vigencia ? ` ${vigencia}` : ''}`);
+        window.Chiky?.decir(`¡Felicidades! Ya puedes usar tu 10% en zapatos.${vigencia ? ` ${vigencia}` : ''}`, { tono: 'festejo' });
         window.Chiky?.accion('Ver mi descuento', () => alinearArriba(porId('descuentos')));
 
         recorrerPasos([
@@ -897,6 +902,7 @@ const GRUPOS_DESCUENTO = [
 ];
 
 let flujoDescuento = null;
+let avisoDescuentoMostrado = false;
 
 /* Variantes para no sonar repetitivo entre pasos. */
 const ANIMOS = ['¡Bien!', '¡Listo!', '¡Genial!', '¡Perfecto!', '¡Vamos bien!'];
@@ -1136,7 +1142,14 @@ function recorrerPasos(pasos, { progreso = true } = {}) {
         },
     }));
 
-    window.Chiky.guiar(guia, { clave: 'chiky_pasos_perfil', forzar: true, barra: false, recordar: false, progreso });
+    window.Chiky.guiar(guia, {
+        clave: 'chiky_pasos_perfil',
+        forzar: true,
+        barra: false,
+        recordar: false,
+        progreso,
+        mostrarAlCerrar: true,
+    });
 }
 
 function continuarPasosDescuento() {
@@ -1233,14 +1246,15 @@ function campoVisible(campo) {
     return campo._flatpickr?.altInput || campo;
 }
 
-/* Área libre de la pantalla: debajo del header y de la barra de Chiky si está visible. */
+/* Área libre de la pantalla: debajo del header y de la tarjeta si flota. */
 function zonaLibre() {
     const header = 60;
     const tarjeta = document.querySelector('.chiky-montaje .chiky');
-    const barraVisible = tarjeta
+    const flotante = tarjeta
         && !tarjeta.hidden
-        && !tarjeta.classList.contains('chiky--guardada');
-    const barra = barraVisible ? tarjeta.getBoundingClientRect().bottom : 0;
+        && !tarjeta.classList.contains('chiky--guardada')
+        && getComputedStyle(tarjeta).position === 'fixed';
+    const barra = flotante ? tarjeta.getBoundingClientRect().bottom : 0;
 
     return { arriba: Math.max(header, barra) + 16, abajo: window.innerHeight - 16 };
 }
@@ -1257,27 +1271,27 @@ function llevarAlPaso(elemento) {
     window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
 }
 
-/* Deja la sección centrada si su contenido cabe; si no, bajo el header. */
+/* Deja la sección centrada si su contenido cabe; si no, bajo la tarjeta/header. */
 function alinearArriba(elemento) {
     if (!elemento) return;
 
-    const header = 60;
+    const { arriba, abajo } = zonaLibre();
     const cabecera = elemento.querySelector('.perfil-seccion__cabecera');
     const cuerpo = elemento.querySelector('.perfil-seccion__cuerpo');
 
     if (!cabecera || !cuerpo) {
-        const destino = window.scrollY + elemento.getBoundingClientRect().top - header - 16;
+        const destino = window.scrollY + elemento.getBoundingClientRect().top - arriba;
         window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
         return;
     }
 
     const inicio = cabecera.getBoundingClientRect().top;
     const alto = cuerpo.getBoundingClientRect().bottom - inicio;
-    const libre = window.innerHeight - header;
+    const libre = abajo - arriba;
 
-    const objetivo = alto <= libre - 32
-        ? header + Math.max(0, (libre - alto) / 2)
-        : header + 16;
+    const objetivo = alto <= libre - 16
+        ? arriba + Math.max(0, (libre - alto) / 2)
+        : arriba;
 
     const destino = window.scrollY + inicio - objetivo;
 
@@ -3124,6 +3138,12 @@ function mostrarDescuento(cliente) {
     if (!contenedor) return;
 
     ajustarTemasAyuda(cliente);
+
+    /* Con el 10% activo, Chiky se queda arriba del perfil (una vez por carga). */
+    if (!avisoDescuentoMostrado && cliente?.descuento?.primera_compra) {
+        avisoDescuentoMostrado = true;
+        window.Chiky?.mostrar();
+    }
 
     const descuento = cliente?.descuento || null;
 

@@ -235,6 +235,16 @@ html { scroll-behavior: smooth; }
     animation: perfil-entra .5s ease both;
 }
 
+/* Con «reducir movimiento» los bloques aparecen sin animación. */
+@media (prefers-reduced-motion: reduce) {
+    .perfil-pagina .perfil-entra,
+    .perfil-ayuda__lista,
+    .campo-password__ojo .ojo-abierto,
+    .campo-password__ojo .ojo-cerrado {
+        animation: none !important;
+    }
+}
+
 /* ── Hoja con las secciones ──────────────────────────────────── */
 .perfil-hoja {
     min-width: 0;
@@ -2088,6 +2098,11 @@ body.sin-scroll {
     display: none;
 }
 
+/* El desplegable de la cabecera sobra: el menú lateral siempre está visible. */
+#menuPerfil {
+    display: none;
+}
+
 .menu-perfil-btn:hover {
     background: transparent;
 }
@@ -2105,8 +2120,8 @@ html.tema-navidad .app-header #btnMenuPerfil:hover {
     display: none;
 }
 
-/* ── Responsive: la sidebar pasa a panel lateral derecho ────── */
-@media (max-width: 900px) {
+/* ── Responsive: por debajo de tablet la sidebar pasa a panel lateral ── */
+@media (max-width: 767px) {
     .perfil-pagina {
         grid-template-columns: minmax(0, 1fr);
         gap: var(--e-4);

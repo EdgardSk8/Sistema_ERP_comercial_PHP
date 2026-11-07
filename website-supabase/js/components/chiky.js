@@ -9,7 +9,7 @@
     const IDENTIDAD = {
         nombre: 'Chiky',
         rol: 'Asistente virtual de Tellez Store Nic',
-        avatar: '/tienda/recursos/imagenes/avatares/Asistente.PNG',
+        avatar: '/tienda/recursos/imagenes/avatares/Asistente.webp',
     };
 
     const MENSAJES = {
@@ -32,6 +32,24 @@
     let accionesEl = null;
     let discreto = false;
     let despedida = null;
+    let condicionVisible = null;
+
+    /* La página puede limitar cuándo se deja ver la tarjeta (p. ej. solo con descuento). */
+    function soloSi(condicion) {
+        condicionVisible = typeof condicion === 'function' ? condicion : null;
+
+        if (!puedeVerse()) guardarTarjeta(true);
+    }
+
+    function puedeVerse() {
+        if (!condicionVisible) return true;
+
+        try {
+            return Boolean(condicionVisible());
+        } catch {
+            return true;
+        }
+    }
 
     function estaOculto() {
         try {
@@ -143,7 +161,7 @@
         /* Los botones de un mensaje anterior no aplican al nuevo. */
         limpiarAcciones();
 
-        if (estaOculto() || discreto) return;
+        if (estaOculto() || discreto || !puedeVerse()) return;
 
         guardarTarjeta(false);
         programarDespedida();
@@ -165,7 +183,12 @@
     function accion(etiqueta, manejador) {
         if (!montar() || !accionesEl) return;
 
-        ultimaAccion = { etiqueta, manejador, mensaje: mensajeEl?.textContent || '' };
+        ultimaAccion = {
+            etiqueta,
+            manejador,
+            mensaje: mensajeEl?.textContent || '',
+            tono: tarjeta?.dataset.tono || 'info',
+        };
 
         limpiarAcciones();
         descartarDespedida();
@@ -201,6 +224,8 @@
     }
 
     function mostrar() {
+        if (!puedeVerse()) return;
+
         recordarOculto(false);
         discreto = false;
         guardarTarjeta(false);
@@ -227,29 +252,26 @@
     let foco = null;
     let focoTimer = null;
     let focoObjetivo = null;
-    let focoFrame = 0;
 
     function refrescarGuia() {
         guiaActiva?.refresh();
     }
 
-    /* Repinta el anillo; si el elemento sigue vivo, vuelve a pedir el siguiente frame. */
+    /* Repinta el anillo sobre el elemento señalado. */
     function pintarFoco() {
-        if (!foco || !focoObjetivo?.isConnected) {
-            focoFrame = 0;
-            return;
-        }
+        if (!foco || !focoObjetivo?.isConnected) return;
 
         const r = focoObjetivo.getBoundingClientRect();
         const margen = 6;
 
-        foco.style.left = `${Math.round(r.left + window.scrollX - margen)}px`;
-        foco.style.top = `${Math.round(r.top + window.scrollY - margen)}px`;
         foco.style.width = `${Math.round(r.width + margen * 2)}px`;
         foco.style.height = `${Math.round(r.height + margen * 2)}px`;
-
-        focoFrame = requestAnimationFrame(pintarFoco);
+        foco.style.transform = `translate3d(${Math.round(r.left + window.scrollX - margen)}px, ${Math.round(r.top + window.scrollY - margen)}px, 0)`;
     }
+
+    /* Solo se recalcula cuando algo se mueve: sin bucle de frames. */
+    window.addEventListener('scroll', pintarFoco, { passive: true });
+    window.addEventListener('resize', pintarFoco);
 
     /* Oscurece el entorno y deja iluminado el elemento indicado. */
     function spotlight(elemento, { duracion = 1900 } = {}) {
@@ -264,15 +286,12 @@
         focoObjetivo = elemento;
         foco.classList.remove('chiky-foco--oculto');
 
-        cancelAnimationFrame(focoFrame);
         pintarFoco();
 
         clearTimeout(focoTimer);
 
         focoTimer = setTimeout(() => {
             focoObjetivo = null;
-            cancelAnimationFrame(focoFrame);
-            focoFrame = 0;
             foco?.classList.add('chiky-foco--oculto');
 
             focoTimer = setTimeout(() => {
@@ -293,7 +312,7 @@
 
         if (!ultimaAccion) return;
 
-        decir(ultimaAccion.mensaje || MENSAJES.bienvenida);
+        decir(ultimaAccion.mensaje || MENSAJES.bienvenida, { tono: ultimaAccion.tono || 'info' });
         accion(ultimaAccion.etiqueta, ultimaAccion.manejador);
     }
 
@@ -317,7 +336,7 @@
        Los pasos los define cada página; aquí solo se aplica el estilo de
        Chiky y se sincroniza su mensaje con el del popover.
     */
-    function guiar(pasos, { clave = 'chiky_guia', forzar = false, barra = true, progreso = true, recordar = true } = {}) {
+    function guiar(pasos, { clave = 'chiky_guia', forzar = false, barra = true, progreso = true, recordar = true, mostrarAlCerrar = false } = {}) {
         const crearDriver = window.driver?.js?.driver;
 
         if (!crearDriver || !Array.isArray(pasos) || !pasos.length) return false;
@@ -381,7 +400,7 @@
 
                 if (barra) {
                     decir('Puedes seguir cuando quieras. Pulsa sobre mí para ver la guía otra vez.');
-                } else if (volverVisible) {
+                } else if (volverVisible || mostrarAlCerrar) {
                     mostrar();
                 }
             },
@@ -397,7 +416,7 @@
         guiaActiva?.destroy();
     }
 
-    window.Chiky = { montar, decir, paso, error, exito, accion, guiar, refrescarGuia, cerrarGuia, modoDiscreto, spotlight, ocultar, mostrar, mensajes: MENSAJES, identidad: IDENTIDAD };
+    window.Chiky = { montar, decir, paso, error, exito, accion, guiar, refrescarGuia, cerrarGuia, modoDiscreto, soloSi, spotlight, ocultar, mostrar, mensajes: MENSAJES, identidad: IDENTIDAD };
 
     montar();
 })();

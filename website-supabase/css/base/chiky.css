@@ -11,6 +11,15 @@
   width: min(720px, calc(100vw - 24px));
 }
 
+/* En el perfil no flota: vive arriba del contenido y se va con el scroll. */
+.perfil-pagina .chiky-montaje {
+  position: static;
+  left: auto;
+  transform: none;
+  width: 100%;
+  margin-bottom: var(--e-4);
+}
+
 .chiky {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -22,7 +31,7 @@
   background: linear-gradient(180deg, #fffdf8 0%, #f6fbf4 100%);
   box-shadow: 0 16px 36px rgba(12, 61, 36, .16), 0 2px 6px rgba(12, 61, 36, .06);
   cursor: pointer;
-  transition: box-shadow .18s ease, opacity .5s ease, transform .5s ease, visibility 0s linear;
+  transition: opacity .5s ease, transform .5s ease, visibility 0s linear;
 }
 
 .chiky:hover { box-shadow: 0 20px 44px rgba(12, 61, 36, .2), 0 2px 6px rgba(12, 61, 36, .08); }
@@ -37,6 +46,19 @@
   transform: translateY(-8px);
   pointer-events: none;
   transition: box-shadow .18s ease, opacity .5s ease, transform .5s ease, visibility 0s linear .5s;
+}
+
+/* En dispositivos con «reducir movimiento» se apagan las animaciones decorativas. */
+@media (prefers-reduced-motion: reduce) {
+  .chiky,
+  .chiky--guardada,
+  .chiky-foco,
+  .chiky[data-tono="festejo"],
+  .chiky[data-tono="festejo"]::after,
+  .chiky[data-tono="festejo"] .chiky__avatar {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
 }
 
 .chiky[data-tono="exito"] { box-shadow: inset 3px 0 0 #198754, 0 16px 36px rgba(12, 61, 36, .16); }
@@ -198,6 +220,8 @@
 /* Foco tipo driver.js: oscurece el entorno dejando libre el elemento. */
 .chiky-foco {
   position: absolute;
+  top: 0;
+  left: 0;
   z-index: 1030;
   pointer-events: none;
   border-radius: 12px;
@@ -206,6 +230,7 @@
     0 0 0 3px rgba(227, 179, 65, .9),
     0 0 0 9999px rgba(12, 61, 36, .55);
   transition: opacity .5s ease;
+  will-change: transform;
 }
 
 .chiky-foco--oculto { opacity: 0; }
@@ -225,6 +250,7 @@
 
 @media (max-width: 767.98px) {
   .chiky-montaje { top: calc(var(--alto-header) + 6px); width: calc(100vw - 16px); }
+  .perfil-pagina .chiky-montaje { top: auto; left: auto; transform: none; width: 100%; }
   .chiky { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 8px 10px; padding: 10px; border-radius: 16px; }
   .chiky__avatar { width: 32px; height: 32px; border-radius: 10px; padding: 2px; }
   .chiky__mensaje { font-size: .85rem; }

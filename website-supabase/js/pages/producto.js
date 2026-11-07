@@ -424,6 +424,7 @@ function pintarPrecio() {
     /* No se acumulan: se muestra el mejor precio y en el carrito se elige. */
     let precioFinal = precioBase;
     let etiqueta = '';
+    let esBienvenida = false;
 
     if (precioPromo < precioFinal) {
         precioFinal = precioPromo;
@@ -433,13 +434,14 @@ function pintarPrecio() {
     if (descuento && precioCuenta < precioFinal) {
         precioFinal = precioCuenta;
         etiqueta = descuento.etiqueta;
+        esBienvenida = Boolean(descuento.primera_compra);
     }
 
     if (precioFinal < precioBase) {
         nodo.innerHTML = `
             <span class="producto__precio--antes">${moneda(precioBase)}</span>
             <span class="producto__precio--dto">${moneda(precioFinal)}</span>
-            <span class="producto__descuento">${escapar(etiqueta)} DESCUENTO</span>
+            <span class="producto__descuento">${escapar(etiqueta)} ${esBienvenida ? 'BIENVENIDA' : 'DESCUENTO'}</span>
         `;
     } else {
         nodo.textContent = moneda(precioBase);
@@ -726,6 +728,7 @@ async function cargarRelacionados() {
                 <li class="splide__slide">
                     <a class="card-compacta" href="/producto?p=${encodeURIComponent(item.id)}&color=${encodeURIComponent(item.color || '')}">
                         <div class="card-compacta__media">
+                            ${tieneDescuento ? `<span class="badge-descuento">${escapar(descuento.etiqueta)} ${descuento.primera_compra ? 'bienvenida' : 'descuento'}</span>` : ''}
                             <img src="${escapar(item.imagen || IMAGEN_FALLBACK)}" alt="${escapar(item.nombre)}" loading="lazy" decoding="async" fetchpriority="low"
                                  onerror="this.src='${IMAGEN_FALLBACK}'">
                         </div>

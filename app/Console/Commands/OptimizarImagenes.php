@@ -10,6 +10,7 @@ class OptimizarImagenes extends Command
 {
     protected $signature = 'imagenes:optimizar
                             {--limite=300 : Peso máximo por imagen en KB}
+                            {--todo : Convierte a WebP también las que ya pesan menos que el límite}
                             {--dry : Solo mostrar qué archivos se optimizarían}';
 
     protected $description = 'Recomprime las fotos de productos y variaciones a WebP por debajo del límite de peso';
@@ -21,6 +22,7 @@ class OptimizarImagenes extends Command
     {
         $limite = max(50, (int) $this->option('limite')) * 1024;
         $soloMostrar = (bool) $this->option('dry');
+        $todo = (bool) $this->option('todo');
 
         $total = 0;
         $ahorro = 0;
@@ -47,7 +49,8 @@ class OptimizarImagenes extends Command
 
                 $peso = filesize($archivo);
 
-                if ($peso <= $limite) {
+                /* Con --todo se convierten a WebP también las que ya están por debajo. */
+                if ($peso <= $limite && (! $todo || $extension === 'webp')) {
                     continue;
                 }
 

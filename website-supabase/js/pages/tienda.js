@@ -159,7 +159,7 @@ function tarjetaProducto(variante, indice = 0) {
                      onerror="this.src='${IMAGEN_FALLBACK}'">
                 ${agotado ? '<span class="badge-agotado">Agotado</span>' : ''}
                 ${!agotado && selloPromocion ? `<span class="badge-promocion">${escapar(selloPromocion)}</span>` : ''}
-                ${!agotado && !selloPromocion && tieneDescuento ? `<span class="badge-descuento">${escapar(descuento.etiqueta)} descuento</span>` : ''}
+                ${!agotado && !selloPromocion && tieneDescuento ? `<span class="badge-descuento">${escapar(descuento.etiqueta)} ${descuento.primera_compra ? 'bienvenida' : 'descuento'}</span>` : ''}
                 <button class="btn-favorito" type="button" data-producto="${variante.id}" aria-label="Agregar a favoritos">
                     <i class="bi bi-heart"></i>
                 </button>
