@@ -67,7 +67,11 @@ begin
             'tipo', 'porcentaje',
             'valor', 10,
             'alcance', 'categoria',
-            'categorias', jsonb_build_array('Zapatos')
+            'categorias', jsonb_build_array('Zapatos'),
+            'expira', case
+                when nullif(v_meta ->> 'descuento_primera_compra_expira', '') is null then null
+                else to_jsonb((v_meta ->> 'descuento_primera_compra_expira')::timestamptz)
+            end
         );
     end if;
 
@@ -596,18 +600,18 @@ begin
         raise exception 'Ya usaste tu descuento de bienvenida.';
     end if;
 
-    /* Vale una semana desde que se activa. */
+    /* Vale un mes desde que se activa. */
     update auth.users
        set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb)
            || jsonb_build_object(
                   'descuento_primera_compra', true,
-                  'descuento_primera_compra_expira', to_jsonb(now() + interval '7 days')
+                  'descuento_primera_compra_expira', to_jsonb(now() + interval '30 days')
               )
      where id = auth.uid();
 
     return jsonb_build_object(
         'success', true,
-        'mensaje', 'Descuento de bienvenida aplicado: 10% en zapatos por 7 días.'
+        'mensaje', 'Descuento de bienvenida aplicado: 10% en zapatos por 30 días.'
     );
 end;
 $$;

@@ -30,10 +30,10 @@
   <link href="https://cdn.jsdelivr.net/npm/driver.js@1.3.6/dist/driver.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261106a">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261107a">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261106b">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261107n">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261105b">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261107d">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261107i">
 </head>
 <body>
 
@@ -153,6 +153,39 @@
           <i class="bi bi-gear"></i> Configuración
         </a>
       </nav>
+
+      <p class="perfil-nav__titulo">Asistente virtual</p>
+
+      <details class="perfil-ayuda" id="ayudaChiky">
+        <summary class="perfil-nav__item perfil-nav__item--chiky" id="btnChikyAyuda">
+          <img class="perfil-nav__avatar" src="/tienda/recursos/imagenes/avatares/Asistente.PNG" alt="" width="26" height="26" decoding="async">
+          Chiky · Asistente virtual
+        </summary>
+
+        <div class="perfil-ayuda__lista">
+          <button type="button" class="perfil-ayuda__tema" data-ayuda="secciones">Recorrido por todas las secciones</button>
+          <button type="button" class="perfil-ayuda__tema" data-ayuda="descuento">¿Cómo uso mi 10%?</button>
+          <button type="button" class="perfil-ayuda__tema" data-ayuda="fidelidad" hidden>Cupones y fidelidad</button>
+          <button type="button" class="perfil-ayuda__tema" data-ayuda="cuenta">Mis datos y contraseña</button>
+          <button type="button" class="perfil-ayuda__tema" data-ayuda="direcciones">Mis direcciones</button>
+          <button type="button" class="perfil-ayuda__tema" data-ayuda="pedidos">Mis pedidos</button>
+          <button type="button" class="perfil-ayuda__tema" data-ayuda="comprar">Cómo comprar</button>
+
+          <div class="perfil-ayuda__grupo">
+            <p class="perfil-ayuda__subtitulo">Explicar una sección</p>
+            <div class="perfil-ayuda__atajos">
+              <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:perfil">Perfil</button>
+              <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:direcciones">Direcciones</button>
+              <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:favoritos">Favoritos</button>
+              <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:deseos">Deseos</button>
+              <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:pedidos">Pedidos</button>
+              <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:historial">Historial</button>
+              <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:descuentos">Descuentos</button>
+              <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:configuracion">Ajustes</button>
+            </div>
+          </div>
+        </div>
+      </details>
 
       <a class="perfil-nav__item perfil-nav__item--salir" href="#">
         <i class="bi bi-box-arrow-right"></i> Cerrar sesión
@@ -367,7 +400,7 @@
                   <div class="row g-1">
                     <div class="col-12">
                       <label class="form-label" for="direccionReferencia">Referencia <span class="dir-etiqueta">(preferencial)</span></label>
-                      <textarea class="form-control" id="direccionReferencia" rows="1" maxlength="500" placeholder="Casa color turquesa con portón negro..."></textarea>
+                      <textarea class="form-control" id="direccionReferencia" rows="1" maxlength="500" placeholder="Casa color crema, puerta blanca con ventana cafe... "></textarea>
                     </div>
 
                     <div class="col-12">
@@ -641,7 +674,7 @@
                   <div class="campo-password">
                     <input class="form-control" id="passwordActual" name="password_actual" type="password" autocomplete="current-password">
                     <button type="button" class="campo-password__ojo" data-toggle-password="passwordActual" aria-label="Mostrar contraseña" aria-pressed="false">
-                      <i class="bi bi-eye" aria-hidden="true"></i>
+                        <svg class="campo-password__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g class="ojo-abierto"><path d="M2.06 12.35a1 1 0 0 1 0-.7C3.5 8.2 7.3 5 12 5s8.5 3.2 9.94 6.65a1 1 0 0 1 0 .7C20.5 15.8 16.7 19 12 19s-8.5-3.2-9.94-6.65Z"/><circle cx="12" cy="12" r="3"/></g><g class="ojo-cerrado"><path d="M2 2l20 20"/><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c4.7 0 8.5 3.2 9.94 6.65a1 1 0 0 1 0 .7 12.7 12.7 0 0 1-2.6 3.8"/><path d="M6.7 6.7A13.4 13.4 0 0 0 2.06 11.65a1 1 0 0 0 0 .7C3.5 15.8 7.3 19 12 19a9.9 9.9 0 0 0 5.3-1.5"/></g></svg>
                     </button>
                   </div>
                 </div>
@@ -655,7 +688,7 @@
                       required minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}"
                       title="Mínimo 8 caracteres, con al menos una minúscula, una mayúscula y un número.">
                     <button type="button" class="campo-password__ojo" data-toggle-password="passwordNueva" aria-label="Mostrar contraseña" aria-pressed="false">
-                      <i class="bi bi-eye" aria-hidden="true"></i>
+                      <svg class="campo-password__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g class="ojo-abierto"><path d="M2.06 12.35a1 1 0 0 1 0-.7C3.5 8.2 7.3 5 12 5s8.5 3.2 9.94 6.65a1 1 0 0 1 0 .7C20.5 15.8 16.7 19 12 19s-8.5-3.2-9.94-6.65Z"/><circle cx="12" cy="12" r="3"/></g><g class="ojo-cerrado"><path d="M2 2l20 20"/><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c4.7 0 8.5 3.2 9.94 6.65a1 1 0 0 1 0 .7 12.7 12.7 0 0 1-2.6 3.8"/><path d="M6.7 6.7A13.4 13.4 0 0 0 2.06 11.65a1 1 0 0 0 0 .7C3.5 15.8 7.3 19 12 19a9.9 9.9 0 0 0 5.3-1.5"/></g></svg>
                     </button>
                   </div>
                 </div>
@@ -666,7 +699,7 @@
                     <input class="form-control" id="passwordNuevaConfirm" name="password_nueva_confirmation" type="password" autocomplete="new-password"
                       required minlength="8" title="Repite la nueva contraseña.">
                     <button type="button" class="campo-password__ojo" data-toggle-password="passwordNuevaConfirm" aria-label="Mostrar contraseña" aria-pressed="false">
-                      <i class="bi bi-eye" aria-hidden="true"></i>
+                      <svg class="campo-password__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g class="ojo-abierto"><path d="M2.06 12.35a1 1 0 0 1 0-.7C3.5 8.2 7.3 5 12 5s8.5 3.2 9.94 6.65a1 1 0 0 1 0 .7C20.5 15.8 16.7 19 12 19s-8.5-3.2-9.94-6.65Z"/><circle cx="12" cy="12" r="3"/></g><g class="ojo-cerrado"><path d="M2 2l20 20"/><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c4.7 0 8.5 3.2 9.94 6.65a1 1 0 0 1 0 .7 12.7 12.7 0 0 1-2.6 3.8"/><path d="M6.7 6.7A13.4 13.4 0 0 0 2.06 11.65a1 1 0 0 0 0 .7C3.5 15.8 7.3 19 12 19a9.9 9.9 0 0 0 5.3-1.5"/></g></svg>
                     </button>
                   </div>
                 </div>
@@ -690,14 +723,14 @@
   <script src="/tienda/recursos/js/core/carrito-store.js?v=20261105c" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261104a" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261107a" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261107c" defer></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js" defer></script>
   <script src="/tienda/recursos/js/core/cedula-nicaragua.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.6/dist/driver.js.iife.js" defer></script>
-  <script src="/tienda/recursos/js/components/chiky.js?v=20261107d" defer></script>
-  <script src="/tienda/recursos/js/pages/perfil.js?v=20261107l" defer></script>
+  <script src="/tienda/recursos/js/components/chiky.js?v=20261107k" defer></script>
+  <script src="/tienda/recursos/js/pages/perfil.js?v=20261108g" defer></script>
 </body>
 </html>

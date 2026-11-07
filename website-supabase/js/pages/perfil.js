@@ -58,7 +58,7 @@ function iniciarPerfil() {
             if (!destino) return;
 
             evento.preventDefault();
-            destino.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            alinearArriba(destino);
             activar(destino);
 
             if (window.history.replaceState) {
@@ -75,7 +75,7 @@ function iniciarPerfil() {
         const inicial = document.getElementById(window.location.hash.slice(1));
         if (inicial) {
             window.setTimeout(() => {
-                inicial.scrollIntoView({ block: 'start' });
+                alinearArriba(inicial);
                 activar(inicial);
             }, 60);
         }
@@ -83,6 +83,12 @@ function iniciarPerfil() {
 
     actualizar();
     iniciarCuenta();
+
+    /* En el perfil Chiky vive en el menú: no ocupa pantalla hasta que se pide. */
+    window.Chiky?.modoDiscreto();
+    conectarAyudaChiky();
+    conectarDesplegableAyuda();
+    animarBloquesPerfil();
 }
 
 /* ╔══════════════════════════════════════════════════════════════╗
@@ -404,7 +410,7 @@ function avisarDatosFaltantes(cliente) {
             return;
         }
 
-        ofrecerDescuento();
+        ofrecerDescuento(cliente);
         return;
     }
 
@@ -420,7 +426,7 @@ function avisarDatosFaltantes(cliente) {
     if (!avisar) {
         if (descuentoUsado) return;
 
-        ofrecerDescuento();
+        ofrecerDescuento(cliente);
         return;
     }
 
@@ -465,14 +471,372 @@ function iniciarGuiaCupones() {
     ], { clave: 'chiky_guia_cupones', forzar: true });
 }
 
-function ofrecerDescuento() {
+function ofrecerDescuento(cliente = window.clienteTienda) {
     const chiky = window.Chiky;
     if (!chiky) return;
 
-    /* Se mantiene visible hasta reclamar el 10%, aunque se haya cerrado antes. */
-    chiky.mostrar();
+    const descuento = cliente?.descuento || null;
+
+    /* Si ya lo reclamó, se felicita en vez de ofrecer la guía otra vez. */
+    if (descuento) {
+        if (descuento.primera_compra) {
+            const vigencia = vigenciaDescuento(descuento.expira);
+
+            chiky.decir(`¡Felicidades! Ya puedes usar tu ${descuento.etiqueta || '10%'} en zapatos.${vigencia ? ` ${vigencia}` : ''}`, { tono: 'festejo' });
+        } else {
+            chiky.decir('Tienes un descuento especial activo en tu cuenta.', { tono: 'festejo' });
+        }
+
+        chiky.accion('Ver mi descuento', () => alinearArriba(porId('descuentos')));
+        return;
+    }
+
+    /* La tarjeta se abre al pedir ayuda o con la guía del 10%. */
     chiky.paso('descuentoBienvenida');
     chiky.accion('Ver cupones', irACupones);
+}
+
+/* El tema del 10% solo existe mientras el descuento esté disponible. */
+function ajustarTemasAyuda(cliente = window.clienteTienda) {
+    const botonDescuento = document.querySelector('#ayudaChiky [data-ayuda="descuento"]');
+    const botonFidelidad = document.querySelector('#ayudaChiky [data-ayuda="fidelidad"]');
+
+    const usado = Boolean(cliente?.descuento_primera_compra_usado);
+    const disponible = Boolean(cliente) && !usado;
+
+    if (botonDescuento) botonDescuento.hidden = !disponible;
+    if (botonFidelidad) botonFidelidad.hidden = !usado;
+}
+
+/* Menú: cada pregunta abre a Chiky y la lleva a guiar por la pantalla. */
+function conectarAyudaChiky() {
+    document.querySelectorAll('#ayudaChiky [data-ayuda]').forEach((boton) => {
+        boton.addEventListener('click', () => {
+            window.Chiky?.mostrar();
+            atenderAyudaChiky(boton.dataset.ayuda);
+        });
+    });
+}
+
+/* Todo bloque que aparezca en el perfil entra con medio segundo. */
+function animarBloquesPerfil() {
+    const raiz = document.querySelector('.perfil-pagina');
+    if (!raiz) return;
+
+    const excluidos = '.perfil-nav, .perfil-nav-fondo, .perfil-velo, .perfil-modal, .chiky, .chiky-foco';
+    /* Listas y tarjetas que se repintan con contenido nuevo. */
+    const repintados = '#contenidoDescuento, #listaDirecciones, #listaCupones, #listaPedidos, #listaHistorial, #listaFavoritos, #listaDeseos, #fidelidadPendientes';
+
+    const entrar = (nodo) => {
+        if (!(nodo instanceof HTMLElement) || nodo.hidden) return;
+        if (nodo.matches(excluidos)) return;
+
+        nodo.classList.remove('perfil-entra');
+        void nodo.offsetWidth;
+        nodo.classList.add('perfil-entra');
+    };
+
+    new MutationObserver((cambios) => {
+        cambios.forEach((cambio) => {
+            if (cambio.attributeName === 'hidden') {
+                entrar(cambio.target);
+                return;
+            }
+
+            if (!cambio.addedNodes.length) return;
+
+            const contenedor = cambio.target instanceof HTMLElement
+                ? cambio.target.closest(repintados)
+                : null;
+
+            if (contenedor) entrar(contenedor);
+        });
+    }).observe(raiz, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['hidden'],
+        childList: true,
+    });
+}
+
+/* El desplegable se abre y se cierra en medio segundo. */
+function conectarDesplegableAyuda() {
+    const detalle = porId('ayudaChiky');
+    const lista = detalle?.querySelector('.perfil-ayuda__lista');
+    const resumen = detalle?.querySelector('summary');
+
+    if (!detalle || !lista || !resumen) return;
+
+    let animando = false;
+
+    resumen.addEventListener('click', (evento) => {
+        evento.preventDefault();
+
+        if (animando) return;
+
+        animando = true;
+
+        if (detalle.open) {
+            cerrarDesplegable(detalle, lista, () => { animando = false; });
+            return;
+        }
+
+        detalle.open = true;
+        abrirDesplegable(lista, () => { animando = false; });
+    });
+}
+
+function abrirDesplegable(lista, alTerminar) {
+    lista.style.maxHeight = '0px';
+    lista.style.opacity = '0';
+
+    requestAnimationFrame(() => {
+        lista.style.transition = 'max-height .5s ease, opacity .5s ease';
+        lista.style.maxHeight = `${lista.scrollHeight}px`;
+        lista.style.opacity = '1';
+
+        setTimeout(() => {
+            lista.style.cssText = '';
+            alTerminar?.();
+        }, 500);
+    });
+}
+
+function cerrarDesplegable(detalle, lista, alTerminar) {
+    lista.style.maxHeight = `${lista.scrollHeight}px`;
+    lista.style.opacity = '1';
+
+    requestAnimationFrame(() => {
+        lista.style.transition = 'max-height .5s ease, opacity .5s ease';
+        lista.style.maxHeight = '0px';
+        lista.style.opacity = '0';
+
+        setTimeout(() => {
+            detalle.open = false;
+            lista.style.cssText = '';
+            alTerminar?.();
+        }, 500);
+    });
+}
+
+function atenderAyudaChiky(tema) {
+    if (!window.Chiky) return;
+
+    /* Un tema nuevo cierra cualquier guía o flujo anterior. */
+    window.Chiky.cerrarGuia?.();
+    flujoDescuento?.observer?.disconnect();
+    flujoDescuento = null;
+
+    if (tema.startsWith('seccion:')) {
+        explicarSeccion(tema.slice(8));
+        return;
+    }
+
+    if (tema === 'secciones') {
+        explicarSecciones();
+        return;
+    }
+
+    if (tema === 'descuento') {
+        ayudaDescuento();
+        return;
+    }
+
+    if (tema === 'fidelidad') {
+        ayudaFidelidad();
+        return;
+    }
+
+    if (tema === 'cuenta') {
+        recorrerPasos([
+            {
+                elemento: cabeceraSeccion('perfil'),
+                titulo: 'Tus datos',
+                mensaje: 'Aquí editas tu nombre, teléfono y fecha de nacimiento.',
+            },
+            {
+                elemento: porId('formPerfil')?.querySelector('button[type="submit"]'),
+                titulo: 'Guardar cambios',
+                mensaje: 'Al terminar, guarda los cambios con este botón.',
+            },
+            {
+                elemento: cabeceraSeccion('configuracion'),
+                titulo: 'Tu contraseña',
+                mensaje: 'Con tu correo y esta contraseña entras sin depender de Google.',
+            },
+            {
+                elemento: porId('formPassword')?.querySelector('button[type="submit"]'),
+                titulo: 'Actualizar contraseña',
+                mensaje: 'Usa 8 caracteres con una mayúscula, una minúscula y un número.',
+            },
+        ].filter((paso) => paso.elemento));
+
+        return;
+    }
+
+    if (tema === 'direcciones') {
+        recorrerPasos([
+            {
+                elemento: porId('btnNuevaDireccion'),
+                titulo: 'Nueva dirección',
+                mensaje: 'Aquí agregas una dirección con su punto en el mapa.',
+            },
+            {
+                elemento: porId('listaDirecciones'),
+                titulo: 'Tus direcciones',
+                mensaje: 'Con el lápiz la editas y con el bote la borras. La predeterminada se usa al pagar.',
+            },
+        ].filter((paso) => paso.elemento));
+
+        return;
+    }
+
+    if (tema === 'pedidos') {
+        recorrerPasos([
+            {
+                elemento: cabeceraSeccion('pedidos'),
+                titulo: 'Mis pedidos',
+                mensaje: 'Aquí sigues tus solicitudes: activas, entregadas o canceladas.',
+            },
+            {
+                elemento: document.querySelector('.perfil-pedidos-filtro'),
+                titulo: 'Filtros',
+                mensaje: 'Cambia el filtro para ver cada estado.',
+            },
+            {
+                elemento: cabeceraSeccion('historial'),
+                titulo: 'Historial de compras',
+                mensaje: 'Y aquí queda el detalle de todo lo que ya compraste.',
+            },
+        ].filter((paso) => paso.elemento));
+
+        return;
+    }
+
+    /* Cómo comprar: se explica y queda el botón para ir al catálogo. */
+    window.Chiky.decir('Elige tus zapatos en el catálogo, agrégalos al carrito y confirma el pedido.');
+    window.Chiky.accion('Ir al catálogo', () => {
+        window.location.href = '/tienda#catalogo';
+    });
+
+    recorrerPasos([
+        {
+            elemento: cabeceraSeccion('favoritos'),
+            titulo: 'Guarda lo que te gusta',
+            mensaje: 'Toca el corazón de un zapato y queda aquí para después.',
+        },
+        {
+            elemento: cabeceraSeccion('deseos'),
+            titulo: '¿No está tu talla?',
+            mensaje: 'Pídelo en la Lista de deseos y te avisamos cuando llegue.',
+        },
+    ].filter((paso) => paso.elemento));
+}
+
+function cabeceraSeccion(id) {
+    return document.querySelector(`#${id} .perfil-seccion__cabecera`);
+}
+
+/* Secciones del perfil y qué explica cada una. */
+const SECCIONES_PERFIL = [
+    ['perfil', 'Perfil', 'Tus datos: nombre, teléfono y fecha de nacimiento. Con ellos te contactamos por tus pedidos.'],
+    ['direcciones', 'Direcciones', 'Los lugares donde entregamos: casa, trabajo u otro. Marca el punto en el mapa para el delivery.'],
+    ['favoritos', 'Favoritos', 'Los zapatos que te gustaron y quieres volver a ver.'],
+    ['deseos', 'Lista de Deseos', 'Pares que no tenemos. Los pides y te avisamos cuando lleguen.'],
+    ['pedidos', 'Mis pedidos', 'El estado de cada solicitud: activa, entregada o cancelada.'],
+    ['historial', 'Historial de compras', 'Todo lo que ya compraste, con su detalle y total.'],
+    ['descuentos', 'Descuentos y cupones', 'Tu 10% de bienvenida, los cupones y el avance del cupón de fidelidad.'],
+    ['configuracion', 'Configuración', 'Tu contraseña y las preferencias de la cuenta.'],
+];
+
+/* Cupones de fidelidad: reemplaza al tema del 10% cuando ya se usó. */
+function ayudaFidelidad() {
+    window.Chiky?.decir('Cada 10 pares ganas un cupón por el 10% acumulado de esos pares.');
+
+    recorrerPasos([
+        {
+            elemento: porId('fidelidadBarra'),
+            titulo: '10 pares = 1 cupón',
+            mensaje: 'La barra avanza con cada par que compras; al llegar a 10 se genera tu cupón.',
+        },
+        {
+            elemento: porId('cuponPerfilCodigo'),
+            titulo: 'Canjear un código',
+            mensaje: 'Cuando tengas un código, escríbelo aquí y pulsa «Canjear».',
+        },
+    ].filter((paso) => paso.elemento));
+}
+
+/* Recorrido por todas las secciones: para qué sirve cada una. */
+function explicarSecciones() {
+    window.Chiky?.decir('Eso es todo: cada sección guarda una parte de tu cuenta. Pulsa «Chiky · Ayuda» cuando quieras repasar.');
+
+    recorrerPasos(SECCIONES_PERFIL
+        .map(([id, titulo, mensaje]) => ({ elemento: cabeceraSeccion(id), titulo, mensaje }))
+        .filter((paso) => paso.elemento));
+}
+
+/* Atajo: explica una sola sección, sin recorrer las demás. */
+function explicarSeccion(id) {
+    const seccion = SECCIONES_PERFIL.find(([clave]) => clave === id);
+    if (!seccion) return;
+
+    const [clave, titulo, mensaje] = seccion;
+
+    recorrerPasos([{ elemento: cabeceraSeccion(clave), titulo, mensaje }], { progreso: false });
+}
+
+/* «¿Cómo uso mi 10%?» cambia según el estado del descuento. */
+function ayudaDescuento() {
+    const descuento = window.clienteTienda?.descuento;
+    const vigencia = descuento?.primera_compra ? vigenciaDescuento(descuento.expira) : '';
+
+    if (descuento?.primera_compra) {
+        window.Chiky?.decir(`¡Felicidades! Ya puedes usar tu 10% en zapatos.${vigencia ? ` ${vigencia}` : ''}`);
+        window.Chiky?.accion('Ver mi descuento', () => alinearArriba(porId('descuentos')));
+
+        recorrerPasos([
+            {
+                elemento: porId('contenidoDescuento'),
+                titulo: 'Tu 10% de bienvenida',
+                mensaje: `Se aplica solo en zapatos al pagar.${vigencia ? ` ${vigencia}` : ''}`,
+            },
+            {
+                elemento: porId('fidelidadBarra'),
+                titulo: 'Cupón de fidelidad',
+                mensaje: 'Cada 10 pares que compres ganas un cupón por el 10% acumulado.',
+            },
+            {
+                elemento: porId('cuponPerfilCodigo'),
+                titulo: 'Canjear un código',
+                mensaje: 'Escribe aquí el código de un cupón y pulsa «Canjear».',
+            },
+        ].filter((paso) => paso.elemento));
+
+        return;
+    }
+
+    if (window.clienteTienda?.descuento_primera_compra_usado) {
+        window.Chiky?.decir('Ya usaste tu 10% de bienvenida. Ahora ganas cupones por fidelidad.');
+        window.Chiky?.accion('Ver cupones', () => alinearArriba(porId('descuentos')));
+
+        recorrerPasos([
+            {
+                elemento: porId('fidelidadBarra'),
+                titulo: '10 pares = 1 cupón',
+                mensaje: 'Cada 10 pares ganas un cupón por el 10% acumulado de esos pares.',
+            },
+            {
+                elemento: porId('cuponPerfilCodigo'),
+                titulo: 'Canjear un código',
+                mensaje: 'Cuando tengas un código, escríbelo aquí y pulsa «Canjear».',
+            },
+        ].filter((paso) => paso.elemento));
+
+        return;
+    }
+
+    irACupones();
 }
 
 /* Primero lleva a la sección; la ayuda se ofrece después. */
@@ -480,8 +844,7 @@ function irACupones() {
     const seccion = porId('descuentos');
     if (!seccion) return;
 
-    const destino = window.scrollY + seccion.getBoundingClientRect().top - 150;
-    window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
+    alinearArriba(seccion);
 
     sombrearContenedor(porId('contenidoDescuento') || seccion);
     window.Chiky?.spotlight(porId('contenidoDescuento') || seccion, { duracion: 1600 });
@@ -569,9 +932,6 @@ function iniciarPasosDescuento(preferido = null) {
         pendientes: pendientesDescuento(),
         preferido,
         esperando: false,
-        campo: null,
-        alSalir: null,
-        marca: null,
     };
 
     flujoDescuento.observer.observe(contenedor, { childList: true, subtree: true });
@@ -586,7 +946,6 @@ function empezarGrupoDescuento() {
     flujoDescuento.pendientes = pendientes;
     flujoDescuento.esperando = false;
     flujoDescuento.preferido = null;
-    flujoDescuento.ultimoFoco = null;
 
     if (!pendientes.length) return terminarDescuento();
 
@@ -604,23 +963,48 @@ function empezarGrupoDescuento() {
         .sort((a, b) => (a === preferido ? -1 : b === preferido ? 1 : 0));
 
     const campo = porId(grupo.campos[faltan[0]]);
-    const destino = campoVisible(campo) || porId(grupo.seccion);
+    const visible = campoVisible(campo);
+    const destino = visible || porId(grupo.seccion);
 
     if (!destino) return;
+
+    if (grupo.seccion === 'perfil') {
+        const formulario = porId('formPerfil');
+        const titulos = {
+            'Teléfono registrado': 'Tu teléfono',
+            'Fecha de nacimiento': 'Tu fecha de nacimiento',
+        };
+        const ayudas = {
+            'Teléfono registrado': 'Escribe tu número de teléfono; lo usamos para avisarte de tus pedidos.',
+            'Fecha de nacimiento': 'Ahora tu fecha de nacimiento: sirve para saludarte en tu cumpleaños.',
+        };
+
+        const pasos = faltan.map((clave, indice) => ({
+            elemento: campoVisible(porId(grupo.campos[clave])),
+            titulo: titulos[clave] || 'Tus datos',
+            mensaje: indice === 0 ? `${grupo.intro(faltan)} ${ayudas[clave] || ''}`.trim() : ayudas[clave],
+            foco: true,
+        }));
+
+        pasos.push({
+            elemento: formulario?.querySelector('button[type="submit"]'),
+            titulo: 'Guardar cambios',
+            mensaje: 'Cuando termines, pulsa «Guardar cambios».',
+        });
+
+        recorrerPasos(pasos.filter((paso) => paso.elemento));
+
+        return;
+    }
 
     if (grupo.seccion === 'configuracion') {
         const formulario = porId('formPassword');
 
-        irAlCampoDescuento(campo, destino, { vigilar: false });
-
         recorrerPasos([
-            {
-                elemento: campoVisible(campo) || destino,
-                mensaje: REGLA_PASSWORD,
-                foco: true,
-            },
+            { elemento: visible || destino, titulo: 'Contraseña', mensaje: REGLA_PASSWORD, foco: true },
             {
                 elemento: formulario?.querySelector('button[type="submit"]'),
+                titulo: 'Actualizar contraseña',
                 mensaje: 'Cuando cumpla la regla, pulsa «Actualizar contraseña».',
             },
         ].filter((paso) => paso.elemento));
@@ -628,9 +1012,8 @@ function empezarGrupoDescuento() {
         return;
     }
 
-    window.Chiky.decir(grupo.intro(faltan));
-
-    irAlCampoDescuento(campo, destino);
+    window.Chiky?.decir(grupo.intro(faltan));
+    guiarPista(campo || destino, 'Tu dirección', grupo.intro(faltan));
 }
 
 /* Los enlaces «Completar/Agregar/Crear» también arrancan la ayuda de Chiky. */
@@ -647,19 +1030,36 @@ document.addEventListener('click', (evento) => {
     iniciarPasosDescuento(requisito);
 });
 
-/* Dentro de la dirección, Chiky señala el botón de ubicación en vez de repetir el texto. */
+/* Al abrir el formulario, Chiky señala el botón de ubicación. */
 document.addEventListener('click', (evento) => {
     if (!evento.target.closest('#btnNuevaDireccion') || !flujoDescuento) return;
     if (flujoDescuento.grupo?.seccion !== 'direcciones') return;
 
-    setTimeout(() => {
-        const boton = porId('btnUbicacion');
-        if (!boton) return;
+    const panel = porId('formDireccionDesplegable');
+    let avisado = false;
 
-        llevarAlPaso(boton);
-        window.Chiky?.spotlight(boton, { duracion: 2200 });
-        window.Chiky?.decir('Perfecto. Ahora pulsa «Ubicación actual» y confirma el punto en el mapa.');
-    }, 350);
+    const avisar = () => {
+        if (avisado) return;
+
+        avisado = true;
+        guiarPista(
+            porId('btnUbicacion'),
+            'Ubicación en el mapa',
+            'Pulsa «Ubicación actual» y confirma el punto en el mapa.',
+        );
+    };
+
+    /* El panel se despliega: se avisa cuando ya tiene su tamaño final. */
+    const alAbrir = (terminado) => {
+        if (terminado.propertyName !== 'grid-template-rows') return;
+
+        panel.removeEventListener('transitionend', alAbrir);
+
+        if (panel.classList.contains('is-abierto')) setTimeout(avisar, 120);
+    };
+
+    panel?.addEventListener('transitionend', alAbrir);
+    setTimeout(avisar, 700);
 });
 
 /* Diálogo con botón: cada paso espera a que el usuario pulse «Siguiente». */
@@ -680,47 +1080,63 @@ function secuenciaDireccion() {
     recorrerPasos([
         {
             elemento: porId('direccionReferencia'),
+            titulo: 'Referencia',
             mensaje: 'Añade una referencia para encontrarte: color de la casa, portón o un negocio cercano.',
             foco: true,
         },
         {
             elemento: porId('direccionManual'),
+            titulo: 'Dirección escrita',
             mensaje: 'Esta es la dirección escrita; si el mapa no quedó exacto, ajústala aquí.',
         },
         {
             elemento: formulario.querySelector('button[type="submit"]'),
+            titulo: 'Guardar dirección',
             mensaje: 'Cuando esté todo bien, pulsa «Guardar dirección».',
         },
     ].filter((paso) => paso.elemento));
 }
 
-/* Recorre los pasos sin prisa: solo avanza al pulsar «Siguiente». */
-function recorrerPasos(pasos) {
-    let indice = 0;
+/* Pista corta sobre un botón, con el mismo popover del login. */
+function guiarPista(elemento, titulo, mensaje, lado = 'bottom') {
+    if (!elemento || !window.Chiky) return;
 
-    const mostrar = () => {
-        const paso = pasos[indice];
+    window.Chiky.guiar([
+        {
+            element: elemento,
+            popover: { title: titulo, description: mensaje, side: lado, align: 'start' },
+            alEntrar: () => {
+                if (elemento.tagName !== 'BUTTON') return;
 
-        if (!paso?.elemento?.isConnected) return;
+                elemento.addEventListener('click', () => window.Chiky?.cerrarGuia(), { once: true });
+            },
+        },
+    ], { clave: 'chiky_pista', forzar: true, barra: false, progreso: false, recordar: false });
+}
 
-        const caja = paso.elemento.getBoundingClientRect();
-        if (caja.top < 130 || caja.bottom > window.innerHeight - 120) llevarAlPaso(paso.elemento);
+/* Pasos numerados («Paso 1 de N») con el popover de driver.js. */
+function recorrerPasos(pasos, { progreso = true } = {}) {
+    if (!window.Chiky || !pasos.length) return;
 
-        window.Chiky?.spotlight(paso.elemento, { duracion: 2200 });
-        window.Chiky?.decir(paso.mensaje);
+    const guia = pasos.map((paso, indice) => ({
+        element: paso.elemento,
+        popover: {
+            title: paso.titulo,
+            description: paso.mensaje,
+            side: paso.lado || 'bottom',
+            align: 'start',
+        },
+        alEntrar: () => {
+            if (paso.foco) paso.elemento.focus({ preventScroll: true });
 
-        if (paso.foco) {
-            setTimeout(() => paso.elemento.focus({ preventScroll: true }), 250);
-        }
+            /* Al usar el botón del último paso, la guía se cierra sola. */
+            if (indice === pasos.length - 1 && paso.elemento.tagName === 'BUTTON') {
+                paso.elemento.addEventListener('click', () => window.Chiky?.cerrarGuia(), { once: true });
+            }
+        },
+    }));
 
-        indice++;
-
-        if (indice < pasos.length) {
-            window.Chiky?.accion('Siguiente', mostrar);
-        }
-    };
-
-    mostrar();
+    window.Chiky.guiar(guia, { clave: 'chiky_pasos_perfil', forzar: true, barra: false, recordar: false, progreso });
 }
 
 function continuarPasosDescuento() {
@@ -767,6 +1183,7 @@ function volverACupones(completadas, pendientes) {
     flujoDescuento.esperando = true;
 
     const destino = window.scrollY + seccion.getBoundingClientRect().top - 150;
+
     window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
 
     sombrearContenedor(porId('contenidoDescuento') || seccion);
@@ -782,31 +1199,26 @@ function terminarDescuento() {
     flujoDescuento?.observer?.disconnect();
     flujoDescuento = null;
 
-    window.Chiky?.decir(`${animo()} Ya completaste los datos. Pulsa «Aplicar descuento» para disfrutar tu 10%.`);
+    const mensaje = `${animo()} Ya completaste los datos. Pulsa «Aplicar descuento» para disfrutar tu 10%.`;
+
+    window.Chiky?.decir(mensaje);
 
     const boton = porId('btnAplicarDescuento');
     if (!boton) return;
 
-    boton.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    boton.classList.add('chiky-resalta');
-    window.Chiky?.spotlight(boton, { duracion: 1800 });
-    setTimeout(() => boton.classList.remove('chiky-resalta'), 2400);
+    guiarPista(boton, '¡Listo!', mensaje);
 }
 
-function irAlCampoDescuento(campo, destino, { vigilar = true } = {}) {
+function irAlCampoDescuento(campo, destino) {
     const visible = campoVisible(campo) || destino;
 
     if (!visible) return;
-
-    limpiarVigilanciaDescuento();
 
     llevarAlPaso(visible);
     sombrearContenedor(visible.closest('.perfil-card, .perfil-grupo') || visible);
     window.Chiky?.spotlight(visible, { duracion: 1800 });
 
     if (!campo) return;
-
-    if (vigilar) vigilarGuardadoDescuento(visible);
 
     setTimeout(() => {
         visible.focus({ preventScroll: true });
@@ -821,57 +1233,59 @@ function campoVisible(campo) {
     return campo._flatpickr?.altInput || campo;
 }
 
-/* Coloca el campo en la zona visible, con aire arriba y sin tapar la tarjeta flotante. */
+/* Área libre de la pantalla: debajo del header y de la barra de Chiky si está visible. */
+function zonaLibre() {
+    const header = 60;
+    const tarjeta = document.querySelector('.chiky-montaje .chiky');
+    const barraVisible = tarjeta
+        && !tarjeta.hidden
+        && !tarjeta.classList.contains('chiky--guardada');
+    const barra = barraVisible ? tarjeta.getBoundingClientRect().bottom : 0;
+
+    return { arriba: Math.max(header, barra) + 16, abajo: window.innerHeight - 16 };
+}
+
+/* Coloca el elemento centrado en la zona libre, sin tapar la barra flotante. */
 function llevarAlPaso(elemento) {
-    const objetivo = Math.max(110, Math.min(window.innerHeight * 0.32, window.innerWidth < 768 ? 240 : 180));
-    const destino = window.scrollY + elemento.getBoundingClientRect().top - objetivo;
+    if (!elemento) return;
 
-    window.scrollTo({ top: Math.max(0, destino), behavior: 'auto' });
+    const { arriba, abajo } = zonaLibre();
+    const caja = elemento.getBoundingClientRect();
+    const centro = arriba + Math.max(0, (abajo - arriba - caja.height) / 2);
+    const destino = window.scrollY + caja.top - centro;
+
+    window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
 }
 
-/* Al salir del campo, señala el botón que guarda ese formulario. */
-function vigilarGuardadoDescuento(campo) {
-    if (!flujoDescuento) return;
+/* Deja la sección centrada si su contenido cabe; si no, bajo el header. */
+function alinearArriba(elemento) {
+    if (!elemento) return;
 
-    const formulario = campo.closest('form');
-    const guardar = formulario?.querySelector('button[type="submit"]');
+    const header = 60;
+    const cabecera = elemento.querySelector('.perfil-seccion__cabecera');
+    const cuerpo = elemento.querySelector('.perfil-seccion__cuerpo');
 
-    if (!formulario || !guardar) return;
+    if (!cabecera || !cuerpo) {
+        const destino = window.scrollY + elemento.getBoundingClientRect().top - header - 16;
+        window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
+        return;
+    }
 
-    const alSalir = () => {
-        const caja = guardar.getBoundingClientRect();
+    const inicio = cabecera.getBoundingClientRect().top;
+    const alto = cuerpo.getBoundingClientRect().bottom - inicio;
+    const libre = window.innerHeight - header;
 
-        if (caja.top < 0 || caja.bottom > window.innerHeight - 90) {
-            guardar.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+    const objetivo = alto <= libre - 32
+        ? header + Math.max(0, (libre - alto) / 2)
+        : header + 16;
 
-        guardar.classList.remove('chiky-resalta');
-        void guardar.offsetWidth;
-        guardar.classList.add('chiky-resalta');
+    const destino = window.scrollY + inicio - objetivo;
 
-        clearTimeout(flujoDescuento?.marca);
-        flujoDescuento.marca = setTimeout(() => guardar.classList.remove('chiky-resalta'), 2400);
-
-        window.Chiky?.decir(`Muy bien. Ahora pulsa «${guardar.textContent.trim()}».`);
-    };
-
-    flujoDescuento.campo = campo;
-    flujoDescuento.alSalir = alSalir;
-    campo.addEventListener('blur', alSalir);
-}
-
-function limpiarVigilanciaDescuento() {
-    if (!flujoDescuento?.campo || !flujoDescuento?.alSalir) return;
-
-    flujoDescuento.campo.removeEventListener('blur', flujoDescuento.alSalir);
-    clearTimeout(flujoDescuento.marca);
-    flujoDescuento.campo = null;
-    flujoDescuento.alSalir = null;
-    flujoDescuento.marca = null;
+    window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
 }
 
 function ayudarCompletarPerfil(campos) {
-    porId('perfil')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    alinearArriba(porId('perfil'));
 
     sombrearContenedor(porId('formPerfil'));
 
@@ -1514,6 +1928,9 @@ function cerrarFormDireccion() {
 }
 
 function desplazarFormDireccion(panel) {
+    /* Con Chiky guiando, el centrado lo hace ella sobre el campo que señala. */
+    if (flujoDescuento?.grupo?.seccion === 'direcciones') return;
+
     let desplazado = false;
 
     const desplazar = () => {
@@ -2686,13 +3103,33 @@ function requisitosDescuento(cliente) {
     ];
 }
 
+/* «Válido hasta el 5 de diciembre de 2026 · quedan 29 días». */
+function vigenciaDescuento(expira) {
+    if (!expira) return '';
+
+    const fecha = new Date(expira);
+    if (Number.isNaN(fecha.getTime())) return '';
+
+    const hasta = fecha.toLocaleDateString('es-NI', { day: 'numeric', month: 'long', year: 'numeric' });
+    const dias = Math.ceil((fecha.getTime() - Date.now()) / 86400000);
+
+    if (dias <= 0) return `Venció el ${hasta}.`;
+    if (dias === 1) return `Válido hasta el ${hasta} · queda 1 día.`;
+
+    return `Válido hasta el ${hasta} · quedan ${dias} días.`;
+}
+
 function mostrarDescuento(cliente) {
     const contenedor = porId('contenidoDescuento');
     if (!contenedor) return;
 
+    ajustarTemasAyuda(cliente);
+
     const descuento = cliente?.descuento || null;
 
     if (descuento) {
+        const vigencia = vigenciaDescuento(descuento.expira);
+
         contenedor.classList.remove('perfil-vacio');
         contenedor.innerHTML = `
             <div class="perfil-descuento">
@@ -2705,6 +3142,7 @@ function mostrarDescuento(cliente) {
                             ? 'Descuento de bienvenida activo: 10% en zapatos.'
                             : 'Se aplica al subtotal de tu carrito.'))}
                     </p>
+                    ${vigencia ? `<p class="perfil-descuento__vigencia">${escapar(vigencia)}</p>` : ''}
                 </div>
             </div>`;
         return;
@@ -2735,7 +3173,7 @@ function mostrarDescuento(cliente) {
                 <span class="perfil-descuento__sello">10%</span>
                 <div>
                     <p class="perfil-descuento__titulo">Descuento de bienvenida</p>
-                    <p class="perfil-descuento__texto">10% en tu primera compra. Completa estos datos para aplicarlo en zapatos.</p>
+                    <p class="perfil-descuento__texto">10% en tu primera compra. Completa estos datos para aplicarlo en zapatos; al activarlo tienes 30 días para usarlo.</p>
                 </div>
             </div>
 
@@ -2771,6 +3209,7 @@ function conectarDescuento() {
             window.clienteTienda = datos.cliente || window.clienteTienda;
             mostrarDescuento(window.clienteTienda);
             tiendaToast(datos.mensaje || 'Descuento aplicado.');
+            window.Chiky?.modoDiscreto();
         } catch (error) {
             mostrarError(error);
         } finally {

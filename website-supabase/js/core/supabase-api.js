@@ -134,6 +134,11 @@
 
         if (!activo) return null;
 
+        const expira = meta.descuento_primera_compra_expira || null;
+
+        /* Vigencia de 30 días: vencida, deja de ofrecerse. */
+        if (expira && new Date(expira).getTime() < Date.now()) return null;
+
         return {
             tipo: 'porcentaje',
             valor: 10,
@@ -141,6 +146,7 @@
             titulo: 'Descuento de bienvenida',
             motivo: '10% de descuento por tu primera compra.',
             primera_compra: true,
+            expira,
         };
     }
 
@@ -210,12 +216,15 @@
        Se guarda en los metadatos de Auth, así no hace falta
        tocar la tabla clientes ni pedir migración en Supabase. */
 
+    /* Primer color de la paleta de avatares: se usa si aún no eligió ninguno. */
+    const COLOR_AVATAR_POR_DEFECTO = '#ffffff';
+
     function datosAvatar() {
         const meta = usuarioActual?.user_metadata || {};
         const color = texto(meta.avatar_color).toLowerCase();
 
         return {
-            avatar_color: /^#[0-9a-f]{6}$/.test(color) ? color : null,
+            avatar_color: /^#[0-9a-f]{6}$/.test(color) ? color : COLOR_AVATAR_POR_DEFECTO,
             avatar_imagen: texto(meta.avatar_imagen) || null,
             avatar_fondo: texto(meta.avatar_fondo) || null,
             marco_avatar: !(meta.marco_avatar === false || texto(meta.marco_avatar) === 'false'),
@@ -257,7 +266,7 @@
     function aplicarAvatar(elemento, cliente) {
         if (!elemento) return;
 
-        const color = cliente?.avatar_color || '#d9f2e4';
+        const color = cliente?.avatar_color || COLOR_AVATAR_POR_DEFECTO;
         const fondo = cliente?.avatar_fondo || '';
         const imagen = elemento.querySelector('[data-avatar-img]');
         const iniciales = elemento.querySelector('[data-avatar-iniciales]');
@@ -687,19 +696,16 @@
         if (!usuarioActual) throw errorApi('Inicia sesión para continuar.', 401);
 
         const meta = usuarioActual.user_metadata || {};
-        const color = texto(cuerpo.avatar_color || meta.avatar_color).toLowerCase();
+        const pedido = texto(cuerpo.avatar_color || meta.avatar_color).toLowerCase();
+
+        /* Sin color elegido se guarda el primero de la paleta. */
+        const color = /^#[0-9a-f]{6}$/.test(pedido) ? pedido : COLOR_AVATAR_POR_DEFECTO;
         const imagen = 'avatar_imagen' in cuerpo
             ? texto(cuerpo.avatar_imagen)
             : texto(meta.avatar_imagen);
         const fondo = 'avatar_fondo' in cuerpo
             ? texto(cuerpo.avatar_fondo)
             : texto(meta.avatar_fondo);
-
-        if (!/^#[0-9a-f]{6}$/.test(color)) {
-            throw errorApi('Elige un color válido para tu avatar.', 422, {
-                avatar_color: ['Elige un color válido para tu avatar.'],
-            });
-        }
 
         if (imagen && !/^[a-z0-9_-]{1,40}$/i.test(imagen)) {
             throw errorApi('La ilustración del avatar no es válida.', 422);

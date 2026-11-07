@@ -20,12 +20,23 @@ html { scroll-behavior: smooth; }
     display: flex;
     flex-direction: column;
     gap: var(--e-1);
+    /* La barra se desplaza sola: la rueda sobre ella no arrastra la página. */
+    max-height: calc(100vh - var(--alto-header) - var(--e-5) * 2);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(12, 61, 36, .22) transparent;
     padding: var(--e-3);
     background: var(--superficie);
     border: 1px solid var(--borde);
     border-radius: var(--r-lg);
     box-shadow: var(--sombra-suave);
 }
+
+/* Barra de desplazamiento fina también en Chrome/Edge. */
+.perfil-nav::-webkit-scrollbar { width: 4px; }
+.perfil-nav::-webkit-scrollbar-thumb { background: rgba(12, 61, 36, .22); border-radius: 999px; }
+.perfil-nav::-webkit-scrollbar-track { background: transparent; }
 
 .perfil-nav__titulo {
     margin: 0 0 var(--e-2);
@@ -87,6 +98,141 @@ html { scroll-behavior: smooth; }
 
 .perfil-nav__item--salir:hover {
     background: rgba(230, 81, 63, .08);
+}
+
+/* Chiky vive en el menú: se abre solo cuando se pide ayuda. */
+.perfil-nav__item--chiky {
+    justify-content: center;
+    width: 100%;
+    margin-top: var(--e-2);
+    padding: .55rem var(--e-3);
+    border: 0;
+    border-radius: var(--r-md);
+    background: transparent;
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    cursor: pointer;
+    transition: background .5s ease, color .5s ease;
+}
+
+.perfil-nav__item--chiky:hover,
+.perfil-nav__item--chiky:focus-visible {
+    background: rgba(14, 90, 52, .08);
+}
+
+.perfil-nav__avatar {
+    width: 26px;
+    height: 26px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--primario-hondo);
+    object-fit: contain;
+}
+
+/* Desplegable de ayuda: la lista se abre en medio segundo. */
+.perfil-ayuda > summary {
+    list-style: none;
+}
+
+.perfil-ayuda > summary::-webkit-details-marker { display: none; }
+
+.perfil-ayuda[open] > summary {
+    background: rgba(14, 90, 52, .08);
+}
+
+.perfil-ayuda__lista {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+    padding: 0 2px;
+    overflow: hidden;
+}
+
+.perfil-ayuda__tema {
+    padding: .5rem .6rem;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    font: inherit;
+    font-size: .8rem;
+    color: var(--texto-suave);
+    text-align: left;
+    cursor: pointer;
+    transition: background .5s ease, color .5s ease;
+}
+
+.perfil-ayuda__tema:hover,
+.perfil-ayuda__tema:focus-visible {
+    background: rgba(14, 90, 52, .08);
+    color: var(--secundario);
+}
+
+@keyframes perfil-ayuda-entra {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* Atajos por sección dentro del desplegable. */
+.perfil-ayuda__grupo {
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--borde);
+}
+
+.perfil-ayuda__subtitulo {
+    margin: 0 0 6px;
+    padding: 0 4px;
+    font-size: .64rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--texto-suave);
+}
+
+.perfil-ayuda__atajos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 2px;
+}
+
+.perfil-ayuda__atajo {
+    flex: 1 1 auto;
+    padding: 4px 9px;
+    border: 1px solid var(--borde);
+    border-radius: var(--r-pill);
+    background: transparent;
+    font: inherit;
+    font-size: .72rem;
+    font-weight: 500;
+    color: var(--secundario);
+    cursor: pointer;
+    transition: background .5s ease, border-color .5s ease;
+}
+
+.perfil-ayuda__atajo:hover,
+.perfil-ayuda__atajo:focus-visible {
+    background: rgba(14, 90, 52, .08);
+    border-color: rgba(14, 90, 52, .28);
+}
+
+@keyframes perfil-ayuda-cierra {
+    from { opacity: 1; transform: none; }
+    to { opacity: 0; transform: translateY(-6px); }
+}
+
+/* Aparición de cualquier bloque del perfil (medio segundo). */
+@keyframes perfil-entra {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+
+.perfil-pagina .perfil-entra {
+    animation: perfil-entra .5s ease both;
 }
 
 /* ── Hoja con las secciones ──────────────────────────────────── */
@@ -663,17 +809,22 @@ html { scroll-behavior: smooth; }
     height: 32px;
     border: 0;
     border-radius: 50%;
-    background: var(--secundario);
-    color: var(--primario);
+    background: transparent;
+    color: black;
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(12, 61, 36, .25);
+    box-shadow: none;
     transition: background .15s ease, color .15s ease;
 }
 
 .campo-password__ojo:hover,
 .campo-password__ojo:focus-visible {
-    background: #2E3239;
-    color: var(--primario);
+    /* background: rgba(12, 61, 36, .08); */
+    color: black;
+}
+
+.campo-password__ojo i {
+    font-size: 1.05rem;
+    color: black;
 }
 
 .campo-password__ojo i {
@@ -681,6 +832,19 @@ html { scroll-behavior: smooth; }
     font-weight: 700;
     pointer-events: none;
 }
+
+.campo-password__icono {
+    width: 20px;
+    height: 20px;
+    display: block;
+    pointer-events: none;
+}
+
+/* Cerrado (contraseña oculta) por defecto; abierto cuando se muestra. */
+.campo-password__icono .ojo-abierto { display: none; }
+.campo-password__ojo[aria-pressed="true"] .ojo-abierto { display: block; animation: perfil-entra .5s ease; }
+.campo-password__ojo[aria-pressed="true"] .ojo-cerrado { display: none; }
+.campo-password__ojo[aria-pressed="false"] .ojo-cerrado { animation: perfil-entra .5s ease; }
 
 .perfil-campo__requisitos {
     display: block;
@@ -1563,7 +1727,7 @@ body.sin-scroll {
     place-items: center;
     padding: var(--e-4);
     opacity: 0;
-    transition: opacity .18s ease;
+    transition: opacity .5s ease;
 }
 
 .modal-perfil.is-visible {
@@ -1587,7 +1751,7 @@ body.sin-scroll {
     border-radius: var(--r-lg);
     box-shadow: 0 18px 48px rgba(17, 17, 17, .22);
     transform: translateY(10px) scale(.98);
-    transition: transform .18s ease;
+    transition: transform .5s ease;
 }
 
 .modal-perfil.is-visible .modal-perfil__caja {
@@ -1901,6 +2065,15 @@ body.sin-scroll {
     color: var(--acento);
 }
 
+/* Vigencia del descuento activo. */
+.perfil-descuento__vigencia {
+    margin: .45rem 0 0;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--secundario);
+    opacity: .85;
+}
+
 .perfil-descuento__requisito a:hover {
     text-decoration: underline;
 }
@@ -2015,6 +2188,13 @@ html.tema-navidad .app-header #btnMenuPerfil:hover {
         padding-top: .5rem;
         border-radius: var(--r-sm);
         justify-content: flex-start;
+    }
+
+    .perfil-nav__item--chiky {
+        margin-top: 6px;
+        padding-top: .5rem;
+        border-radius: var(--r-sm);
+        justify-content: center;
     }
 
     .perfil-nav-fondo {

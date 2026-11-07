@@ -1761,7 +1761,7 @@ button { font-family: inherit; }
   transform: translate(-50%, 26px) scale(.92);
   pointer-events: none;
   overflow: hidden;
-  transition: opacity .24s ease, transform .42s cubic-bezier(.22, 1.35, .36, 1);
+  transition: opacity .5s ease, transform .5s ease;
 }
 
 .tienda-toast--visible { opacity: 1; transform: translate(-50%, 0) scale(1); }

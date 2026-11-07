@@ -30,6 +30,8 @@
     let tarjeta = null;
     let mensajeEl = null;
     let accionesEl = null;
+    let discreto = false;
+    let despedida = null;
 
     function estaOculto() {
         try {
@@ -53,6 +55,39 @@
 
         accionesEl.innerHTML = '';
         accionesEl.hidden = true;
+    }
+
+    /* Muestra u oculta la tarjeta con la transición de medio segundo. */
+    function guardarTarjeta(oculta) {
+        if (!tarjeta) return;
+
+        tarjeta.classList.toggle('chiky--guardada', oculta);
+        tarjeta.setAttribute('aria-hidden', oculta ? 'true' : 'false');
+
+        if (oculta) descartarDespedida();
+    }
+
+    /*
+       Un mensaje sencillo (sin botones y sin guía abierta) se despide solo
+       a los 5 segundos, desvaneciéndose.
+    */
+    function programarDespedida() {
+        descartarDespedida();
+
+        despedida = setTimeout(() => {
+            despedida = null;
+
+            if (!tarjeta || guiaActiva) return;
+            if (tarjeta.classList.contains('chiky--guardada')) return;
+            if (accionesEl && !accionesEl.hidden) return;
+
+            guardarTarjeta(true);
+        }, 5000);
+    }
+
+    function descartarDespedida() {
+        clearTimeout(despedida);
+        despedida = null;
     }
 
     function montar() {
@@ -89,7 +124,9 @@
             if (evento.target.closest('button, a, input, select, textarea')) return;
             repetirGuia();
         });
-        tarjeta.hidden = estaOculto();
+        tarjeta.hidden = false;
+        tarjeta.classList.toggle('chiky--guardada', estaOculto());
+        tarjeta.setAttribute('aria-hidden', estaOculto() ? 'true' : 'false');
 
         /* Sin guía ni mensaje de página, Chiky saluda por defecto. */
         if (!estaOculto() && !mensajeEl.textContent) decir(MENSAJES.bienvenida);
@@ -103,7 +140,13 @@
         mensajeEl.textContent = texto;
         tarjeta.dataset.tono = tono;
 
-        if (!estaOculto()) tarjeta.hidden = false;
+        /* Los botones de un mensaje anterior no aplican al nuevo. */
+        limpiarAcciones();
+
+        if (estaOculto() || discreto) return;
+
+        guardarTarjeta(false);
+        programarDespedida();
     }
 
     function paso(clave) {
@@ -125,6 +168,7 @@
         ultimaAccion = { etiqueta, manejador, mensaje: mensajeEl?.textContent || '' };
 
         limpiarAcciones();
+        descartarDespedida();
 
         const principal = document.createElement('button');
         principal.type = 'button';
@@ -141,7 +185,9 @@
         omitir.textContent = 'Ahora no';
         omitir.addEventListener('click', () => {
             limpiarAcciones();
-            decir(MENSAJES.sinAyuda);
+
+            /* «Ahora no» guarda a Chiky: se reabre desde el menú cuando se pida. */
+            guardarTarjeta(true);
         });
 
         accionesEl.append(principal, omitir);
@@ -151,14 +197,26 @@
     function ocultar() {
         recordarOculto(true);
         limpiarAcciones();
-
-        if (tarjeta) tarjeta.hidden = true;
+        guardarTarjeta(true);
     }
 
     function mostrar() {
         recordarOculto(false);
+        discreto = false;
+        guardarTarjeta(false);
+        programarDespedida();
+    }
 
-        if (tarjeta) tarjeta.hidden = false;
+    /*
+       Modo discreto: la tarjeta queda guardada y solo aparece cuando la
+       página llama a mostrar(). Útil donde Chiky vive en el menú.
+    */
+    function modoDiscreto(activo = true) {
+        discreto = activo;
+
+        if (!activo || !montar()) return;
+
+        guardarTarjeta(true);
     }
 
     /* ── Recorrido guiado (driver.js) ─────────────────────────── */
@@ -168,9 +226,29 @@
     let ultimaAccion = null;
     let foco = null;
     let focoTimer = null;
+    let focoObjetivo = null;
+    let focoFrame = 0;
 
     function refrescarGuia() {
         guiaActiva?.refresh();
+    }
+
+    /* Repinta el anillo; si el elemento sigue vivo, vuelve a pedir el siguiente frame. */
+    function pintarFoco() {
+        if (!foco || !focoObjetivo?.isConnected) {
+            focoFrame = 0;
+            return;
+        }
+
+        const r = focoObjetivo.getBoundingClientRect();
+        const margen = 6;
+
+        foco.style.left = `${Math.round(r.left + window.scrollX - margen)}px`;
+        foco.style.top = `${Math.round(r.top + window.scrollY - margen)}px`;
+        foco.style.width = `${Math.round(r.width + margen * 2)}px`;
+        foco.style.height = `${Math.round(r.height + margen * 2)}px`;
+
+        focoFrame = requestAnimationFrame(pintarFoco);
     }
 
     /* Oscurece el entorno y deja iluminado el elemento indicado. */
@@ -183,23 +261,24 @@
             document.body.appendChild(foco);
         }
 
-        const r = elemento.getBoundingClientRect();
-        const margen = 6;
-
-        foco.style.left = `${Math.round(r.left + window.scrollX - margen)}px`;
-        foco.style.top = `${Math.round(r.top + window.scrollY - margen)}px`;
-        foco.style.width = `${Math.round(r.width + margen * 2)}px`;
-        foco.style.height = `${Math.round(r.height + margen * 2)}px`;
+        focoObjetivo = elemento;
         foco.classList.remove('chiky-foco--oculto');
+
+        cancelAnimationFrame(focoFrame);
+        pintarFoco();
 
         clearTimeout(focoTimer);
 
         focoTimer = setTimeout(() => {
+            focoObjetivo = null;
+            cancelAnimationFrame(focoFrame);
+            focoFrame = 0;
             foco?.classList.add('chiky-foco--oculto');
+
             focoTimer = setTimeout(() => {
                 foco?.remove();
                 foco = null;
-            }, 300);
+            }, 500);
         }, duracion);
     }
 
@@ -238,12 +317,15 @@
        Los pasos los define cada página; aquí solo se aplica el estilo de
        Chiky y se sincroniza su mensaje con el del popover.
     */
-    function guiar(pasos, { clave = 'chiky_guia', forzar = false } = {}) {
+    function guiar(pasos, { clave = 'chiky_guia', forzar = false, barra = true, progreso = true, recordar = true } = {}) {
         const crearDriver = window.driver?.js?.driver;
 
         if (!crearDriver || !Array.isArray(pasos) || !pasos.length) return false;
 
-        ultimaGuia = { pasos, clave };
+        descartarDespedida();
+
+        /* recordar:false evita que una pista corta sustituya a la guía de la tarjeta. */
+        if (recordar) ultimaGuia = { pasos, clave };
 
         if (estaOculto() || (!forzar && guiaVista(clave))) return false;
 
@@ -261,8 +343,16 @@
 
         marcarGuia(clave);
 
+        /* Si ya había una guía abierta, se cierra antes de abrir esta. */
+        guiaActiva?.destroy();
+
+        /* barra:false deja el escenario limpio: el texto va solo en el popover. */
+        const volverVisible = !discreto;
+
+        if (!barra) guardarTarjeta(true);
+
         guiaActiva = crearDriver({
-            showProgress: true,
+            showProgress: progreso,
             progressText: 'Paso {{current}} de {{total}}',
             nextBtnText: 'Siguiente',
             prevBtnText: 'Anterior',
@@ -284,11 +374,17 @@
                 }
 
                 const texto = paso?.popover?.description;
-                if (texto) decir(texto);
+                if (texto && barra) decir(texto);
             },
             onDestroyed: () => {
                 guiaActiva = null;
-                decir('Puedes seguir cuando quieras. Pulsa sobre mí para ver la guía otra vez.');            },
+
+                if (barra) {
+                    decir('Puedes seguir cuando quieras. Pulsa sobre mí para ver la guía otra vez.');
+                } else if (volverVisible) {
+                    mostrar();
+                }
+            },
         });
 
         guiaActiva.drive();
@@ -296,7 +392,12 @@
         return true;
     }
 
-    window.Chiky = { montar, decir, paso, error, exito, accion, guiar, refrescarGuia, spotlight, ocultar, mostrar, mensajes: MENSAJES, identidad: IDENTIDAD };
+    /* Cierra la guía abierta (por ejemplo, al pulsar el botón señalado). */
+    function cerrarGuia() {
+        guiaActiva?.destroy();
+    }
+
+    window.Chiky = { montar, decir, paso, error, exito, accion, guiar, refrescarGuia, cerrarGuia, modoDiscreto, spotlight, ocultar, mostrar, mensajes: MENSAJES, identidad: IDENTIDAD };
 
     montar();
 })();
