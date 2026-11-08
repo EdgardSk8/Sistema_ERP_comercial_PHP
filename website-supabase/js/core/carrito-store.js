@@ -32,6 +32,27 @@ window.BASE_TIENDA = BASE_TIENDA;
 window.urlTienda = urlTienda;
 window.destinoInterno = destinoInterno;
 
+/* srcset de las variantes WebP generadas por el ERP. */
+function srcsetImagen(url, anchos = [320, 640, 960]) {
+    const texto = String(url || '');
+
+    if (!/\/imagenes\/(productosvariaciones|promociones)\//.test(texto)) return '';
+
+    const [ruta, ...consulta] = texto.split('?');
+    const coincidencia = ruta.match(/\.(webp|jpe?g|png)$/i);
+
+    if (!coincidencia) return '';
+
+    const base = ruta.slice(0, -coincidencia[0].length);
+    const query = consulta.length ? `?${consulta.join('?')}` : '';
+
+    return anchos
+        .map((ancho) => `${base}-${ancho}.webp${query} ${ancho}w`)
+        .join(', ');
+}
+
+window.srcsetImagen = srcsetImagen;
+
 /* ╔══════════════════════════════════════════════════════════════╗
    ║  Tienda · Carrito (localStorage)                              ║
    ╚══════════════════════════════════════════════════════════════╝ */

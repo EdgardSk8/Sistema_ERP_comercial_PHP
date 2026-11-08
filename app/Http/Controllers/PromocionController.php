@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Producto;
 use App\Models\Promocion;
 use App\Support\ImagenOptimizada;
+use App\Support\ImagenWeb;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -200,6 +201,10 @@ class PromocionController extends Controller
                     if (is_file($archivoWebAnterior)) {
                         @unlink($archivoWebAnterior);
                     }
+
+                    $rutaRelativa = 'imagenes/promociones/'.$imagenAnterior;
+                    ImagenOptimizada::eliminarVariantes($rutaRelativa);
+                    ImagenWeb::eliminarVariantes($rutaRelativa);
                 }
             }
 
@@ -320,6 +325,15 @@ class PromocionController extends Controller
 
         if (is_file($origen)) {
             @copy($origen, $destino);
+        }
+
+        $rutaRelativa = 'imagenes/promociones/'.$nombre;
+
+        try {
+            ImagenOptimizada::generarVariantes($origen);
+            ImagenWeb::sincronizarVariantes($rutaRelativa);
+        } catch (\Throwable $e) {
+            report($e);
         }
 
         return $nombre;

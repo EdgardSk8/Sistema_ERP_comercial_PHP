@@ -32,6 +32,9 @@ class ImagenOptimizada
     /** Ancho mínimo al que se puede reducir buscando el peso máximo. */
     protected const ANCHO_MINIMO = 640;
 
+    /** Anchos de las variantes responsive que usa la tienda. */
+    public const ANCHOS_RESPONSIVE = [320, 640, 960];
+
     /**
      * Guarda la imagen optimizada en el directorio indicado.
      *
@@ -110,6 +113,90 @@ class ImagenOptimizada
         file_put_contents($ruta, $bytes);
 
         return true;
+    }
+
+    /**
+     * Genera variantes WebP junto al archivo original.
+     *
+     * @return array<int, string> Nombres de archivo generados.
+     */
+    public static function generarVariantes(
+        string $ruta,
+        array $anchos = self::ANCHOS_RESPONSIVE,
+        int $calidad = 78
+    ): array {
+        if (! is_file($ruta)) {
+            return [];
+        }
+
+        $extension = strtolower(pathinfo($ruta, PATHINFO_EXTENSION));
+
+        if (! in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            return [];
+        }
+
+        $directorio = dirname($ruta);
+        $base = pathinfo($ruta, PATHINFO_FILENAME);
+        $generadas = [];
+
+        foreach ($anchos as $ancho) {
+            $ancho = (int) $ancho;
+
+            if ($ancho < 100) {
+                continue;
+            }
+
+            $destino = $directorio.DIRECTORY_SEPARATOR.$base.'-'.$ancho.'.webp';
+
+            $imagen = Image::make($ruta);
+            $imagen->resize($ancho, null, function ($restriccion) {
+                $restriccion->aspectRatio();
+            });
+
+            file_put_contents($destino, $imagen->encode('webp', $calidad)->getEncoded());
+            @chmod($destino, 0644);
+
+            $generadas[] = basename($destino);
+        }
+
+        return $generadas;
+    }
+
+    /**
+     * Nombres de las variantes responsive de una ruta relativa.
+     *
+     * @return array<int, string>
+     */
+    public static function rutasVariantes(
+        string $rutaRelativa,
+        array $anchos = self::ANCHOS_RESPONSIVE
+    ): array {
+        $info = pathinfo($rutaRelativa);
+
+        if (empty($info['dirname']) || empty($info['filename'])) {
+            return [];
+        }
+
+        return array_map(
+            fn (int $ancho) => $info['dirname'].'/'.$info['filename'].'-'.$ancho.'.webp',
+            $anchos
+        );
+    }
+
+    /**
+     * Borra las variantes responsive de un archivo original.
+     */
+    public static function eliminarVariantes(
+        string $rutaRelativa,
+        array $anchos = self::ANCHOS_RESPONSIVE
+    ): void {
+        foreach (self::rutasVariantes($rutaRelativa, $anchos) as $variante) {
+            $archivo = public_path($variante);
+
+            if (is_file($archivo)) {
+                @unlink($archivo);
+            }
+        }
     }
 
     /**

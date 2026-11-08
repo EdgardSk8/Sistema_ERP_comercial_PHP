@@ -183,19 +183,26 @@ function pintarGaleria(imagenes) {
     const minis = $('galeriaMinis');
     const lista = imagenes?.length ? imagenes : [IMAGEN_FALLBACK];
 
-    slides.innerHTML = lista.map((imagen, indice) => `
+    slides.innerHTML = lista.map((imagen, indice) => {
+        const srcset = window.srcsetImagen?.(imagen) || '';
+        return `
         <li class="splide__slide">
             <img class="galeria__imagen" src="${escapar(imagen)}" alt="Imagen ${indice + 1}" draggable="false"
-                 ${indice === 0 ? 'fetchpriority="high"' : 'fetchpriority="low"'} decoding="async" onerror="this.src='${IMAGEN_FALLBACK}'">
-        </li>
-    `).join('');
+                 ${srcset ? `srcset="${escapar(srcset)}" sizes="(min-width: 992px) 45vw, 100vw"` : ''}
+                 ${indice === 0 ? 'fetchpriority="high"' : 'fetchpriority="low"'} decoding="async"
+                 onerror="if(!this.dataset.original){this.dataset.original='1';this.removeAttribute('srcset');this.src='${escapar(imagen)}';}else{this.src='${IMAGEN_FALLBACK}';}">
+        </li>`;
+    }).join('');
 
-    minis.innerHTML = lista.map((imagen, indice) => `
+    minis.innerHTML = lista.map((imagen, indice) => {
+        const srcset = window.srcsetImagen?.(imagen) || '';
+        return `
         <button type="button" class="galeria__mini${indice === 0 ? ' galeria__mini--activo' : ''}"
             data-indice="${indice}" data-imagen="${escapar(imagen)}" aria-label="Ver imagen ${indice + 1}">
-            <img src="${escapar(imagen)}" alt="Miniatura ${indice + 1}" draggable="false" decoding="async" fetchpriority="low" onerror="this.src='${IMAGEN_FALLBACK}'">
-        </button>
-    `).join('');
+            <img src="${escapar(imagen)}" alt="Miniatura ${indice + 1}" draggable="false" decoding="async" fetchpriority="low"
+                ${srcset ? `srcset="${escapar(srcset)}" sizes="72px"` : ''} onerror="this.src='${IMAGEN_FALLBACK}'">
+        </button>`;
+    }).join('');
 
     minis.classList.toggle('galeria__minis--oculto', lista.length <= 1);
 
@@ -210,11 +217,13 @@ function pintarColores() {
     contenedor.innerHTML = variaciones.map(variacion => {
         const activo = variacion.id === variacionActual?.id ? ' color-opcion--activo' : '';
         const imagen = variacion.imagenes?.[0] || producto.imagen || IMAGEN_FALLBACK;
+        const srcset = window.srcsetImagen?.(imagen) || '';
         return `
             <button type="button" class="color-opcion color-opcion--imagen${activo}"
                 data-variacion="${variacion.id}" title="${escapar(variacion.color)}"
                 aria-label="Color ${escapar(variacion.color)}">
                 <img src="${escapar(imagen)}" alt="${escapar(variacion.color)}"
+                    ${srcset ? `srcset="${escapar(srcset)}" sizes="72px"` : ''}
                     onerror="this.src='${IMAGEN_FALLBACK}'">
             </button>
         `;
@@ -731,6 +740,7 @@ async function cargarRelacionados() {
             const descuento = window.descuentoClienteActivo?.(item.categoria);
             const precioFinal = window.precioConDescuento?.(precioBase, item.categoria) ?? precioBase;
             const tieneDescuento = Boolean(descuento && precioFinal < precioBase);
+            const srcset = window.srcsetImagen?.(item.imagen) || '';
 
             return `
                 <li class="splide__slide">
@@ -738,7 +748,7 @@ async function cargarRelacionados() {
                         <div class="card-compacta__media">
                             ${tieneDescuento ? `<span class="badge-descuento">${escapar(descuento.etiqueta)} ${descuento.primera_compra ? 'bienvenida' : 'descuento'}</span>` : ''}
                             <img src="${escapar(item.imagen || IMAGEN_FALLBACK)}" alt="${escapar(item.nombre)}" loading="lazy" decoding="async" fetchpriority="low"
-                                 onerror="this.src='${IMAGEN_FALLBACK}'">
+                                 ${srcset ? `srcset="${escapar(srcset)}" sizes="(min-width: 992px) 270px, 45vw"` : ''} onerror="this.src='${IMAGEN_FALLBACK}'">
                         </div>
                         <div class="card-compacta__info">
                             <span class="card-compacta__nombre">${escapar(item.nombre)}</span>

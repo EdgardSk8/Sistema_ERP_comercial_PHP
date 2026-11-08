@@ -20,6 +20,7 @@
 
     const carruselRaiz = contenedor.closest('.splide');
     let carrusel = null;
+    let promocionesDesdeErp = false;
 
     /* ╔══════════════════════════════════════════════════════════╗
        ║  Splide a demanda                                         ║
@@ -133,17 +134,17 @@
        ╚══════════════════════════════════════════════════════════╝ */
 
     async function montarCarrusel() {
-        if (!carruselRaiz) return;
+        if (!carruselRaiz) return false;
 
         if (typeof Splide === 'undefined') await cargarSplide();
-        if (typeof Splide === 'undefined') return;
+        if (typeof Splide === 'undefined') return false;
 
         if (carrusel) {
             carrusel.destroy(true);
             carrusel = null;
         }
 
-        if (!contenedor.children.length) return;
+        if (!contenedor.children.length) return false;
 
         /*
            autoWidth respeta el ancho de cada tarjeta definido en CSS:
@@ -156,6 +157,7 @@
             pagination: false,
             drag: 'free',
             snap: true,
+            lazyLoad: 'nearby',
             speed: 400,
             focus: 0,
             omitEnd: true,
@@ -168,6 +170,31 @@
         });
 
         carrusel.mount();
+        return true;
+    }
+
+    function programarCarrusel() {
+        if (!carruselRaiz) return;
+
+        if (carrusel) {
+            void montarCarrusel();
+            return;
+        }
+
+        const visible = () => seccion.getBoundingClientRect().top < window.innerHeight - 40;
+
+        if (visible()) {
+            void montarCarrusel();
+            return;
+        }
+
+        const alDesplazar = () => {
+            if (!visible()) return;
+            window.removeEventListener('scroll', alDesplazar);
+            void montarCarrusel();
+        };
+
+        window.addEventListener('scroll', alDesplazar, { passive: true });
     }
 
     function tarjeta(foto, indice) {
@@ -187,14 +214,20 @@
             ? `<span class="promo__pie">${titulo}${cta}</span>`
             : '';
 
-        const carga = indice === 0
-            ? 'loading="eager" fetchpriority="high"'
-            : 'loading="lazy" fetchpriority="low"';
+        const fuente = indice === 0
+            ? `src="${escapar(foto.imagen)}" loading="lazy" fetchpriority="low"`
+            : `data-splide-lazy="${escapar(foto.imagen)}" loading="lazy" fetchpriority="low"`;
+        const srcset = window.srcsetImagen?.(foto.imagen) || '';
+        const atributo = indice === 0 ? 'srcset' : 'data-splide-lazy-srcset';
+        const tamano = srcset
+            ? `${atributo}="${escapar(srcset)}" sizes="(min-width: 992px) 340px, 270px"`
+            : '';
 
         const contenido = `
             <span class="promo__media">
                 ${descuento}
-                <img src="${escapar(foto.imagen)}" alt="${escapar(foto.titulo || `Promoción ${indice + 1}`)}" ${carga} decoding="async">
+                <img ${fuente} ${tamano} alt="${escapar(foto.titulo || `Promoción ${indice + 1}`)}" width="270" height="270" decoding="async"
+                     onerror="if(!this.dataset.original){this.dataset.original='1';this.removeAttribute('srcset');this.removeAttribute('data-splide-lazy-srcset');this.src='${escapar(foto.imagen)}';}">
             </span>
             ${pie}
         `;
@@ -264,9 +297,10 @@
             const promocionesErp = await cargarDesdeErp();
 
             if (promocionesErp.length) {
+                promocionesDesdeErp = true;
                 contenedor.innerHTML = promocionesErp.map(diapositiva).join('');
                 mostrarSeccion();
-                montarCarrusel();
+                programarCarrusel();
                 return;
             }
 
@@ -287,11 +321,16 @@
 
             contenedor.innerHTML = fotos.map(diapositiva).join('');
             mostrarSeccion();
-            montarCarrusel();
+            programarCarrusel();
         } catch (error) {
             console.warn('No se pudieron cargar las promociones.', error);
         }
     }
+
+    /* Si la home cargó el respaldo estático, se refresca al resolver la sesión. */
+    document.addEventListener('tienda:sesion', () => {
+        if (!promocionesDesdeErp && window.TiendaAPI?.get) cargar();
+    });
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', cargar);

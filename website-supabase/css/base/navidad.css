@@ -65,19 +65,20 @@ html.tema-navidad body::before {
     background-size: 150px 150px, 210px 210px, 280px 280px, 360px 360px;
     background-repeat: repeat, repeat, repeat, repeat;
     background-position: 0 0, 40px 60px, 100px 130px, 170px 30px;
-    transform: rotate(2deg);
-    animation: navidad-copos 60s linear infinite;
-    will-change: background-position;
+    transform: translate3d(0, -120px, 0) rotate(2deg);
+    animation: navidad-copos 42s linear infinite;
+    will-change: transform;
 }
 
 @keyframes navidad-copos {
     from {
-        background-position: 0 0, 40px 60px, 100px 130px, 170px 30px;
+        transform: translate3d(0, -120px, 0) rotate(2deg);
     }
     to {
-        background-position: 0 150px, 40px 270px, 100px 410px, 170px 390px;
+        transform: translate3d(0, 0, 0) rotate(2deg);
     }
 }
+
 /* Copos tenues dentro del hero, detrás del texto */
 html.tema-navidad .hero {
     background-image:
@@ -460,26 +461,26 @@ html.tema-navidad .pie__redes a[href*="instagram"]:hover {
 }
 
 html.tema-navidad .pie__redes a[href*="facebook"] {
-    background: #1877f2;
-    border-color: #1877f2;
+    background: #1454b8;
+    border-color: #1454b8;
     color: #fff;
 }
 
 html.tema-navidad .pie__redes a[href*="facebook"]:hover {
-    background: #0f65d4;
-    border-color: #0f65d4;
+    background: #0f4699;
+    border-color: #0f4699;
     color: #fff;
 }
 
 html.tema-navidad .pie__redes a[href*="wa.me"] {
-    background: #25d366;
-    border-color: #25d366;
+    background: #0b6b3a;
+    border-color: #0b6b3a;
     color: #fff;
 }
 
 html.tema-navidad .pie__redes a[href*="wa.me"]:hover {
-    background: #1ebe57;
-    border-color: #1ebe57;
+    background: #085b31;
+    border-color: #085b31;
     color: #fff;
 }
 

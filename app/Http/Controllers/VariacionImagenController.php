@@ -413,8 +413,15 @@ class VariacionImagenController extends Controller
 
         $rutaRelativa = 'imagenes/productosvariaciones/'.$nombreArchivo;
 
-        // Copia a la carpeta del website para que la tienda la vea.
         ImagenWeb::sincronizar($rutaRelativa);
+
+        try {
+            // Variantes para tarjetas y galería; después se copian a la tienda.
+            ImagenOptimizada::generarVariantes(public_path($rutaRelativa));
+            ImagenWeb::sincronizarVariantes($rutaRelativa);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return $rutaRelativa;
     }
@@ -435,7 +442,10 @@ class VariacionImagenController extends Controller
             File::delete($archivo);
         }
 
-        ImagenWeb::eliminar('imagenes/productosvariaciones/'.$nombreArchivo);
+        $rutaRelativa = 'imagenes/productosvariaciones/'.$nombreArchivo;
+        ImagenOptimizada::eliminarVariantes($rutaRelativa);
+        ImagenWeb::eliminar($rutaRelativa);
+        ImagenWeb::eliminarVariantes($rutaRelativa);
     }
 
     /** Borra la miniatura en caché para que se regenere con la imagen nueva. */

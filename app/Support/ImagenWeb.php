@@ -36,6 +36,34 @@ class ImagenWeb
         File::copy($origen, $destino);
     }
 
+    /** Copia las variantes responsive de una imagen a la carpeta del sitio. */
+    public static function sincronizarVariantes(string $rutaRelativa): void
+    {
+        $rutaRelativa = self::normalizar($rutaRelativa);
+
+        if ($rutaRelativa === null) {
+            return;
+        }
+
+        foreach (ImagenOptimizada::rutasVariantes($rutaRelativa) as $variante) {
+            self::sincronizar($variante);
+        }
+    }
+
+    /** Borra las variantes responsive de la copia pública. */
+    public static function eliminarVariantes(string $rutaRelativa): void
+    {
+        $rutaRelativa = self::normalizar($rutaRelativa);
+
+        if ($rutaRelativa === null) {
+            return;
+        }
+
+        foreach (ImagenOptimizada::rutasVariantes($rutaRelativa) as $variante) {
+            self::eliminar($variante);
+        }
+    }
+
     /** Borra la copia del sitio cuando la imagen se elimina del ERP. */
     public static function eliminar(string $rutaRelativa): void
     {

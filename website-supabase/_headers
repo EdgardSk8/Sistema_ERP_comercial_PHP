@@ -33,3 +33,6 @@
 
 /tienda/recursos/img/*
   Cache-Control: public, max-age=31536000, immutable
+
+/tienda/recursos/imagenes/*
+  Cache-Control: public, max-age=31536000, immutable

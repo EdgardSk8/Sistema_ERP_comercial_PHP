@@ -159,13 +159,15 @@ function tarjetaProducto(variante, indice = 0) {
         : (window.precioConDescuento?.(precioBase, variante.categoria) ?? precioBase);
     const tieneDescuento = Boolean(descuento && precioFinal < precioBase);
     const precioRebajado = precioFinal < precioBase;
+    const srcset = window.srcsetImagen?.(variante.imagen) || '';
 
     return `
         <a class="card-producto" href="${escapar(enlace)}" style="--i:${indice}">
             <div class="card-producto__media">
                 <img src="${escapar(variante.imagen || IMAGEN_FALLBACK)}" alt="${escapar(variante.nombre)}"
-                     ${indice === 0 ? 'fetchpriority="high"' : 'loading="lazy" fetchpriority="low"'} decoding="async"
-                     onerror="this.src='${IMAGEN_FALLBACK}'">
+                     ${srcset ? `srcset="${escapar(srcset)}" sizes="(min-width: 992px) 25vw, (min-width: 560px) 33vw, 50vw"` : ''}
+                     loading="lazy" fetchpriority="low" decoding="async"
+                     onerror="if(!this.dataset.original){this.dataset.original='1';this.removeAttribute('srcset');this.src='${escapar(variante.imagen || IMAGEN_FALLBACK)}';}else{this.src='${IMAGEN_FALLBACK}';}">
                 ${agotado ? '<span class="badge-agotado">Agotado</span>' : ''}
                 ${!agotado && selloPromocion ? `<span class="badge-promocion">${escapar(selloPromocion)}</span>` : ''}
                 ${!agotado && !selloPromocion && tieneDescuento ? `<span class="badge-descuento">${escapar(descuento.etiqueta)} ${descuento.primera_compra ? 'bienvenida' : 'descuento'}</span>` : ''}
@@ -662,6 +664,8 @@ function iniciarCatalogo(productos, tallasReferencia) {
         if (deseosCatalogoCargados) return;
 
         try {
+            if (window.cargarSupabase) await window.cargarSupabase();
+
             const sesion = await window.sesionTiendaPromise;
             deseosAutenticado = Boolean(sesion?.autenticado);
 
@@ -1122,10 +1126,7 @@ async function cargarCatalogo() {
     const grid = document.getElementById('catalogoGrid');
 
     try {
-        const [respuesta] = await Promise.all([
-            fetch(API_PRODUCTOS, { headers: { Accept: 'application/json' } }),
-            (window.sesionTiendaPromise || Promise.resolve()).catch(() => null),
-        ]);
+        const respuesta = await fetch(API_PRODUCTOS, { headers: { Accept: 'application/json' } });
 
         if (!respuesta.ok) throw new Error('No se pudo cargar el catálogo.');
 
@@ -1380,8 +1381,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cargarCatalogo();
 
-    window.sesionTiendaPromise.then(async (sesion) => {
-        if (!sesion?.autenticado) return;
+    let favoritosSesionCargados = false;
+
+    async function cargarFavoritosDeSesion() {
+        if (favoritosSesionCargados) return;
+        favoritosSesionCargados = true;
+
+        if (window.cargarSupabase) await window.cargarSupabase();
+
+        const sesion = await window.sesionTiendaPromise;
+
+        if (!sesion?.autenticado) {
+            window.refrescarCatalogo?.();
+            return;
+        }
 
         try {
             const datos = await window.TiendaAPI.get('/tienda/api/favoritos');
@@ -1393,7 +1406,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('No se pudieron cargar los favoritos.', error);
         }
-    });
+    }
+
+    document.addEventListener('tienda:sesion', cargarFavoritosDeSesion);
+
+    if (window.sesionTiendaPromise) void cargarFavoritosDeSesion();
 });
 
 document.addEventListener('click', async (evento) => {
@@ -1405,6 +1422,8 @@ document.addEventListener('click', async (evento) => {
 
     const idProducto = boton.dataset.producto;
     if (!idProducto) return;
+
+    if (window.cargarSupabase) await window.cargarSupabase();
 
     const sesion = await window.sesionTiendaPromise;
 

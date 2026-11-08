@@ -400,6 +400,12 @@ button { font-family: inherit; }
 /* ── 4. Tarjetas de producto ─────────────────────────────────── */
 .grid-productos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e-3); }
 
+/* Las tarjetas fuera del primer pantallazo se renderizan al acercarse. */
+.grid-productos .card-producto:nth-child(n+9) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 380px;
+}
+
 /* Entrada suave al cambiar de categoría o aplicar filtros */
 .grid-productos.catalogo-animando .card-producto {
   animation: catalogo-aparecer .45s cubic-bezier(.22, .9, .3, 1) backwards;
@@ -1818,12 +1824,23 @@ button { font-family: inherit; }
 
 .promos__carrusel { --promo-ancho: 270px; }
 
+/* Reserva el layout antes de que Splide se cargue bajo demanda. */
+.promos__carrusel .splide__list {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+}
+
 .promos__carrusel .splide__track {
   padding: 4px 0 8px;
 }
 
 .promos__carrusel .splide__slide {
   display: flex;
+  flex: 0 0 var(--promo-ancho);
   width: var(--promo-ancho);
 }
 

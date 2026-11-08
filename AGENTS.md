@@ -54,6 +54,9 @@ npm run build    # Build de producción
 php artisan migrate
 php artisan db:seed
 
+# Imágenes: genera variantes responsive (320/640/960 WebP) y las copia a la tienda
+php artisan imagenes:variantes
+
 # Pruebas
 composer test            # limpia config y corre la suite
 php artisan test         # suite directa
@@ -240,4 +243,4 @@ Flatpickr, Chart.js, Splide, Turbo, supabase-js e iconos).
 
 - Mantén secretos y datos reales fuera del repositorio; usa `.env`.
 - Verifica permisos, impuestos y formatos de impresión antes de usar en producción.
-- Las imágenes subidas se guardan en `public/imagenes/...` (p. ej. `public/imagenes/productos`).
+- Las imágenes subidas se guardan en `public/imagenes/...` (p. ej. `public/imagenes/productos`). Las variaciones y promociones generan automáticamente variantes WebP de 320/640/960 px y la tienda las consume con `srcset`.
