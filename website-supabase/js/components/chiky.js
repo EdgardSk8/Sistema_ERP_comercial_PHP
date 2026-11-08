@@ -25,6 +25,52 @@
     };
 
     const CLAVE_OCULTO = 'chiky_oculto';
+    const DRIVER_CSS = 'https://cdn.jsdelivr.net/npm/driver.js@1.3.6/dist/driver.css';
+    const DRIVER_JS = 'https://cdn.jsdelivr.net/npm/driver.js@1.3.6/dist/driver.js.iife.js';
+
+    let driverCargando = null;
+
+    function cargarDriverCss() {
+        return new Promise((resolver) => {
+            const enlace = document.createElement('link');
+            enlace.rel = 'stylesheet';
+            enlace.href = DRIVER_CSS;
+            enlace.onload = resolver;
+            enlace.onerror = resolver;
+            document.head.appendChild(enlace);
+        });
+    }
+
+    function cargarDriverScript() {
+        return new Promise((resolver, rechazar) => {
+            const script = document.createElement('script');
+            script.src = DRIVER_JS;
+            script.async = true;
+            script.onload = resolver;
+            script.onerror = rechazar;
+            document.head.appendChild(script);
+        });
+    }
+
+    function cargarDriver() {
+        if (window.driver?.js?.driver) return Promise.resolve(true);
+        if (driverCargando) return driverCargando;
+
+        driverCargando = (async () => {
+            try {
+                const cssListo = cargarDriverCss();
+                await cargarDriverScript();
+                await cssListo;
+
+                return Boolean(window.driver?.js?.driver);
+            } catch (error) {
+                console.warn('No se pudo cargar la guía de Chiky.', error);
+                return false;
+            }
+        })();
+
+        return driverCargando;
+    }
 
     let montaje = null;
     let tarjeta = null;
@@ -347,17 +393,21 @@
        Los pasos los define cada página; aquí solo se aplica el estilo de
        Chiky y se sincroniza su mensaje con el del popover.
     */
-    function guiar(pasos, { clave = 'chiky_guia', forzar = false, barra = true, progreso = true, recordar = true, mostrarAlCerrar = false } = {}) {
-        const crearDriver = window.driver?.js?.driver;
-
-        if (!crearDriver || !Array.isArray(pasos) || !pasos.length) return false;
-
-        descartarDespedida();
+    async function guiar(pasos, { clave = 'chiky_guia', forzar = false, barra = true, progreso = true, recordar = true, mostrarAlCerrar = false } = {}) {
+        if (!Array.isArray(pasos) || !pasos.length) return false;
 
         /* recordar:false evita que una pista corta sustituya a la guía de la tarjeta. */
         if (recordar) ultimaGuia = { pasos, clave };
 
         if (estaOculto() || (!forzar && guiaVista(clave))) return false;
+
+        await cargarDriver();
+
+        const crearDriver = window.driver?.js?.driver;
+
+        if (!crearDriver) return false;
+
+        descartarDespedida();
 
         /* Cada paso puede traer un selector o un elemento ya resuelto. */
         const resueltos = pasos
