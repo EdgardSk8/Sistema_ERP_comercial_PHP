@@ -6,8 +6,26 @@
     { "source": "/tienda/carrito", "destination": "/carrito.html" },
     { "source": "/tienda/perfil", "destination": "/perfil.html" },
     { "source": "/tienda/ayuda", "destination": "/ayuda.html" },
+    { "source": "/tienda/quienes-somos", "destination": "/quienes-somos.html" },
+    { "source": "/tienda/terminos", "destination": "/terminos.html" },
+    { "source": "/quienes-somos", "destination": "/quienes-somos.html" },
+    { "source": "/terminos", "destination": "/terminos.html" },
     { "source": "/producto", "destination": "/producto.html" },
     { "source": "/tienda/producto/:id", "destination": "/producto.html" },
     { "source": "/tienda/recursos/:path*", "destination": "/:path*" }
+  ],
+  "headers": [
+    {
+      "source": "/(css|js|fonts|img|imagenes)/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/data/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
+      ]
+    }
   ]
 }

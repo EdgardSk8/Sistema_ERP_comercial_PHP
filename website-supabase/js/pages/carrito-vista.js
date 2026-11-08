@@ -553,7 +553,7 @@ function pintarDetalleResumen() {
     }
 
     detalle.textContent = aplicoMinimo
-        ? `${formatearKm(km)} km × ${moneda(precioPorKm)} = ${moneda(bruto)} → ${moneda(final)} (tarifa mínima)`
+        ? `Tarifa mínima de ${moneda(final)} (${formatearKm(km)} km).`
         : `${formatearKm(km)} km × ${moneda(precioPorKm)} = ${moneda(bruto)} → ${moneda(final)} (redondeado a la baja)`;
 
     if (envioNodo) {
@@ -598,8 +598,10 @@ function pintarEntregaInfo(mensaje = '') {
 
     info.innerHTML = `
         <div class="carrito-entrega__linea"><span>Distancia</span><strong>${formatearKm(km)} km</strong></div>
-        <div class="carrito-entrega__linea"><span>Cálculo</span><strong>${formatearKm(km)} km × ${moneda(precioPorKm)} = ${moneda(bruto)}</strong></div>
-        ${aplicoMinimo && redondeado > 0 ? `<div class="carrito-entrega__linea"><span>Redondeo</span><strong>${moneda(redondeado)}</strong></div>` : ''}
+        ${aplicoMinimo
+            ? `<div class="carrito-entrega__linea"><span>Tarifa mínima</span><strong>${moneda(minimo)}</strong></div>`
+            : `<div class="carrito-entrega__linea"><span>Cálculo</span><strong>${formatearKm(km)} km × ${moneda(precioPorKm)} = ${moneda(bruto)}</strong></div>
+               ${redondeado > 0 ? `<div class="carrito-entrega__linea"><span>Redondeo</span><strong>${moneda(redondeado)}</strong></div>` : ''}`}
         <div class="carrito-entrega__linea carrito-entrega__linea--final"><span>Envío</span><strong>${moneda(final)}</strong></div>
         <p class="carrito-entrega__redondeo">${aplicoMinimo
             ? `Se aplica la tarifa mínima de ${moneda(minimo)}.`
@@ -1126,7 +1128,7 @@ function cambiar(clave, accion) {
         const nueva = Number(item.cantidad) + 1;
 
         if (nueva > stock) {
-            tiendaToast(`Solo hay ${stock} disponibles de este artículo.`, 'aviso');
+            tiendaToast(`Solo hay ${stock} ${stock === 1 ? 'disponible' : 'disponibles'} de este artículo.`, 'aviso');
             return;
         }
 
@@ -1341,4 +1343,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    if (window.TIENDA_MODO_PRUEBA) {
+        const boton = document.getElementById('btnFinalizar');
+
+        if (boton) {
+            const aviso = document.createElement('p');
+            aviso.className = 'resumen__aviso';
+            aviso.textContent = 'Modo prueba: este pedido no se guardará.';
+            boton.before(aviso);
+        }
+    }
 });

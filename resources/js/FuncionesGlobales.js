@@ -176,6 +176,15 @@ window.mostrarToast = function (mensaje, tipo = "success") {
 };
 
 
+/* Normaliza texto para buscar sin distinguir mayúsculas ni tildes. */
+window.normalizarBusqueda = function (valor) {
+    return String(valor ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+};
+
 window.Traduccion = {
     language: {
         search: "Buscar:",
@@ -205,6 +214,55 @@ $.extend(true, $.fn.dataTable.defaults, {
     ...Traduccion,
     dom: '<"top"lf>rt<"bottom"ip><"clear">',
 });
+
+/* DataTables compara el texto de las celdas tal cual. Se normaliza el dato
+   de búsqueda y el término escrito para que "Jose" encuentre "José". */
+(function () {
+    if (!$.fn.dataTable || !$.fn.dataTable.ext || !$.fn.dataTable.ext.type) return;
+
+    const busquedas = $.fn.dataTable.ext.type.search || {};
+    const normalizar = window.normalizarBusqueda;
+    const originalString = busquedas.string || (dato => dato);
+    const originalHtml = busquedas.html || (dato => dato);
+
+    busquedas.string = dato => normalizar(originalString(dato));
+    busquedas.html = dato => normalizar(originalHtml(dato));
+
+    /*
+       En tablas locales se intercepta el buscador para enviar el término
+       normalizado. En modo servidor el backend hace la normalización y se
+       deja que DataTables haga su petición normal.
+    */
+    ['keyup', 'input', 'paste', 'cut'].forEach((evento) => {
+        document.addEventListener(evento, (event) => {
+            const input = event.target;
+
+            if (!(input instanceof HTMLInputElement)) return;
+
+            const filtro = input.closest('.dataTables_filter');
+            if (!filtro) return;
+
+            const wrapper = filtro.closest('.dataTables_wrapper');
+            const $tablas = wrapper ? window.jQuery(wrapper).find('table') : null;
+            const $principal = $tablas?.filter('[id]').first();
+            const $cuerpo = wrapper ? window.jQuery(wrapper).find('.dataTables_scrollBody table').first() : null;
+            const nodo = $principal?.length ? $principal : ($cuerpo?.length ? $cuerpo : $tablas?.last());
+
+            if (!nodo?.length || !window.jQuery.fn.DataTable.isDataTable(nodo[0])) return;
+
+            const tabla = nodo.DataTable();
+            const ajustes = tabla.settings()[0];
+
+            if (!ajustes || ajustes.oFeatures.bServerSide) return;
+
+            event.stopPropagation();
+
+            if (evento === 'input') {
+                tabla.search(normalizar(input.value)).draw();
+            }
+        }, true);
+    });
+})();
 
 
 window.toggleFooterDataTable = function() {
@@ -712,7 +770,7 @@ window.ConfigurarFiltrosDataTable = function(tabla, config = {}) {
             let select = $(` <select class="form-select form-select-sm filtro-columna"> <option value="">Todos</option> </select> `)
 
             .appendTo(footer).on('change', function () {
-                let val = $.fn.dataTable.util.escapeRegex($(this).val());
+                let val = $.fn.dataTable.util.escapeRegex(window.normalizarBusqueda($(this).val()));
                 column.search(val ? '^' + val + '$' : '', true, false).draw();
             });
 
@@ -746,7 +804,7 @@ window.ConfigurarFiltrosDataTable = function(tabla, config = {}) {
 
                     column.search(regex, true, false).draw();
 
-                } else { column.search(valor).draw(); }
+                } else { column.search(window.normalizarBusqueda(valor)).draw(); }
 
             });
 

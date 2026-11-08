@@ -445,7 +445,7 @@ const  PlantillaExcel = function (config = {}) {
                 let select = $(`<select class="form-select form-select-sm filtro-columna"> <option value="">Todos</option> </select>`)
                 .appendTo(footer)
                 .on('change', function () {
-                    let val = $.fn.dataTable.util.escapeRegex($(this).val());
+                    let val = $.fn.dataTable.util.escapeRegex(window.normalizarBusqueda($(this).val()));
                     column.search(val ? '^' + val + '$' : '', true, false).draw();
                 });
 
@@ -478,10 +478,12 @@ const  PlantillaExcel = function (config = {}) {
                 .appendTo(footer)
                 .on('keyup change clear', function () {
 
-                    if(column.search() !== this.value){
+                    const valor = window.normalizarBusqueda(this.value);
+
+                    if(column.search() !== valor){
 
                         column
-                            .search(this.value)
+                            .search(valor)
                             .draw();
 
                     }

@@ -481,9 +481,13 @@ function iniciarGuiaCupones() {
     ], { clave: 'chiky_guia_cupones', forzar: true });
 }
 
+/* Evita que el aviso automático del descuento tape una ayuda que el cliente acaba de pedir. */
+let ultimaAyudaChiky = 0;
+
 function ofrecerDescuento(cliente = window.clienteTienda) {
     const chiky = window.Chiky;
     if (!chiky) return;
+    if (Date.now() - ultimaAyudaChiky < 5000) return;
 
     const descuento = cliente?.descuento || null;
 
@@ -639,8 +643,11 @@ function cerrarDesplegable(detalle, lista, alTerminar) {
 function atenderAyudaChiky(tema) {
     if (!window.Chiky) return;
 
+    ultimaAyudaChiky = Date.now();
+
     /* Un tema nuevo cierra cualquier guía o flujo anterior. */
     window.Chiky.cerrarGuia?.();
+    window.Chiky.mostrar(true);
     flujoDescuento?.observer?.disconnect();
     flujoDescuento = null;
 
@@ -667,22 +674,22 @@ function atenderAyudaChiky(tema) {
     if (tema === 'cuenta') {
         recorrerPasos([
             {
-                elemento: cabeceraSeccion('perfil'),
+                elemento: consultar('#formPerfil .row.g-3', '#formPerfil'),
                 titulo: 'Tus datos',
-                mensaje: 'Aquí editas tu nombre, teléfono y fecha de nacimiento.',
+                mensaje: 'Aquí actualizas tu nombre, teléfono y fecha de nacimiento cuando algo cambie.',
             },
             {
-                elemento: porId('formPerfil')?.querySelector('button[type="submit"]'),
+                elemento: consultar('#formPerfil button[type="submit"]'),
                 titulo: 'Guardar cambios',
-                mensaje: 'Al terminar, guarda los cambios con este botón.',
+                mensaje: 'Cuando termines, guarda los cambios con este botón.',
             },
             {
-                elemento: cabeceraSeccion('configuracion'),
+                elemento: consultar('#formPassword'),
                 titulo: 'Tu contraseña',
-                mensaje: 'Con tu correo y esta contraseña entras sin depender de Google.',
+                mensaje: 'Con tu correo y esta contraseña puedes entrar sin depender de Google.',
             },
             {
-                elemento: porId('formPassword')?.querySelector('button[type="submit"]'),
+                elemento: consultar('#formPassword button[type="submit"]'),
                 titulo: 'Actualizar contraseña',
                 mensaje: 'Usa 8 caracteres con una mayúscula, una minúscula y un número.',
             },
@@ -696,12 +703,12 @@ function atenderAyudaChiky(tema) {
             {
                 elemento: porId('btnNuevaDireccion'),
                 titulo: 'Nueva dirección',
-                mensaje: 'Aquí agregas una dirección con su punto en el mapa.',
+                mensaje: 'Aquí agregas una dirección y marcas el punto exacto en el mapa.',
             },
             {
                 elemento: porId('listaDirecciones'),
                 titulo: 'Tus direcciones',
-                mensaje: 'Con el lápiz la editas y con el bote la borras. La predeterminada se usa al pagar.',
+                mensaje: 'Con el lápiz la editas y con el bote la borras. La que marques como predeterminada se usa al pagar.',
             },
         ].filter((paso) => paso.elemento));
 
@@ -713,19 +720,19 @@ function atenderAyudaChiky(tema) {
 
         recorrerPasos([
             {
-                elemento: cabeceraSeccion('pedidos'),
+                elemento: consultar('#listaPedidos', '#pedidosVacio', '#pedidosInvitado'),
                 titulo: 'Mis pedidos',
-                mensaje: 'Aquí sigues tus solicitudes: activas, entregadas o canceladas.',
+                mensaje: 'Aquí sigues tus pedidos: si están activos, entregados o cancelados.',
             },
             {
                 elemento: document.querySelector('.perfil-pedidos-filtro'),
                 titulo: 'Filtros',
-                mensaje: 'Cambia el filtro para ver cada estado.',
+                mensaje: 'Toca un filtro para ver solo los pedidos de ese estado.',
             },
             {
-                elemento: cabeceraSeccion('historial'),
+                elemento: consultar('#listaHistorial', '#historialVacio', '#historialInvitado'),
                 titulo: 'Historial de compras',
-                mensaje: 'Y aquí queda el detalle de todo lo que ya compraste.',
+                mensaje: 'Y aquí queda el detalle de todo lo que ya compraste, con su total.',
             },
         ].filter((paso) => paso.elemento));
 
@@ -736,25 +743,155 @@ function atenderAyudaChiky(tema) {
     return;
 }
 
-function cabeceraSeccion(id) {
-    return document.querySelector(`#${id} .perfil-seccion__cabecera`);
+/* Primer elemento visible de los selectores dados (evita contenedores ocultos). */
+function consultar(...selectores) {
+    for (const selector of selectores) {
+        const elemento = document.querySelector(selector);
+
+        if (elemento && elemento.getClientRects().length) return elemento;
+    }
+
+    return null;
 }
 
-/* Secciones del perfil y qué explica cada una. */
+/* Bloques importantes de cada sección: se resalta el contenido, no solo el título. */
+const PASOS_SECCION = {
+    perfil: () => [
+        {
+            elemento: consultar('#perfilLogueado .perfil-avatar'),
+            titulo: 'Foto de perfil',
+            mensaje: 'Elige un color o una foto de fondo para tu cuenta. Si no eliges, quedan tus iniciales y así te verán en tus comentarios.',
+        },
+        {
+            elemento: consultar('#perfilLogueado .perfil-marco-bloque'),
+            titulo: 'Marco de ventas',
+            mensaje: 'Cada 5 ventas desbloqueas un marco nuevo. Aquí ves tu avance y decides si quieres mostrarlo.',
+        },
+        {
+            elemento: consultar('#formPerfil .row.g-3', '#formPerfil'),
+            titulo: 'Datos personales',
+            mensaje: 'Aquí mantienes al día tu nombre, usuario, correo, teléfono y fecha de nacimiento.',
+        },
+        {
+            elemento: consultar('#formPerfil button[type="submit"]'),
+            titulo: 'Guardar cambios',
+            mensaje: 'Cuando termines, guarda los cambios con este botón.',
+        },
+    ],
+    direcciones: () => [
+        {
+            elemento: consultar('#btnNuevaDireccion'),
+            titulo: 'Nueva dirección',
+            mensaje: 'Agrega tu casa, tu trabajo u otro lugar, y marca el punto en el mapa para que el delivery llegue sin vueltas.',
+        },
+        {
+            elemento: consultar('#listaDirecciones'),
+            titulo: 'Tus direcciones',
+            mensaje: 'Aquí quedan guardadas. La que marques como predeterminada se usa al pagar.',
+        },
+    ],
+    favoritos: () => [
+        {
+            elemento: consultar('#listaFavoritos', '#favoritosVacio'),
+            titulo: 'Tus favoritos',
+            mensaje: 'Aquí están los productos que guardaste para volver a verlos cuando quieras.',
+        },
+    ],
+    deseos: () => [
+        {
+            elemento: consultar('#btnCatalogoDeseos'),
+            titulo: 'Catálogo de pares',
+            mensaje: 'Abre el catálogo y elige el par que todavía no tenemos.',
+        },
+        {
+            elemento: consultar('#listaDeseos', '#deseosVacio'),
+            titulo: 'Pares solicitados',
+            mensaje: 'Aquí ves los pares que pediste y te avisamos en cuanto lleguen.',
+        },
+    ],
+    pedidos: () => [
+        {
+            elemento: consultar('.perfil-pedidos-filtro'),
+            titulo: 'Filtros',
+            mensaje: 'Toca un filtro para ver solo los pedidos de ese estado.',
+        },
+        {
+            elemento: consultar('#listaPedidos', '#pedidosVacio'),
+            titulo: 'Tus pedidos',
+            mensaje: 'Aquí sigues tus pedidos: si están activos, entregados o cancelados.',
+        },
+    ],
+    historial: () => [
+        {
+            elemento: consultar('#listaHistorial', '#historialVacio'),
+            titulo: 'Tus compras',
+            mensaje: 'Aquí está todo lo que ya compraste, con su detalle y total.',
+        },
+    ],
+    descuentos: () => [
+        {
+            elemento: consultar('#contenidoDescuento', '#descuentoInvitado'),
+            titulo: 'Descuento de bienvenida',
+            mensaje: 'Aquí ves tu 10% de bienvenida y los cupones que puedes canjear.',
+        },
+        {
+            elemento: consultar('#fidelidadBarra'),
+            titulo: 'Cupón de fidelidad',
+            mensaje: 'Cada 10 pares que compras ganas un cupón por el 10% acumulado.',
+        },
+        {
+            elemento: consultar('#formCuponPerfil'),
+            titulo: 'Canjear un código',
+            mensaje: 'Escribe aquí el código de un cupón y pulsa «Canjear».',
+        },
+    ],
+    configuracion: () => [
+        {
+            elemento: consultar('#formPassword'),
+            titulo: 'Contraseña',
+            mensaje: 'Aquí cambias tu contraseña o creas una si entras con Google.',
+        },
+        {
+            elemento: consultar('#btnCerrarSesion'),
+            titulo: 'Cerrar sesión',
+            mensaje: 'Aquí puedes cerrar la sesión en este dispositivo cuando termines.',
+        },
+    ],
+};
+
+/* Orden del recorrido y de qué trata cada sección. */
 const SECCIONES_PERFIL = [
-    ['perfil', 'Perfil', 'Tus datos: nombre, teléfono y fecha de nacimiento. Con ellos te contactamos por tus pedidos.'],
-    ['direcciones', 'Direcciones', 'Los lugares donde entregamos: casa, trabajo u otro. Marca el punto en el mapa para el delivery.'],
-    ['favoritos', 'Favoritos', 'Los zapatos que te gustaron y quieres volver a ver.'],
-    ['deseos', 'Lista de Deseos', 'Pares que no tenemos. Los pides y te avisamos cuando lleguen.'],
-    ['pedidos', 'Mis pedidos', 'El estado de cada solicitud: activa, entregada o cancelada.'],
-    ['historial', 'Historial de compras', 'Todo lo que ya compraste, con su detalle y total.'],
-    ['descuentos', 'Descuentos y cupones', 'Tu 10% de bienvenida, los cupones y el avance del cupón de fidelidad.'],
-    ['configuracion', 'Configuración', 'Tu contraseña y las preferencias de la cuenta.'],
+    ['perfil', 'Perfil', 'En esta sección puedes elegir un avatar y una foto para personalizar tu cuenta; así, cuando comentes un producto, los demás usuarios podrán verlo.'],
+    ['direcciones', 'Direcciones', 'En esta sección guardas los lugares donde te entregamos, como tu casa o tu trabajo. Puedes marcar el punto exacto en el mapa para que el delivery llegue sin vueltas.'],
+    ['favoritos', 'Favoritos', 'En esta sección quedan los pares que te gustaron, para que no los pierdas de vista y los encuentres rápido cuando vuelvas.'],
+    ['deseos', 'Lista de Deseos', 'En esta sección pides los pares que todavía no tenemos y te avisamos en cuanto lleguen.'],
+    ['pedidos', 'Mis pedidos', 'En esta sección ves cómo va cada pedido: si ya lo aceptamos, si está en camino o si se canceló.'],
+    ['historial', 'Historial de compras', 'En esta sección queda todo lo que ya compraste, con el detalle y el total, por si necesitas revisarlo.'],
+    ['descuentos', 'Descuentos y cupones', 'En esta sección encuentras tu descuento de bienvenida, tus cupones y lo que llevas para el cupón de fidelidad.'],
+    ['configuracion', 'Configuración', 'En esta sección cambias tu contraseña y revisas las opciones de tu cuenta.'],
 ];
+
+/* Pasos de una sección: primero de qué trata, luego sus bloques. */
+function pasosDeSeccion(id) {
+    const seccion = SECCIONES_PERFIL.find(([clave]) => clave === id);
+    if (!seccion) return [];
+
+    const [clave, titulo, descripcion] = seccion;
+    const intro = document.querySelector(`#${clave} .perfil-seccion__cabecera`)
+        || document.querySelector(`#${clave} .perfil-seccion__cuerpo`);
+    const pasos = (PASOS_SECCION[clave]?.() || []).filter((paso) => paso.elemento);
+
+    const lista = intro
+        ? [{ elemento: intro, titulo, mensaje: descripcion }, ...pasos]
+        : pasos;
+
+    /* Si dos pasos apuntan al mismo bloque, deja solo el primero. */
+    return lista.filter((paso, indice) => lista.findIndex((otro) => otro.elemento === paso.elemento) === indice);
+}
 
 /* Cupones de fidelidad: reemplaza al tema del 10% cuando ya se usó. */
 function ayudaFidelidad() {
-    window.Chiky?.decir('Cada 10 pares ganas un cupón por el 10% acumulado de esos pares.');
+    window.Chiky?.decir('Cada 10 pares que compras te dan un cupón por el 10% acumulado de esos pares.');
 
     recorrerPasos([
         {
@@ -770,23 +907,31 @@ function ayudaFidelidad() {
     ].filter((paso) => paso.elemento));
 }
 
-/* Recorrido por todas las secciones: para qué sirve cada una. */
+/* Recorrido completo: foto, marco, datos y cada bloque de la cuenta. */
 function explicarSecciones() {
-    window.Chiky?.decir('Eso es todo: cada sección guarda una parte de tu cuenta. Pulsa «Chiky · Ayuda» cuando quieras repasar.');
+    const pasos = SECCIONES_PERFIL.flatMap(([id]) => pasosDeSeccion(id));
 
-    recorrerPasos(SECCIONES_PERFIL
-        .map(([id, titulo, mensaje]) => ({ elemento: cabeceraSeccion(id), titulo, mensaje }))
-        .filter((paso) => paso.elemento));
+    if (!pasos.length) return;
+
+    /* Primero avisa de que empieza el recorrido, sin saltar directo a la primera sección. */
+    const boton = document.querySelector('#ayudaChiky [data-ayuda="secciones"]');
+    const intro = boton
+        ? [{
+            elemento: boton,
+            titulo: 'Te doy un recorrido',
+            mensaje: 'Vamos a ver tu foto, tu marco, tus datos y cada sección de tu cuenta, una por una. Avanza con «Siguiente» y cierra cuando quieras.',
+        }]
+        : [];
+
+    recorrerPasos([...intro, ...pasos]);
 }
 
 /* Atajo: explica una sola sección, sin recorrer las demás. */
 function explicarSeccion(id) {
-    const seccion = SECCIONES_PERFIL.find(([clave]) => clave === id);
-    if (!seccion) return;
+    const pasos = pasosDeSeccion(id);
+    if (!pasos.length) return;
 
-    const [clave, titulo, mensaje] = seccion;
-
-    recorrerPasos([{ elemento: cabeceraSeccion(clave), titulo, mensaje }], { progreso: false });
+    recorrerPasos(pasos, { progreso: pasos.length > 1 });
 }
 
 /* «¿Cómo uso mi 10%?» cambia según el estado del descuento. */
@@ -797,39 +942,29 @@ function ayudaDescuento() {
     const vigencia = descuento?.primera_compra ? vigenciaDescuento(descuento.expira) : '';
 
     if (descuento?.primera_compra) {
-        window.Chiky?.decir(`¡Felicidades! Ya puedes usar tu 10% en zapatos.${vigencia ? ` ${vigencia}` : ''}`, { tono: 'festejo' });
-        window.Chiky?.accion('Ver mi descuento', () => alinearArriba(porId('descuentos')));
+        const enlaceCatalogo = `${urlTienda()}?categoria=Zapatos`;
+        const respuesta = 'Para aplicar el 10% de descuento, ve al '
+            + `<a class="chiky__enlace" href="${escapar(enlaceCatalogo)}"><strong>catálogo de productos</strong></a>`
+            + ' (te lo dejo filtrado en Zapatos), elige un par con el sello de descuento y agrégalo al carrito.'
+            + (vigencia ? ` ${escapar(vigencia)}` : '');
 
-        recorrerPasos([
-            {
-                elemento: porId('contenidoDescuento'),
-                titulo: 'Tu 10% de bienvenida',
-                mensaje: `Se aplica solo en zapatos al pagar.${vigencia ? ` ${vigencia}` : ''}`,
-            },
-            {
-                elemento: porId('fidelidadBarra'),
-                titulo: 'Cupón de fidelidad',
-                mensaje: 'Cada 10 pares que compres ganas un cupón por el 10% acumulado.',
-            },
-            {
-                elemento: porId('cuponPerfilCodigo'),
-                titulo: 'Canjear un código',
-                mensaje: 'Escribe aquí el código de un cupón y pulsa «Canjear».',
-            },
-        ].filter((paso) => paso.elemento));
+        window.Chiky?.decir(respuesta, { tono: 'festejo', html: true });
+        window.Chiky?.accion('Ir al catálogo de zapatos', () => {
+            window.location.href = enlaceCatalogo;
+        });
 
         return;
     }
 
     if (window.clienteTienda?.descuento_primera_compra_usado) {
-        window.Chiky?.decir('Ya usaste tu 10% de bienvenida. Ahora ganas cupones por fidelidad.');
+        window.Chiky?.decir('Ya usaste tu 10% de bienvenida; ahora los cupones te llegan por fidelidad.');
         window.Chiky?.accion('Ver cupones', () => alinearArriba(porId('descuentos')));
 
         recorrerPasos([
             {
                 elemento: porId('fidelidadBarra'),
                 titulo: '10 pares = 1 cupón',
-                mensaje: 'Cada 10 pares ganas un cupón por el 10% acumulado de esos pares.',
+                mensaje: 'Cada 10 pares que compras te dan un cupón por el 10% acumulado de esos pares.',
             },
             {
                 elemento: porId('cuponPerfilCodigo'),
@@ -854,7 +989,7 @@ function irACupones() {
     sombrearContenedor(porId('contenidoDescuento') || seccion);
     window.Chiky?.spotlight(porId('contenidoDescuento') || seccion, { duracion: 1600 });
 
-    window.Chiky?.decir('Estos son los requisitos para activar tu 10%. Si quieres, te guío paso a paso para completarlos.');
+    window.Chiky?.decir('Para activar tu 10% faltan estos datos. Si quieres, te acompaño paso a paso para completarlos.');
     window.Chiky?.accion('Sí, ayúdame', iniciarPasosDescuento);
 }
 
@@ -886,7 +1021,7 @@ const GRUPOS_DESCUENTO = [
             'Teléfono registrado': 'perfilTelefono',
             'Fecha de nacimiento': 'perfilFechaNacimiento',
         },
-        intro: (faltan) => `Okey, iremos paso a paso. Vamos a registrar ${listarRequisitos(faltan)}.`,
+        intro: (faltan) => `Vamos paso a paso. Primero registramos ${listarRequisitos(faltan)}.`,
     },
     {
         claves: ['Dirección con ubicación'],
@@ -1870,13 +2005,13 @@ function direccionHTML(direccion) {
 
                 <div class="perfil-item-card__acciones">
                     ${direccion.predeterminada_direccion ? '' : `
-                        <button type="button" class="perfil-btn-icono" data-accion="predeterminada" title="Usar como predeterminada">
+                        <button type="button" class="perfil-btn-icono" data-accion="predeterminada" title="Usar como predeterminada" aria-label="Usar como dirección predeterminada">
                             <i class="bi bi-star"></i>
                         </button>`}
-                    <button type="button" class="perfil-btn-icono" data-accion="editar" title="Editar">
+                    <button type="button" class="perfil-btn-icono" data-accion="editar" title="Editar" aria-label="Editar dirección">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button type="button" class="perfil-btn-icono perfil-btn-icono--peligro" data-accion="eliminar" title="Eliminar">
+                    <button type="button" class="perfil-btn-icono perfil-btn-icono--peligro" data-accion="eliminar" title="Eliminar" aria-label="Eliminar dirección">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -2262,7 +2397,7 @@ function favoritoHTML(favorito) {
                 <span class="perfil-producto__precio">${moneda(favorito.precio)}</span>
             </div>
 
-            <button type="button" class="perfil-btn-icono perfil-btn-icono--peligro" data-quitar-favorito="${favorito.id_producto}" title="Quitar de favoritos">
+            <button type="button" class="perfil-btn-icono perfil-btn-icono--peligro" data-quitar-favorito="${favorito.id_producto}" title="Quitar de favoritos" aria-label="Quitar de favoritos">
                 <i class="bi bi-trash"></i>
             </button>
         </article>`;
@@ -2889,7 +3024,7 @@ function pintarDeseos(deseos) {
                 </span>
                 <span class="perfil-deseo-item__fecha">${formatearFecha(deseo.fecha_solicitud)}</span>
                 <button type="button" class="perfil-btn-icono perfil-btn-icono--peligro perfil-deseo-item__eliminar"
-                    data-eliminar-deseo="${Number(deseo.id_deseo)}" title="Quitar de la lista">
+                    data-eliminar-deseo="${Number(deseo.id_deseo)}" title="Quitar de la lista" aria-label="Quitar de la lista de deseos">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
@@ -3149,6 +3284,7 @@ function mostrarDescuento(cliente) {
 
     if (descuento) {
         const vigencia = vigenciaDescuento(descuento.expira);
+        const enlaceZapatos = `${urlTienda()}?categoria=Zapatos`;
 
         contenedor.classList.remove('perfil-vacio');
         contenedor.innerHTML = `
@@ -3163,6 +3299,9 @@ function mostrarDescuento(cliente) {
                             : 'Se aplica al subtotal de tu carrito.'))}
                     </p>
                     ${vigencia ? `<p class="perfil-descuento__vigencia">${escapar(vigencia)}</p>` : ''}
+                    ${descuento.primera_compra
+                        ? `<a class="btn-primario perfil-descuento__cta" href="${escapar(enlaceZapatos)}">Ver Productos</a>`
+                        : ''}
                 </div>
             </div>`;
         return;
@@ -3335,7 +3474,7 @@ function pintarFidelidadPerfil(datos) {
 
     if (texto) {
         texto.textContent = pares === 0
-            ? 'Cada 10 pares ganas un cupón por el 10% acumulado.'
+            ? 'Cada 10 pares que compras ganas un cupón por el 10% acumulado.'
             : `Te faltan ${faltan} ${faltan === 1 ? 'par' : 'pares'} para tu próximo cupón.`;
     }
 

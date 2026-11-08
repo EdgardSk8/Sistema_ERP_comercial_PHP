@@ -15,7 +15,7 @@ export default function initCuentas() {
         if (!ocultar) return true;
 
         const estado = data[4]; // Columna de estado
-        return String(estado || '').includes('Activo');
+        return String(estado || '').includes('activo');
     });
 
     $('#toggleInactivosCuentas').on('change', function() { tabla.draw(); }); // Redibujar tabla ocultar inactivos

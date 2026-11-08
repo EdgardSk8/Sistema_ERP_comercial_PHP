@@ -11,7 +11,7 @@ export default function initMostrarCategorias() {
         if (!ocultar) return true;
 
         const estado = data[3]; // columna estado_categoria
-        return String(estado || '').includes('Activo');
+        return String(estado || '').includes('activo');
     });
 
     $('#toggleInactivosCategorias').on('change', function() { tabla.draw(); });

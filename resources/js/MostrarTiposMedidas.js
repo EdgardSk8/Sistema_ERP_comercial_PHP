@@ -10,7 +10,7 @@ export default function initMostrarTiposMedidas() {
         if (!ocultar) return true;
 
         const estado = data[3]; // Columna Estado
-        return String(estado || '').includes('Activo');
+        return String(estado || '').includes('activo');
     });
 
     $('#toggleInactivosTiposMedidas').on('change', function () { tabla.draw(); });

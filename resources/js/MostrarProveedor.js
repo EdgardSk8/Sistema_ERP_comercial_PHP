@@ -10,7 +10,7 @@ export default function initMostrarProveedores() {
         if (!ocultar) return true;
 
         const estado = data[6]; // columna estado_proveedor
-        return String(estado || '').includes('Activo');
+        return String(estado || '').includes('activo');
     });
 
     $('#toggleInactivosProveedores').on('change', function() { tabla.draw(); });

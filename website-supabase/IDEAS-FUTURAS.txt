@@ -1,0 +1,29 @@
+IDEAS PARA DESPUÉS — Tellez Nic Store
+=====================================
+Anotadas el 2026-11-07. No implementadas todavía.
+
+Producto y ventas
+-----------------
+1. Modo staging de pedidos (proyecto Supabase de prueba o estado "prueba") para probar el
+   checkout sin ensuciar stock/ventas. Ya existe el modo simulado TIENDA_MODO_PRUEBA.
+2. "Mejor precio" automático en el carrito: preseleccionar la opción que más ahorra
+   (promo 26 % vs bienvenida 10 %) y marcarla como recomendada.
+3. Envío gratis desde C$X con barra de progreso en el carrito (sube el ticket promedio).
+4. "Completa el look" en producto: calcetines, cuidado del calzado, accesorios.
+5. Recuperar carrito abandonado por WhatsApp/correo (hoy el carrito vive solo en localStorage).
+6. Búsqueda tolerante: "tenis" -> zapatos, "sandalias" -> chinelas; búsqueda por marca.
+7. Aviso de reposición ("Avísame cuando llegue") en tallas agotadas.
+8. Reseñas con foto + sello "compra verificada".
+9. Cupón automático por URL (?cupon=CODIGO) para campañas de Instagram/WhatsApp.
+10. Compra como invitado (correo + teléfono) para reducir abandono.
+11. Timeline del pedido en Perfil: solicitado -> pagado -> enviado -> entregado.
+
+Rendimiento y técnica
+---------------------
+12. PWA con caché del catálogo (stale-while-revalidate) para visitas repetidas.
+13. Cloudflare Images / AVIF + srcset (la mejora de rendimiento más grande que queda).
+14. Datos estructurados Product/Offer + sitemap.xml para Google Shopping.
+15. Accesibilidad: revisar etiquetas, aria-labels y objetivos de 44 px (ya se corrigieron
+    los principales: favoritos, avatar, atajos, botones de icono, pestañas de reseñas).
+16. Laravel: OPcache + config:cache + route:cache en el ERP (baja el arranque en frío).
+17. Analítica privacy-friendly (Cloudflare Web Analytics o GA4) para medir conversión.

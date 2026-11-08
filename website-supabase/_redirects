@@ -8,6 +8,8 @@
 /tienda/carrito        /carrito      301
 /tienda/perfil         /perfil       301
 /tienda/ayuda          /ayuda        301
+/tienda/quienes-somos  /quienes-somos 301
+/tienda/terminos       /terminos     301
 /tienda/producto       /             301
 /tienda/producto/*     /producto?p=:splat  301
 /tienda/recursos/*     /:splat       200

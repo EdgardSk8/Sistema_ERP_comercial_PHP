@@ -10,7 +10,7 @@ export default function initMostrarImpuestos() {
         if (!ocultar) return true;
 
         const estado = data[3]; // columna estado
-        return String(estado || '').includes('Activo');
+        return String(estado || '').includes('activo');
     });
 
     $('#toggleInactivosImpuestos').on('change', function() { tabla.draw(); });

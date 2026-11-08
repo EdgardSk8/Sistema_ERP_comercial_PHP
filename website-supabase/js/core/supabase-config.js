@@ -4,6 +4,12 @@ window.SUPABASE_CONFIG = {
     key: 'sb_publishable_JzRHC4by1DK9QzUKiFWbwQ_CIqS8z7q',
 };
 
+/*
+   Modo prueba: simula el envío de pedidos sin escribir en Supabase.
+   Déjalo en false en producción. Para probar el checkout ponlo en true.
+*/
+window.TIENDA_MODO_PRUEBA = false;
+
 /* Tema navideño: pon false para apagarlo sin tocar el HTML ni reconstruir. */
 window.TEMA_NAVIDAD = true;
 

@@ -29,6 +29,7 @@ export default function initMostrarProductoVariacionDetalle() {
     /* Cuando se llega desde Productos (?producto=ID) se muestra solo ese producto.
        Se lee del atributo porque la navegación por turbo-frame no cambia la URL. */
     const idProductoFiltro = $('#variacionesFiltro').data('producto') || null;
+    const nombreProductoFiltro = $('#variacionesFiltro').data('nombre') || '';
 
     if (!$tabla.length) return;
     if ($.fn.DataTable.isDataTable($tabla[0])) $tabla.DataTable().destroy();
@@ -423,13 +424,17 @@ export default function initMostrarProductoVariacionDetalle() {
             return;
         }
 
-        const producto = variaciones.find(variacion => String(variacion.id_producto) === String(idProductoFiltro))?.producto;
+        const variantesProducto = variaciones.filter(variacion => String(variacion.id_producto) === String(idProductoFiltro));
+        const producto = variantesProducto[0]?.producto;
+        const nombreProducto = producto?.nombre_producto || nombreProductoFiltro || `producto #${idProductoFiltro}`;
 
         contenedor.classList.remove('d-none');
         contenedor.innerHTML = `
             <span class="variaciones-filtro__texto">
-                <i class="ph ph-funnel"></i>
-                Mostrando variantes de <strong>${escapar(producto?.nombre_producto || 'producto #' + idProductoFiltro)}</strong>
+                <i class="ph ${variantesProducto.length ? 'ph-funnel' : 'ph-info'}"></i>
+                ${variantesProducto.length
+                    ? `Mostrando variantes de <strong>${escapar(nombreProducto)}</strong>`
+                    : `<strong>${escapar(nombreProducto)}</strong> todavía no tiene variantes. Usa el botón <strong>Color</strong> para agregar la primera.`}
             </span>
             <span class="variaciones-filtro__acciones">
                 <a class="variaciones-filtro__volver" href="/productos" data-turbo-frame="contenido-dinamico">
@@ -442,10 +447,7 @@ export default function initMostrarProductoVariacionDetalle() {
     }
 
     /* ── Nuevo color (antes era la pantalla «Variaciones de Productos») ── */
-    function abrirModalCrearColor(variaciones) {
-
-        const select = document.getElementById('color_id_producto');
-
+    function productosDesdeVariaciones(variaciones) {
         const productos = new Map();
 
         variaciones.forEach(variacion => {
@@ -453,15 +455,60 @@ export default function initMostrarProductoVariacionDetalle() {
             if (!productos.has(id)) productos.set(id, variacion.producto?.nombre_producto || `Producto ${id}`);
         });
 
-        const opciones = [...productos.entries()]
-            .sort((a, b) => String(a[1]).localeCompare(String(b[1]), 'es'))
-            .map(([id, nombre]) => `<option value="${id}">${escapar(nombre)}</option>`)
-            .join('');
+        return [...productos.entries()].map(([id, nombre]) => ({ id, nombre }));
+    }
 
-        select.innerHTML = `<option value="">Seleccione un producto</option>${opciones}`;
+    function pintarOpcionesProductoColor(productos) {
+        const $select = $('#color_id_producto');
+
+        if ($.fn.select2 && $select.hasClass('select2-hidden-accessible')) $select.select2('destroy');
+
+        $select.empty().append(new Option('Seleccione un producto', ''));
+
+        productos
+            .slice()
+            .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es', { sensitivity: 'base' }))
+            .forEach(producto => $select.append(new Option(producto.nombre, producto.id)));
 
         // Si venimos filtrados por un producto, se deja seleccionado.
-        if (idProductoFiltro) select.value = String(idProductoFiltro);
+        if (idProductoFiltro) $select.val(String(idProductoFiltro));
+
+        if ($.fn.select2) {
+            $select.select2({
+                width: '100%',
+                dropdownParent: $select.closest('.modal'),
+                placeholder: 'Buscar producto',
+                allowClear: true,
+                language: {
+                    noResults: () => 'Sin resultados',
+                    searching: () => 'Buscando…'
+                }
+            });
+
+            $select.trigger('change.select2');
+        }
+    }
+
+    async function abrirModalCrearColor(variaciones) {
+
+        // Respaldo: los productos que ya tienen variantes. Luego se reemplaza
+        // por el catálogo completo, incluidos los productos recién creados.
+        let productos = productosDesdeVariaciones(variaciones);
+
+        try {
+            const respuesta = await $.getJSON('/producto-variaciones/mostrar-producto');
+
+            if (respuesta?.success && Array.isArray(respuesta.productos) && respuesta.productos.length) {
+                productos = respuesta.productos.map(producto => ({
+                    id: producto.id_producto,
+                    nombre: producto.nombre_producto
+                }));
+            }
+        } catch (error) {
+            console.warn('No se pudieron cargar todos los productos; se usan los que ya tienen variantes.', error);
+        }
+
+        pintarOpcionesProductoColor(productos);
 
         $('#color_nombre').val('');
 
@@ -474,8 +521,16 @@ export default function initMostrarProductoVariacionDetalle() {
     });
 
     /* Alta de color desde esta misma pantalla. */
-    $('#btnNuevoColorVariacion').off('click.color').on('click.color', () => {
-        abrirModalCrearColor(variacionesCrudas);
+    $('#btnNuevoColorVariacion').off('click.color').on('click.color', async function () {
+        const $boton = $(this);
+
+        $boton.prop('disabled', true);
+
+        try {
+            await abrirModalCrearColor(variacionesCrudas);
+        } finally {
+            $boton.prop('disabled', false);
+        }
     });
 
     $('#formCrearColorVariacion').off('submit.color').on('submit.color', function (event) {

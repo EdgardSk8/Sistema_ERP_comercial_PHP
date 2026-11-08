@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Medida;
 use App\Models\TipoMedida;
+use App\Support\Busqueda;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -254,13 +255,7 @@ class MedidasController extends Controller
         $tipos = TipoMedida::where('estado_tipo_medida', 1)
 
             ->when($buscar, function ($query) use ($buscar) {
-
-                $query->where(
-                    'nombre_tipo_medida',
-                    'LIKE',
-                    "%{$buscar}%"
-                );
-
+                Busqueda::aplicarLike($query, 'nombre_tipo_medida', (string) $buscar);
             })
 
             ->orderBy('nombre_tipo_medida')

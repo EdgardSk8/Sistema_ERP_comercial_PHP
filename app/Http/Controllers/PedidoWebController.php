@@ -12,6 +12,7 @@ use App\Models\Producto;
 use App\Models\VariacionTalla;
 use App\Models\Venta;
 use App\Services\CosteoInventarioService;
+use App\Support\Busqueda;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -105,13 +106,13 @@ class PedidoWebController extends Controller
         }
 
         if ($request->filled('buscar')) {
-            $buscar = '%'.$request->buscar.'%';
+            $buscar = (string) $request->buscar;
 
             $consulta->where(function ($query) use ($buscar) {
-                $query->where('p.numero_pedido', 'ilike', $buscar)
-                    ->orWhere('c.nombre_cliente', 'ilike', $buscar)
-                    ->orWhere('c.correo_cliente', 'ilike', $buscar)
-                    ->orWhere('p.nombre_recibe', 'ilike', $buscar);
+                Busqueda::aplicarLike($query, 'p.numero_pedido', $buscar);
+                Busqueda::aplicarLike($query, 'c.nombre_cliente', $buscar, 'or');
+                Busqueda::aplicarLike($query, 'c.correo_cliente', $buscar, 'or');
+                Busqueda::aplicarLike($query, 'p.nombre_recibe', $buscar, 'or');
             });
         }
 

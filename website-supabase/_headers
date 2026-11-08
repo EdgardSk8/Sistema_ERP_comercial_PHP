@@ -1,0 +1,35 @@
+# Cloudflare Pages: los assets llevan ?v= para invalidar caché.
+/css/*
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+/js/*
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+/img/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/imagenes/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/data/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+# Rutas antiguas /tienda/recursos/* que Pages reescribe a /*.
+/tienda/recursos/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/tienda/recursos/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/tienda/recursos/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+/tienda/recursos/img/*
+  Cache-Control: public, max-age=31536000, immutable

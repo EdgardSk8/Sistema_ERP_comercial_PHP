@@ -139,7 +139,8 @@
 - [ ] Reportes: conversión, ticket promedio, top productos, costo de envío.
 
 ### 3.10 Confianza y contenido
-- [ ] Páginas legales (términos, privacidad, envíos, devoluciones) y FAQ.
+- [x] Página de términos y condiciones y página "Quiénes somos" (8 nov 2026).
+- [ ] Páginas independientes de privacidad, envíos, devoluciones y FAQ.
 - [ ] SEO por producto: slug, meta, `Product` JSON-LD, sitemap.
 - [ ] Barra fija de compra en móvil.
 - [ ] Analítica de eventos (vista, carrito, checkout).
@@ -161,8 +162,11 @@
 ## 5. Configuración externa pendiente (Supabase / Cloudflare)
 
 - [ ] Supabase → Authentication → URL Configuration:
-  - Site URL: `https://tellezstorenic.pages.dev`
-  - Redirect URLs: `https://tellezstorenic.pages.dev/**` y `http://127.0.0.1:8090/**`
+  - Site URL: `https://tellezstorenic.pages.dev` (producción)
+  - Redirect URLs: `https://tellezstorenic.pages.dev/**`, `http://127.0.0.1:8090/**`,
+    `http://localhost:8090/**`, `http://127.0.0.1:8000/**`, `http://localhost:8000/**` y
+    `http://TU-IP-LAN:8090/**` (celular/otros equipos).
+  - Si el `redirectTo` no está en la lista, Supabase devuelve al Site URL (producción) sin avisar.
 - [ ] Supabase → Providers → Google: Client ID y Client Secret.
 - [ ] Google Cloud → URI autorizado: `https://tnzuicefxwowpbjtjdnx.supabase.co/auth/v1/callback`
 - [ ] Cloudflare Pages: publicar `_redirects` corregido (sin destinos `.html`).

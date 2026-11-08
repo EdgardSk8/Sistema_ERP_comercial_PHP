@@ -171,7 +171,7 @@ export default function initCuponesDescuentos() {
     });
 
     document.getElementById('buscarCupon')?.addEventListener('input', (evento) => {
-        tabla.search(evento.target.value).draw();
+        tabla.search(window.normalizarBusqueda(evento.target.value)).draw();
     });
 
     document.getElementById('recargarCupones')?.addEventListener('click', () => {
@@ -428,13 +428,12 @@ export default function initCuponesDescuentos() {
     }
 
     function pintarClientesCupon() {
-        const busqueda = document.getElementById('buscarClienteCupon').value.trim().toLowerCase();
+        const busqueda = window.normalizarBusqueda(document.getElementById('buscarClienteCupon').value);
 
         const visibles = clientesCupon.filter((cliente) => {
             if (!busqueda) return true;
 
-            return `${cliente.nombre_cliente || ''} ${cliente.correo_cliente || ''}`
-                .toLowerCase()
+            return window.normalizarBusqueda(`${cliente.nombre_cliente || ''} ${cliente.correo_cliente || ''}`)
                 .includes(busqueda);
         });
 

@@ -10,7 +10,7 @@ export default function initTipoGasto() {
         if (!ocultar) return true; // no filtrar si el checkbox está desmarcado
 
         const estado = data[2]; // columna "estado_tipo_gasto"
-        return String(estado || '').includes('Activo');
+        return String(estado || '').includes('activo');
     });
 
     $('#toggleInactivosTipoGasto').on('change', function() { tabla.draw(); });

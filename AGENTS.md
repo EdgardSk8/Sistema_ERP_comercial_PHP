@@ -131,6 +131,7 @@ if ($validator->fails()) {
 - Los endpoints devuelven **JSON** con la forma `{ success: bool, ... }`; usa `422` para errores de validación.
 - Envuelve la lógica en `try { ... } catch (\Throwable $e) { ... }` y registra/retorna el error de forma controlada.
 - Para operaciones con múltiples tablas usa transacciones (`DB::transaction` / `DB::beginTransaction`).
+- Para búsquedas de texto usa `App\Support\Busqueda::aplicarLike($consulta, 'columna', $valor)` en lugar de `LIKE` directo: PostgreSQL distingue mayúsculas y tildes. Las tablas con `DataTableServidor` ya lo aplican.
 
 ### 4.5 Modelos (`app/Models`)
 
@@ -170,6 +171,7 @@ const modulos = [
   - `FlatPickr(elemento)`
   - `formatearFecha(fechaSQL)`
   - `mostrarToast(mensaje, tipo = 'success')`
+  - `normalizarBusqueda(valor)` (minúsculas y sin tildes, para filtros locales)
 - `jQuery`/`$` está disponible globalmente: se usa `$('#id')`, DataTables y AJAX de jQuery.
 - Escapa HTML al inyectar datos del servidor en plantillas (usa el patrón `escapeHtml` ya presente).
 - Evita `innerHTML` con datos sin sanitizar; prefiere `textContent` o el helper de escape.

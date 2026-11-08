@@ -72,8 +72,8 @@ echo -- Levantando ERP y Tienda Supabase en la red local
  echo    Tienda (otros):       http://%IP_LAN%:8090/tienda
  echo.
  echo    [AVISO] Para el login de la tienda desde otros equipos, agrega en Supabase
- echo            Authentication - URL Configuration:
- echo            http://%IP_LAN%:8090/tienda/login
+ echo            Authentication - URL Configuration (Redirect URLs):
+ echo            http://%IP_LAN%:8090/**   ^(y http://localhost:8090/**^)
  echo.
  echo    Cierra las dos ventanas nuevas para detener los servidores.
  echo.

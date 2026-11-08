@@ -33,12 +33,13 @@
     let discreto = false;
     let despedida = null;
     let condicionVisible = null;
+    let solicitudVisible = false;
 
     /* La página puede limitar cuándo se deja ver la tarjeta (p. ej. solo con descuento). */
     function soloSi(condicion) {
         condicionVisible = typeof condicion === 'function' ? condicion : null;
 
-        if (!puedeVerse()) guardarTarjeta(true);
+        if (!puedeVerse() && !solicitudVisible) guardarTarjeta(true);
     }
 
     function puedeVerse() {
@@ -152,16 +153,19 @@
         return true;
     }
 
-    function decir(texto, { tono = 'info' } = {}) {
+    function decir(texto, { tono = 'info', html = false } = {}) {
         if (!montar() || !texto) return;
 
-        mensajeEl.textContent = texto;
+        if (html) mensajeEl.innerHTML = texto;
+        else mensajeEl.textContent = texto;
+
+        mensajeEl.dataset.html = html ? '1' : '0';
         tarjeta.dataset.tono = tono;
 
         /* Los botones de un mensaje anterior no aplican al nuevo. */
         limpiarAcciones();
 
-        if (estaOculto() || discreto || !puedeVerse()) return;
+        if (estaOculto() || discreto || (!puedeVerse() && !solicitudVisible)) return;
 
         guardarTarjeta(false);
         programarDespedida();
@@ -187,6 +191,8 @@
             etiqueta,
             manejador,
             mensaje: mensajeEl?.textContent || '',
+            contenido: mensajeEl?.innerHTML || '',
+            html: mensajeEl?.dataset.html === '1',
             tono: tarjeta?.dataset.tono || 'info',
         };
 
@@ -218,13 +224,15 @@
     }
 
     function ocultar() {
+        solicitudVisible = false;
         recordarOculto(true);
         limpiarAcciones();
         guardarTarjeta(true);
     }
 
-    function mostrar() {
-        if (!puedeVerse()) return;
+    function mostrar(forzar = false) {
+        if (forzar) solicitudVisible = true;
+        if (!puedeVerse() && !solicitudVisible) return;
 
         recordarOculto(false);
         discreto = false;
@@ -312,7 +320,10 @@
 
         if (!ultimaAccion) return;
 
-        decir(ultimaAccion.mensaje || MENSAJES.bienvenida, { tono: ultimaAccion.tono || 'info' });
+        decir(
+            ultimaAccion.html ? ultimaAccion.contenido : ultimaAccion.mensaje,
+            { tono: ultimaAccion.tono || 'info', html: Boolean(ultimaAccion.html) }
+        );
         accion(ultimaAccion.etiqueta, ultimaAccion.manejador);
     }
 

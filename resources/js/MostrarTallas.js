@@ -61,7 +61,7 @@ export default function initMostrarTallas() {
         if (settings.nTable.id !== 'tablaTallas') return true;
         if (!$('#toggleInactivasTallas').is(':checked')) return true;
         const estado = $('<div>').html(data[3] || '').text().trim();
-        return estado === 'Activa';
+        return estado === 'activa';
     });
 
     if ($.fn.DataTable.isDataTable($tabla[0])) $tabla.DataTable().destroy();

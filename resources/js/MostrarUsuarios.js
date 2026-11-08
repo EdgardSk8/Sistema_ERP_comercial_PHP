@@ -10,7 +10,7 @@ export default function initMostrarUsuarios() {
         if (!ocultar) return true; // no filtrar si el checkbox está desmarcado
 
         const estado = data[4]; // columna "estado_usuario" (índice 4)
-        return String(estado || '').includes('Activo');
+        return String(estado || '').includes('activo');
     });
  $('#toggleInactivosUsuarios').on('change', function() { tabla.draw(); });
 

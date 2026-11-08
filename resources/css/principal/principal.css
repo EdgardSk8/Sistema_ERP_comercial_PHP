@@ -462,6 +462,11 @@ span.flatpickr-weekday{color:var(--fp-calendar-muted)}
     background:var(--verde-soft);
 }
 
+.btn-nuevo-color:disabled{
+    opacity:.6;
+    cursor:wait;
+}
+
 /* Acciones sobre el color dentro del modal de detalle */
 .btn-accion-color{
     display:inline-flex;

@@ -75,16 +75,14 @@ class DataTableServidor
                     continue;
                 }
 
-                $like = '%'.$valor.'%';
-
                 if (! empty($config['rel'])) {
-                    $query->orWhereHas($config['rel'], fn (Builder $rel) => $rel->where($config['col'], 'like', $like));
+                    $query->orWhereHas($config['rel'], fn (Builder $rel) => Busqueda::aplicarLike($rel, $config['col'], $valor));
 
                     continue;
                 }
 
                 if (! empty($config['col'])) {
-                    $query->orWhere($config['col'], 'like', $like);
+                    Busqueda::aplicarLike($query, $config['col'], $valor, 'or');
                 }
             }
         });
@@ -125,16 +123,15 @@ class DataTableServidor
             }
 
             $limpio = self::limpiarValor($valor);
-            $like = '%'.$limpio.'%';
 
             if (! empty($config['rel'])) {
-                $consulta->whereHas($config['rel'], fn (Builder $rel) => $rel->where($config['col'], 'like', $like));
+                $consulta->whereHas($config['rel'], fn (Builder $rel) => Busqueda::aplicarLike($rel, $config['col'], $limpio));
 
                 continue;
             }
 
             if (! empty($config['col'])) {
-                $consulta->where($config['col'], 'like', $like);
+                Busqueda::aplicarLike($consulta, $config['col'], $limpio);
             }
         }
 

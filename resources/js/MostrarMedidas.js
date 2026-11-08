@@ -89,7 +89,7 @@ export default function initMostrarMedidas() {
         const ocultar = $('#toggleInactivosMedidas').is(':checked');
         if (!ocultar) return true;
 
-        return String(data[5] || '').includes('Activo');
+        return String(data[5] || '').includes('activo');
     });
 
     // EVENTO PARA CARGAR LOS TIPOS DE MEDIDAS

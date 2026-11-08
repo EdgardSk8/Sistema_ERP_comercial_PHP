@@ -111,6 +111,16 @@ html.tema-navidad .app-header .nav-escritorio a {
     color: var(--nav-crema);
 }
 
+html.tema-navidad .app-header .nav-escritorio a.nav-escritorio__promo {
+    background: var(--nav-dorado);
+    color: #3f2b00;
+}
+
+html.tema-navidad .app-header .nav-escritorio a.nav-escritorio__promo:hover {
+    background: #f0c85a;
+    color: #2e1f00;
+}
+
 html.tema-navidad .app-header .icono-btn:hover,
 html.tema-navidad .app-header .perfil__acceso:hover {
     background: rgba(255, 248, 236, .16);
@@ -179,8 +189,7 @@ html.tema-navidad .carrito-item,
 html.tema-navidad .perfil-card,
 html.tema-navidad .perfil-item-card,
 html.tema-navidad .acceso__card,
-html.tema-navidad .resenias__resumen,
-html.tema-navidad .filtros__panel {
+html.tema-navidad .resenias__resumen {
     border-color: rgba(212, 175, 55, .38);
     box-shadow: 0 0 0 1px rgba(212, 175, 55, .16), var(--sombra-suave);
 }
@@ -388,14 +397,30 @@ html.tema-navidad .acceso__logo {
 /* ── Precios y acentos ──────────────────────────────────────── */
 
 html.tema-navidad .producto__descuento,
+html.tema-navidad .badge-descuento {
+    background: var(--nav-verde);
+}
+
 html.tema-navidad .badge-agotado {
     background: var(--nav-rojo);
 }
 
 html.tema-navidad .producto__precio,
-html.tema-navidad .card-producto__precio,
+html.tema-navidad .card-producto__precios,
 html.tema-navidad .card-compacta__precio {
     color: var(--nav-verde);
+}
+
+html.tema-navidad .producto__precio--dto,
+html.tema-navidad .card-producto__precios .precio--dto,
+html.tema-navidad .card-compacta__precio .precio--dto {
+    color: var(--nav-verde);
+}
+
+html.tema-navidad .producto__precio--antes,
+html.tema-navidad .card-producto__precios .precio--antes,
+html.tema-navidad .card-compacta__precio .precio--antes {
+    color: var(--nav-rojo);
 }
 
 /* ── Pie de página ──────────────────────────────────────────── */
@@ -533,7 +558,7 @@ html.tema-navidad .app-header {
 html.tema-navidad .card-producto {
     position: relative;
     border-color: rgba(193, 18, 31, .30);
-    box-shadow: 0 0 0 1px rgba(193, 18, 31, .20), var(--sombra-suave);
+    box-shadow: var(--sombra-suave);
 }
 
 html.tema-navidad .card-producto:hover {

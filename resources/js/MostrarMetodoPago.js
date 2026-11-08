@@ -1,7 +1,7 @@
 const filtroMetodosPago = function(settings, data) {
     if (settings.nTable.id !== 'tablaMetodosPago') return true;
     if (!$('#toggleInactivosMetodosPago').is(':checked')) return true;
-    return data[2].includes('Activo');
+    return data[2].includes('activo');
 };
 
 export default function initMostrarMetodosPagos() {

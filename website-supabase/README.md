@@ -56,11 +56,16 @@ el cambio estaba en `supabase-api.js` pero la versión seguía en `20261103h`.
 En el panel de Supabase:
 
 1. **Authentication → URL Configuration**
-   - Site URL: `https://TU-SITIO` (o `http://127.0.0.1:8090` en local).
-   - Redirect URLs: agrega
-     - `https://TU-SITIO/tienda/login`
-     - `http://127.0.0.1:8090/tienda/login`
-     - `http://localhost:8000/tienda/login`
+   - Site URL: `https://TU-SITIO` (producción; **no** lo cambies para desarrollar en local).
+   - Redirect URLs (con `/**` se cubren todas las rutas):
+     - `https://TU-SITIO/**`
+     - `http://127.0.0.1:8090/**`
+     - `http://localhost:8090/**`
+     - `http://127.0.0.1:8000/**` y `http://localhost:8000/**` (si usas `php artisan serve`)
+     - `http://TU-IP-LAN:8090/**` (para probar desde el celular u otro equipo)
+   - El host debe coincidir **exacto**: `localhost` y `127.0.0.1` son distintos. Si el
+     `redirectTo` no está en la lista, Supabase lo ignora y devuelve al **Site URL**
+     (producción) sin mostrar error.
 2. **Authentication → Providers → Google**
    - Actívalo con el Client ID y Client Secret de Google Cloud.
    - En Google Cloud, el URI de redirección autorizado debe ser:
@@ -75,6 +80,19 @@ En el panel de Supabase:
 - Los clientes creados antes en Laravel no tienen usuario de Supabase Auth; deben registrarse de nuevo o migrarse.
 - Si el ERP agrega productos/imágenes nuevos, vuelve a copiar `public/imagenes` o migra a Supabase Storage.
 - El catálogo y los precios se calculan en las funciones SQL, igual que la API anterior.
+- El index acepta `?categoria=Nombre` (p. ej. `/tienda?categoria=Zapatos`) para abrir el catálogo
+  ya filtrado y bajar hasta él; lo usa el botón «Ver zapatos» del descuento de bienvenida en Perfil.
+  También acepta `?categoria=Descuentos` (o `ofertas`).
+- La categoría «Descuentos» solo lista productos con una **promoción activa del ERP**
+  (`promociones`); el 10 % de bienvenida del cliente **no** cuenta ahí. Si no hay promociones,
+  la categoría no se muestra.
+- **Modo prueba de pedidos**: en `js/core/supabase-config.js`, `window.TIENDA_MODO_PRUEBA = true`
+  simula el checkout (`PRUEBA-XXXXXX`) sin escribir en Supabase y muestra un aviso en el carrito.
+  Déjalo en `false` en producción.
+- **404**: Cloudflare Pages sirve `404.html` para rutas inexistentes; `dev-server.php` también
+  la usa en local.
+- **Imágenes**: las fotos de productos y promociones se optimizaron (máx. 1000 px, WebP 78-80).
+  Guarda una copia de los originales antes de reemplazarlas si necesitas más calidad.
 
 ## 6. Avatar del cliente (colores e ilustraciones)
 

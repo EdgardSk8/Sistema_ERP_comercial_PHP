@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Talla;
+use App\Support\Busqueda;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -34,7 +35,7 @@ class TallaController extends Controller
 
             if ($request->filled('buscar')) {
                 $buscar = trim($request->input('buscar'));
-                $query->where('talla', 'like', '%'.$buscar.'%');
+                Busqueda::aplicarLike($query, 'talla', $buscar);
             }
 
             if ($request->has('estado')) {

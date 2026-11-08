@@ -11,7 +11,9 @@
             <span class="variaciones-cargando__texto">Cargando variaciones…</span>
         </div>
 
-        <div class="variaciones-filtro d-none" id="variacionesFiltro" data-producto="{{ request('producto') }}"></div>
+        <div class="variaciones-filtro d-none" id="variacionesFiltro"
+             data-producto="{{ request('producto') }}"
+             data-nombre="{{ request('nombre') }}"></div>
 
         <table id="tablaProductoVariacionDetalle" class="table table-bordered">
             <thead>
@@ -95,10 +97,15 @@
                     </div>
                     <div class="modal-body">
                         <div class="mb-2">
-                            <label for="color_id_producto" class="form-label">Producto</label>
+                            <label for="color_id_producto" class="form-label">
+                                Producto <span class="text-muted fw-normal">(escribe para buscar)</span>
+                            </label>
                             <select id="color_id_producto" name="id_producto" class="form-select form-select-sm" required>
                                 <option value="">Seleccione un producto</option>
                             </select>
+                            <small class="text-muted d-block mt-1">
+                                Aparecen todos los productos activos, aunque todavía no tengan variantes.
+                            </small>
                         </div>
                         <div>
                             <label for="color_nombre" class="form-label">Color</label>

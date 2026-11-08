@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es" class="tema-navidad">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5EEDE">
+  <link rel="preload" href="/tienda/recursos/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" type="image/png" sizes="32x32" href="/tienda/recursos/img/favicon-navidad.png?v=20261030h">
+  <link rel="apple-touch-icon" sizes="180x180" href="/tienda/recursos/img/apple-touch-navidad.png?v=20261030h">
+  <title>Página no encontrada · Tellez Nic Store</title>
+
+  <meta name="robots" content="noindex">
+  <meta name="description" content="La página que buscas no existe o cambió de lugar.">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261108x">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/login.css?v=20261105a">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108g">
+
+  <style>
+    .no-encontrada__codigo {
+      margin: 0;
+      font-family: var(--fuente-titulo);
+      font-size: 2.4rem;
+      font-weight: 600;
+      color: var(--nav-rojo, var(--secundario));
+    }
+
+    .no-encontrada__acciones {
+      display: grid;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body class="pagina-login">
+
+  <header class="app-header">
+    <div class="contenedor">
+      <a class="icono-btn" href="/tienda" aria-label="Volver">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+
+      <a class="marca" href="/tienda">
+        <img class="marca__logo" src="/tienda/recursos/img/minilogo.png?v=20261102d" alt="">
+        Tellez Nic Store
+      </a>
+
+      <div class="header-acciones">
+        <a class="icono-btn" href="/tienda/carrito" aria-label="Carrito">
+          <i class="bi bi-bag"></i>
+          <span class="icono-btn__badge" data-carrito-badge hidden>0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="acceso contenedor">
+    <section class="acceso__card">
+
+      <div class="acceso__marca">
+        <img class="acceso__logo" src="/tienda/recursos/img/minilogo.png?v=20261102d" alt="Tellez Nic Store">
+        <p class="no-encontrada__codigo">404</p>
+        <h1 class="acceso__titulo">Página no encontrada</h1>
+        <p class="acceso__texto">
+          La página que buscas no existe o cambió de lugar.
+          Revisa el enlace o vuelve al catálogo para seguir comprando.
+        </p>
+      </div>
+
+      <div class="acceso__contenido">
+        <div class="no-encontrada__acciones">
+          <a class="btn-primario w-100" href="/tienda">
+            <i class="bi bi-house" aria-hidden="true"></i> Ir a la tienda
+          </a>
+          <a class="btn-secundario w-100" href="/tienda#catalogo">
+            <i class="bi bi-grid" aria-hidden="true"></i> Ver catálogo
+          </a>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261105c" defer></script>
+</body>
+</html>

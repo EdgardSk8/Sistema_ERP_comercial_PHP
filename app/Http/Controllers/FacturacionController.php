@@ -20,6 +20,7 @@ use App\Models\Venta;
 use App\Services\CosteoInventarioService;
 use App\Services\RegistrarPagoVenta;
 use App\Services\TicketEscPosService;
+use App\Support\Busqueda;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -68,7 +69,7 @@ class FacturacionController extends Controller
 
                     // 🔍 Buscador
                     if ($request->filled('buscar')) {
-                        $query->where('nombre_producto', 'like', '%'.$request->buscar.'%');
+                        Busqueda::aplicarLike($query, 'nombre_producto', (string) $request->buscar);
                     }
 
                     return $query->select(

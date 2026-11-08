@@ -8,7 +8,7 @@ export default function initMostrarGastos() {
         if (settings.nTable.id !== 'tablaGastos') return true;
         const ocultar = $('#toggleInactivosGastos').is(':checked');
         if (!ocultar) return true;
-        return String(data[7] ?? '').includes('Activo');
+        return String(data[7] ?? '').includes('activo');
     };
     window.registrarFiltroDataTable('gastos-inactivos', filtrarGastosInactivos);
 

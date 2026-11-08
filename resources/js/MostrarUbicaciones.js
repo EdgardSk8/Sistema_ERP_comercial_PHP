@@ -70,7 +70,7 @@ export default function initMostrarUbicaciones() {
     configurarToggleColumnas('tablaUbicaciones');
 
     $('#toggleInactivosUbicaciones').off('change.ubicaciones').on('change.ubicaciones', function () {
-        tabla.column(2).search(this.checked ? '^Activa$' : '', true, false).draw();
+        tabla.column(2).search(this.checked ? '^activa$' : '', true, false).draw();
     }).trigger('change');
 
     $('#modalCrearUbicacion').off('hidden.bs.modal.ubicaciones').on('hidden.bs.modal.ubicaciones', function () {

@@ -17,6 +17,7 @@ use App\Models\Proveedor;
 use App\Models\TipoFactura;
 use App\Models\VariacionTalla;
 use App\Services\CosteoInventarioService;
+use App\Support\Busqueda;
 use App\Support\DataTableServidor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -309,8 +310,8 @@ class CompraController extends Controller
                 $busqueda = $request->q;
 
                 $query->where(function ($q) use ($busqueda) {
-                    $q->where('nombre_proveedor', 'like', "%{$busqueda}%")
-                        ->orWhere('ruc_proveedor', 'like', "%{$busqueda}%");
+                    Busqueda::aplicarLike($q, 'nombre_proveedor', $busqueda);
+                    Busqueda::aplicarLike($q, 'ruc_proveedor', $busqueda, 'or');
                 });
             }
 
@@ -584,17 +585,22 @@ class CompraController extends Controller
                 $busqueda = $request->q;
 
                 $query->where(function ($q) use ($busqueda) {
-                    $q->where('nombre_producto', 'like', "%{$busqueda}%")
-                        ->orWhere('descripcion_producto', 'like', "%{$busqueda}%")
-                        ->orWhereHas('variaciones.tallas', function ($variantes) use ($busqueda) {
-                            $variantes->where('sku', 'like', "%{$busqueda}%")
-                                ->orWhereHas('variacion', function ($variacion) use ($busqueda) {
-                                    $variacion->where('color', 'like', "%{$busqueda}%");
-                                })
-                                ->orWhereHas('talla', function ($talla) use ($busqueda) {
-                                    $talla->where('talla', 'like', "%{$busqueda}%");
-                                });
-                        });
+                    Busqueda::aplicarLike($q, 'nombre_producto', $busqueda);
+                    Busqueda::aplicarLike($q, 'descripcion_producto', $busqueda, 'or');
+
+                    $q->orWhereHas('variaciones.tallas', function ($variantes) use ($busqueda) {
+                        Busqueda::aplicarLike($variantes, 'sku', $busqueda);
+
+                        $variantes->orWhereHas(
+                            'variacion',
+                            fn ($variacion) => Busqueda::aplicarLike($variacion, 'color', $busqueda)
+                        );
+
+                        $variantes->orWhereHas(
+                            'talla',
+                            fn ($talla) => Busqueda::aplicarLike($talla, 'talla', $busqueda)
+                        );
+                    });
                 });
             }
 

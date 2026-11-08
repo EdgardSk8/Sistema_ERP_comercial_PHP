@@ -67,7 +67,7 @@ Los tokens viven en `website-supabase/css/base/estilos.css`. No introducir valor
 
 **Badges de descuento** — píldora o cuadrada, fondo `#E6513F`, texto blanco, 12px bold, esquina `--r-sm`.
 
-**Cards de producto** — fondo blanco, `--r-md`, `--sombra-suave`, imagen con `object-fit: cover` y relación 3:4, favorito (corazón) arriba a la derecha.
+**Cards de producto** — fondo blanco, borde 1px `--borde`, radio 16px, imagen 1:1 con `object-fit: cover` y favorito (corazón) de 36px (44px en táctil) arriba a la derecha. Ficha en cuadrícula: marca + rating, nombre a 2 líneas, categoría y color con muestra (`--tono`) en una fila que puede envolver, y precio separado al pie con una línea superior. Grid de 2/3/4 columnas (base / ≥560px / ≥992px).
 
 **Selector de color/talla** — círculos de 32px con borde `2px` del color; activo: borde `--secundario`. Tallas = píldoras, activa con fondo `--secundario` y texto `#F5EEDE`.
 

@@ -60,6 +60,22 @@ class WebsiteController extends Controller
         ]);
     }
 
+    public function quienesSomosVista(): BinaryFileResponse
+    {
+        return response()->file(base_path('website-supabase/quienes-somos.html'), [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'no-cache',
+        ]);
+    }
+
+    public function terminosVista(): BinaryFileResponse
+    {
+        return response()->file(base_path('website-supabase/terminos.html'), [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'no-cache',
+        ]);
+    }
+
     /** Sirve css, js e imágenes de la carpeta website-supabase/. */
     public function archivo(string $archivo): BinaryFileResponse
     {

@@ -10,7 +10,7 @@ export default function initMostrarRoles() {
         if (!ocultar) return true;
 
         const estado = data[3]; // columna "estado_rol"
-        return String(estado || '').includes('Activo');
+        return String(estado || '').includes('activo');
     });
 
     $('#toggleInactivosRoles').on('change', function() { tabla.draw(); });

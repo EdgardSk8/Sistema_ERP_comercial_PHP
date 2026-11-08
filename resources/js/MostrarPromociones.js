@@ -208,11 +208,11 @@ export default function initPromociones() {
 
     function pintarProductos() {
         const categoria = document.getElementById('promocionFiltroCategoria').value;
-        const texto = document.getElementById('promocionBuscarProducto').value.trim().toLowerCase();
+        const texto = window.normalizarBusqueda(document.getElementById('promocionBuscarProducto').value);
 
         const filtrados = productosPromocion.filter((producto) => {
             const cumpleCategoria = !categoria || String(producto.nombre_categoria || '') === categoria;
-            const cumpleTexto = !texto || String(producto.nombre_producto || '').toLowerCase().includes(texto);
+            const cumpleTexto = !texto || window.normalizarBusqueda(producto.nombre_producto || '').includes(texto);
 
             return cumpleCategoria && cumpleTexto;
         });

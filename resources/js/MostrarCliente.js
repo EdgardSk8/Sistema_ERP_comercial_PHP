@@ -11,7 +11,7 @@ export default function initMostrarCliente() {
         if (!ocultar) return true;
 
         const estado = data[10]; // columna estado_cliente
-        return String(estado || '').includes('Activo');
+        return String(estado || '').includes('activo');
     });
 
     $('#toggleInactivosClientes').on('change', function() { tabla.draw(); });

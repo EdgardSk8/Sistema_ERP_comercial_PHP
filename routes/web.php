@@ -518,6 +518,10 @@ Route::get('/tienda/login', [WebsiteController::class, 'loginVista'])->name('tie
 Route::get('/tienda/perfil', [WebsiteController::class, 'perfilVista'])->name('tienda.perfil');
 Route::get('/tienda/ayuda', [WebsiteController::class, 'ayudaVista'])->name('tienda.ayuda');
 Route::get('/ayuda', [WebsiteController::class, 'ayudaVista'])->name('tienda.ayuda.directa');
+Route::get('/tienda/quienes-somos', [WebsiteController::class, 'quienesSomosVista'])->name('tienda.quienes-somos');
+Route::get('/quienes-somos', [WebsiteController::class, 'quienesSomosVista'])->name('tienda.quienes-somos.directa');
+Route::get('/tienda/terminos', [WebsiteController::class, 'terminosVista'])->name('tienda.terminos');
+Route::get('/terminos', [WebsiteController::class, 'terminosVista'])->name('tienda.terminos.directa');
 
 // Acceso con redes sociales (OAuth)
 Route::get('/tienda/auth/{proveedor}/redirect', [ClienteWebController::class, 'redirigirProveedor'])

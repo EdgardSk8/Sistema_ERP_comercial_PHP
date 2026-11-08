@@ -1286,6 +1286,18 @@
     async function crearPedidoApi(cuerpo) {
         if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
 
+        /* Modo prueba: devuelve un pedido simulado sin tocar Supabase. */
+        if (window.TIENDA_MODO_PRUEBA) {
+            return {
+                success: true,
+                modo_prueba: true,
+                pedido: {
+                    numero_pedido: `PRUEBA-${Date.now().toString().slice(-6)}`,
+                    estado_pedido: 'prueba',
+                },
+            };
+        }
+
         const { data, error } = await supabase.rpc('web_crear_pedido', { p_datos: cuerpo || {} });
 
         if (error) throw errorApi(mensajeRpc(error, 'No se pudo enviar el pedido.'), 422);

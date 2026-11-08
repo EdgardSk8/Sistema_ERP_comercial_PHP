@@ -11,6 +11,7 @@ use App\Models\Producto;
 use App\Models\VariacionTalla;
 use App\Models\Venta;
 use App\Services\CosteoInventarioService;
+use App\Support\Busqueda;
 use App\Support\DataTableServidor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -65,7 +66,7 @@ class VentaController extends Controller
                                 return;
                             }
 
-                            $query->whereHas('metodoPago', fn ($metodo) => $metodo->where('nombre_metodo_pago', 'like', "%{$limpio}%"));
+                            $query->whereHas('metodoPago', fn ($metodo) => Busqueda::aplicarLike($metodo, 'nombre_metodo_pago', $limpio));
                         },
                     ],
                     10 => ['col' => 'estado_venta'],

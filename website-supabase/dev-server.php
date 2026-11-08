@@ -48,6 +48,12 @@ $rutas = [
     '/tienda/carrito' => 'carrito.html',
     '/tienda/perfil' => 'perfil.html',
     '/tienda/ayuda' => 'ayuda.html',
+    '/tienda/quienes-somos' => 'quienes-somos.html',
+    '/tienda/terminos' => 'terminos.html',
+    '/quienes-somos' => 'quienes-somos.html',
+    '/quienes-somos.html' => 'quienes-somos.html',
+    '/terminos' => 'terminos.html',
+    '/terminos.html' => 'terminos.html',
 ];
 
 if (isset($rutas[$uri])) {
@@ -72,8 +78,29 @@ if (preg_match('#^/tienda/recursos/(.+)$#', $uri, $coincidencia)) {
     }
 
     http_response_code(404);
+    servir(__DIR__.'/404.html');
 
     return true;
 }
 
-return false;
+/* En producción las imágenes viven en la raíz (/imagenes/...); se replica en local. */
+if (preg_match('#^/imagenes/(.+)$#', $uri, $coincidencia)) {
+    $archivo = __DIR__.'/imagenes/'.$coincidencia[1];
+
+    if (is_file($archivo)) {
+        servir($archivo);
+
+        return true;
+    }
+
+    http_response_code(404);
+    servir(__DIR__.'/404.html');
+
+    return true;
+}
+
+/* Cualquier otra ruta: página 404 con su propio estado. */
+http_response_code(404);
+servir(__DIR__.'/404.html');
+
+return true;

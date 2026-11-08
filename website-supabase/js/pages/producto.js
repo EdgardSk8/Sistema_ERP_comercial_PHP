@@ -535,6 +535,14 @@ function actualizarMetaProducto() {
     poner('meta[property="og:description"]', producto.descripcion || 'Producto disponible en Tellez Nic Store.');
     poner('meta[name="description"]', producto.descripcion || 'Producto disponible en Tellez Nic Store.');
 
+    /* Canonical y og:url propios del producto (evita que todos apunten a /producto). */
+    const canonica = document.querySelector('link[rel="canonical"]');
+    const base = canonica ? canonica.href.split('?')[0] : `${location.origin}${location.pathname}`;
+    const urlProducto = `${base}?p=${encodeURIComponent(producto.id)}`;
+
+    canonica?.setAttribute('href', urlProducto);
+    poner('meta[property="og:url"]', urlProducto);
+
     if (producto.imagen) {
         poner('meta[property="og:image"]', new URL(producto.imagen, location.origin).href);
     }

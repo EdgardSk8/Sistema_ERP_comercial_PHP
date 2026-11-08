@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#F5EEDE">
+  <link rel="preload" href="/tienda/recursos/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="icon" type="image/png" sizes="32x32" href="/tienda/recursos/img/favicon-navidad.png?v=20261030h">
   <link rel="apple-touch-icon" sizes="180x180" href="/tienda/recursos/img/apple-touch-navidad.png?v=20261030h">
   <title>Tellez Nic Store</title>
@@ -20,17 +21,11 @@
   <meta property="og:image:alt" content="Tellez Nic Store">
   <meta name="twitter:card" content="summary_large_image">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
-  <link href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261106c">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261105b">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261108x">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108g">
 </head>
 <body>
 
@@ -43,8 +38,13 @@
       </a>
 
       <nav class="nav-escritorio">
-        <a href="#catalogo">Catálogo</a>
-        <a href="#categorias">Categorías</a>
+        <a class="nav-escritorio__promo" id="navPromociones" href="#promos" hidden>
+          <i class="bi bi-tag" aria-hidden="true"></i>
+          Promociones
+        </a>
+        <a href="/tienda/quienes-somos">Quiénes somos</a>
+        <a href="#contacto">Contacto</a>
+        <a href="/tienda/ayuda">Ayuda</a>
       </nav>
 
       <div class="header-acciones">
@@ -179,6 +179,13 @@
 
       <div class="filtros__cortina">
         <div class="filtros__cortina__cuerpo">
+          <div class="filtros__cabecera">
+            <p class="filtros__panel-titulo">Filtros</p>
+            <button type="button" class="filtros__cerrar" id="btnCerrarFiltros" aria-label="Cerrar filtros">
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+          </div>
+
           <div class="filtros__panel">
             <div class="filtros__fila">
 
@@ -197,11 +204,20 @@
               </div>
 
               <div class="filtros__col">
-                <p class="filtros__titulo">Rango de precio</p>
+                <div class="filtros__titulo-fila">
+                  <p class="filtros__titulo">Rango de precio</p>
+                  <p class="filtros__ayuda" id="filtrosAyuda"></p>
+                </div>
 
                 <div class="filtros__valores">
-                  <span class="filtros__valor" id="precioMinEtiqueta">C$ 100.00</span>
-                  <span class="filtros__valor" id="precioMaxEtiqueta">C$ 2,000.00</span>
+                  <span class="filtros__valor">
+                    <span class="filtros__valor__etiqueta">Mín.</span>
+                    <span id="precioMinEtiqueta">C$ 100.00</span>
+                  </span>
+                  <span class="filtros__valor">
+                    <span class="filtros__valor__etiqueta">Máx.</span>
+                    <span id="precioMaxEtiqueta">C$ 2,000.00</span>
+                  </span>
                 </div>
 
                 <div class="filtros__slider" id="sliderPrecio">
@@ -216,8 +232,6 @@
 
             </div>
 
-            <p class="filtros__ayuda" id="filtrosAyuda"></p>
-
             <div class="filtros__fila filtros__fila--marcas">
 
               <div class="filtros__col">
@@ -227,7 +241,12 @@
                         aria-label="Filtrar por marca"></select>
               </div>
 
-              <div class="filtros__col">
+              <div class="filtros__col filtros__col--tipo">
+                <p class="filtros__titulo">Tipo</p>
+                <div id="filtroTipo" class="filtros__tipo"></div>
+              </div>
+
+              <div class="filtros__col filtros__col--caracteristicas">
                 <p class="filtros__titulo">Características</p>
 
                 <div class="filtros__atributos" id="filtrosAtributos"></div>
@@ -237,7 +256,7 @@
 
             <div class="filtros__acciones">
               <button type="button" class="filtros__limpiar" id="btnLimpiarFiltros">Limpiar</button>
-              <button type="button" class="filtros__aplicar" id="btnAplicarFiltros">Aplicar filtro</button>
+              <button type="button" class="filtros__aplicar" id="btnAplicarFiltros">Aplicar filtros</button>
             </div>
           </div>
         </div>
@@ -284,7 +303,7 @@
           </div>
         </div>
 
-        <div class="pie__bloque">
+        <div class="pie__bloque" id="contacto">
           <h3 class="pie__titulo">Contacto</h3>
           <ul class="pie__lista">
             <li>
@@ -322,6 +341,8 @@
 
       <p class="pie__legal">
         © 2026 Tellez Software · Todos los derechos reservados ·
+        <a href="/tienda/quienes-somos">Quiénes somos</a> ·
+        <a href="/tienda/terminos">Términos y condiciones</a> ·
         <a href="mailto:tellezsoftware@gmail.com">tellezsoftware@gmail.com</a>
       </p>
 
@@ -339,16 +360,13 @@
   </footer>
 
   <!-- ── Scripts ────────────────────────────────────────────── -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
   <script src="/tienda/recursos/js/core/carrito-store.js?v=20261105c" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-config.js?v=20261104a" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261105g" defer></script>
-  <script src="/tienda/recursos/js/core/categorias.js?v=20261030o" defer></script>
-  <script src="/tienda/recursos/js/pages/tienda.js?v=20261106a" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js" defer></script>
-  <script src="/tienda/recursos/js/components/promos.js?v=20261106a" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-config.js?v=20261107c" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261107d" defer></script>
+  <script src="/tienda/recursos/js/core/categorias.js?v=20261109a" defer></script>
+  <script src="/tienda/recursos/js/pages/tienda.js?v=20261108i" defer></script>
+  <script src="/tienda/recursos/js/components/promos.js?v=20261108d" defer></script>
   <script src="/tienda/recursos/js/components/mapa.js?v=20261102d" defer></script>
 </body>
 </html>

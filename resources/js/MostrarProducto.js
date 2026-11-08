@@ -113,7 +113,7 @@ export default function initMostrarProductos() {
 
                         // Abre la pantalla de variantes filtrada por este producto.
                         let botonVariantes = `<a class="btn-transferir variantesProducto"
-                            href="/producto-variaciones-detalles?producto=${data}"
+                            href="/producto-variaciones-detalles?producto=${data}&nombre=${encodeURIComponent(row.nombre_producto || '')}"
                             data-turbo-frame="contenido-dinamico"
                             title="Variantes (colores, tallas e imágenes)">
                             <i class="ph ph-squares-four"></i>
@@ -157,7 +157,7 @@ window.registrarFiltroDataTable('productos-inactivos', function (settings, data)
     if (settings.nTable?.id !== 'TablaMostrarProductos') return true;
     if (! $('#toggleInactivosProductos').is(':checked')) return true;
 
-    return String(data[12] || '').includes('Activo');
+    return String(data[12] || '').includes('activo');
 });
 
 /* ════════════════════════════════════════════════════════════════════════════════════════════════════════════════ */

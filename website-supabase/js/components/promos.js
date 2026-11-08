@@ -8,11 +8,65 @@
 (() => {
     const seccion = document.getElementById('promos');
     const contenedor = document.getElementById('promosGrid');
+    const enlaceNav = document.getElementById('navPromociones');
 
     if (!seccion || !contenedor) return;
 
+    /* El enlace del header solo aparece cuando hay promociones que mostrar. */
+    function mostrarSeccion() {
+        seccion.hidden = false;
+        if (enlaceNav) enlaceNav.hidden = false;
+    }
+
     const carruselRaiz = contenedor.closest('.splide');
     let carrusel = null;
+
+    /* ╔══════════════════════════════════════════════════════════╗
+       ║  Splide a demanda                                         ║
+       ║  La sección está bajo el pliegue: no bloquea la carga.    ║
+       ╚══════════════════════════════════════════════════════════╝ */
+    const SPLIDE_CSS_URL = 'https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css';
+    const SPLIDE_JS_URL = 'https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js';
+    let splideCargando = null;
+
+    function cargarCss(href) {
+        return new Promise((resolver) => {
+            const enlace = document.createElement('link');
+            enlace.rel = 'stylesheet';
+            enlace.href = href;
+            enlace.onload = resolver;
+            enlace.onerror = resolver;
+            document.head.appendChild(enlace);
+        });
+    }
+
+    function cargarScript(src) {
+        return new Promise((resolver, rechazar) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.onload = resolver;
+            script.onerror = rechazar;
+            document.head.appendChild(script);
+        });
+    }
+
+    function cargarSplide() {
+        if (typeof Splide !== 'undefined') return Promise.resolve();
+        if (splideCargando) return splideCargando;
+
+        splideCargando = (async () => {
+            try {
+                const cssListo = cargarCss(SPLIDE_CSS_URL);
+                await cargarScript(SPLIDE_JS_URL);
+                await cssListo;
+            } catch (error) {
+                console.warn('No se pudo cargar el carrusel de promociones.', error);
+            }
+        })();
+
+        return splideCargando;
+    }
 
     const escapar = (valor) => String(valor ?? '')
         .replace(/&/g, '&amp;')
@@ -78,8 +132,11 @@
        ║  Carrusel horizontal con Splide                          ║
        ╚══════════════════════════════════════════════════════════╝ */
 
-    function montarCarrusel() {
-        if (!carruselRaiz || typeof Splide === 'undefined') return;
+    async function montarCarrusel() {
+        if (!carruselRaiz) return;
+
+        if (typeof Splide === 'undefined') await cargarSplide();
+        if (typeof Splide === 'undefined') return;
 
         if (carrusel) {
             carrusel.destroy(true);
@@ -130,10 +187,14 @@
             ? `<span class="promo__pie">${titulo}${cta}</span>`
             : '';
 
+        const carga = indice === 0
+            ? 'loading="eager" fetchpriority="high"'
+            : 'loading="lazy" fetchpriority="low"';
+
         const contenido = `
             <span class="promo__media">
                 ${descuento}
-                <img src="${escapar(foto.imagen)}" alt="${escapar(foto.titulo || `Promoción ${indice + 1}`)}" loading="lazy" decoding="async" fetchpriority="low">
+                <img src="${escapar(foto.imagen)}" alt="${escapar(foto.titulo || `Promoción ${indice + 1}`)}" ${carga} decoding="async">
             </span>
             ${pie}
         `;
@@ -204,7 +265,7 @@
 
             if (promocionesErp.length) {
                 contenedor.innerHTML = promocionesErp.map(diapositiva).join('');
-                seccion.hidden = false;
+                mostrarSeccion();
                 montarCarrusel();
                 return;
             }
@@ -225,7 +286,7 @@
             if (!fotos.length) return;
 
             contenedor.innerHTML = fotos.map(diapositiva).join('');
-            seccion.hidden = false;
+            mostrarSeccion();
             montarCarrusel();
         } catch (error) {
             console.warn('No se pudieron cargar las promociones.', error);
