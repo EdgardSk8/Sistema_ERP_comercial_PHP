@@ -183,6 +183,14 @@
 
         montaje.querySelector('.chiky__avatar').src = montaje.dataset.chikyAvatar || IDENTIDAD.avatar;
 
+        montaje.setAttribute('role', 'button');
+        montaje.setAttribute('tabindex', '0');
+        montaje.addEventListener('keydown', (evento) => {
+            if (evento.key !== 'Enter' && evento.key !== ' ') return;
+            evento.preventDefault();
+            repetirGuia();
+        });
+
         montaje.querySelector('.chiky__cerrar').addEventListener('click', ocultar);
         tarjeta.title = 'Ver la guía de nuevo';
         tarjeta.addEventListener('click', (evento) => {

@@ -250,6 +250,12 @@
 /* Campo que Chiky señala al ayudar a completar el perfil. */
 .chiky-resalta { animation: chiky-resalta 2.2s ease; }
 
+/* Mejora el contraste del progreso que dibuja driver.js. */
+.driver-popover .driver-popover-progress-text {
+  color: var(--secundario, #0c3d24) !important;
+  font-weight: 600;
+}
+
 @keyframes chiky-resalta {
   0%, 100% { box-shadow: none; }
   20%, 60% { box-shadow: 0 0 0 .2rem rgba(227, 179, 65, .55); }
