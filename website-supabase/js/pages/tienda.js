@@ -1122,15 +1122,39 @@ async function cargarTallasReferencia() {
     }
 }
 
+async function cargarProductos() {
+    const respuesta = await fetch(API_PRODUCTOS, { headers: { Accept: 'application/json' } });
+
+    if (respuesta.ok) return await respuesta.json();
+
+    /* En Cloudflare no hay Laravel: el catálogo público se lee directo de Supabase. */
+    const config = window.SUPABASE_CONFIG;
+
+    if (respuesta.status === 404 && config?.url && config?.key) {
+        const directa = await fetch(`${config.url}/rest/v1/rpc/web_productos`, {
+            method: 'POST',
+            headers: {
+                apikey: config.key,
+                Authorization: `Bearer ${config.key}`,
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
+            body: '{}',
+        });
+
+        if (!directa.ok) throw new Error('No se pudo cargar el catálogo.');
+
+        return { productos: await directa.json() };
+    }
+
+    throw new Error('No se pudo cargar el catálogo.');
+}
+
 async function cargarCatalogo() {
     const grid = document.getElementById('catalogoGrid');
 
     try {
-        const respuesta = await fetch(API_PRODUCTOS, { headers: { Accept: 'application/json' } });
-
-        if (!respuesta.ok) throw new Error('No se pudo cargar el catálogo.');
-
-        const data = await respuesta.json();
+        const data = await cargarProductos();
         const productos = data.productos || [];
 
         if (!productos.length) {
