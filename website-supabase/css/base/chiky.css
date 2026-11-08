@@ -253,6 +253,7 @@
 /* Mejora el contraste del progreso que dibuja driver.js. */
 .driver-popover .driver-popover-progress-text {
   color: var(--secundario, #0c3d24) !important;
+  opacity: 1 !important;
   font-weight: 600;
 }
 
