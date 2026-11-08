@@ -1122,29 +1122,42 @@ async function cargarTallasReferencia() {
     }
 }
 
+async function productosDesdeSupabase(config) {
+    const respuesta = await fetch(`${config.url}/rest/v1/rpc/web_productos`, {
+        method: 'POST',
+        headers: {
+            apikey: config.key,
+            Authorization: `Bearer ${config.key}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+        },
+        body: '{}',
+    });
+
+    if (!respuesta.ok) throw new Error('No se pudo cargar el catálogo.');
+
+    return await respuesta.json();
+}
+
 async function cargarProductos() {
+    const config = window.SUPABASE_CONFIG;
+    const esLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+
+    /* En Cloudflare no hay Laravel: se evita el 404 y se lee directo de Supabase. */
+    if (!esLocal && config?.url && config?.key) {
+        try {
+            return { productos: await productosDesdeSupabase(config) };
+        } catch (error) {
+            console.warn('No se pudo cargar el catálogo directo de Supabase.', error);
+        }
+    }
+
     const respuesta = await fetch(API_PRODUCTOS, { headers: { Accept: 'application/json' } });
 
     if (respuesta.ok) return await respuesta.json();
 
-    /* En Cloudflare no hay Laravel: el catálogo público se lee directo de Supabase. */
-    const config = window.SUPABASE_CONFIG;
-
     if (respuesta.status === 404 && config?.url && config?.key) {
-        const directa = await fetch(`${config.url}/rest/v1/rpc/web_productos`, {
-            method: 'POST',
-            headers: {
-                apikey: config.key,
-                Authorization: `Bearer ${config.key}`,
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-            },
-            body: '{}',
-        });
-
-        if (!directa.ok) throw new Error('No se pudo cargar el catálogo.');
-
-        return { productos: await directa.json() };
+        return { productos: await productosDesdeSupabase(config) };
     }
 
     throw new Error('No se pudo cargar el catálogo.');
