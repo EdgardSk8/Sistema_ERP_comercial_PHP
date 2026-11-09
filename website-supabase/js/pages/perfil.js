@@ -484,9 +484,53 @@ function iniciarGuiaCupones() {
 /* Evita que el aviso automático del descuento tape una ayuda que el cliente acaba de pedir. */
 let ultimaAyudaChiky = 0;
 
+function actualizarOfertaChiky(cliente = window.clienteTienda) {
+    const chiky = window.Chiky;
+    if (!chiky?.oferta) return;
+
+    if (!cliente) {
+        chiky.oferta(null);
+        return;
+    }
+
+    const descuento = cliente.descuento || null;
+
+    if (descuento) {
+        chiky.oferta({
+            estado: 'activo',
+            etiqueta: descuento.etiqueta || '10%',
+            titulo: descuento.titulo || 'Descuento',
+            detalle: descuento.primera_compra
+                ? (vigenciaDescuento(descuento.expira) || 'Activo en Zapatos.')
+                : 'Descuento activo en tu cuenta.',
+        });
+        return;
+    }
+
+    if (cliente.descuento_primera_compra_usado) {
+        chiky.oferta({
+            estado: 'usado',
+            etiqueta: '10%',
+            titulo: 'Descuento de bienvenida',
+            detalle: 'Ya lo usaste en una compra.',
+        });
+        return;
+    }
+
+    chiky.oferta({
+        estado: 'pendiente',
+        etiqueta: '10%',
+        titulo: 'Descuento de bienvenida',
+        detalle: 'Pendiente de activar en Zapatos.',
+    });
+}
+
 function ofrecerDescuento(cliente = window.clienteTienda) {
     const chiky = window.Chiky;
     if (!chiky) return;
+
+    actualizarOfertaChiky(cliente);
+
     if (Date.now() - ultimaAyudaChiky < 5000) return;
 
     const descuento = cliente?.descuento || null;
@@ -502,6 +546,12 @@ function ofrecerDescuento(cliente = window.clienteTienda) {
         }
 
         chiky.accion('Ver mi descuento', () => alinearArriba(porId('descuentos')));
+        return;
+    }
+
+    if (cliente?.descuento_primera_compra_usado) {
+        chiky.decir('Ya usaste tu 10% de bienvenida; ahora los cupones te llegan por fidelidad.');
+        chiky.accion('Ver cupones', irACupones);
         return;
     }
 
@@ -521,8 +571,8 @@ function ajustarTemasAyuda(cliente = window.clienteTienda) {
     if (botonDescuento) botonDescuento.hidden = !disponible;
     if (botonFidelidad) botonFidelidad.hidden = !usado;
 
-    /* La tarjeta de Chiky solo aparece mientras tenga el 10% de bienvenida. */
-    window.Chiky?.soloSi(() => Boolean(window.clienteTienda?.descuento?.primera_compra));
+    /* Chiky acompaña también mientras el 10% está pendiente de activar. */
+    window.Chiky?.soloSi(() => Boolean(window.clienteTienda));
 }
 
 /* Menú: cada pregunta abre a Chiky y la lleva a guiar por la pantalla. */
@@ -3273,6 +3323,7 @@ function mostrarDescuento(cliente) {
     if (!contenedor) return;
 
     ajustarTemasAyuda(cliente);
+    actualizarOfertaChiky(cliente);
 
     /* Con el 10% activo, Chiky se queda arriba del perfil (una vez por carga). */
     if (!avisoDescuentoMostrado && cliente?.descuento?.primera_compra) {
@@ -3368,7 +3419,19 @@ function conectarDescuento() {
             window.clienteTienda = datos.cliente || window.clienteTienda;
             mostrarDescuento(window.clienteTienda);
             tiendaToast(datos.mensaje || 'Descuento aplicado.');
-            window.Chiky?.modoDiscreto();
+
+            const descuento = window.clienteTienda?.descuento;
+
+            if (descuento?.primera_compra) {
+                window.Chiky?.modoDiscreto(false);
+                window.Chiky?.mostrar();
+                window.Chiky?.decir(`¡Felicidades! Ya activaste tu ${descuento.etiqueta || '10%'} en zapatos.`, { tono: 'festejo' });
+                window.Chiky?.accion('Ver zapatos', () => {
+                    window.location.href = `${urlTienda()}?categoria=Zapatos`;
+                });
+            } else {
+                window.Chiky?.modoDiscreto();
+            }
         } catch (error) {
             mostrarError(error);
         } finally {

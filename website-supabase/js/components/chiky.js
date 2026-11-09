@@ -169,6 +169,7 @@
                 <div class="chiky__contenido">
                     <p class="chiky__nombre">${IDENTIDAD.nombre}</p>
                     <p class="chiky__mensaje"></p>
+                    <div class="chiky__oferta" hidden></div>
                     <div class="chiky__acciones" hidden></div>
                 </div>
                 <button class="chiky__cerrar" type="button" aria-label="Ocultar a Chiky">
@@ -205,6 +206,40 @@
         if (!estaOculto() && !mensajeEl.textContent) decir(MENSAJES.bienvenida);
 
         return true;
+    }
+
+    /* Franja compacta para mostrar el 10% dentro de la misma tarjeta. */
+    function oferta(datos = null) {
+        if (!montar()) return;
+
+        const caja = montaje.querySelector('.chiky__oferta');
+        if (!caja) return;
+
+        if (!datos) {
+            caja.hidden = true;
+            caja.replaceChildren();
+            return;
+        }
+
+        caja.hidden = false;
+        caja.dataset.estado = datos.estado || 'pendiente';
+        caja.replaceChildren();
+
+        const sello = document.createElement('span');
+        sello.className = 'chiky__oferta-sello';
+        sello.textContent = datos.etiqueta || '10%';
+
+        const texto = document.createElement('div');
+        texto.className = 'chiky__oferta-texto';
+
+        const titulo = document.createElement('strong');
+        titulo.textContent = datos.titulo || 'Descuento de bienvenida';
+
+        const detalle = document.createElement('small');
+        detalle.textContent = datos.detalle || '';
+
+        texto.append(titulo, detalle);
+        caja.append(sello, texto);
     }
 
     function decir(texto, { tono = 'info', html = false } = {}) {
@@ -485,7 +520,7 @@
         guiaActiva?.destroy();
     }
 
-    window.Chiky = { montar, decir, paso, error, exito, accion, guiar, refrescarGuia, cerrarGuia, modoDiscreto, soloSi, spotlight, ocultar, mostrar, mensajes: MENSAJES, identidad: IDENTIDAD };
+    window.Chiky = { montar, decir, paso, error, exito, accion, oferta, guiar, refrescarGuia, cerrarGuia, modoDiscreto, soloSi, spotlight, ocultar, mostrar, mensajes: MENSAJES, identidad: IDENTIDAD };
 
     montar();
 })();
