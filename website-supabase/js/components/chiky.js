@@ -80,6 +80,7 @@
     let despedida = null;
     let condicionVisible = null;
     let solicitudVisible = false;
+    let ofertaFijada = false;
 
     /* La página puede limitar cuándo se deja ver la tarjeta (p. ej. solo con descuento). */
     function soloSi(condicion) {
@@ -145,6 +146,9 @@
             if (!tarjeta || guiaActiva) return;
             if (tarjeta.classList.contains('chiky--guardada')) return;
             if (accionesEl && !accionesEl.hidden) return;
+
+            /* La oferta del 10% se queda visible hasta que la persona la cierre. */
+            if (ofertaFijada) return;
 
             guardarTarjeta(true);
         }, 5000);
@@ -214,6 +218,8 @@
 
         const caja = montaje.querySelector('.chiky__oferta');
         if (!caja) return;
+
+        ofertaFijada = Boolean(datos);
 
         if (!datos) {
             caja.hidden = true;

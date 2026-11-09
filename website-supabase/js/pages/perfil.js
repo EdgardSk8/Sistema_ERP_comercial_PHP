@@ -3325,6 +3325,12 @@ function mostrarDescuento(cliente) {
     ajustarTemasAyuda(cliente);
     actualizarOfertaChiky(cliente);
 
+    /* La oferta vive dentro de Chiky y debe quedar visible en el perfil. */
+    if (cliente) {
+        window.Chiky?.modoDiscreto(false);
+        window.Chiky?.mostrar(true);
+    }
+
     /* Con el 10% activo, Chiky se queda arriba del perfil (una vez por carga). */
     if (!avisoDescuentoMostrado && cliente?.descuento?.primera_compra) {
         avisoDescuentoMostrado = true;

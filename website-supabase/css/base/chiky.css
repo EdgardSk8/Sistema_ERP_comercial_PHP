@@ -11,9 +11,11 @@
   width: min(720px, calc(100vw - 24px));
 }
 
-/* En el perfil no flota: vive arriba del contenido y se va con el scroll. */
+/* En el perfil la tarjeta acompaña el scroll y no desaparece. */
 .perfil-pagina .chiky-montaje {
-  position: static;
+  position: sticky;
+  top: calc(var(--alto-header) + 8px);
+  z-index: 1040;
   left: auto;
   transform: none;
   width: 100%;
@@ -308,7 +310,7 @@
 
 @media (max-width: 767.98px) {
   .chiky-montaje { top: calc(var(--alto-header) + 6px); width: calc(100vw - 16px); }
-  .perfil-pagina .chiky-montaje { top: auto; left: auto; transform: none; width: 100%; }
+  .perfil-pagina .chiky-montaje { top: calc(var(--alto-header) + 6px); left: auto; transform: none; width: 100%; }
   .chiky { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 8px 10px; padding: 10px; border-radius: 16px; }
   .chiky__avatar { width: 32px; height: 32px; border-radius: 10px; padding: 2px; }
   .chiky__mensaje { font-size: .85rem; }
