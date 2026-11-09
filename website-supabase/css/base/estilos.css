@@ -17,6 +17,7 @@
 }
 
 :root {
+  color-scheme: only light;
   --primario: #F5EEDE;
   --secundario: #22252A;
   --acento: #E6513F;
