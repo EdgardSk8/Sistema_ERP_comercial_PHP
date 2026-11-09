@@ -1192,6 +1192,12 @@ let quickAddActual = null;
 let quickAddSolicitud = 0;
 
 async function cargarDetalleProducto(id) {
+    /* En la portada Supabase se carga bajo demanda; esperamos el interceptor
+       antes de pedir el detalle para que el quick add no falle en el primer toque. */
+    if (!window.TiendaAPI && typeof window.cargarSupabase === 'function') {
+        await window.cargarSupabase().catch(() => null);
+    }
+
     const respuesta = await fetch(`/tienda/api/productos/${encodeURIComponent(id)}`, {
         headers: { Accept: 'application/json' },
     });
@@ -1307,29 +1313,17 @@ async function abrirQuickAdd(boton) {
 
     cerrarQuickAdd(false);
 
-    const { popover, contenido } = crearQuickAdd();
-    let scrollListo = false;
-    const temporizadorScroll = window.setTimeout(() => { scrollListo = true; }, 180);
-    const alDesplazar = () => { if (scrollListo) cerrarQuickAdd(false); };
-    const alRedimensionar = () => cerrarQuickAdd(false);
+    const solicitud = ++quickAddSolicitud;
 
     quickAddActual = {
-        popover,
-        contenido,
+        popover: null,
+        contenido: null,
         boton,
-        alDesplazar,
-        alRedimensionar,
-        temporizadorScroll,
-        solicitud: ++quickAddSolicitud,
+        alDesplazar: null,
+        alRedimensionar: null,
+        temporizadorScroll: null,
+        solicitud,
     };
-
-    const solicitud = quickAddActual.solicitud;
-
-    boton.setAttribute('aria-expanded', 'true');
-    document.body.appendChild(popover);
-    window.addEventListener('scroll', alDesplazar, { passive: true, once: true });
-    window.addEventListener('resize', alRedimensionar);
-    posicionarQuickAdd();
 
     try {
         const producto = await cargarDetalleProducto(boton.dataset.producto);
@@ -1341,23 +1335,42 @@ async function abrirQuickAdd(boton) {
         ) || (producto.variaciones || [])[0];
 
         if (!variacion) {
-            contenido.innerHTML = '<p class="quick-add__vacio">Este producto no tiene colores disponibles.</p>';
-            posicionarQuickAdd();
+            tiendaToast('Este producto no tiene colores disponibles.', 'aviso');
+            cerrarQuickAdd();
             return;
         }
 
         const tallas = (variacion.tallas || []).filter((talla) => Number(talla.stock) > 0);
 
         if (!tallas.length) {
-            contenido.innerHTML = '<p class="quick-add__vacio">No hay tallas disponibles para este color.</p>';
-            posicionarQuickAdd();
+            tiendaToast('No hay tallas disponibles para este color.', 'aviso');
+            cerrarQuickAdd();
             return;
         }
 
+        /* Con una sola talla no tiene sentido abrir el diálogo: se agrega directo. */
         if (tallas.length === 1) {
             agregarDesdeQuickAdd(producto, variacion, tallas[0]);
             return;
         }
+
+        const { popover, contenido } = crearQuickAdd();
+        let scrollListo = false;
+        const temporizadorScroll = window.setTimeout(() => { scrollListo = true; }, 180);
+        const alDesplazar = () => { if (scrollListo) cerrarQuickAdd(false); };
+        const alRedimensionar = () => cerrarQuickAdd(false);
+
+        quickAddActual.popover = popover;
+        quickAddActual.contenido = contenido;
+        quickAddActual.alDesplazar = alDesplazar;
+        quickAddActual.alRedimensionar = alRedimensionar;
+        quickAddActual.temporizadorScroll = temporizadorScroll;
+
+        boton.setAttribute('aria-expanded', 'true');
+        document.body.appendChild(popover);
+        window.addEventListener('scroll', alDesplazar, { passive: true, once: true });
+        window.addEventListener('resize', alRedimensionar);
+        posicionarQuickAdd();
 
         contenido.innerHTML = '';
 
@@ -1380,8 +1393,8 @@ async function abrirQuickAdd(boton) {
     } catch (error) {
         if (!quickAddActual || quickAddActual.solicitud !== solicitud) return;
 
-        contenido.innerHTML = '<p class="quick-add__vacio">No se pudieron cargar las tallas. Intenta de nuevo.</p>';
-        posicionarQuickAdd();
+        tiendaToast('No se pudieron cargar las tallas. Intenta de nuevo.', 'aviso');
+        cerrarQuickAdd();
         console.error(error);
     }
 }

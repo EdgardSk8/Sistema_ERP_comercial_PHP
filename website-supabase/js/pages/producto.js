@@ -112,6 +112,7 @@ let variacionActual = null;
 let tallaActual = null;
 let carrusel = null;
 let promocionProducto = null;
+let promocionesProductos = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -352,47 +353,64 @@ function pintarEquivalencias() {
 /* ── Promoción del producto y aviso de registro ─────────────── */
 async function cargarPromocionProducto() {
     promocionProducto = null;
+    promocionesProductos = [];
 
     if (!producto) return;
 
     try {
         const datos = await window.TiendaAPI.get('/tienda/api/promociones');
-        const promo = (datos?.promociones || []).find(
-            (fila) => String(fila.id_producto) === String(producto.id) && Number(fila.valor_descuento) > 0
-        );
+        const promociones = (datos?.promociones || [])
+            .filter((fila) => Number(fila.valor_descuento) > 0);
 
-        promocionProducto = promo || null;
+        promocionesProductos = promociones;
+        promocionProducto = promociones.find(
+            (fila) => String(fila.id_producto) === String(producto.id)
+        ) || null;
     } catch {
         promocionProducto = null;
+        promocionesProductos = [];
     }
 }
 
-function etiquetaPromocion() {
-    if (!promocionProducto) return '';
+function etiquetaPromocion(promocion = promocionProducto) {
+    if (!promocion) return '';
 
-    const valor = Number(promocionProducto.valor_descuento) || 0;
+    const valor = Number(promocion.valor_descuento) || 0;
 
-    return promocionProducto.tipo_descuento === 'porcentaje'
+    return promocion.tipo_descuento === 'porcentaje'
         ? `${Math.round(valor)}%`
         : moneda(valor);
 }
 
-function precioConPromocion(precioBase) {
-    const base = Number(precioBase) || 0;
-    if (!promocionProducto || base <= 0) return base;
+function textoPromocion(promocion = promocionProducto) {
+    if (!promocion) return '';
 
-    const valor = Number(promocionProducto.valor_descuento) || 0;
+    const valor = Number(promocion.valor_descuento) || 0;
+    if (valor <= 0) return '';
+
+    if (promocion.tipo_descuento === 'porcentaje') return `${Math.round(valor)}% DESCUENTO`;
+    if (promocion.tipo_descuento === 'monto') return `-C$ ${valor.toFixed(2)}`;
+    if (promocion.tipo_descuento === 'precio') return `Ahora C$ ${valor.toFixed(2)}`;
+
+    return '';
+}
+
+function precioConPromocion(precioBase, promocion = promocionProducto) {
+    const base = Number(precioBase) || 0;
+    if (!promocion || base <= 0) return base;
+
+    const valor = Number(promocion.valor_descuento) || 0;
     if (valor <= 0) return base;
 
-    if (promocionProducto.tipo_descuento === 'porcentaje') {
+    if (promocion.tipo_descuento === 'porcentaje') {
         return Math.max(0, Math.round(base * (1 - valor / 100) * 100) / 100);
     }
 
-    if (promocionProducto.tipo_descuento === 'monto') {
+    if (promocion.tipo_descuento === 'monto') {
         return Math.max(0, base - valor);
     }
 
-    if (promocionProducto.tipo_descuento === 'precio') {
+    if (promocion.tipo_descuento === 'precio') {
         return valor;
     }
 
@@ -720,10 +738,14 @@ async function cargarRelacionados() {
                 const tarjeta = {
                     id: item.id,
                     nombre: item.nombre,
+                    categoria: item.categoria,
                     precio: item.precio,
                     color: color.nombre,
                     imagen: color.imagen,
                     calificacion: item.calificacion || { promedio: 0, total: 0 },
+                    promocion: promocionesProductos.find(
+                        (fila) => String(fila.id_producto) === String(item.id)
+                    ) || null,
                 };
 
                 if (item.categoria === producto.categoria) mismaCategoria.push(tarjeta);
@@ -737,16 +759,40 @@ async function cargarRelacionados() {
 
         lista.innerHTML = tarjetas.map(item => {
             const precioBase = Number(item.precio) || 0;
+            const promo = item.promocion;
+            const precioPromo = precioConPromocion(precioBase, promo);
             const descuento = window.descuentoClienteActivo?.(item.categoria);
-            const precioFinal = window.precioConDescuento?.(precioBase, item.categoria) ?? precioBase;
-            const tieneDescuento = Boolean(descuento && precioFinal < precioBase);
+            const precioCuenta = window.precioConDescuento?.(precioBase, item.categoria) ?? precioBase;
+            let precioFinal = precioBase;
+            let etiqueta = '';
+            let tipoDescuento = '';
+            let esBienvenida = false;
+
+            /* La promoción y el descuento de cuenta no se acumulan. */
+            if (precioPromo < precioFinal) {
+                precioFinal = precioPromo;
+                etiqueta = textoPromocion(promo);
+                tipoDescuento = 'promocion';
+            }
+
+            if (descuento && precioCuenta < precioFinal) {
+                precioFinal = precioCuenta;
+                etiqueta = descuento.etiqueta;
+                tipoDescuento = 'cuenta';
+                esBienvenida = Boolean(descuento.primera_compra);
+            }
+
+            const rebajado = precioFinal < precioBase;
+            const sello = tipoDescuento === 'promocion'
+                ? `<span class="badge-promocion">${escapar(etiqueta)}</span>`
+                : (rebajado ? `<span class="badge-descuento">${escapar(etiqueta)} ${esBienvenida ? 'bienvenida' : 'descuento'}</span>` : '');
             const srcset = window.srcsetImagen?.(item.imagen) || '';
 
             return `
                 <li class="splide__slide">
                     <a class="card-compacta" href="/producto?p=${encodeURIComponent(item.id)}&color=${encodeURIComponent(item.color || '')}">
                         <div class="card-compacta__media">
-                            ${tieneDescuento ? `<span class="badge-descuento">${escapar(descuento.etiqueta)} ${descuento.primera_compra ? 'bienvenida' : 'descuento'}</span>` : ''}
+                            ${rebajado ? sello : ''}
                             <img src="${escapar(item.imagen || IMAGEN_FALLBACK)}" alt="${escapar(item.nombre)}" loading="lazy" decoding="async" fetchpriority="low"
                                  ${srcset ? `srcset="${escapar(srcset)}" sizes="(min-width: 992px) 270px, 45vw"` : ''} onerror="this.src='${IMAGEN_FALLBACK}'">
                         </div>
@@ -754,8 +800,8 @@ async function cargarRelacionados() {
                             <span class="card-compacta__nombre">${escapar(item.nombre)}</span>
                             ${ratingRelacionado(item)}
                             <span class="card-compacta__precio">
-                                ${tieneDescuento ? `<span class="precio--antes">${moneda(precioBase)}</span> ` : ''}
-                                <span class="${tieneDescuento ? 'precio--dto' : ''}">${moneda(precioFinal)}</span>
+                                ${rebajado ? `<span class="precio--antes">${moneda(precioBase)}</span> ` : ''}
+                                <span class="${rebajado ? 'precio--dto' : ''}">${moneda(precioFinal)}</span>
                             </span>
                         </div>
                     </a>
