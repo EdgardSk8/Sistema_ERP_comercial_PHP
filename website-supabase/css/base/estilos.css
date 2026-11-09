@@ -159,6 +159,33 @@ button { font-family: inherit; }
 .icono-btn__badge[hidden] { display: none; }
 .nav-escritorio { display: none; }
 
+.nav-movil {
+  border-bottom: 1px solid var(--borde);
+  background: var(--superficie);
+}
+
+.nav-movil__inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-4);
+  min-height: 38px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nav-movil__inner::-webkit-scrollbar { display: none; }
+
+.nav-movil a {
+  color: var(--texto-suave);
+  font-size: .72rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-movil a:hover { color: var(--secundario); }
+
 /* ── 3. Home: buscador, categorías, hero y secciones ─────────── */
 .buscador {
   display: flex;
@@ -3376,6 +3403,7 @@ button { font-family: inherit; }
 @media (min-width: 992px) {
   body { font-size: 16px; padding-bottom: 0; }
   .app-header { height: 72px; }
+  .nav-movil { display: none; }
   .marca { font-size: 1.12rem; letter-spacing: .14em; text-indent: .14em; }
 
   .nav-escritorio {
