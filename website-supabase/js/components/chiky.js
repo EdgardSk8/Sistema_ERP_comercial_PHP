@@ -220,6 +220,8 @@
         if (!caja) return;
 
         ofertaFijada = Boolean(datos);
+        const cerrar = montaje.querySelector('.chiky__cerrar');
+        if (cerrar) cerrar.hidden = Boolean(datos);
 
         if (!datos) {
             caja.hidden = true;
@@ -314,7 +316,10 @@
             guardarTarjeta(true);
         });
 
-        accionesEl.append(principal, omitir);
+        /* Con la oferta del 10% fija, la tarjeta no ofrece «Ahora no». */
+        accionesEl.append(principal);
+        if (!ofertaFijada) accionesEl.append(omitir);
+
         accionesEl.hidden = false;
     }
 
