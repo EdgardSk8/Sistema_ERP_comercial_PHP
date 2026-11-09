@@ -421,9 +421,26 @@ function pintarAvisoDescuento() {
     const caja = $('productoAvisoDescuento');
     if (!caja) return;
 
-    if (window.clienteTienda) {
+    const cliente = window.clienteTienda;
+    const descuento = cliente?.descuento || null;
+    const usado = Boolean(cliente?.descuento_primera_compra_usado);
+
+    if (cliente && (descuento || usado)) {
         caja.hidden = true;
         caja.innerHTML = '';
+        return;
+    }
+
+    caja.hidden = false;
+
+    if (cliente) {
+        caja.innerHTML = `
+            <i class="bi bi-percent" aria-hidden="true"></i>
+            <p>Activa tu 10% de bienvenida en zapatos para tu primera compra.</p>
+            <a class="producto__aviso-dto-link" href="${escapar(`${urlTienda('perfil')}#descuentos`)}">
+                Completar y activar
+            </a>
+        `;
         return;
     }
 
@@ -431,7 +448,6 @@ function pintarAvisoDescuento() {
         ? `Regístrate para aplicar el descuento de ${etiquetaPromocion()} en este producto.`
         : 'Regístrate y obtén 10% de descuento en tu primera compra.';
 
-    caja.hidden = false;
     caja.innerHTML = `
         <i class="bi bi-percent" aria-hidden="true"></i>
         <p>${escapar(mensaje)}</p>

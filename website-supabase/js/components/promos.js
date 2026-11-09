@@ -86,8 +86,44 @@
     */
     function aplicarSesion(cliente) {
         const aviso = document.getElementById('promosAviso');
+        if (!aviso) return;
 
-        if (aviso) aviso.hidden = Boolean(cliente);
+        const descuento = cliente?.descuento || null;
+        const usado = Boolean(cliente?.descuento_primera_compra_usado);
+
+        /* Sin sesión: invita a registrarse. Con sesión y sin descuento:
+           invita a activarlo. Si ya lo tiene o ya lo usó, no molesta. */
+        if (cliente && (descuento || usado)) {
+            aviso.hidden = true;
+            return;
+        }
+
+        aviso.hidden = false;
+
+        const etiqueta = aviso.querySelector('.promos-aviso__etiqueta');
+        const titulo = aviso.querySelector('.promos-aviso__titulo');
+        const detalle = aviso.querySelector('.promos-aviso__detalle');
+        const boton = aviso.querySelector('.promos-aviso__btn');
+
+        if (!cliente) {
+            if (etiqueta) etiqueta.textContent = 'Solo por registrarte';
+            if (titulo) titulo.textContent = 'Regístrate y obtén 10% de descuento';
+            if (detalle) detalle.textContent = 'Tu descuento de bienvenida se aplica en tu primera compra de zapatos.';
+            if (boton) {
+                boton.href = window.urlTienda ? window.urlTienda('login') : '/login';
+                boton.innerHTML = 'Crear mi cuenta <i class="bi bi-arrow-right" aria-hidden="true"></i>';
+            }
+            return;
+        }
+
+        if (etiqueta) etiqueta.textContent = 'Tu beneficio';
+        if (titulo) titulo.textContent = 'Activa tu 10% de bienvenida';
+        if (detalle) detalle.textContent = 'Completa los datos de tu perfil y aplícalo en tu primera compra de zapatos.';
+        if (boton) {
+            const destino = window.urlTienda ? window.urlTienda('perfil') : '/perfil';
+            boton.href = `${destino}#descuentos`;
+            boton.innerHTML = 'Activar mi 10% <i class="bi bi-arrow-right" aria-hidden="true"></i>';
+        }
     }
 
     function montarAvisoRegistro() {
@@ -121,11 +157,29 @@
 
     montarAvisoRegistro();
 
-    if (window.sesionTiendaPromise) {
-        window.sesionTiendaPromise
-            .then((datos) => aplicarSesion(datos?.cliente))
-            .catch(() => aplicarSesion(null));
-    }
+    /* En la portada Supabase se carga bajo demanda. Si hay una sesión
+       guardada, la resolvemos para no mostrar la invitación de registro a
+       alguien que ya tiene cuenta. */
+    const sesionParaAviso = (() => {
+        if (window.sesionTiendaPromise) return window.sesionTiendaPromise;
+
+        try {
+            const hayToken = Object.keys(localStorage)
+                .some((clave) => /^sb-.*-auth-token$/.test(clave));
+
+            if (hayToken && typeof window.cargarSupabase === 'function') {
+                return window.cargarSupabase();
+            }
+        } catch {
+            /* sin almacenamiento: se comporta como visitante */
+        }
+
+        return Promise.resolve(null);
+    })();
+
+    sesionParaAviso
+        .then((datos) => aplicarSesion(datos?.cliente))
+        .catch(() => aplicarSesion(null));
 
     document.addEventListener('tienda:sesion', (evento) => aplicarSesion(evento.detail?.cliente));
 
