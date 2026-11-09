@@ -46,6 +46,7 @@ use App\Http\Controllers\TallaController;
 use App\Http\Controllers\TipoGastoController;
 use App\Http\Controllers\TiposMedidasController;
 use App\Http\Controllers\TipoTallaController;
+use App\Http\Controllers\TrabajadorController;
 use App\Http\Controllers\TransferenciaCajaCuentaController;
 use App\Http\Controllers\UbicacionController;
 use App\Http\Controllers\UsuarioController;
@@ -351,6 +352,14 @@ Route::get('/pedidos-web/mostrar', [PedidoWebController::class, 'Mostrar'])->mid
 Route::get('/pedidos-web/{id}/detalle', [PedidoWebController::class, 'Detalle'])->middleware('permiso:mostrar_pedidos_web');
 Route::post('/pedidos-web/{id}/estado', [PedidoWebController::class, 'CambiarEstado'])->middleware('permiso:actualizar_pedidos_web');
 Route::view('/pedidos-web', 'pedidosweb.PedidosWeb')->middleware('permiso:vista_pedidos_web')->name('pedidos-web');
+
+/*  ╔═════════════ TRABAJADORES / REPARTIDORES ═════════════════╗
+    ╚════════════════════════════════════════════════════════════╝ */
+
+Route::get('/trabajadores/mostrar', [TrabajadorController::class, 'Mostrar'])->middleware('permiso:mostrar_trabajadores');
+Route::put('/trabajadores/{id}', [TrabajadorController::class, 'Actualizar'])->middleware('permiso:actualizar_trabajadores');
+Route::delete('/trabajadores/{id}', [TrabajadorController::class, 'Eliminar'])->middleware('permiso:eliminar_trabajadores');
+Route::view('/trabajadores', 'trabajadores.Trabajadores')->middleware('permiso:vista_trabajadores')->name('trabajadores');
 
 /*  ╔═════════════ CUPONES Y DESCUENTOS ═════════════════╗
     ╚════════════════════════════════════════════════════╝ */

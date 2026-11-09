@@ -160,6 +160,7 @@ const modulos = [
     ['#tablaUbicaciones', () => import('./MostrarUbicaciones')],
     ['#tablaCuentasPorCobrar', () => import('./CuentasPorCobrar')],
     ['#tablaPedidosWeb', () => import('./MostrarPedidosWeb')],
+    ['#tablaTrabajadores', () => import('./MostrarTrabajadores')],
     ['#tablaCupones', () => import('./MostrarCuponesDescuentos')],
     ['#manualNav', () => import('./Manual')]
 

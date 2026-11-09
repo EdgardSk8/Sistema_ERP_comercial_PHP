@@ -215,7 +215,9 @@ export default function initPedidosWeb() {
             fila.innerHTML = `
                 <td class="pedidos-numero">${escapar(pedido.numero_pedido || `VTA-${pedido.id_pedido}`)}</td>
                 <td class="pedidos-fecha">${escapar(window.FechaSimple(pedido.fecha_pedido))}</td>
-                <td class="pedidos-cliente">${escapar(pedido.nombre_cliente)}</td>
+                <td class="pedidos-cliente">${escapar(pedido.nombre_cliente)}${pedido.repartidor
+                    ? `<small class="d-block text-muted"><i class="ph ph-motorcycle" aria-hidden="true"></i> ${escapar(pedido.repartidor)}</small>`
+                    : ''}</td>
                 <td class="pedidos-items" title="${escapar(resumenItems)}"><span class="pedidos-items-texto">${escapar(resumenItems)}</span></td>
                 <td class="fw-semibold">${moneda(pedido.total_pedido)}</td>
                 <td>${badgePedido(pedido.estado_pedido)}</td>
@@ -503,6 +505,13 @@ export default function initPedidosWeb() {
                 document.getElementById('telefonoDetallePedidoWeb').textContent = pedido.telefono_contacto || pedido.telefono_cliente || '—';
                 document.getElementById('metodoDetallePedidoWeb').textContent = METODOS_PAGO[pedido.metodo_pago_web] || pedido.metodo_pago_web || '—';
                 document.getElementById('tipoEntregaDetallePedidoWeb').textContent = textoEntregaPedido(pedido);
+                document.getElementById('repartidorDetallePedidoWeb').textContent = pedido.repartidor
+                    ? [pedido.repartidor, [pedido.vehiculo_marca, pedido.vehiculo_modelo, pedido.vehiculo_placa]
+                        .filter(Boolean)
+                        .join(' · ')]
+                        .filter(Boolean)
+                        .join(' — ')
+                    : 'Sin asignar';
                 document.getElementById('subtotalDetallePedidoWeb').textContent = moneda(pedido.subtotal_pedido);
                 document.getElementById('descuentoDetallePedidoWeb').textContent = moneda(pedido.descuento_pedido);
                 document.getElementById('envioDetallePedidoWeb').textContent = moneda(pedido.costo_envio_pedido);

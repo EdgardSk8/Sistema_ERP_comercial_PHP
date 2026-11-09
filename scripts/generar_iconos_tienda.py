@@ -48,7 +48,7 @@ def iconos_usados() -> set[str]:
     patron = re.compile(r"\bbi-[a-z0-9-]+")
     usados: set[str] = set()
 
-    for ruta in [*TIENDA.glob("*.html"), *TIENDA.glob("js/*.js")]:
+    for ruta in [*TIENDA.glob("*.html"), *TIENDA.rglob("*.js")]:
         usados.update(patron.findall(ruta.read_text(encoding="utf-8", errors="ignore")))
 
     return usados

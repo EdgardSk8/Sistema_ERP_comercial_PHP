@@ -907,6 +907,13 @@ const PASOS_SECCION = {
             mensaje: 'Aquí puedes cerrar la sesión en este dispositivo cuando termines.',
         },
     ],
+    trabajo: () => [
+        {
+            elemento: consultar('#accesoTrabajador'),
+            titulo: 'Tu solicitud',
+            mensaje: 'Aquí envías tu solicitud para formar parte del equipo y consultas su estado.',
+        },
+    ],
 };
 
 /* Orden del recorrido y de qué trata cada sección. */
@@ -918,7 +925,8 @@ const SECCIONES_PERFIL = [
     ['pedidos', 'Mis pedidos', 'En esta sección ves cómo va cada pedido: si ya lo aceptamos, si está en camino o si se canceló.'],
     ['historial', 'Historial de compras', 'En esta sección queda todo lo que ya compraste, con el detalle y el total, por si necesitas revisarlo.'],
     ['descuentos', 'Descuentos y cupones', 'En esta sección encuentras tu descuento de bienvenida, tus cupones y lo que llevas para el cupón de fidelidad.'],
-    ['configuracion', 'Configuración', 'En esta sección cambias tu contraseña y revisas las opciones de tu cuenta.'],
+    ['configuracion', 'Contraseñas', 'En esta sección cambias tu contraseña y cierras la sesión de tu cuenta.'],
+    ['trabajo', 'Trabaja con nosotros', 'En esta sección puedes enviar tu solicitud para formar parte de nuestro equipo y consultar su estado.'],
 ];
 
 /* Pasos de una sección: primero de qué trata, luego sus bloques. */
@@ -1431,20 +1439,14 @@ function campoVisible(campo) {
     return campo._flatpickr?.altInput || campo;
 }
 
-/* Área libre de la pantalla: debajo del header y de la tarjeta si flota. */
+/* Área libre de la pantalla: debajo del header fijo. */
 function zonaLibre() {
     const header = 60;
-    const tarjeta = document.querySelector('.chiky-montaje .chiky');
-    const flotante = tarjeta
-        && !tarjeta.hidden
-        && !tarjeta.classList.contains('chiky--guardada')
-        && getComputedStyle(tarjeta).position === 'fixed';
-    const barra = flotante ? tarjeta.getBoundingClientRect().bottom : 0;
 
-    return { arriba: Math.max(header, barra) + 16, abajo: window.innerHeight - 16 };
+    return { arriba: header + 16, abajo: window.innerHeight - 16 };
 }
 
-/* Coloca el elemento centrado en la zona libre, sin tapar la barra flotante. */
+/* Coloca el elemento centrado en la zona libre, sin taparlo con el header. */
 function llevarAlPaso(elemento) {
     if (!elemento) return;
 
@@ -1464,7 +1466,11 @@ function alinearArriba(elemento) {
     const cabecera = elemento.querySelector('.perfil-seccion__cabecera');
     const cuerpo = elemento.querySelector('.perfil-seccion__cuerpo');
 
-    if (!cabecera || !cuerpo) {
+    /* La última sección se alinea por su borde superior: su contenido crece
+       después de cargar y, si se centra, el menú lateral no la marca. */
+    const ultima = elemento.parentElement?.lastElementChild === elemento;
+
+    if (ultima || !cabecera || !cuerpo) {
         const destino = window.scrollY + elemento.getBoundingClientRect().top - arriba;
         window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
         return;
@@ -2694,6 +2700,43 @@ function pedidoHTML(pedido) {
            </div>`
         : '';
 
+    const repartidor = (!estaCancelado && pedido.trabajador)
+        ? (() => {
+            const datos = pedido.trabajador;
+            const nombre = datos.nombre || 'Repartidor';
+            const vehiculo = [datos.vehiculo_marca, datos.vehiculo_modelo, datos.vehiculo_placa]
+                .filter(Boolean)
+                .join(' · ');
+            const color = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(datos.color_usuario || ''))
+                ? datos.color_usuario
+                : '#22c55e';
+            const telefono = String(datos.telefono || '').replace(/\D/g, '');
+            const whatsapp = telefono ? (telefono.length === 8 ? `505${telefono}` : telefono) : '';
+            const foto = String(datos.foto || '');
+            const fotoValida = /^https?:\/\//i.test(foto) || (foto.startsWith('/') && !foto.startsWith('//'));
+
+            return `<div class="perfil-pedido__repartidor" style="--color-repartidor:${escapar(color)}">
+                <span class="perfil-pedido__repartidor-avatar">
+                    ${fotoValida
+                        ? `<img src="${escapar(foto)}" alt="${escapar(nombre)}" loading="lazy" onerror="this.remove()">`
+                        : '<i class="bi bi-person" aria-hidden="true"></i>'}
+                </span>
+                <div class="perfil-pedido__repartidor-datos">
+                    <span>Tu repartidor</span>
+                    <strong>${escapar(nombre)}</strong>
+                    <small>${escapar(vehiculo || 'Vehículo por confirmar')}${datos.vehiculo_color ? ` · ${escapar(datos.vehiculo_color)}` : ''}</small>
+                </div>
+                <span class="perfil-pedido__repartidor-color" title="Color de identificación"></span>
+                ${whatsapp
+                    ? `<a class="perfil-pedido__repartidor-wa" target="_blank" rel="noopener noreferrer"
+                          href="https://wa.me/${escapar(whatsapp)}" aria-label="Escribir al repartidor">
+                          <i class="bi bi-whatsapp"></i>
+                       </a>`
+                    : ''}
+            </div>`;
+        })()
+        : '';
+
     const motivo = (estaCancelado && pedido.nota_negocio)
         ? `<p class="perfil-pedido__motivo">Motivo de cancelación de pedido: <strong>${escapar(pedido.nota_negocio)}</strong></p>`
         : '';
@@ -2729,6 +2772,7 @@ function pedidoHTML(pedido) {
             </header>
 
             ${exito}
+            ${repartidor}
             ${pasosPedidoHTML(pedido)}
             <ul class="perfil-compra__items">${articulos}</ul>
             ${motivo}

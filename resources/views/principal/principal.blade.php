@@ -100,6 +100,15 @@
                 </a>
             @endif
 
+            @if(in_array('vista_trabajadores', session('permisos', [])))
+                <a href="{{ route('trabajadores') }}"
+                class="sidebar-link"
+                data-turbo-frame="contenido-dinamico">
+                    <i class="ph ph-motorcycle text-success"></i>
+                    Trabajadores
+                </a>
+            @endif
+
             @if(in_array('vista_cupones_descuentos', session('permisos', [])))
                 <a href="{{ route('cupones-descuentos') }}"
                 class="sidebar-link"

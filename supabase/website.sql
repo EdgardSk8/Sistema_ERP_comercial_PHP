@@ -277,6 +277,29 @@ colores as (
                    join public.tallas t on t.id_talla = vt.id_talla
                    where vt.id_variacion = v.id_variacion
                      and vt.stock > 0
+               ), '[]'::jsonb),
+               /* Tallas con su escala (tipo) para agrupar el filtro del catálogo. */
+               'tallas_info', coalesce((
+                   select jsonb_agg(jsonb_build_object(
+                              'id', x.id,
+                              'nombre', x.nombre,
+                              'tipo', x.tipo,
+                              'tipo_id', x.tipo_id,
+                              'orden', x.orden
+                          ) order by x.tipo_id, x.orden nulls last, x.nombre)
+                   from (
+                       select distinct
+                              coalesce(t.id_talla::text, 'unica') as id,
+                              coalesce(t.talla, 'Única') as nombre,
+                              coalesce(tt.nombre_tipo_talla, 'Sin talla') as tipo,
+                              coalesce(tt.id_tipo_talla, 0) as tipo_id,
+                              t.orden_talla as orden
+                       from public.variacion_tallas vt
+                       left join public.tallas t on t.id_talla = vt.id_talla
+                       left join public.tipos_talla tt on tt.id_tipo_talla = t.id_tipo_talla
+                       where vt.id_variacion = v.id_variacion
+                         and vt.stock > 0
+                   ) x
                ), '[]'::jsonb)
            ) as color_json,
            v.id_variacion,

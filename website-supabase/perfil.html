@@ -26,13 +26,13 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
   <link href="/tienda/recursos/css/base/bootstrap-utilidades.css?v=20261110a" rel="stylesheet">
-  <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
+  <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261111d">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261107r">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261114d">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261111b">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261114b">
 </head>
 <body>
 
@@ -69,6 +69,7 @@
             <ul class="perfil__lista">
               <li><a class="perfil__item" href="/tienda/login"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</a></li>
               <li><a class="perfil__item" href="/tienda/login?vista=registro"><i class="bi bi-person-plus"></i> Crear cuenta</a></li>
+              <li><a class="perfil__item" href="/tienda/trabaja-con-nosotros"><i class="bi bi-truck"></i> Trabaja con nosotros</a></li>
             </ul>
           </div>
         </details>
@@ -95,9 +96,11 @@
               <li><a class="perfil__item" href="/tienda/perfil#favoritos"><i class="bi bi-heart"></i> Favoritos</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#deseos"><i class="bi bi-star"></i> Lista de Deseos</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#pedidos"><i class="bi bi-bag"></i> Mis pedidos</a></li>
+              <li><a class="perfil__item" href="/tienda/trabaja-con-nosotros"><i class="bi bi-truck"></i> Trabaja con nosotros</a></li>
+              <li id="menuModoTrabajador" hidden><a class="perfil__item" href="/tienda/trabajador"><i class="bi bi-truck"></i> Modo trabajador</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#historial"><i class="bi bi-receipt"></i> Historial de compras</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#descuentos"><i class="bi bi-ticket-perforated"></i> Descuentos y cupones</a></li>
-              <li><a class="perfil__item" href="/tienda/perfil#configuracion"><i class="bi bi-gear"></i> Configuración</a></li>
+              <li><a class="perfil__item" href="/tienda/perfil#configuracion"><i class="bi bi-key"></i> Contraseñas</a></li>
             </ul>
 
             <a class="perfil__item perfil__item--salir" href="#">
@@ -149,7 +152,10 @@
           <i class="bi bi-ticket-perforated"></i> Descuentos y cupones
         </a>
         <a class="perfil-nav__item" href="#configuracion" data-seccion="configuracion">
-          <i class="bi bi-gear"></i> Configuración
+          <i class="bi bi-key"></i> Contraseñas
+        </a>
+        <a class="perfil-nav__item" href="#trabajo" data-seccion="trabajo">
+          <i class="bi bi-truck"></i> Trabaja con nosotros
         </a>
       </nav>
 
@@ -179,7 +185,8 @@
               <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:pedidos">Pedidos</button>
               <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:historial">Historial</button>
               <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:descuentos">Descuentos</button>
-              <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:configuracion">Ajustes</button>
+              <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:configuracion">Contraseñas</button>
+              <button type="button" class="perfil-ayuda__atajo" data-ayuda="seccion:trabajo">Trabajo</button>
             </div>
           </div>
         </div>
@@ -644,18 +651,18 @@
         </div>
       </section>
 
-      <!-- Sección: Configuración -->
+      <!-- Sección: Contraseñas -->
       <section class="perfil-seccion" id="configuracion">
         <header class="perfil-seccion__cabecera">
           <span class="perfil-seccion__etiqueta">Mi cuenta</span>
-          <h2 class="perfil-seccion__titulo">Configuración</h2>
-          <p class="perfil-seccion__texto">Preferencias de la cuenta y seguridad.</p>
+          <h2 class="perfil-seccion__titulo">Contraseñas</h2>
+          <p class="perfil-seccion__texto">Cambia tu contraseña y revisa la seguridad de tu cuenta.</p>
         </header>
 
         <div class="perfil-seccion__cuerpo">
           <div id="configuracionInvitado" class="perfil-vacio">
-            <i class="bi bi-gear"></i>
-            <p>Inicia sesión para configurar tu cuenta.</p>
+            <i class="bi bi-key"></i>
+            <p>Inicia sesión para gestionar tu contraseña.</p>
           </div>
 
           <div id="configuracionContenido" hidden>              <div class="alert alert-warning py-2 px-3 small mb-3" id="avisoPassword" hidden>
@@ -715,19 +722,58 @@
         </div>
       </section>
 
+      <!-- Sección: Trabaja con nosotros -->
+      <section class="perfil-seccion" id="trabajo">
+        <header class="perfil-seccion__cabecera">
+          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
+          <h2 class="perfil-seccion__titulo">Trabaja con nosotros</h2>
+          <p class="perfil-seccion__texto">Forma parte de nuestro equipo y recibe pedidos con tu propio vehículo.</p>
+        </header>
+
+        <div class="perfil-seccion__cuerpo">
+          <div class="perfil-entra" id="trabajoContenido">
+            <div class="perfil-card perfil-trabajador" id="accesoTrabajador">
+              <div class="perfil-trabajador__hero">
+                <span class="perfil-trabajador__icono" aria-hidden="true">
+                  <i class="bi bi-truck"></i>
+                </span>
+                <div>
+                  <span class="perfil-seccion__etiqueta">Únete al equipo</span>
+                  <h3 class="perfil-card__titulo">¿Te gustaría trabajar con nosotros?</h3>
+                  <p class="perfil-card__texto">
+                    Forma parte de nuestro equipo, elige tus horarios y trabaja con tu propio vehículo.
+                    Consulta tu solicitud o entra a tu panel de trabajo.
+                  </p>
+                  <ul class="perfil-trabajador__beneficios">
+                    <li><i class="bi bi-clock" aria-hidden="true"></i> Horarios flexibles</li>
+                    <li><i class="bi bi-truck" aria-hidden="true"></i> Tu propio vehículo</li>
+                    <li><i class="bi bi-wallet2" aria-hidden="true"></i> Ingresos por pedido</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="perfil-trabajador__estado" id="accesoTrabajadorContenido">
+                <p class="perfil-vacio"><i class="bi bi-hourglass-split"></i> Cargando tu cuenta de trabajo...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   </main>
 
   <script src="/tienda/recursos/js/core/carrito-store.js?v=20261109d" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261107c" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261111b" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261113a" defer></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js" defer></script>
   <script src="/tienda/recursos/js/core/cedula-nicaragua.js" defer></script>
   <script src="/tienda/recursos/js/components/chiky.js?v=20261111d" defer></script>
-  <script src="/tienda/recursos/js/pages/perfil.js?v=20261111f" defer></script>
+  <script src="/tienda/recursos/js/pages/perfil.js?v=20261114g" defer></script>
+  <script src="/tienda/recursos/js/pages/perfil-trabajador-acceso.js?v=20261114c" defer></script>
 </body>
 </html>

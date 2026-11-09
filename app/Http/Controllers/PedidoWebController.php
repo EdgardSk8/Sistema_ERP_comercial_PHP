@@ -72,6 +72,7 @@ class PedidoWebController extends Controller
 
         $consulta = DB::table('pedidos_web as p')
             ->join('clientes as c', 'c.id_cliente', '=', 'p.id_cliente')
+            ->leftJoin('trabajadores as t', 't.id_trabajador', '=', 'p.id_trabajador')
             ->select([
                 'p.id_pedido',
                 'p.numero_pedido',
@@ -94,6 +95,7 @@ class PedidoWebController extends Controller
                 'c.nombre_cliente',
                 'c.correo_cliente',
                 'c.telefono_cliente',
+                't.nombre_trabajador as repartidor',
             ])
             ->orderByDesc('p.fecha_pedido');
 
@@ -113,6 +115,7 @@ class PedidoWebController extends Controller
                 Busqueda::aplicarLike($query, 'c.nombre_cliente', $buscar, 'or');
                 Busqueda::aplicarLike($query, 'c.correo_cliente', $buscar, 'or');
                 Busqueda::aplicarLike($query, 'p.nombre_recibe', $buscar, 'or');
+                Busqueda::aplicarLike($query, 't.nombre_trabajador', $buscar, 'or');
             });
         }
 
@@ -160,8 +163,19 @@ class PedidoWebController extends Controller
     {
         $pedido = DB::table('pedidos_web as p')
             ->join('clientes as c', 'c.id_cliente', '=', 'p.id_cliente')
+            ->leftJoin('trabajadores as t', 't.id_trabajador', '=', 'p.id_trabajador')
             ->where('p.id_pedido', $id)
-            ->select('p.*', 'c.nombre_cliente', 'c.correo_cliente', 'c.telefono_cliente')
+            ->select(
+                'p.*',
+                'c.nombre_cliente',
+                'c.correo_cliente',
+                'c.telefono_cliente',
+                't.nombre_trabajador as repartidor',
+                't.telefono_trabajador as repartidor_telefono',
+                't.vehiculo_marca',
+                't.vehiculo_modelo',
+                't.vehiculo_placa'
+            )
             ->first();
 
         if (! $pedido) {

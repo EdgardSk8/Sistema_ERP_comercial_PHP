@@ -18,6 +18,7 @@ No depende del backend Laravel.
 
 - SQL ejecutado: `supabase/website.sql` (columna `auth_id`, trigger, RLS y funciones `web_productos`, `web_producto`, `web_favoritos`, `web_historial`).
 - Pedidos web: después de `php artisan migrate`, ejecutar `supabase/pedidos-web.sql` (tablas de pedidos, estados, RLS y RPC `web_crear_pedido`, `web_pedidos`, `web_pedido`, `web_cancelar_pedido`).
+- Trabajadores/repartidores: después de `php artisan migrate` y de `supabase/pedidos-web.sql`, ejecutar `supabase/trabajadores.sql` (tabla `trabajadores`, rol `clientes.rol_cliente`, RLS, RPC de solicitud/disponibilidad, asignación de repartidor a `pedidos_web`, RPC `web_trabajador_pedidos`, `web_trabajador_aceptar_pedido`, `web_trabajador_estado_pedido` y bucket público `trabajadores` para las fotos). La solicitud de reparto vive en `/tienda/trabaja-con-nosotros` y el panel del repartidor en `/tienda/trabajador`.
 - Imágenes copiadas desde `public/imagenes` a `imagenes/`.
 
 ## 2. Probar en local

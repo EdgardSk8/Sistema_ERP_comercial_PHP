@@ -1350,6 +1350,116 @@
         return data || { success: true };
     }
 
+    /* ── Trabajadores / repartidores ─────────────────────────── */
+
+    async function miTrabajadorApi() {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_mi_trabajador');
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo cargar tu solicitud.'), 400);
+
+        return { success: true, trabajador: data || null };
+    }
+
+    async function solicitarTrabajadorApi(cuerpo) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_solicitar_trabajador', { p_datos: cuerpo || {} });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo enviar tu solicitud.'), 422);
+
+        return {
+            success: true,
+            trabajador: data,
+            mensaje: data?.estado_trabajador === 'aprobado'
+                ? 'Datos actualizados.'
+                : 'Solicitud enviada. La tienda la revisará y te avisará.',
+        };
+    }
+
+    async function disponibilidadTrabajadorApi(cuerpo) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_actualizar_disponibilidad', {
+            p_disponible: Boolean(cuerpo?.disponible),
+        });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo actualizar tu disponibilidad.'), 400);
+
+        return { success: true, trabajador: data };
+    }
+
+    async function pedidosTrabajadorApi() {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_trabajador_pedidos');
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudieron cargar los pedidos.'), 400);
+
+        return {
+            success: true,
+            disponible: Boolean(data?.disponible),
+            disponibles: data?.disponibles || [],
+            asignados: data?.asignados || [],
+        };
+    }
+
+    async function aceptarPedidoTrabajadorApi(id) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_trabajador_aceptar_pedido', { p_id: Number(id) });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo aceptar el pedido.'), 400);
+
+        return data || { success: true };
+    }
+
+    async function estadoPedidoTrabajadorApi(id, cuerpo) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_trabajador_estado_pedido', {
+            p_id: Number(id),
+            p_estado: cuerpo?.estado || '',
+        });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo actualizar el pedido.'), 400);
+
+        return data || { success: true };
+    }
+
+    /* Sube una foto al bucket público "trabajadores" y devuelve su URL. */
+    async function subirFotoTrabajadorApi(cuerpo) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const archivo = cuerpo?.archivo;
+        const tipo = String(cuerpo?.tipo || 'foto').replace(/[^a-z0-9_-]/gi, '') || 'foto';
+
+        if (!(archivo instanceof Blob)) throw errorApi('Selecciona una imagen.', 422);
+        if (!String(archivo.type || '').startsWith('image/')) {
+            throw errorApi('El archivo debe ser una imagen.', 422);
+        }
+        if (archivo.size > 5 * 1024 * 1024) {
+            throw errorApi('La imagen no puede superar 5 MB.', 422);
+        }
+
+        const extension = (String(archivo.name || '').split('.').pop() || 'jpg')
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '') || 'jpg';
+        const ruta = `${usuarioActual.id}/trabajador-${tipo}-${Date.now()}.${extension}`;
+
+        const { error } = await supabase.storage.from('trabajadores').upload(ruta, archivo, {
+            contentType: archivo.type || 'image/jpeg',
+            upsert: true,
+        });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo subir la imagen.'), 400);
+
+        const { data } = supabase.storage.from('trabajadores').getPublicUrl(ruta);
+
+        return { success: true, url: data?.publicUrl || '' };
+    }
+
     /* Cupones del cliente (un uso por cupón). */
     async function cuponesApi() {
         if (!clienteActual) return { success: true, cupones: [] };
@@ -1678,6 +1788,16 @@
 
             'POST /tienda/api/pedidos': () => crearPedidoApi(cuerpo),
 
+            'GET /tienda/api/trabajador': () => miTrabajadorApi(),
+
+            'POST /tienda/api/trabajador/solicitud': () => solicitarTrabajadorApi(cuerpo),
+
+            'PUT /tienda/api/trabajador/disponibilidad': () => disponibilidadTrabajadorApi(cuerpo),
+
+            'GET /tienda/api/trabajador/pedidos': () => pedidosTrabajadorApi(),
+
+            'POST /tienda/api/trabajador/foto': () => subirFotoTrabajadorApi(cuerpo),
+
             'GET /tienda/api/deseos': () => deseosListaApi(),
 
             'GET /tienda/api/deseos/opciones': () => deseosOpcionesApi(),
@@ -1729,6 +1849,18 @@
 
         if (pedidoCancelar && metodo === 'POST') {
             return cancelarPedidoApi(Number(pedidoCancelar[1]));
+        }
+
+        const pedidoTrabajadorAceptar = url.match(/^\/tienda\/api\/trabajador\/pedidos\/(\d+)\/aceptar$/);
+
+        if (pedidoTrabajadorAceptar && metodo === 'POST') {
+            return aceptarPedidoTrabajadorApi(Number(pedidoTrabajadorAceptar[1]));
+        }
+
+        const pedidoTrabajadorEstado = url.match(/^\/tienda\/api\/trabajador\/pedidos\/(\d+)\/estado$/);
+
+        if (pedidoTrabajadorEstado && metodo === 'PUT') {
+            return estadoPedidoTrabajadorApi(Number(pedidoTrabajadorEstado[1]), cuerpo);
         }
 
         const deseoEliminar = url.match(/^\/tienda\/api\/deseos\/(\d+)$/);

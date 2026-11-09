@@ -160,7 +160,7 @@ class WebsiteController extends Controller
             'impuesto',
             'variaciones' => fn ($query) => $query->where('estado_variacion', 1),
             'variaciones.imagenes',
-            'variaciones.tallas.talla',
+            'variaciones.tallas.talla.tipoTalla',
         ])->where('estado_producto', 1);
     }
 
@@ -171,17 +171,36 @@ class WebsiteController extends Controller
         $variaciones = $producto->variaciones;
 
         $colores = $variaciones
-            ->map(fn ($variacion) => [
-                'nombre' => $variacion->color ?: 'Único',
-                'imagen' => $this->urlVariacionImagen($variacion->imagenes->first()->imagen ?? null)
-                    ?: $this->urlImagenProducto($producto),
-                'stock' => (int) $variacion->tallas->sum('stock'),
-                'tallas' => $variacion->tallas
-                    ->filter(fn ($variacionTalla) => (int) $variacionTalla->stock > 0)
-                    ->map(fn ($variacionTalla) => $variacionTalla->talla->talla ?? 'Única')
-                    ->unique()
-                    ->values(),
-            ])
+            ->map(function ($variacion) use ($producto) {
+                $tallasDisponibles = $variacion->tallas
+                    ->filter(fn ($variacionTalla) => (int) $variacionTalla->stock > 0);
+
+                return [
+                    'nombre' => $variacion->color ?: 'Único',
+                    'imagen' => $this->urlVariacionImagen($variacion->imagenes->first()->imagen ?? null)
+                        ?: $this->urlImagenProducto($producto),
+                    'stock' => (int) $variacion->tallas->sum('stock'),
+                    'tallas' => $tallasDisponibles
+                        ->map(fn ($variacionTalla) => $variacionTalla->talla?->talla ?? 'Única')
+                        ->unique()
+                        ->values(),
+                    /* Tallas con su escala para agrupar el filtro del catálogo. */
+                    'tallas_info' => $tallasDisponibles
+                        ->map(function ($variacionTalla) {
+                            $talla = $variacionTalla->talla;
+
+                            return [
+                                'id' => $talla?->id_talla !== null ? (string) $talla->id_talla : 'unica',
+                                'nombre' => $talla?->talla ?? 'Única',
+                                'tipo' => $talla?->tipoTalla?->nombre_tipo_talla ?? 'Sin talla',
+                                'tipo_id' => (int) ($talla?->id_tipo_talla ?? 0),
+                                'orden' => $talla?->orden_talla !== null ? (int) $talla->orden_talla : null,
+                            ];
+                        })
+                        ->unique('id')
+                        ->values(),
+                ];
+            })
             ->unique('nombre')
             ->values();
 

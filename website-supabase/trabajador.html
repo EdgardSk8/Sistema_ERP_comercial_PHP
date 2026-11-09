@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es" class="tema-navidad trabajador-html">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5EEDE">
+  <meta name="color-scheme" content="light">
+  <link rel="preload" href="/tienda/recursos/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" type="image/png" sizes="32x32" href="/tienda/recursos/img/favicon-navidad.png?v=20261030h">
+  <link rel="apple-touch-icon" sizes="180x180" href="/tienda/recursos/img/apple-touch-navidad.png?v=20261030h">
+  <title>Panel de trabajo · Tellez Nic Store</title>
+  <meta name="description" content="Panel de trabajo: acepta pedidos, revisa los datos de entrega y marca tus pedidos en camino.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://tellezstorenic.pages.dev/trabajador">
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
+  <link href="/tienda/recursos/css/base/bootstrap-utilidades.css?v=20261110a" rel="stylesheet">
+  <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a" rel="stylesheet">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/trabajador.css?v=20261113g">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261114b">
+</head>
+<body class="trabajador-body">
+
+  <header class="app-header">
+    <div class="contenedor">
+      <a class="icono-btn" href="/tienda/perfil#trabajo" aria-label="Volver a mi cuenta">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+
+      <a class="marca" href="/tienda">
+        <img class="marca__logo" src="/tienda/recursos/img/logonavidad-mini.png?v=20261102d" alt="">
+        Tellez Nic Store
+      </a>
+
+      <div class="header-acciones">
+        <a class="trabajador-modo-cliente" href="/tienda/perfil" aria-label="Cambiar a modo cliente">
+          <i class="bi bi-person" aria-hidden="true"></i>
+          <span>Modo cliente</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="trabajador-main contenedor">
+    <section class="trabajador-cargando" id="trabajadorCargando" aria-live="polite">
+      <span class="trabajador-spinner" aria-hidden="true"></span>
+      <p>Cargando tu panel de trabajo…</p>
+    </section>
+
+    <section class="trabajador-bloqueo" id="trabajadorBloqueo" hidden>
+      <span class="trabajador-bloqueo__icono" aria-hidden="true">
+        <i class="bi bi-shield-lock"></i>
+      </span>
+      <h1 id="trabajadorBloqueoTitulo">Modo trabajador</h1>
+      <p id="trabajadorBloqueoTexto"></p>
+      <a class="trabajador-boton" id="trabajadorBloqueoEnlace" href="/tienda/perfil#trabajo">
+        Ir a configuración
+      </a>
+    </section>
+
+    <div id="trabajadorPanel" hidden>
+      <section class="trabajador-hero" id="trabajadorHero">
+        <div class="trabajador-hero__avatar" id="trabajadorAvatar" aria-hidden="true"></div>
+
+        <div class="trabajador-hero__datos">
+          <span class="trabajador-hero__etiqueta">
+            <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+            Trabajador aprobado
+          </span>
+          <h1 id="trabajadorNombre">—</h1>
+          <p id="trabajadorVehiculo">—</p>
+          <div class="trabajador-hero__chips">
+            <span class="trabajador-chip" id="trabajadorPlaca"></span>
+            <span class="trabajador-chip" id="trabajadorColor"></span>
+            <span class="trabajador-chip" id="trabajadorGanancia"></span>
+          </div>
+        </div>
+
+        <div class="trabajador-disponibilidad">
+          <span class="trabajador-disponibilidad__titulo">Disponible</span>
+          <label class="trabajador-switch">
+            <input type="checkbox" id="trabajadorDisponible" role="switch" aria-label="Disponibilidad para recibir pedidos">
+            <span class="trabajador-switch__slider" aria-hidden="true"></span>
+          </label>
+          <small id="trabajadorDisponibilidadTexto">Conectado</small>
+        </div>
+      </section>
+
+      <div class="trabajador-alerta" id="alertaDisponibilidad" hidden>
+        <i class="bi bi-broadcast" aria-hidden="true"></i>
+        <div>
+          <strong>Estás desconectado</strong>
+          <span>Activa tu disponibilidad para poder aceptar pedidos.</span>
+        </div>
+      </div>
+
+      <section class="trabajador-resumen" aria-label="Resumen de pedidos">
+        <article class="trabajador-stat">
+          <span class="trabajador-stat__icono trabajador-stat__icono--verde"><i class="bi bi-inbox"></i></span>
+          <div>
+            <span>Disponibles</span>
+            <strong id="statDisponibles">0</strong>
+          </div>
+        </article>
+        <article class="trabajador-stat">
+          <span class="trabajador-stat__icono trabajador-stat__icono--azul"><i class="bi bi-truck"></i></span>
+          <div>
+            <span>Mis entregas activas</span>
+            <strong id="statAsignados">0</strong>
+          </div>
+        </article>
+        <article class="trabajador-stat">
+          <span class="trabajador-stat__icono trabajador-stat__icono--dorado"><i class="bi bi-check2-circle"></i></span>
+          <div>
+            <span>Entregadas</span>
+            <strong id="statEntregados">0</strong>
+          </div>
+        </article>
+      </section>
+
+      <div class="trabajador-barra">
+        <div class="trabajador-tabs" role="tablist" aria-label="Pedidos">
+          <button type="button" class="trabajador-tab is-active" data-vista="disponibles" role="tab" aria-selected="true">
+            Disponibles
+            <span id="badgeDisponibles">0</span>
+          </button>
+          <button type="button" class="trabajador-tab" data-vista="asignados" role="tab" aria-selected="false">
+            Mis entregas
+            <span id="badgeAsignados">0</span>
+          </button>
+        </div>
+
+        <button type="button" class="trabajador-refrescar" data-refrescar>
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          <span>Actualizar</span>
+        </button>
+      </div>
+
+      <section class="trabajador-vista" id="vistaDisponibles" role="tabpanel">
+        <div class="trabajador-vista__cabecera">
+          <div>
+            <h2>Pedidos disponibles</h2>
+            <p>Toma un pedido y revisa los datos de entrega del cliente.</p>
+          </div>
+        </div>
+        <div class="trabajador-lista" id="listaDisponibles"></div>
+        <div class="trabajador-vacio" id="vacioDisponibles" hidden>
+          <i class="bi bi-inbox" aria-hidden="true"></i>
+          <strong>No hay pedidos disponibles</strong>
+          <span>Actualiza en unos minutos o activa tu disponibilidad.</span>
+        </div>
+      </section>
+
+      <section class="trabajador-vista" id="vistaAsignados" role="tabpanel" hidden>
+        <div class="trabajador-vista__cabecera">
+          <div>
+            <h2>Mis entregas</h2>
+            <p>Pedidos que tomaste. Marca “En camino” al salir con el pedido.</p>
+          </div>
+        </div>
+        <div class="trabajador-lista" id="listaAsignados"></div>
+        <div class="trabajador-vacio" id="vacioAsignados" hidden>
+          <i class="bi bi-truck" aria-hidden="true"></i>
+          <strong>Todavía no tienes entregas</strong>
+          <span>Acepta un pedido de la pestaña “Disponibles”.</span>
+        </div>
+      </section>
+    </div>
+
+    <div class="trabajador-toasts" id="trabajadorToasts" aria-live="polite" aria-atomic="false"></div>
+  </main>
+
+  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261109d" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-config.js?v=20261107c" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261113a" defer></script>
+  <script src="/tienda/recursos/js/pages/trabajador.js?v=20261114c" defer></script>
+</body>
+</html>

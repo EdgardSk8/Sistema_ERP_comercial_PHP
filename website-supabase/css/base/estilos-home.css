@@ -1794,16 +1794,21 @@ button { font-family: inherit; }
   background: var(--superficie);
 }
 
-.filtros__panel .select2-selection__rendered { margin: 0; padding: 0; list-style: none; }
-.filtros__panel .select2-search--inline { margin: 0; }
+.filtros__panel .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 
-.filtros__panel .select2-container--focus .select2-selection--multiple,
-.filtros__panel .select2-container--open .select2-selection--multiple {
+.filtros__panel .select2-container--default .select2-search--inline { margin: 0; }
+
+.filtros__panel .select2-container--default.select2-container--focus .select2-selection--multiple,
+.filtros__panel .select2-container--default.select2-container--open .select2-selection--multiple {
   border-color: var(--secundario);
   box-shadow: 0 0 0 3px rgba(34, 37, 42, .06);
 }
 
-.filtros__panel .select2-selection__choice {
+.filtros__panel .select2-container--default .select2-selection--multiple .select2-selection__choice {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1818,9 +1823,13 @@ button { font-family: inherit; }
   line-height: 1.4;
 }
 
-.filtros__panel .select2-selection__choice__display { order: 1; padding: 0; font-variant-numeric: tabular-nums; }
+.filtros__panel .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+  order: 1;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+}
 
-.filtros__panel .select2-selection__choice__remove {
+.filtros__panel .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
   order: 2;
   position: static;
   display: inline-flex;
@@ -1838,9 +1847,22 @@ button { font-family: inherit; }
   line-height: 1;
 }
 
-.filtros__panel .select2-selection__choice__remove:hover { background: none; color: var(--secundario); }
+.filtros__panel .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+  background: none;
+  color: var(--secundario);
+}
 
-.filtros__panel .select2-search__field {
+.filtros__panel .select2-container--default .select2-selection--multiple .select2-selection__clear {
+  color: var(--texto-suave);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.filtros__panel .select2-container--default .select2-selection--multiple .select2-selection__clear:hover {
+  color: var(--secundario);
+}
+
+.filtros__panel .select2-container .select2-search--inline .select2-search__field {
   height: 20px;
   min-height: 20px;
   margin: 0 0 0 2px;
@@ -1848,6 +1870,11 @@ button { font-family: inherit; }
   line-height: 20px;
   vertical-align: middle;
   font-family: var(--fuente);
+  font-size: .77rem;
+}
+
+.filtros__panel .select2-container .select2-search--inline .select2-search__field::placeholder {
+  color: var(--texto-suave);
   font-size: .77rem;
 }
 
@@ -1861,8 +1888,14 @@ button { font-family: inherit; }
   box-shadow: var(--sombra-media);
 }
 
-.select2-container--open .select2-dropdown { border: 1px solid var(--borde); border-radius: 0; overflow: hidden; }
-.select2-results__option {
+.select2-container--open .select2-dropdown {
+  border: 1px solid var(--borde);
+  border-radius: 0;
+  overflow: hidden;
+  /* Por encima del panel de filtros (z-index 1200), también en PC. */
+  z-index: 1400;
+}
+.select2-container--default .select2-results__option:not(.select2-results__option--group) {
   display: flex;
   align-items: center;
   min-height: 36px;
@@ -1872,6 +1905,16 @@ button { font-family: inherit; }
 .select2-results__option--highlighted[aria-selected] { background: var(--secundario); color: var(--primario); }
 .select2-results__option[aria-disabled="true"] { color: var(--texto-suave); text-decoration: line-through; }
 .select2-results__option[aria-selected="true"] { background: var(--primario-claro); color: var(--secundario); font-weight: 600; }
+
+/* Escalas de talla dentro del desplegable (Calzado, Ropa adulto, Memoria…). */
+.select2-container--default .select2-results__group {
+  padding: 8px 9px 4px;
+  color: var(--texto-suave);
+  font-size: .66rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
 
 .filtros__cortina__cuerpo,
 .select2-results__options {
@@ -1945,16 +1988,19 @@ button { font-family: inherit; }
     border-radius: 22px 22px 0 0;
     background: var(--superficie);
     box-shadow: 0 -20px 50px rgba(12, 61, 36, .18);
-    animation: filtrosHojaEntrar .3s cubic-bezier(.22, .9, .3, 1);
     -webkit-overflow-scrolling: touch;
   }
 
+  .filtros[open] .filtros__cortina__cuerpo {
+    animation: filtrosHojaEntrar .5s cubic-bezier(.22, .9, .3, 1);
+  }
+
   .filtros.filtros--cerrando .filtros__cortina {
-    animation: filtrosFondoSalir .22s ease-in forwards;
+    animation: filtrosFondoSalir .5s ease-in forwards;
   }
 
   .filtros.filtros--cerrando .filtros__cortina__cuerpo {
-    animation: filtrosHojaSalir .22s ease-in forwards;
+    animation: filtrosHojaSalir .5s ease-in forwards;
   }
 
   .filtros__cabecera {
@@ -2044,6 +2090,17 @@ button { font-family: inherit; }
   }
 }
 
+/* Hoja ancha: talla y color comparten fila; el precio ocupa el ancho completo. */
+@media (min-width: 560px) and (max-width: 991.98px) {
+  .filtros__fila {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filtros__fila > .filtros__col:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
 @keyframes filtrosFondoEntrar {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -2055,17 +2112,17 @@ button { font-family: inherit; }
 }
 
 @keyframes filtrosHojaEntrar {
-  from { opacity: .7; transform: translateY(18px); }
+  from { opacity: .7; transform: translateY(40px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes filtrosHojaSalir {
   from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(18px); }
+  to { opacity: 0; transform: translateY(32px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .filtros__cortina__cuerpo,
+  .filtros[open] .filtros__cortina__cuerpo,
   .filtros.filtros--cerrando .filtros__cortina__cuerpo {
     animation: none;
   }

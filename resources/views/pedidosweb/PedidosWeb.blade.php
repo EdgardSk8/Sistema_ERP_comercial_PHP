@@ -179,6 +179,7 @@
                                 <strong>Teléfono:</strong> <span id="telefonoDetallePedidoWeb">—</span><br>
                                 <strong>Método de pago:</strong> <span id="metodoDetallePedidoWeb">—</span><br>
                                 <strong>Entrega:</strong> <span id="tipoEntregaDetallePedidoWeb">—</span><br>
+                                <strong>Repartidor:</strong> <span id="repartidorDetallePedidoWeb">Sin asignar</span><br>
                                 <strong>Dirección:</strong> <span id="direccionDetallePedidoWeb">—</span><br>
                                 <strong>Referencia:</strong> <span id="referenciaDetallePedidoWeb">—</span>
                             </div>

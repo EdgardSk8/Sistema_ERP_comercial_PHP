@@ -212,6 +212,34 @@ function tarjetaProducto(variante, indice = 0) {
     `;
 }
 
+/* Normaliza la talla que llega del API (objeto con escala/tipo o texto legado). */
+function normalizarTalla(talla) {
+    if (talla && typeof talla === 'object') {
+        const nombre = String(talla.nombre ?? talla.talla ?? '').trim() || 'Única';
+
+        return {
+            id: String(talla.id ?? nombre),
+            nombre,
+            tipo: String(talla.tipo ?? '').trim() || 'Tallas',
+            tipoId: Number(talla.tipo_id) || 0,
+            orden: talla.orden === null || talla.orden === undefined || talla.orden === ''
+                ? null
+                : Number(talla.orden),
+        };
+    }
+
+    const nombre = String(talla ?? '').trim();
+    const numero = Number(nombre);
+
+    return {
+        id: nombre || 'unica',
+        nombre: nombre || 'Única',
+        tipo: 'Tallas',
+        tipoId: 0,
+        orden: nombre !== '' && Number.isFinite(numero) ? numero : null,
+    };
+}
+
 /* Cada color del producto es una tarjeta independiente */
 function desagruparPorColor(productos) {
     return productos.flatMap(producto => {
@@ -224,7 +252,7 @@ function desagruparPorColor(productos) {
             color: color.nombre,
             imagen: color.imagen || producto.imagen,
             stock: color.stock ?? producto.stock,
-            tallas: color.tallas || producto.tallas || [],
+            tallas: (color.tallas_info || color.tallas || producto.tallas || []).map(normalizarTalla),
         }));
     });
 }
@@ -362,31 +390,64 @@ function iniciarCatalogo(productos, tallasReferencia) {
         if (evento.key === 'Escape') cerrarFiltros();
     });
 
-    /* ── Filtro por talla (Select2, 36 a 44) ──────────────────── */
-    const TALLAS_FILTRO = Array.from({ length: 9 }, (_, indice) => String(36 + indice));
+    /* ── Filtro por talla (Select2 agrupado por escala/tipo) ──── */
     const selectTallas = document.getElementById('filtroTallas');
     let tallasSeleccionadas = [];
     /* Cambio pendiente hasta pulsar "Aplicar filtro". */
     let tallasPendientes = null;
 
-    const tallasCatalogo = new Set(
-        variantes.flatMap(variante => (variante.tallas || []).map(talla => String(talla)))
-    );
+    /* id → { id, nombre, tipo, tipoId, orden } */
+    const tallasCatalogo = new Map();
 
-    const cmDeTalla = (talla) => {
-        const ref = tallasReferencia?.tallas?.find(t => Number(t.eu) === Number(talla));
+    variantes.forEach(variante => {
+        (variante.tallas || []).forEach(talla => {
+            if (!tallasCatalogo.has(talla.id)) tallasCatalogo.set(talla.id, talla);
+        });
+    });
+
+    const cmDeTalla = (nombre) => {
+        const ref = tallasReferencia?.tallas?.find(t => Number(t.eu) === Number(nombre));
         return ref ? `${ref.cm} cm` : '';
     };
 
+    const gruposTallas = () => {
+        const grupos = new Map();
+
+        tallasCatalogo.forEach(talla => {
+            const clave = `${talla.tipoId}|${talla.tipo}`;
+
+            if (!grupos.has(clave)) {
+                grupos.set(clave, { tipo: talla.tipo, tipoId: talla.tipoId, tallas: [] });
+            }
+
+            grupos.get(clave).tallas.push(talla);
+        });
+
+        return [...grupos.values()]
+            .sort((a, b) => (a.tipoId || 9999) - (b.tipoId || 9999) || a.tipo.localeCompare(b.tipo, 'es'))
+            .map(grupo => ({
+                ...grupo,
+                tallas: grupo.tallas.sort((a, b) => {
+                    const ordenA = a.orden ?? Number.MAX_SAFE_INTEGER;
+                    const ordenB = b.orden ?? Number.MAX_SAFE_INTEGER;
+
+                    return ordenA - ordenB || a.nombre.localeCompare(b.nombre, 'es', { numeric: true });
+                }),
+            }));
+    };
+
+    const detalleTalla = (talla) => {
+        const cm = cmDeTalla(talla.nombre);
+
+        return cm ? ` · ${cm}` : '';
+    };
+
     if (selectTallas) {
-        selectTallas.innerHTML = TALLAS_FILTRO.map(talla => {
-            const disponible = tallasCatalogo.has(talla);
-            const cm = cmDeTalla(talla);
-            const detalle = disponible
-                ? (cm ? ` · ${cm}` : '')
-                : ` · ${cm ? `${cm} · ` : ''}sin productos`;
-            return `<option value="${talla}"${disponible ? '' : ' disabled'}>${talla}${detalle}</option>`;
-        }).join('');
+        selectTallas.innerHTML = gruposTallas().map(grupo => `
+            <optgroup label="${escapar(grupo.tipo)}">
+                ${grupo.tallas.map(talla => `<option value="${escapar(talla.id)}">${escapar(talla.nombre)}${detalleTalla(talla)}</option>`).join('')}
+            </optgroup>
+        `).join('');
 
         if (window.jQuery && window.jQuery.fn.select2) {
             window.jQuery(selectTallas).select2({
@@ -402,7 +463,7 @@ function iniciarCatalogo(productos, tallasReferencia) {
         ? Array.from(selectTallas.selectedOptions).map(opcion => opcion.value)
         : [];
 
-    /* ── Filtro por color (Select2 con buscador) ──────────────── */
+    /* ── Filtro por color (depende de las tallas elegidas) ────── */
     const selectColores = document.getElementById('filtroColores');
     let coloresSeleccionados = [];
     /* Cambio pendiente hasta pulsar "Aplicar filtro". */
@@ -411,6 +472,51 @@ function iniciarCatalogo(productos, tallasReferencia) {
     const coloresCatalogo = [...new Set(
         variantes.map(variante => String(variante.color || 'Único').trim()).filter(Boolean)
     )].sort((a, b) => a.localeCompare(b, 'es'));
+
+    const leerColores = () => selectColores
+        ? Array.from(selectColores.selectedOptions).map(opcion => opcion.value)
+        : [];
+
+    const coloresSegunTallas = (idsTallas = []) => {
+        if (!idsTallas.length) return coloresCatalogo;
+
+        const seleccion = new Set(idsTallas.map(String));
+
+        return [...new Set(
+            variantes
+                .filter(variante => (variante.tallas || []).some(talla => seleccion.has(String(talla.id))))
+                .map(variante => String(variante.color || 'Único').trim())
+                .filter(Boolean)
+        )].sort((a, b) => a.localeCompare(b, 'es'));
+    };
+
+    let claveColores = '';
+
+    /* Al cambiar la talla solo quedan los colores que existen en esa talla. */
+    const actualizarColores = (idsTallas = []) => {
+        if (!selectColores) return;
+
+        const clave = [...idsTallas].map(String).sort().join('|');
+        if (clave === claveColores) return;
+        claveColores = clave;
+
+        const disponibles = coloresSegunTallas(idsTallas);
+        const elegidos = leerColores().filter(color => disponibles.includes(color));
+
+        selectColores.innerHTML = disponibles
+            .map(color => `<option value="${escapar(color)}"${elegidos.includes(color) ? ' selected' : ''}>${escapar(color)}</option>`)
+            .join('');
+
+        /* Select2 relee las opciones del <select>: así se refresca en sitio, sin recrear el selector. */
+        const $ = window.jQuery;
+
+        if ($?.fn?.select2 && $(selectColores).data('select2')) {
+            $(selectColores).trigger('change.select2');
+        }
+
+        /* Un color que ya no existe para la talla deja de estar seleccionado. */
+        coloresPendientes = elegidos;
+    };
 
     if (selectColores) {
         selectColores.innerHTML = coloresCatalogo
@@ -426,10 +532,6 @@ function iniciarCatalogo(productos, tallasReferencia) {
             });
         }
     }
-
-    const leerColores = () => selectColores
-        ? Array.from(selectColores.selectedOptions).map(opcion => opcion.value)
-        : [];
 
     /* ── Filtro por marca (Select2 con buscador) ──────────────── */
     const selectMarcas = document.getElementById('filtroMarcas');
@@ -605,7 +707,8 @@ function iniciarCatalogo(productos, tallasReferencia) {
         }
 
         if (tallasSeleccionadas.length) {
-            partes.push(`Tallas ${tallasSeleccionadas.join(', ')}`);
+            const nombres = tallasSeleccionadas.map(id => tallasCatalogo.get(String(id))?.nombre || id);
+            partes.push(`Tallas ${nombres.join(', ')}`);
         }
 
         if (coloresSeleccionados.length) {
@@ -742,7 +845,7 @@ function iniciarCatalogo(productos, tallasReferencia) {
             const coincidePrecio = (precioMin === null || precio >= precioMin)
                 && (precioMax === null || precio <= precioMax);
             const coincideTalla = !tallasSeleccionadas.length
-                || (variante.tallas || []).some(talla => tallasSeleccionadas.includes(String(talla)));
+                || (variante.tallas || []).some(talla => tallasSeleccionadas.includes(String(talla.id)));
             const coincideColor = !coloresSeleccionados.length
                 || coloresSeleccionados.includes(String(variante.color || 'Único').trim());
             const coincideMarca = !marcasSeleccionadas.length
@@ -913,6 +1016,7 @@ function iniciarCatalogo(productos, tallasReferencia) {
     /* Los cambios quedan pendientes hasta pulsar "Aplicar filtro". */
     const alCambiarTallas = () => {
         tallasPendientes = leerTallas();
+        actualizarColores(tallasPendientes);
     };
 
     const alCambiarColores = () => {
