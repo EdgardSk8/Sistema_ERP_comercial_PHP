@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261102f" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos-home.css?v=20261110c">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos-home.css?v=20261110e">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
 </head>
 <body>
@@ -163,16 +163,17 @@
     </section>
   </div>
 
-  <!-- ── Buscador ──────────────────────────────────────────── -->
+  <!-- ── Buscador + filtros ────────────────────────────────── -->
   <div class="contenedor">
-    <form class="buscador" role="search" onsubmit="return false;">
-      <i class="bi bi-search" aria-hidden="true"></i>
-      <input class="buscador__campo" id="buscadorProductos" type="search"
-             placeholder="Buscar productos…" aria-label="Buscar productos" autocomplete="off">
-    </form>
+    <div class="catalogo-controles">
+      <form class="buscador" role="search" onsubmit="return false;">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input class="buscador__campo" id="buscadorProductos" type="search"
+               placeholder="Buscar productos…" aria-label="Buscar productos" autocomplete="off">
+      </form>
 
-    <!-- ── Filtros ─────────────────────────────────────────── -->
-    <details class="filtros" id="filtrosCatalogo">
+      <!-- ── Filtros ─────────────────────────────────────────── -->
+      <details class="filtros" id="filtrosCatalogo">
       <summary class="filtros__boton">
         <i class="bi bi-sliders" aria-hidden="true"></i> Filtros
         <span class="filtros__resumen" id="filtrosResumen" hidden></span>
@@ -263,6 +264,7 @@
         </div>
       </div>
     </details>
+    </div>
   </div>
 
   <main class="contenedor">
