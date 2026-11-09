@@ -1489,6 +1489,32 @@ button { font-family: inherit; }
 .resumen__vaciar { width: 100%; margin-top: 10px; border: 0; background: transparent; color: var(--texto-suave); font-size: .78rem; text-decoration: underline; cursor: pointer; }
 .resumen__legal { margin: 8px 0 0; text-align: center; font-size: .68rem; line-height: 1.45; color: var(--texto-suave); }
 .resumen__legal a { color: var(--secundario); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.resumen__terminos {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 14px 0 0;
+  font-size: .72rem;
+  line-height: 1.45;
+  text-align: left;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+.resumen__terminos input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  accent-color: var(--secundario);
+  cursor: pointer;
+}
+.resumen__terminos a { color: var(--secundario); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.resumen__terminos--error { color: #b42318; }
+.resumen__terminos--error a { color: #b42318; }
+.resumen__legal--error { color: #b42318; }
+.resumen__btn:disabled,
+.resumen__wa--deshabilitado { opacity: .48; cursor: not-allowed; }
+.resumen__wa--deshabilitado:hover { background: transparent; }
 .resumen__detalle { margin-top: -2px; padding-bottom: 4px; font-size: .68rem; line-height: 1.45; color: var(--texto-suave); }
 
 /* Descuentos elegibles en el carrito (uno solo, no se acumulan) */

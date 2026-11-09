@@ -38,6 +38,142 @@ let direccionEntrega = null;
 let envio = 0;
 let envioDetalle = null;
 
+const CLAVE_TERMINOS = 'tienda_terminos_aceptados';
+const AYUDA_TERMINOS = 'Debes aceptar los términos y condiciones para comprar o pedir por WhatsApp.';
+let terminosVersion = '1.1';
+let terminosAceptados = false;
+
+function claveTerminosLocal() {
+    const responsable = clienteTienda?.id_cliente || 'invitado';
+    return `${CLAVE_TERMINOS}:${responsable}:${terminosVersion}`;
+}
+
+function leerTerminosLocal() {
+    try {
+        return localStorage.getItem(claveTerminosLocal()) === '1';
+    } catch {
+        return false;
+    }
+}
+
+function guardarTerminosLocal(aceptado) {
+    try {
+        if (aceptado) {
+            localStorage.setItem(claveTerminosLocal(), '1');
+        } else {
+            localStorage.removeItem(claveTerminosLocal());
+        }
+    } catch {
+        /* Sin almacenamiento: el estado se conserva durante esta visita. */
+    }
+}
+
+function actualizarBotonWhatsapp() {
+    const boton = document.getElementById('btnWhatsappCarrito');
+    if (!boton) return;
+
+    const habilitado = terminosAceptados && Boolean(boton.dataset.href);
+
+    if (habilitado) {
+        boton.href = boton.dataset.href;
+        boton.removeAttribute('aria-disabled');
+        boton.removeAttribute('tabindex');
+        boton.classList.remove('resumen__wa--deshabilitado');
+    } else {
+        boton.removeAttribute('href');
+        boton.setAttribute('aria-disabled', 'true');
+        boton.setAttribute('tabindex', '-1');
+        boton.classList.add('resumen__wa--deshabilitado');
+    }
+}
+
+function actualizarEstadoTerminos(aceptado) {
+    terminosAceptados = Boolean(aceptado);
+
+    const checkbox = document.getElementById('aceptaTerminos');
+    const botonFinalizar = document.getElementById('btnFinalizar');
+    const etiqueta = document.getElementById('terminosLabel');
+    const ayuda = document.getElementById('terminosAyuda');
+
+    if (checkbox) checkbox.checked = terminosAceptados;
+    if (botonFinalizar) botonFinalizar.disabled = !terminosAceptados;
+    if (etiqueta) etiqueta.classList.remove('resumen__terminos--error');
+
+    if (ayuda) {
+        ayuda.classList.remove('resumen__legal--error');
+        ayuda.textContent = terminosAceptados
+            ? `Aceptaste los términos y condiciones (versión ${terminosVersion}).`
+            : AYUDA_TERMINOS;
+    }
+
+    actualizarBotonWhatsapp();
+}
+
+function mostrarErrorTerminos() {
+    const checkbox = document.getElementById('aceptaTerminos');
+    const etiqueta = document.getElementById('terminosLabel');
+    const ayuda = document.getElementById('terminosAyuda');
+
+    etiqueta?.classList.add('resumen__terminos--error');
+    if (ayuda) {
+        ayuda.classList.add('resumen__legal--error');
+        ayuda.textContent = 'Debes aceptar los términos y condiciones para continuar.';
+    }
+
+    checkbox?.focus();
+    tiendaToast('Acepta los términos y condiciones para continuar.', 'aviso');
+}
+
+function sincronizarTerminosConSesion() {
+    const aceptadoEnCuenta = Boolean(
+        clienteTienda
+        && String(clienteTienda.terminos_version_aceptada || '') === terminosVersion
+    );
+
+    if (aceptadoEnCuenta) guardarTerminosLocal(true);
+
+    actualizarEstadoTerminos(aceptadoEnCuenta || leerTerminosLocal());
+}
+
+function configurarTerminos() {
+    const checkbox = document.getElementById('aceptaTerminos');
+    if (!checkbox) return;
+
+    terminosVersion = checkbox.dataset.version || terminosVersion;
+
+    checkbox.addEventListener('change', async () => {
+        const aceptado = checkbox.checked;
+        guardarTerminosLocal(aceptado);
+        actualizarEstadoTerminos(aceptado);
+
+        if (!aceptado || !clienteTienda || !window.TiendaAPI?.post) return;
+
+        try {
+            await window.TiendaAPI.post('/tienda/api/terminos/aceptar', {
+                version: terminosVersion,
+            });
+            clienteTienda.terminos_version_aceptada = terminosVersion;
+        } catch {
+            tiendaToast(
+                'La aceptación quedó guardada en este dispositivo, pero no pudimos sincronizarla con tu cuenta.',
+                'aviso'
+            );
+        }
+    });
+
+    document.getElementById('terminosEnlace')?.addEventListener('click', (evento) => {
+        evento.stopPropagation();
+    });
+
+    document.getElementById('btnWhatsappCarrito')?.addEventListener('click', (evento) => {
+        if (terminosAceptados) return;
+        evento.preventDefault();
+        mostrarErrorTerminos();
+    });
+
+    sincronizarTerminosConSesion();
+}
+
 function importeLinea(item) {
     return Number(item.precio || 0) * Number(item.cantidad || 0);
 }
@@ -1067,7 +1203,8 @@ function actualizarWhatsappCarrito(items, subtotal, descuento, total) {
     }
     lineas.push(`Total: ${moneda(total)}`);
 
-    boton.href = `https://wa.me/${WHATSAPP_TIENDA}?text=${encodeURIComponent(lineas.join('\n'))}`;
+    boton.dataset.href = `https://wa.me/${WHATSAPP_TIENDA}?text=${encodeURIComponent(lineas.join('\n'))}`;
+    actualizarBotonWhatsapp();
 }
 
 function pintarCarrito() {
@@ -1168,6 +1305,7 @@ document.addEventListener('click', (event) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    configurarTerminos();
     configurarEnlaceBilletera();
     inicializarMetodoPago();
 
@@ -1193,6 +1331,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.sesionTiendaPromise.then(async (sesion) => {
         clienteTienda = sesion?.cliente || null;
+        sincronizarTerminosConSesion();
         actualizarMotivoTransferencia();
 
         const descuento = sesion?.cliente?.descuento || null;
@@ -1267,6 +1406,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (!terminosAceptados) {
+            mostrarErrorTerminos();
+            return;
+        }
+
         if (!clienteTienda) {
             try {
                 sessionStorage.setItem('tienda_redirect', urlTienda('carrito'));
@@ -1338,7 +1482,7 @@ document.addEventListener('DOMContentLoaded', () => {
             );
 
             if (boton) {
-                boton.disabled = false;
+                boton.disabled = !terminosAceptados;
                 boton.textContent = 'Finalizar compra';
             }
         }

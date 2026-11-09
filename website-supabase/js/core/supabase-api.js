@@ -208,6 +208,8 @@
             ),
             password_set: usuarioActual?.user_metadata?.password_set === true
                 || texto(usuarioActual?.user_metadata?.password_set) === 'true',
+            terminos_version_aceptada: texto(usuarioActual?.user_metadata?.terminos_version_aceptada) || null,
+            terminos_aceptados_en: texto(usuarioActual?.user_metadata?.terminos_aceptados_en) || null,
             ...datosAvatar(),
         };
     }
@@ -689,6 +691,36 @@
             success: true,
             mensaje: 'Perfil actualizado correctamente.',
             cliente: datosCliente(clienteActual),
+        };
+    }
+
+    async function aceptarTerminosApi(cuerpo) {
+        if (!usuarioActual) throw errorApi('Inicia sesión para guardar la aceptación.', 401);
+
+        const version = texto(cuerpo.version);
+
+        if (!/^[0-9A-Za-z._-]{1,20}$/.test(version)) {
+            throw errorApi('La versión de los términos no es válida.', 422);
+        }
+
+        const aceptadoEn = new Date().toISOString();
+        const { data, error } = await supabase.auth.updateUser({
+            data: {
+                terminos_version_aceptada: version,
+                terminos_aceptados_en: aceptadoEn,
+            },
+        });
+
+        if (error) {
+            throw errorDeSupabase(error, 'No se pudo guardar la aceptación de los términos.');
+        }
+
+        usuarioActual = data.user || usuarioActual;
+
+        return {
+            success: true,
+            version,
+            aceptado_en: aceptadoEn,
         };
     }
 
@@ -1604,6 +1636,8 @@
             },
 
             'PUT /tienda/api/perfil': () => perfilApi(cuerpo),
+
+            'POST /tienda/api/terminos/aceptar': () => aceptarTerminosApi(cuerpo),
 
             'PUT /tienda/api/perfil/avatar': () => avatarApi(cuerpo),
 
