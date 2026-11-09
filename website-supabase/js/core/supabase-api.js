@@ -6,6 +6,9 @@
     // Interruptor del tema navideño (definido en supabase-config.js).
     if (window.TEMA_NAVIDAD === false) {
         document.documentElement.classList.remove('tema-navidad');
+        document.querySelectorAll('img.marca__logo, img.acceso__logo').forEach((imagen) => {
+            imagen.src = '/tienda/recursos/img/minilogo.png?v=20261102d';
+        });
     }
 
     if (window.TEMA_NAVIDAD !== false) {

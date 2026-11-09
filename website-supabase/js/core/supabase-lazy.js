@@ -6,7 +6,7 @@
 (() => {
     const SUPABASE_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
     const CONFIG_URL = '/tienda/recursos/js/core/supabase-config.js';
-    const API_URL = '/tienda/recursos/js/core/supabase-api.js';
+    const API_URL = '/tienda/recursos/js/core/supabase-api.js?v=20261111b';
 
     let carga = null;
 
