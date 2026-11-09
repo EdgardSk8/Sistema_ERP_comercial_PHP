@@ -109,7 +109,7 @@ button { font-family: inherit; }
 }
 
 .app-header .marca { align-self: stretch; }
-.marca__logo { height: 100%; width: auto; max-height: var(--alto-header); object-fit: contain; }
+.marca__logo { height: 100%; width: auto; margin: 10px; max-height: var(--alto-header); object-fit: contain; }
 .header-acciones { display: flex; align-items: center; gap: 2px; margin-left: auto; }
 
 .icono-btn {
