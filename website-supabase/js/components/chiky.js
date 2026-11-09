@@ -19,7 +19,7 @@
         registroCreado: '¡Excelente! Tu cuenta está creada. Revisa tu correo para confirmarla.',
         perfilIncompleto: 'Veo que puedes completar algunos datos de tu perfil. ¿Te ayudo?',
         perfilCompleto: '¡Bien! Tu perfil ya está completo.',
-        descuentoBienvenida: '¡Hola! Soy Chiky, tu asistente virtual. Tienes un 10% de bienvenida en zapatos para tu primera compra: en «Descuentos y cupones» te explico cómo activarlo.',
+        descuentoBienvenida: '¡Hola! Soy Chiky, tu asistente virtual. Puedes activar un 10% de bienvenida en zapatos para tu primera compra: en «Descuentos y cupones» te explico cómo hacerlo.',
         perfilGuardado: '¡Listo! Tus datos se guardaron correctamente.',
         sinAyuda: 'De acuerdo. Cuando quieras seguir, pulsa sobre mí.',
     };

@@ -507,7 +507,7 @@ function ofrecerDescuento(cliente = window.clienteTienda) {
 
     /* La tarjeta se abre al pedir ayuda o con la guía del 10%. */
     chiky.paso('descuentoBienvenida');
-    chiky.accion('Ver cupones', irACupones);
+    chiky.accion('Ver cómo activarlo', irACupones);
 }
 
 /* El tema del 10% solo existe mientras el descuento esté disponible. */
