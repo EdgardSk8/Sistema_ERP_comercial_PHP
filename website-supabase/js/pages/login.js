@@ -88,7 +88,7 @@ function iniciarGuiaAcceso() {
             },
         },
         {
-            element: '#panelRegistro',
+            element: '#registroCampos',
             alEntrar: () => {
                 document.querySelector('[data-vista="registro"]')?.click();
                 setTimeout(() => window.Chiky?.refrescarGuia(), 80);
