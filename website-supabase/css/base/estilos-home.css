@@ -1034,12 +1034,15 @@ button { font-family: inherit; }
 
 /* Reserva el layout antes de que Splide se cargue bajo demanda. */
 .promos__carrusel .splide__list {
-  display: flex;
-  gap: 12px;
   margin: 0;
   padding: 0;
-  overflow-x: auto;
   list-style: none;
+}
+
+.promos__carrusel:not(.is-initialized) .splide__list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
 }
 
 .promos__carrusel .splide__track {

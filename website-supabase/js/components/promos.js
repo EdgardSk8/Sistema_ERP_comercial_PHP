@@ -157,7 +157,6 @@
             pagination: false,
             drag: 'free',
             snap: true,
-            lazyLoad: 'nearby',
             speed: 400,
             focus: 0,
             omitEnd: true,
@@ -214,13 +213,10 @@
             ? `<span class="promo__pie">${titulo}${cta}</span>`
             : '';
 
-        const fuente = indice === 0
-            ? `src="${escapar(foto.imagen)}" loading="lazy" fetchpriority="low"`
-            : `data-splide-lazy="${escapar(foto.imagen)}" loading="lazy" fetchpriority="low"`;
+        const fuente = `src="${escapar(foto.imagen)}" loading="lazy" fetchpriority="low"`;
         const srcset = window.srcsetImagen?.(foto.imagen) || '';
-        const atributo = indice === 0 ? 'srcset' : 'data-splide-lazy-srcset';
         const tamano = srcset
-            ? `${atributo}="${escapar(srcset)}" sizes="(min-width: 992px) 340px, 270px"`
+            ? `srcset="${escapar(srcset)}" sizes="(min-width: 992px) 340px, 270px"`
             : '';
 
         const contenido = `
