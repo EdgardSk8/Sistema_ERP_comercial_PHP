@@ -49,22 +49,27 @@
             </div>
 
             <div class="form-check">
-                <input class="form-check-input toggle-col" type="checkbox" data-column="8" id="colTotal" checked>
+                <input class="form-check-input toggle-col" type="checkbox" data-column="8" id="colGastos" checked>
+                <label class="form-check-label" for="colGastos">Gastos</label>
+            </div>
+
+            <div class="form-check">
+                <input class="form-check-input toggle-col" type="checkbox" data-column="9" id="colTotal" checked>
                 <label class="form-check-label" for="colTotal">Total</label>
             </div>
 
             <div class="form-check">
-                <input class="form-check-input toggle-col" type="checkbox" data-column="9" id="colMetodoPago">
+                <input class="form-check-input toggle-col" type="checkbox" data-column="10" id="colMetodoPago">
                 <label class="form-check-label" for="colMetodoPago">Método Pago</label>
             </div>
 
             <div class="form-check">
-                <input class="form-check-input toggle-col" type="checkbox" data-column="10" id="colEstado" checked>
+                <input class="form-check-input toggle-col" type="checkbox" data-column="11" id="colEstado" checked>
                 <label class="form-check-label" for="colEstado">Estado</label>
             </div>
 
             <div class="form-check">
-                <input class="form-check-input toggle-col" type="checkbox" data-column="11" id="colDetalles" checked>
+                <input class="form-check-input toggle-col" type="checkbox" data-column="12" id="colDetalles" checked>
                 <label class="form-check-label" for="colDetalles">Detalles</label>
             </div>
 

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5EEDE">
+  <meta name="color-scheme" content="light">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Panel administrativo · Tellez Nic Store</title>
+  <meta name="description" content="Panel administrativo móvil de Tellez Nic Store.">
+
+  <link rel="preload" href="/tienda/recursos/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" type="image/png" sizes="32x32" href="/tienda/recursos/img/favicon-navidad.png?v=20261030h">
+  <link rel="apple-touch-icon" sizes="180x180" href="/tienda/recursos/img/apple-touch-navidad.png?v=20261030h">
+  <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
+
+  <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-utilidades.css?v=20261110a">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/admin.css?v=20261110l">
+</head>
+<body class="admin-pagina">
+
+  <header class="admin-topbar">
+    <div class="admin-topbar__marca">
+      <img src="/tienda/recursos/img/minilogo.png" alt="">
+      <div>
+        <strong>Panel</strong>
+        <small id="adminUsuarioNombre">Tellez Nic Store</small>
+      </div>
+    </div>
+
+    <div class="admin-topbar__acciones">
+      <button class="admin-icono-btn" type="button" id="adminRefrescar" title="Actualizar datos" aria-label="Actualizar datos">
+        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+      </button>
+      <button class="admin-icono-btn admin-icono-btn--salir" type="button" id="adminSalir" title="Cerrar sesión" aria-label="Cerrar sesión">
+        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="admin-main" id="adminMain">
+
+    <!-- ───────────── PEDIDOS ───────────── -->
+    <section class="admin-vista" id="vistaPedidos" data-vista="pedidos" aria-labelledby="tituloPedidos">
+      <header class="admin-vista__cabecera">
+        <div>
+          <div class="admin-vista__titulo">
+            <h1 id="tituloPedidos">Pedidos web</h1>
+            <span class="admin-contador" id="pedidosContador" data-singular="pedido" data-plural="pedidos" aria-live="polite" aria-label="0 pedidos">0 pedidos</span>
+          </div>
+          <p>Revisa los pedidos y avanza la logística desde tu celular.</p>
+        </div>
+        <div class="admin-vista__cabecera-acciones">
+          <div class="admin-ayuda">
+            <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaPedidos" aria-label="Más información sobre los pedidos">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+            </button>
+            <div class="admin-ayuda__panel" id="ayudaPedidos" role="note" tabindex="-1" hidden>
+              <strong>Cómo funciona</strong>
+              <p>Puedes aceptar y facturar un pedido, cobrar en línea (Lafise o billetera móvil) y avanzar la logística. Si el pago queda pendiente, regístralo después desde el detalle.</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-buscador">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input id="pedidosBuscar" type="search" placeholder="Buscar número, cliente o teléfono" autocomplete="off">
+      </div>
+
+      <div class="admin-chips" id="pedidosFiltros" role="group" aria-label="Filtrar pedidos">
+        <button class="admin-chip is-activo" type="button" data-estado="todos">Todos</button>
+        <button class="admin-chip" type="button" data-estado="solicitado">Solicitados</button>
+        <button class="admin-chip" type="button" data-estado="aceptado">Aceptados</button>
+        <button class="admin-chip" type="button" data-estado="en_camino">En camino</button>
+        <button class="admin-chip" type="button" data-estado="entregado">Entregados</button>
+      </div>
+
+      <div class="admin-lista" id="listaPedidos"></div>
+    </section>
+
+    <!-- ───────────── PROMOCIONES ───────────── -->
+    <section class="admin-vista" id="vistaPromociones" data-vista="promociones" aria-labelledby="tituloPromociones" hidden>
+      <header class="admin-vista__cabecera">
+        <div>
+          <h1 id="tituloPromociones">Promociones</h1>
+          <p>Activa ofertas y crea descuentos por producto.</p>
+        </div>
+        <div class="admin-vista__cabecera-acciones">
+          <button class="admin-btn admin-btn--primario admin-btn--icono" type="button" id="btnNuevaPromo" aria-label="Nueva promoción">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            <span>Nueva</span>
+          </button>
+          <div class="admin-ayuda">
+            <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaPromociones" aria-label="Más información sobre las promociones">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+            </button>
+            <div class="admin-ayuda__panel" id="ayudaPromociones" role="note" tabindex="-1" hidden>
+              <strong>Cómo funciona</strong>
+              <p>La imagen se administra desde el ERP; no se puede cambiar ni ingresar desde el panel. Las promociones pausadas dejan de mostrarse en la tienda.</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-lista" id="listaPromos"></div>
+    </section>
+
+    <!-- ───────────── CUPONES ───────────── -->
+    <section class="admin-vista" id="vistaCupones" data-vista="cupones" aria-labelledby="tituloCupones" hidden>
+      <header class="admin-vista__cabecera">
+        <div>
+          <h1 id="tituloCupones">Cupones</h1>
+          <p>Crea códigos, controla usos y activa o pausa cupones.</p>
+        </div>
+        <div class="admin-vista__cabecera-acciones">
+          <button class="admin-btn admin-btn--primario admin-btn--icono" type="button" id="btnNuevoCupon" aria-label="Nuevo cupón">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            <span>Nuevo</span>
+          </button>
+          <div class="admin-ayuda">
+            <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaCupones" aria-label="Más información sobre los cupones">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+            </button>
+            <div class="admin-ayuda__panel" id="ayudaCupones" role="note" tabindex="-1" hidden>
+              <strong>Cómo funciona</strong>
+              <p>El código se guarda en mayúsculas y no se permiten duplicados. Define usos y fechas para controlar la vigencia.</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-lista" id="listaCupones"></div>
+    </section>
+
+    <!-- ───────────── REPARTIDORES ───────────── -->
+    <section class="admin-vista" id="vistaTrabajadores" data-vista="trabajadores" aria-labelledby="tituloTrabajadores" hidden>
+      <header class="admin-vista__cabecera">
+        <div>
+          <div class="admin-vista__titulo">
+            <h1 id="tituloTrabajadores">Repartidores</h1>
+            <span class="admin-contador" id="trabajadoresContador" data-singular="repartidor" data-plural="repartidores" aria-live="polite" aria-label="0 repartidores">0 repartidores</span>
+          </div>
+          <p>Revisa solicitudes, aprueba, suspende y ajusta comisiones.</p>
+        </div>
+        <div class="admin-vista__cabecera-acciones">
+          <div class="admin-ayuda">
+            <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaTrabajadores" aria-label="Más información sobre los repartidores">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+            </button>
+            <div class="admin-ayuda__panel" id="ayudaTrabajadores" role="note" tabindex="-1" hidden>
+              <strong>Cómo funciona</strong>
+              <p>Al aprobar, el cliente pasa a rol trabajador y se guarda la comisión indicada. Rechazar o suspender queda registrado en su solicitud.</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-chips" id="trabajadoresFiltros" role="group" aria-label="Filtrar repartidores">
+        <button class="admin-chip is-activo" type="button" data-estado="pendiente">Pendientes</button>
+        <button class="admin-chip" type="button" data-estado="aprobado">Aprobados</button>
+        <button class="admin-chip" type="button" data-estado="suspendido">Suspendidos</button>
+        <button class="admin-chip" type="button" data-estado="rechazado">Rechazados</button>
+        <button class="admin-chip" type="button" data-estado="todos">Todos</button>
+      </div>
+
+      <div class="admin-lista" id="listaTrabajadores"></div>
+    </section>
+
+    <!-- ───────────── CUENTAS POR COBRAR ───────────── -->
+    <section class="admin-vista" id="vistaCobros" data-vista="cobros" aria-labelledby="tituloCobros" hidden>
+      <header class="admin-vista__cabecera">
+        <div>
+          <h1 id="tituloCobros">Cuentas por cobrar</h1>
+          <p>Consulta saldos, registra abonos y contacta a cada cliente.</p>
+        </div>
+        <div class="admin-vista__cabecera-acciones">
+          <div class="admin-ayuda">
+            <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaCobros" aria-label="Más información sobre las cuentas por cobrar">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+            </button>
+            <div class="admin-ayuda__panel" id="ayudaCobros" role="note" tabindex="-1" hidden>
+              <strong>Cómo funciona</strong>
+              <p>Usa Pagar para registrar un abono parcial o total. En efectivo necesitas una caja abierta; también puedes elegir una cuenta activa. El abono se aplica a las cuotas más antiguas y actualiza la caja o la cuenta al instante. Los pedidos web en línea se cobran desde Pedidos.</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-resumen" id="resumenCobros">
+        <div class="admin-resumen__item">
+          <span>Saldo total</span>
+          <strong id="cobrosSaldo">—</strong>
+        </div>
+        <div class="admin-resumen__item">
+          <span>Cuentas abiertas</span>
+          <strong id="cobrosAbiertas">—</strong>
+        </div>
+        <div class="admin-resumen__item admin-resumen__item--alerta">
+          <span>Vencidas</span>
+          <strong id="cobrosVencidas">—</strong>
+        </div>
+      </div>
+
+      <div class="admin-buscador">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input id="cobrosBuscar" type="search" placeholder="Buscar cliente, factura o teléfono" autocomplete="off">
+      </div>
+
+      <div class="admin-chips" id="cobrosFiltros" role="group" aria-label="Filtrar cuentas">
+        <button class="admin-chip is-activo" type="button" data-estado="todas">Todas</button>
+        <button class="admin-chip" type="button" data-estado="atrasada">Atrasadas</button>
+        <button class="admin-chip" type="button" data-estado="parcial">Parciales</button>
+        <button class="admin-chip" type="button" data-estado="pendiente">Pendientes</button>
+        <button class="admin-chip" type="button" data-estado="pagada">Pagadas</button>
+      </div>
+
+      <div class="admin-lista" id="listaCobros"></div>
+    </section>
+
+  </main>
+
+  <nav class="admin-nav" aria-label="Secciones del panel">
+    <button class="admin-nav__item is-activo" type="button" data-vista="pedidos">
+      <i class="bi bi-bag" aria-hidden="true"></i>
+      <span>Pedidos</span>
+      <em id="navBadgePedidos" hidden>0</em>
+    </button>
+    <button class="admin-nav__item" type="button" data-vista="promociones">
+      <i class="bi bi-tag" aria-hidden="true"></i>
+      <span>Promos</span>
+    </button>
+    <button class="admin-nav__item" type="button" data-vista="cupones">
+      <i class="bi bi-ticket-perforated" aria-hidden="true"></i>
+      <span>Cupones</span>
+    </button>
+    <button class="admin-nav__item" type="button" data-vista="trabajadores">
+      <i class="bi bi-truck" aria-hidden="true"></i>
+      <span>Repartidores</span>
+      <em id="navBadgeTrabajadores" hidden>0</em>
+    </button>
+    <button class="admin-nav__item" type="button" data-vista="cobros">
+      <i class="bi bi-cash-coin" aria-hidden="true"></i>
+      <span>Cobros</span>
+    </button>
+  </nav>
+
+  <!-- Hoja inferior reutilizable para formularios y detalles -->
+  <div class="admin-sheet" id="adminSheet" hidden>
+    <div class="admin-sheet__fondo" data-cerrar-sheet></div>
+    <section class="admin-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="adminSheetTitulo">
+      <header class="admin-sheet__cabecera">
+        <div>
+          <h2 id="adminSheetTitulo">Detalle</h2>
+          <p id="adminSheetSubtitulo"></p>
+        </div>
+        <button class="admin-sheet__cerrar" type="button" data-cerrar-sheet aria-label="Cerrar">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+      </header>
+      <div class="admin-sheet__contenido" id="adminSheetContenido"></div>
+    </section>
+  </div>
+
+  <!-- Confirmación -->
+  <div class="admin-dialogo" id="adminDialogo" hidden>
+    <div class="admin-dialogo__caja" role="alertdialog" aria-modal="true" aria-labelledby="adminDialogoTitulo" aria-describedby="adminDialogoMensaje">
+      <h2 id="adminDialogoTitulo">Confirmar</h2>
+      <p id="adminDialogoMensaje"></p>
+      <div class="admin-dialogo__acciones">
+        <button class="admin-btn admin-btn--ghost" type="button" id="adminDialogoCancelar">Cancelar</button>
+        <button class="admin-btn admin-btn--peligro" type="button" id="adminDialogoAceptar">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-toast" id="adminToast" role="status" aria-live="polite" hidden></div>
+
+  <script src="/tienda/recursos/js/core/supabase-config.js?v=20261110a" defer></script>
+  <script src="/tienda/recursos/js/pages/admin.js?v=20261110p" defer></script>
+</body>
+</html>

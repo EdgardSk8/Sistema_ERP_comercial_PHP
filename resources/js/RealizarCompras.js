@@ -5,28 +5,42 @@ export default function initCompras() {
 /* ------------------------------------------------------------------------------------------------------------------- */
 
     let carrito = [];
+    let gastosCompra = [];
 
     let tabla = $('#tabla_carrito').DataTable({
         paging: false,
         searching: false,
         info: false,
         ordering: false,
+        scrollX: true,
+        responsive: false,
     });
 
     document.getElementById('titulo').textContent = 'REGISTRO DE COMPRAS';
 
 /* ------------------------------------------------------------------------------------------------------------------- */
-/* 🔹 SELECT2 PRODUCTO (SOLO IMPUESTO + NOMBRE) */
+/* 🔹 SELECT2 PRODUCTO (BÚSQUEDA REMOTA + PRECIO) */
 /* ------------------------------------------------------------------------------------------------------------------- */
 
     $('#producto_select').select2({
+        width: '100%',
+        placeholder: 'Buscar por nombre, SKU, color o talla',
+        allowClear: true,
+        language: {
+            searching: () => 'Buscando…',
+            noResults: () => 'Sin resultados'
+        },
         ajax: {
             url: '/productos-compra/mostrar',
             dataType: 'json',
+            delay: 250,
+            cache: true,
             data: params => ({ q: params.term }),
             processResults: function (res) {
+                const items = Array.isArray(res.data) ? res.data : [];
+
                 return {
-                    results: res.data.map(p => ({
+                    results: items.map(p => ({
                         id: p.id,
                         id_variacion_talla: p.id_variacion_talla || null,
                         sku: p.sku || null,
@@ -36,6 +50,15 @@ export default function initCompras() {
                     }))
                 };
             }
+        },
+        templateResult: function (data) {
+            if (!data.id) return data.text;
+
+            const $opcion = $('<div class="select2-producto-opcion">');
+            $('<span class="select2-producto-nombre">').text(data.text).appendTo($opcion);
+            $('<span class="select2-producto-precio">').text(moneda(data.precio || 0)).appendTo($opcion);
+
+            return $opcion;
         }
     });
 
@@ -82,6 +105,30 @@ export default function initCompras() {
                 };
             }
         }
+    });
+
+    $('#gasto_tipo').select2({
+        ajax: {
+            url: '/tipo-gasto-compra/mostrar',
+            dataType: 'json',
+            processResults: function (res) {
+
+                if (!res.success || !Array.isArray(res.data) || !res.data.length) {
+                    return {
+                        results: [{
+                            id: '',
+                            text: 'No hay tipos de gasto configurados',
+                            disabled: true
+                        }]
+                    };
+                }
+
+                return { results: res.data };
+            }
+        },
+        width: '100%',
+        dropdownParent: $('#modalGastosCompra'),
+        placeholder: 'Seleccione un tipo'
     });
 
     // ⚠️ Las opciones ya vienen del Blade, así que NO se le pasa `data` a Select2
@@ -236,10 +283,11 @@ export default function initCompras() {
         if (!data) return mostrarToast('Seleccione producto', 'danger');
 
         let cantidad = parseFloat($('#cantidad').val()) || 0;
-        let precio = parseFloat($('#precio_usuario').val()) || 0; // 🔥 USER INPUT
+        // El costo de compra viene del producto/variante seleccionado; luego
+        // se puede ajustar en la columna "Precio Compra" del carrito.
+        let precio = Number(data.precio) || 0;
 
         if (cantidad <= 0) return mostrarToast('Cantidad inválida', 'danger');
-        //if (precio <= 0) return mostrarToast('Precio inválido', 'danger');
 
         // Fusiona solo si es el mismo producto/variante Y el mismo precio; así un
         // mismo producto puede registrarse en varias líneas (p. ej. 6 pares a C$100
@@ -275,18 +323,13 @@ export default function initCompras() {
 
         $('#producto_select').val(null).trigger('change');
         $('#cantidad').val(1);
-        $('#precio_usuario').val('');
-    });
-
-    $('#producto_select').on('select2:select', function (event) {
-        const producto = event.params.data;
-        $('#precio_usuario').val(Number(producto.precio || 0).toFixed(2));
     });
 
     $('#cantidad').val(1);
     $('#descuento').val(0);
     $('#impuesto').val(0);
     $('#subtotal').val(0);
+    $('#gastos').val('0.00');
     $('#total').val(0);
 
 /* ------------------------------------------------------------------------------------------------------------------- */
@@ -384,6 +427,75 @@ export default function initCompras() {
     });
 
 /* ------------------------------------------------------------------------------------------------------------------- */
+/* 🔥 GASTOS ADICIONALES (TRANSPORTE, COMIDA, ETC.) */
+/* ------------------------------------------------------------------------------------------------------------------- */
+
+    function escapeHtmlGasto(valor) {
+        return $('<div>').text(valor ?? '').html();
+    }
+
+    function totalGastosCompra() {
+        return gastosCompra.reduce((total, gasto) => total + (Number(gasto.monto) || 0), 0);
+    }
+
+    function renderGastosCompra() {
+
+        const filas = gastosCompra.map((gasto, i) => `
+            <tr>
+                <td>${escapeHtmlGasto(gasto.tipo)}</td>
+                <td>${gasto.detalle ? escapeHtmlGasto(gasto.detalle) : '<span class="text-muted">—</span>'}</td>
+                <td class="text-end">${moneda(gasto.monto)}</td>
+                <td class="text-end">
+                    <button type="button" class="btn-baja quitar-gasto" data-index="${i}" title="Quitar">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        $('#tablaGastosCompra').html(
+            filas || '<tr><td colspan="4" class="text-center text-muted">Sin gastos adicionales</td></tr>'
+        );
+
+        $('#totalGastosCompra').text(moneda(totalGastosCompra()));
+    }
+
+    $('#btnGastosCompra').on('click', function () {
+        renderGastosCompra();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalGastosCompra')).show();
+    });
+
+    $('#btnAgregarGasto').on('click', function () {
+
+        const tipo = $('#gasto_tipo').select2('data')[0];
+        const monto = parseFloat($('#gasto_monto').val()) || 0;
+        const detalle = $('#gasto_detalle').val().trim();
+
+        if (!tipo || !tipo.id) return mostrarToast('Seleccione el tipo de gasto', 'danger');
+        if (monto <= 0) return mostrarToast('Ingrese un monto válido', 'danger');
+
+        gastosCompra.push({
+            id_tipo_gasto: tipo.id,
+            tipo: tipo.text,
+            detalle: detalle || null,
+            monto
+        });
+
+        $('#gasto_tipo').val(null).trigger('change');
+        $('#gasto_monto').val('');
+        $('#gasto_detalle').val('');
+
+        renderGastosCompra();
+        recalcularTodo();
+    });
+
+    $('#tablaGastosCompra').on('click', '.quitar-gasto', function () {
+        gastosCompra.splice($(this).data('index'), 1);
+        renderGastosCompra();
+        recalcularTodo();
+    });
+
+/* ------------------------------------------------------------------------------------------------------------------- */
 /* 🔥 CÁLCULO GLOBAL REAL */
 /* ------------------------------------------------------------------------------------------------------------------- */
 
@@ -403,11 +515,13 @@ export default function initCompras() {
         });
 
         let descuento = parseFloat($('#descuento').val()) || 0;
+        let gastos = totalGastosCompra();
 
-        let total = subtotalGeneral + impuestoGeneral - descuento;
+        let total = subtotalGeneral + impuestoGeneral - descuento + gastos;
 
         $('#subtotal').val(subtotalGeneral.toFixed(2));
         $('#impuesto').val(impuestoGeneral.toFixed(2));
+        $('#gastos').val(gastos.toFixed(2));
         $('#total').val(total.toFixed(2));
 
         //actualizarCajas();
@@ -421,11 +535,16 @@ export default function initCompras() {
     $('#btnLimpiar').click(function () {
 
         carrito = [];
+        gastosCompra = [];
         renderCarrito();
+        renderGastosCompra();
 
         $('#proveedor, #tipo_factura, #metodo_pago, #cuenta, #caja_select, #cajacuentaselect').val(null).trigger('change');
+        $('#gasto_tipo').val(null).trigger('change');
 
         $('#numero_factura, #subtotal, #total, #impuesto').val('');
+        $('#gastos').val('0.00');
+        $('#gasto_monto, #gasto_detalle').val('');
         $('#descuento').val(0);
     });
 
@@ -444,6 +563,11 @@ export default function initCompras() {
             cuenta: $('#cuenta').val(),
             descuento: parseFloat($('#descuento').val()) || 0,
             impuesto: parseFloat($('#impuesto').val()) || 0,
+            gastos: gastosCompra.map(g => ({
+                id_tipo_gasto: g.id_tipo_gasto,
+                descripcion: g.detalle,
+                monto: g.monto
+            })),
             carrito
         };
 

@@ -524,13 +524,13 @@ window.Formato12Horas = function(hora24) {
 
 /* -------------------------------------------------------------------------------- */
 
-window.configurarToggleColumnas = function (idTabla) {
+window.configurarToggleColumnas = function (idTabla, selector = '.toggle-col') {
 
     const tabla = $(`#${idTabla}`).DataTable();
 
     let huboCambio = false;
 
-    $('.toggle-col').each(function () {
+    $(selector).each(function () {
         const columna = tabla.column($(this).data('column'));
 
         if (columna.visible() !== this.checked) {
@@ -547,7 +547,7 @@ window.configurarToggleColumnas = function (idTabla) {
         tabla.columns.adjust();
     }
 
-    $('.toggle-col')
+    $(selector)
         .off('change.toggleCol')
         .on('change.toggleCol', function () {
 

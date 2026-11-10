@@ -365,6 +365,11 @@ Route::view('/trabajadores', 'trabajadores.Trabajadores')->middleware('permiso:v
     ╚════════════════════════════════════════════════════╝ */
 
 Route::get('/cupones-descuentos/mostrar', [CuponDescuentoController::class, 'Mostrar'])->middleware('permiso:mostrar_cupones_descuentos');
+Route::get('/cupones-descuentos/clientes-resumen', [CuponDescuentoController::class, 'ClientesResumen'])->middleware('permiso:mostrar_cupones_descuentos');
+Route::get('/cupones-descuentos/clientes/{id}/detalle', [CuponDescuentoController::class, 'ClienteDetalle'])->middleware('permiso:mostrar_cupones_descuentos');
+Route::post('/cupones-descuentos/clientes/{id}/cupon-manual', [CuponDescuentoController::class, 'AgregarCuponManual'])->middleware('permiso:asignar_cupones_descuentos');
+Route::delete('/cupones-descuentos/clientes/{id}/cupones/{idCupon}', [CuponDescuentoController::class, 'QuitarCuponCliente'])->middleware('permiso:asignar_cupones_descuentos');
+Route::post('/cupones-descuentos/clientes/{id}/cupones/{idCupon}/extender', [CuponDescuentoController::class, 'ExtenderCuponCliente'])->middleware('permiso:editar_cupones_descuentos');
 Route::get('/cupones-descuentos/clientes', [CuponDescuentoController::class, 'Clientes'])->middleware('permiso:asignar_cupones_descuentos');
 Route::get('/cupones-descuentos/{id}/detalle', [CuponDescuentoController::class, 'Detalle'])->middleware('permiso:mostrar_cupones_descuentos');
 Route::post('/cupones-descuentos/crear', [CuponDescuentoController::class, 'Crear'])->middleware('permiso:crear_cupones_descuentos');
@@ -400,6 +405,7 @@ Route::get('/metodo-pago-compra/mostrar', [CompraController::class, 'MostrarMeto
 Route::get('/cuenta-compra/mostrar', [CompraController::class, 'MostrarCuentasCompras'])->middleware('permiso:mostrar_cuentas');
 Route::get('/caja-compra/mostrar', [CompraController::class, 'mostrarCajasAbiertas'])->middleware('permiso:crear_compras');
 Route::get('/medidas-compra/mostrar', [CompraController::class, 'MostrarMedidasCompras'])->middleware('permiso:crear_compras');
+Route::get('/tipo-gasto-compra/mostrar', [CompraController::class, 'MostrarTiposGastoCompras'])->middleware('permiso:crear_compras');
 Route::get('/compras/{id}/detalle', [CompraController::class, 'MostrarDetalleCompra'])->middleware('permiso:mostrar_detalle_compras');
 
 /*  ╔════════════ Endpoint Permisos ═════════════╗

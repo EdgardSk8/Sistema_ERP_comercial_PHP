@@ -65,11 +65,11 @@
   - `preparando` queda solo para pedidos antiguos (no se ofrece en el selector).
 - [x] **Estado de pago separado**: `pendiente` → `en_revision` → `pagado`; también `parcial` y `reembolsado`.
   - El cliente paga por billetera/transferencia y envía el comprobante por WhatsApp.
-  - El negocio solo pasa el pedido a `aceptado` cuando el pago está `pagado` (regla del negocio).
+  - Los pedidos en línea (`lafise`/`billetera_movil`) se aceptan cuando el pago está `pagado`; los de efectivo pueden aceptarse y facturarse con pago pendiente, que se registra después desde el panel.
 - [x] **Quién cambia cada estado**
   - Cliente: crea el pedido (`solicitado` + pago `pendiente`) y solo puede cancelar mientras siga `solicitado` y sin pago confirmado.
-  - ERP: acepta/rechaza, prepara, envía, entrega y devuelve. Se hará desde la interfaz de facturación automática del inventario (pendiente de UI/lógica).
-  - Cada cambio queda en `pedido_web_estados` con origen (`web` / `erp` / `sistema`).
+  - ERP y panel móvil: aceptar/facturar, rechazar/cancelar, preparar, enviar, entregar y devolver. En efectivo el pago puede quedar pendiente y registrarse después.
+  - Cada cambio queda en `pedido_web_estados` con origen (`web` / `erp` / `web_admin` / `sistema`).
 - [x] **Stock**: se descuenta al **aceptar** (cuando se factura), no al solicitar. Si se rechaza o cancela antes de aceptar, no hay stock que liberar.
 - [x] **Rechazo/cancelación**: el pedido queda cerrado, se avisa al cliente y no se prepara. Si ya había pago, el negocio gestiona el reembolso (`estado_pago = reembolsado`).
 - [x] **Numeración legible**: `VTA-20261103-00001` (secuencia `pedidos_web_numero_seq`, trigger `web_numero_pedido`).
@@ -127,15 +127,21 @@
 
 ### 3.8 Promociones
 - [x] Descuento fijo por cliente (ya existe).
-- [ ] Cupones con código, vigencia y límites.
+- [x] Imagen administrada solo desde el ERP; el panel no permite cambiarla ni ingresar fotos.
+- [x] Cupones con código, vigencia y límites (panel admin y ERP).
 - [ ] Precio de oferta con precio anterior tachado.
 - [ ] Envío gratis por umbral (se cruza con 3.1).
 
 ### 3.9 Administración
 - [x] Bandeja de pedidos con filtros por estado y pago (la zona queda pendiente).
 - [x] Aceptar/rechazar pedido desde el ERP.
+- [x] Panel admin móvil en `/tienda/admin` con usuario y contraseña del ERP: pedidos, promociones, cupones, repartidores y cuentas por cobrar. Ver README §10.
+- [x] Cobro en línea desde el panel (Lafise / billetera móvil): monto exacto, factura, FIFO, ingreso en cuenta e historial de pagos.
+- [x] Aceptar y facturar desde el panel; en efectivo el pago puede quedar pendiente y registrarse después (caja o cuenta).
+- [x] Abonos manuales desde **Cuentas por cobrar**: parciales o totales, en efectivo con caja abierta o desde una cuenta activa; se aplican a las cuotas más antiguas y actualizan caja/cuentas.
 - [ ] Moderación de reseñas (`estado_resenia` ya existe, sin interfaz).
-- [ ] Gestión de tarifas de envío y cupones sin tocar SQL.
+- [x] Gestión de cupones sin tocar SQL desde el panel admin.
+- [ ] Gestión de tarifas de envío sin tocar SQL.
 - [ ] Reportes: conversión, ticket promedio, top productos, costo de envío.
 
 ### 3.10 Confianza y contenido

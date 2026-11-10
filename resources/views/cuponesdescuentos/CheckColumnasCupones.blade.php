@@ -2,7 +2,7 @@
 
     <div class="d-flex align-items-center gap-3">
 
-        <div class="dropdown">
+        <div class="dropdown" id="columnasCupones">
             <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
                 Columnas
             </button>

@@ -1,8 +1,6 @@
 <turbo-frame id="contenido-dinamico">
     @vite(['resources/css/cuponesdescuentos/CuponesDescuentos.css'])
 
-    @include('cuponesdescuentos.CheckColumnasCupones')
-
     <section class="cupones-page">
         <div class="cupones-toolbar">
             <div class="cupones-toolbar-info">
@@ -10,7 +8,16 @@
                 <span class="cupones-toolbar-sub">Cupones de la tienda, fidelidad y descuentos vigentes</span>
             </div>
 
-            <div class="cupones-toolbar-resumen">
+            <div class="cupones-vistas" role="tablist" aria-label="Cupones y clientes">
+                <button type="button" class="cupones-vista is-activo" data-vista-cupones="cupones" role="tab" aria-selected="true">
+                    <i class="ph ph-ticket"></i> Cupones
+                </button>
+                <button type="button" class="cupones-vista" data-vista-cupones="clientes" role="tab" aria-selected="false">
+                    <i class="ph ph-users"></i> Clientes
+                </button>
+            </div>
+
+            <div class="cupones-toolbar-resumen" id="chipsCupones">
                 <button type="button" class="cupones-chip is-activo" data-filtro="todos">
                     <span>Total</span>
                     <strong id="resumenCuponesTotal">0</strong>
@@ -30,7 +37,10 @@
             </div>
         </div>
 
-        <div class="cupones-descuentos">
+        <div class="cupones-vista-panel" id="vistaCupones">
+            @include('cuponesdescuentos.CheckColumnasCupones')
+
+            <div class="cupones-descuentos">
             <article class="cupones-descuento-card">
                 <span class="cupones-descuento-card__icono"><i class="ph ph-gift"></i></span>
                 <div class="cupones-descuento-card__texto">
@@ -86,6 +96,65 @@
                 <tbody></tbody>
             </table>
         </div>
+        </div><!-- /vistaCupones -->
+
+        <div class="cupones-vista-panel" id="vistaClientes" hidden>
+        <div class="cupones-toolbar">
+            <div class="cupones-toolbar-info">
+                <h4 class="cupones-toolbar-titulo">Clientes</h4>
+                <span class="cupones-toolbar-sub">Compras, descuento de bienvenida y cupones por cliente</span>
+            </div>
+        </div>
+
+        <div class="cupones-toolbar-resumen cupones-toolbar-resumen--clientes">
+            <button type="button" class="cupones-chip is-activo" data-filtro-cliente="todos">
+                <span>Todos</span>
+                <strong id="resumenClientesTotal">0</strong>
+            </button>
+            <button type="button" class="cupones-chip" data-filtro-cliente="con-compras">
+                <span>Con compras</span>
+                <strong id="resumenClientesCompras">0</strong>
+            </button>
+            <button type="button" class="cupones-chip" data-filtro-cliente="bienvenida-disponible">
+                <span>Bienvenida disponible</span>
+                <strong id="resumenClientesBienvenida">0</strong>
+            </button>
+            <button type="button" class="cupones-chip" data-filtro-cliente="bienvenida-usada">
+                <span>Bienvenida usada</span>
+                <strong id="resumenClientesBienvenidaUsada">0</strong>
+            </button>
+            <button type="button" class="cupones-chip" data-filtro-cliente="sin-compras">
+                <span>Sin compras</span>
+                <strong id="resumenClientesSinCompras">0</strong>
+            </button>
+            <button type="button" class="cupones-chip" data-filtro-cliente="con-cupones">
+                <span>Con cupones</span>
+                <strong id="resumenClientesCupones">0</strong>
+            </button>
+        </div>
+
+        @include('cuponesdescuentos.CheckColumnasClientesCupones')
+
+        <div class="card cupones-tabla-card">
+            <table id="tablaClientesCupones" class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Correo</th>
+                        <th>Teléfono</th>
+                        <th>Compras</th>
+                        <th>Total gastado</th>
+                        <th>Pedidos web</th>
+                        <th>Última compra</th>
+                        <th>Bienvenida</th>
+                        <th>Cupones</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        </div><!-- /vistaClientes -->
     </section>
 
     <div class="modal fade cupones-modal" id="modalDetalleCupon" tabindex="-1" aria-hidden="true">
@@ -151,13 +220,13 @@
                             <div class="cupones-form__campo">
                                 <label class="form-label" for="cuponCodigo">Código</label>
                                 <input type="text" id="cuponCodigo" class="form-control form-control-sm"
-                                       maxlength="40" placeholder="Ej. PAREJAS20" autocomplete="off">
+                                       maxlength="40" placeholder="Ej. VERANO25" autocomplete="off">
                             </div>
 
                             <div class="cupones-form__campo">
                                 <label class="form-label" for="cuponNombre">Nombre</label>
                                 <input type="text" id="cuponNombre" class="form-control form-control-sm"
-                                       maxlength="120" placeholder="Ej. Cupón parejas">
+                                       maxlength="120" placeholder="Ej. Cupón de verano">
                             </div>
 
                             <div class="cupones-form__campo">
@@ -179,6 +248,12 @@
                                 <select id="cuponCategoria" class="form-select form-select-sm">
                                     <option value="">Todas las categorías</option>
                                 </select>
+                            </div>
+
+                            <div class="cupones-form__campo">
+                                <label class="form-label" for="cuponTope">Tope en C$ (solo %)</label>
+                                <input type="number" id="cuponTope" class="form-control form-control-sm"
+                                       min="0.01" step="0.01" placeholder="Sin tope">
                             </div>
 
                             <div class="cupones-form__campo">
@@ -254,6 +329,109 @@
                         <button type="button" class="cupones-btn cupones-btn--secundario" data-bs-dismiss="modal">Cancelar</button>
                         <button type="button" class="cupones-btn cupones-btn--primario" id="btnConfirmarAsignacion">Asignar</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade cupones-modal" id="modalClienteCupon" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloClienteCupon">Cliente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="cupones-cliente-resumen" id="resumenClienteCupon"></div>
+
+                    <h6 class="cupones-detalle__subtitulo">Datos del cliente</h6>
+
+                    <div class="cupones-cliente-datos">
+                        <div><span>Nombre</span><strong id="clienteNombreCupon">—</strong></div>
+                        <div><span>Correo</span><strong id="clienteCorreoCupon">—</strong></div>
+                        <div><span>Teléfono</span><strong id="clienteTelefonoCupon">—</strong></div>
+                        <div><span>Cliente desde</span><strong id="clienteAltaCupon">—</strong></div>
+                    </div>
+
+                    <h6 class="cupones-detalle__subtitulo">Cupones del cliente</h6>
+                    <p class="cupones-cliente-aviso">«+ días» extiende la vigencia del cupón para todos los clientes que lo tengan.</p>
+
+                    <div id="clienteCuponesLista" class="cupones-cliente-cupones"></div>
+
+                    <h6 class="cupones-detalle__subtitulo">Agregar cupón manual</h6>
+
+                    <form id="formCuponManual" class="cupones-form" novalidate>
+                        <div class="cupones-form__campo">
+                            <label class="form-label" for="manualTipo">Tipo</label>
+                            <select id="manualTipo" class="form-select form-select-sm">
+                                <option value="monto">Monto fijo (C$)</option>
+                                <option value="porcentaje">Porcentaje (%)</option>
+                            </select>
+                        </div>
+
+                        <div class="cupones-form__campo">
+                            <label class="form-label" for="manualValor">Valor</label>
+                            <input type="number" id="manualValor" class="form-control form-control-sm"
+                                   min="0.01" step="0.01" placeholder="300.00">
+                        </div>
+
+                        <div class="cupones-form__campo">
+                            <label class="form-label" for="manualNombre">Nombre (opcional)</label>
+                            <input type="text" id="manualNombre" class="form-control form-control-sm"
+                                   maxlength="120" placeholder="Ej. Crédito 300 córdobas">
+                        </div>
+
+                        <div class="cupones-form__campo" id="manualCategoriaCampo">
+                            <label class="form-label" for="manualCategoria">Categoría</label>
+                            <select id="manualCategoria" class="form-select form-select-sm">
+                                <option value="">Todas las categorías</option>
+                            </select>
+                        </div>
+
+                        <div class="cupones-form__campo" id="manualTopeCampo">
+                            <label class="form-label" for="manualTope">Tope en C$</label>
+                            <input type="number" id="manualTope" class="form-control form-control-sm"
+                                   min="0.01" step="0.01" placeholder="Sin tope">
+                        </div>
+
+                        <div class="cupones-form__campo">
+                            <label class="form-label" for="manualDias">Vigencia (días)</label>
+                            <input type="number" id="manualDias" class="form-control form-control-sm"
+                                   min="1" max="365" value="30">
+                        </div>
+
+                        <div class="cupones-form__campo cupones-form__campo--ancho cupones-cliente-guardar">
+                            <button type="submit" class="cupones-btn cupones-btn--primario cupones-btn--sm" id="btnAgregarCuponManual">
+                                Agregar cupón
+                            </button>
+                            <div id="errorCuponManual" class="cupones-form__error" role="alert"></div>
+                        </div>
+                    </form>
+
+                    <h6 class="cupones-detalle__subtitulo">Últimas compras</h6>
+
+                    <div id="clienteComprasLista" class="cupones-cliente-compras"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade cupones-modal" id="modalConfirmarClienteCupon" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloConfirmarCupon">Confirmar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="mb-0" id="mensajeConfirmarCupon"></p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="cupones-btn cupones-btn--secundario" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="cupones-btn cupones-btn--primario" id="btnAceptarConfirmarCupon">Aceptar</button>
                 </div>
             </div>
         </div>

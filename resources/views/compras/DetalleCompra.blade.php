@@ -48,6 +48,7 @@
                                 <th>Cant</th>
                                 <th>Precio</th>
                                 <th>Impuesto</th>
+                                <th>Gasto</th>
                                 <th>Subtotal</th>
                             </tr>
                         </thead>
@@ -55,6 +56,14 @@
                             <!-- JS inserta aquí -->
                         </tbody>
                     </table>
+                </div>
+
+                <!-- GASTOS ADICIONALES -->
+                <div class="row mt-3" id="seccionGastosCompra" style="display:none">
+                    <div class="col-12">
+                        <strong>Gastos adicionales:</strong>
+                        <ul id="listaGastosCompraDetalle" class="mb-0 small"></ul>
+                    </div>
                 </div>
 
                 <!-- TOTALES -->
@@ -76,6 +85,11 @@
                         <div class="d-flex justify-content-between">
                             <strong>Impuesto:</strong>
                             <span id="impuestoCompra">C$ 0.00</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <strong>Gastos:</strong>
+                            <span id="gastosCompra">C$ 0.00</span>
                         </div>
 
                         <div class="d-flex justify-content-between border-top pt-2">

@@ -12,6 +12,7 @@ create table if not exists public.cupones (
     tipo_descuento_cupon varchar(20) not null default 'porcentaje',
     valor_descuento_cupon numeric(10, 2) not null default 0,
     categoria_cupon varchar(80),
+    tope_descuento_cupon numeric(10, 2),
     usos_maximos integer not null default 1,
     usos_realizados integer not null default 0,
     fecha_inicio_cupon timestamp without time zone not null default now(),
@@ -19,6 +20,8 @@ create table if not exists public.cupones (
     estado_cupon boolean not null default true,
     fecha_creacion_cupon timestamp without time zone not null default now()
 );
+
+alter table public.cupones add column if not exists tope_descuento_cupon numeric(10, 2);
 
 -- 2) Cupones reclamados por cada cliente (un uso por cliente)
 create table if not exists public.cupones_clientes (
@@ -57,6 +60,7 @@ select coalesce(jsonb_agg(jsonb_build_object(
         else 'C$ ' || to_char(c.valor_descuento_cupon, 'FM999999990.00')
     end,
     'categoria', c.categoria_cupon,
+    'tope', c.tope_descuento_cupon,
     'fecha_fin', c.fecha_fin_cupon
 ) order by c.fecha_fin_cupon nulls last, c.id_cupon), '[]'::jsonb)
 from public.cupones_clientes cc

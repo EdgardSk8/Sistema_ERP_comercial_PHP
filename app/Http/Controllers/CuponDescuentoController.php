@@ -22,6 +22,7 @@ class CuponDescuentoController extends Controller
                     'c.tipo_descuento_cupon',
                     'c.valor_descuento_cupon',
                     'c.categoria_cupon',
+                    'c.tope_descuento_cupon',
                     'c.usos_maximos',
                     'c.usos_realizados',
                     'c.fecha_inicio_cupon',
@@ -151,6 +152,348 @@ class CuponDescuentoController extends Controller
                 'mensaje' => 'No se pudieron cargar los clientes.',
             ], 500);
         }
+    }
+
+    public function ClientesResumen()
+    {
+        try {
+            $clientes = DB::table('clientes as cl')
+                ->leftJoin('auth.users as u', 'u.id', '=', 'cl.auth_id')
+                ->select([
+                    'cl.id_cliente',
+                    'cl.nombre_cliente',
+                    'cl.correo_cliente',
+                    'cl.telefono_cliente',
+                    'cl.estado_cliente',
+                ])
+                ->selectRaw('(select count(*) from ventas v where v.id_cliente = cl.id_cliente and coalesce(v.estado_venta, true)) as compras')
+                ->selectRaw('(select coalesce(sum(v.total_venta), 0) from ventas v where v.id_cliente = cl.id_cliente and coalesce(v.estado_venta, true)) as total_compras')
+                ->selectRaw('(select max(v.fecha_venta) from ventas v where v.id_cliente = cl.id_cliente and coalesce(v.estado_venta, true)) as ultima_compra')
+                ->selectRaw("(select count(*) from pedidos_web p where p.id_cliente = cl.id_cliente and p.id_venta is null and p.estado_pedido not in ('cancelado', 'rechazado')) as pedidos_web")
+                ->selectRaw("(select coalesce(sum(p.total_pedido), 0) from pedidos_web p where p.id_cliente = cl.id_cliente and p.id_venta is null and p.estado_pedido not in ('cancelado', 'rechazado')) as total_pedidos_web")
+                ->selectRaw('(select max(p.fecha_pedido) from pedidos_web p where p.id_cliente = cl.id_cliente) as ultimo_pedido')
+                ->selectRaw('(select count(*) from cupones_clientes cc where cc.id_cliente = cl.id_cliente) as cupones_asignados')
+                ->selectRaw('(select count(*) from cupones_clientes cc where cc.id_cliente = cl.id_cliente and cc.usado_cupon) as cupones_usados')
+                ->selectRaw("lower(coalesce(u.raw_user_meta_data->>'descuento_primera_compra', '')) as bienvenida_meta")
+                ->selectRaw("lower(coalesce(u.raw_user_meta_data->>'descuento_primera_compra_usado', '')) as bienvenida_usada_meta")
+                ->orderBy('cl.nombre_cliente')
+                ->get()
+                ->map(function ($cliente) {
+                    $verdadero = fn ($valor) => in_array((string) $valor, ['true', 't', '1'], true);
+
+                    $usada = $verdadero($cliente->bienvenida_usada_meta);
+
+                    $cliente->compras = (int) $cliente->compras;
+                    $cliente->pedidos_web = (int) $cliente->pedidos_web;
+                    $cliente->total_compras = (float) $cliente->total_compras;
+                    $cliente->total_pedidos_web = (float) $cliente->total_pedidos_web;
+                    $cliente->cupones_asignados = (int) $cliente->cupones_asignados;
+                    $cliente->cupones_usados = (int) $cliente->cupones_usados;
+                    $cliente->bienvenida_usada = $usada;
+                    $cliente->bienvenida_disponible = ! $usada && $verdadero($cliente->bienvenida_meta);
+                    $cliente->total_gastado = $cliente->total_compras + $cliente->total_pedidos_web;
+                    $cliente->ultima_actividad = collect([$cliente->ultima_compra, $cliente->ultimo_pedido])
+                        ->filter()
+                        ->sort()
+                        ->last();
+
+                    unset($cliente->bienvenida_meta, $cliente->bienvenida_usada_meta);
+
+                    return $cliente;
+                })
+                ->values();
+
+            $resumen = [
+                'total' => $clientes->count(),
+                'con_compras' => $clientes->filter(fn ($cliente) => ($cliente->compras + $cliente->pedidos_web) > 0)->count(),
+                'sin_compras' => $clientes->filter(fn ($cliente) => ($cliente->compras + $cliente->pedidos_web) === 0)->count(),
+                'bienvenida_disponible' => $clientes->filter(fn ($cliente) => $cliente->bienvenida_disponible)->count(),
+                'bienvenida_usada' => $clientes->filter(fn ($cliente) => $cliente->bienvenida_usada)->count(),
+                'con_cupones' => $clientes->filter(fn ($cliente) => $cliente->cupones_asignados > 0)->count(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'clientes' => $clientes,
+                'resumen' => $resumen,
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'No se pudieron cargar los clientes.',
+            ], 500);
+        }
+    }
+
+    public function ClienteDetalle($id)
+    {
+        $cliente = $this->clienteConMetricas((int) $id);
+
+        if (! $cliente) {
+            return response()->json(['success' => false, 'mensaje' => 'Cliente no encontrado.'], 404);
+        }
+
+        $cupones = DB::table('cupones_clientes as cc')
+            ->join('cupones as c', 'c.id_cupon', '=', 'cc.id_cupon')
+            ->where('cc.id_cliente', $id)
+            ->select([
+                'cc.id_cupon_cliente',
+                'cc.usado_cupon',
+                'cc.fecha_asignacion_cupon',
+                'cc.fecha_uso_cupon',
+                'c.id_cupon',
+                'c.codigo_cupon',
+                'c.nombre_cupon',
+                'c.tipo_descuento_cupon',
+                'c.valor_descuento_cupon',
+                'c.categoria_cupon',
+                'c.tope_descuento_cupon',
+                'c.fecha_fin_cupon',
+                'c.estado_cupon',
+            ])
+            ->orderBy('cc.usado_cupon')
+            ->orderByDesc('cc.fecha_asignacion_cupon')
+            ->get()
+            ->map(function ($cupon) {
+                $cupon->usado_cupon = (bool) $cupon->usado_cupon;
+                $cupon->valor_descuento_cupon = (float) $cupon->valor_descuento_cupon;
+
+                return $cupon;
+            });
+
+        $ventas = DB::table('ventas')
+            ->where('id_cliente', $id)
+            ->orderByDesc('fecha_venta')
+            ->limit(5)
+            ->get(['numero_factura', 'fecha_venta', 'total_venta', 'estado_venta']);
+
+        $pedidos = DB::table('pedidos_web')
+            ->where('id_cliente', $id)
+            ->orderByDesc('fecha_pedido')
+            ->limit(5)
+            ->get(['numero_pedido', 'fecha_pedido', 'total_pedido', 'estado_pedido']);
+
+        return response()->json([
+            'success' => true,
+            'cliente' => $cliente,
+            'cupones' => $cupones,
+            'ventas' => $ventas,
+            'pedidos' => $pedidos,
+        ]);
+    }
+
+    public function QuitarCuponCliente($id, $idCupon)
+    {
+        $asignacion = DB::table('cupones_clientes')
+            ->where('id_cliente', $id)
+            ->where('id_cupon', $idCupon);
+
+        if (! (clone $asignacion)->exists()) {
+            return response()->json(['success' => false, 'mensaje' => 'El cliente no tiene ese cupón.'], 404);
+        }
+
+        $asignacion->delete();
+
+        /* Los cupones manuales (MAN-) se eliminan si ya no quedan asignados. */
+        $cupon = DB::table('cupones')->where('id_cupon', $idCupon)->first();
+        $quedan = DB::table('cupones_clientes')->where('id_cupon', $idCupon)->count();
+
+        if ($cupon && $quedan === 0 && str_starts_with(strtoupper((string) $cupon->codigo_cupon), 'MAN-')) {
+            DB::table('cupones')->where('id_cupon', $idCupon)->delete();
+        }
+
+        return response()->json(['success' => true, 'mensaje' => 'Cupón quitado al cliente.']);
+    }
+
+    public function ExtenderCuponCliente(Request $request, $id, $idCupon)
+    {
+        $validator = Validator::make($request->all(), [
+            'dias' => 'required|integer|min:1|max:365',
+        ], [
+            'required' => 'Indica cuántos días extender.',
+            'integer' => 'Los días deben ser un número entero.',
+            'min' => 'Los días deben ser al menos 1.',
+            'max' => 'No puedes extender más de 365 días.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        if (! DB::table('cupones_clientes')->where('id_cliente', $id)->where('id_cupon', $idCupon)->exists()) {
+            return response()->json(['success' => false, 'mensaje' => 'El cliente no tiene ese cupón.'], 404);
+        }
+
+        $cupon = DB::table('cupones')->where('id_cupon', $idCupon)->first();
+
+        if (! $cupon) {
+            return response()->json(['success' => false, 'mensaje' => 'Cupón no encontrado.'], 404);
+        }
+
+        $base = $cupon->fecha_fin_cupon && now()->lessThan($cupon->fecha_fin_cupon)
+            ? $cupon->fecha_fin_cupon
+            : now()->toDateTimeString();
+
+        $nuevaFecha = date('Y-m-d H:i:s', strtotime($base.' +'.(int) $request->input('dias').' days'));
+
+        DB::table('cupones')->where('id_cupon', $idCupon)->update([
+            'fecha_fin_cupon' => $nuevaFecha,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'mensaje' => 'Vigencia extendida hasta '.date('d/m/Y', strtotime($nuevaFecha)).'.',
+            'fecha_fin_cupon' => $nuevaFecha,
+        ]);
+    }
+
+    public function AgregarCuponManual(Request $request, $id)
+    {
+        $cliente = DB::table('clientes')->where('id_cliente', $id)->first();
+
+        if (! $cliente) {
+            return response()->json(['success' => false, 'mensaje' => 'Cliente no encontrado.'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'tipo_descuento_cupon' => 'required|in:porcentaje,monto',
+            'valor_descuento_cupon' => 'required|numeric|min:0.01',
+            'nombre_cupon' => 'nullable|max:120',
+            'categoria_cupon' => 'nullable|max:80',
+            'tope_descuento_cupon' => 'nullable|numeric|min:0.01',
+            'dias' => 'nullable|integer|min:1|max:365',
+        ], [
+            'required' => 'El campo :attribute es obligatorio.',
+            'numeric' => 'El campo :attribute debe ser numérico.',
+            'min' => 'El campo :attribute debe ser mayor o igual a :min.',
+            'in' => 'El campo :attribute no es válido.',
+            'max' => 'El campo :attribute no debe superar :max.',
+        ], [
+            'tipo_descuento_cupon' => 'tipo',
+            'valor_descuento_cupon' => 'valor',
+            'nombre_cupon' => 'nombre',
+            'categoria_cupon' => 'categoría',
+            'tope_descuento_cupon' => 'tope',
+            'dias' => 'días',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $tipo = $request->input('tipo_descuento_cupon');
+        $valor = (float) $request->input('valor_descuento_cupon');
+
+        if ($tipo === 'porcentaje' && $valor > 100) {
+            return response()->json(['success' => false, 'mensaje' => 'El porcentaje no puede superar 100.'], 422);
+        }
+
+        $dias = (int) ($request->input('dias') ?: 30);
+        $nombre = trim((string) $request->input('nombre_cupon'));
+        $categoria = $tipo === 'porcentaje'
+            ? (trim((string) $request->input('categoria_cupon')) ?: null)
+            : null;
+        $tope = $tipo === 'porcentaje' && $request->filled('tope_descuento_cupon')
+            ? round((float) $request->input('tope_descuento_cupon'), 2)
+            : null;
+
+        if ($nombre === '') {
+            $nombre = $tipo === 'porcentaje'
+                ? 'Descuento '.$valor.'%'
+                : 'Crédito '.number_format($valor, 2);
+        }
+
+        try {
+            $idCupon = DB::transaction(function () use ($id, $cliente, $tipo, $valor, $nombre, $dias, $categoria, $tope) {
+                do {
+                    $codigo = 'MAN-'.strtoupper(bin2hex(random_bytes(3)));
+                } while (DB::table('cupones')->whereRaw('upper(codigo_cupon) = ?', [$codigo])->exists());
+
+                $idCupon = DB::table('cupones')->insertGetId([
+                    'codigo_cupon' => $codigo,
+                    'nombre_cupon' => $nombre,
+                    'descripcion_cupon' => 'Cupón manual para '.$cliente->nombre_cliente,
+                    'tipo_descuento_cupon' => $tipo,
+                    'valor_descuento_cupon' => $valor,
+                    'categoria_cupon' => $categoria,
+                    'tope_descuento_cupon' => $tope,
+                    'usos_maximos' => 1,
+                    'usos_realizados' => 0,
+                    'fecha_inicio_cupon' => now(),
+                    'fecha_fin_cupon' => now()->addDays($dias),
+                    'estado_cupon' => true,
+                    'fecha_creacion_cupon' => now(),
+                ], 'id_cupon');
+
+                DB::table('cupones_clientes')->insert([
+                    'id_cupon' => $idCupon,
+                    'id_cliente' => (int) $id,
+                    'usado_cupon' => false,
+                    'fecha_asignacion_cupon' => now(),
+                ]);
+
+                return $idCupon;
+            });
+
+            return response()->json([
+                'success' => true,
+                'id_cupon' => $idCupon,
+                'mensaje' => 'Cupón agregado al cliente.',
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'No se pudo agregar el cupón.',
+            ], 500);
+        }
+    }
+
+    private function clienteConMetricas(int $id)
+    {
+        $cliente = DB::table('clientes as cl')
+            ->leftJoin('auth.users as u', 'u.id', '=', 'cl.auth_id')
+            ->where('cl.id_cliente', $id)
+            ->select([
+                'cl.id_cliente',
+                'cl.nombre_cliente',
+                'cl.correo_cliente',
+                'cl.telefono_cliente',
+                'cl.estado_cliente',
+                'cl.fecha_creacion_cliente',
+            ])
+            ->selectRaw('(select count(*) from ventas v where v.id_cliente = cl.id_cliente and coalesce(v.estado_venta, true)) as compras')
+            ->selectRaw('(select coalesce(sum(v.total_venta), 0) from ventas v where v.id_cliente = cl.id_cliente and coalesce(v.estado_venta, true)) as total_compras')
+            ->selectRaw("(select count(*) from pedidos_web p where p.id_cliente = cl.id_cliente and p.id_venta is null and p.estado_pedido not in ('cancelado', 'rechazado')) as pedidos_web")
+            ->selectRaw("(select coalesce(sum(p.total_pedido), 0) from pedidos_web p where p.id_cliente = cl.id_cliente and p.id_venta is null and p.estado_pedido not in ('cancelado', 'rechazado')) as total_pedidos_web")
+            ->selectRaw('(select count(*) from cupones_clientes cc where cc.id_cliente = cl.id_cliente) as cupones_asignados')
+            ->selectRaw("lower(coalesce(u.raw_user_meta_data->>'descuento_primera_compra', '')) as bienvenida_meta")
+            ->selectRaw("lower(coalesce(u.raw_user_meta_data->>'descuento_primera_compra_usado', '')) as bienvenida_usada_meta")
+            ->first();
+
+        if (! $cliente) {
+            return null;
+        }
+
+        $verdadero = fn ($valor) => in_array((string) $valor, ['true', 't', '1'], true);
+
+        $usada = $verdadero($cliente->bienvenida_usada_meta);
+
+        $cliente->compras = (int) $cliente->compras;
+        $cliente->pedidos_web = (int) $cliente->pedidos_web;
+        $cliente->total_compras = (float) $cliente->total_compras;
+        $cliente->total_pedidos_web = (float) $cliente->total_pedidos_web;
+        $cliente->total_gastado = $cliente->total_compras + $cliente->total_pedidos_web;
+        $cliente->cupones_asignados = (int) $cliente->cupones_asignados;
+        $cliente->bienvenida_usada = $usada;
+        $cliente->bienvenida_disponible = ! $usada && $verdadero($cliente->bienvenida_meta);
+
+        unset($cliente->bienvenida_meta, $cliente->bienvenida_usada_meta);
+
+        return $cliente;
     }
 
     public function Crear(Request $request)
@@ -301,6 +644,7 @@ class CuponDescuentoController extends Controller
             'tipo_descuento_cupon' => 'required|in:porcentaje,monto',
             'valor_descuento_cupon' => 'required|numeric|min:0.01',
             'categoria_cupon' => 'nullable|max:80',
+            'tope_descuento_cupon' => 'nullable|numeric|min:0.01',
             'usos_maximos' => 'required|integer|min:1',
             'fecha_inicio_cupon' => 'nullable|date',
             'fecha_fin_cupon' => 'nullable|date|after_or_equal:fecha_inicio_cupon',
@@ -365,6 +709,10 @@ class CuponDescuentoController extends Controller
             'valor_descuento_cupon' => round((float) $request->input('valor_descuento_cupon'), 2),
             'categoria_cupon' => $request->filled('categoria_cupon')
                 ? trim((string) $request->input('categoria_cupon'))
+                : null,
+            'tope_descuento_cupon' => $request->input('tipo_descuento_cupon') === 'porcentaje'
+                && $request->filled('tope_descuento_cupon')
+                ? round((float) $request->input('tope_descuento_cupon'), 2)
                 : null,
             'usos_maximos' => (int) $request->input('usos_maximos'),
             'fecha_inicio_cupon' => $request->filled('fecha_inicio_cupon')

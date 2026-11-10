@@ -2,6 +2,10 @@ export default function initMostrarCompras() {
 
     let opcionesFiltros = {};
 
+    function escapeHtml(valor) {
+        return $('<div>').text(valor ?? '').html();
+    }
+
     $(document).off('.mostrarCompras');
 
     document.getElementById('titulo').textContent = 'HISTORIAL DE COMPRAS';
@@ -37,6 +41,7 @@ export default function initMostrarCompras() {
             { data: 'subtotal_compra', render: data => moneda(data) },
             { data: 'descuento_compra', render: data => moneda(data) },
             { data: 'impuesto_compra', render: data => moneda(data) },
+            { data: 'gastos_compra', render: data => moneda(data) },
             { data: 'total_compra', render: data => moneda(data) },
             { data: 'metodo_pago.nombre_metodo_pago' },
 
@@ -60,7 +65,7 @@ export default function initMostrarCompras() {
                 }
             }
         ], drawCallback: function () { AnimarFilasVisibles(this.api()); }, order: [[0, 'desc']],
-        initComplete: function () { ConfigurarFiltrosDataTable(this, { columnasSelect: [2,3,9], columnasIgnorar: [11], opciones: opcionesFiltros }); }
+        initComplete: function () { ConfigurarFiltrosDataTable(this, { columnasSelect: [2,3,10], columnasIgnorar: [12], opciones: opcionesFiltros }); }
     });
 
     configurarToggleColumnas('tablaCompras');
@@ -71,7 +76,7 @@ export default function initMostrarCompras() {
 
         let idCompra = btn.data('id');
 
-        $('#tablaDetallesCompra').html('<tr><td colspan="5" class="text-center">Cargando...</td></tr>');
+        $('#tablaDetallesCompra').html('<tr><td colspan="6" class="text-center">Cargando...</td></tr>');
 
         $.get(`/compras/${idCompra}/detalle`, function (res) {
 
@@ -91,7 +96,7 @@ export default function initMostrarCompras() {
             $('#facturaTituloCompra').text(`Factura: ${compra.numero_factura_compra ?? 'Sin Numero de Factura' }`);
             $('#proveedorNombre').text(compra.proveedor?.nombre_proveedor ?? '—');
             $('#usuarioNombreCompra').text(compra.usuario?.nombre_usuario ?? '—');
-            $('#fechaCompra').text(compra.fecha_compra);
+            $('#fechaCompra').text(formatearFecha(compra.fecha_compra));
             $('#metodoPagoCompra').text(compra.metodo_pago?.nombre_metodo_pago ?? '—');
 
             let filas = '';
@@ -103,6 +108,7 @@ export default function initMostrarCompras() {
                         <td class="text-center">${detalle.cantidad_compra}</td>
                         <td class="text-end">C$ ${parseFloat(detalle.precio_unitario_compra).toFixed(2)}</td>
                         <td class="text-end">C$ ${(detalle.subtotal_detalle_compra - (detalle.precio_unitario_compra * detalle.cantidad_compra)).toFixed(2)}</td>
+                        <td class="text-end">C$ ${parseFloat(detalle.gastos_detalle_compra ?? 0).toFixed(2)}</td>
                         <td class="text-end">C$ ${parseFloat(detalle.subtotal_detalle_compra).toFixed(2)}</td>
                     </tr>
                 `;
@@ -110,9 +116,25 @@ export default function initMostrarCompras() {
 
             $('#tablaDetallesCompra').html(filas);
 
+            const gastos = compra.gastos_adicionales ?? [];
+            let listaGastos = '';
+
+            gastos.forEach(gasto => {
+                const tipo = gasto.tipo_gasto?.nombre_tipo_gasto ?? 'Otro';
+                const detalle = gasto.descripcion_gasto_compra
+                    ? ` · ${escapeHtml(gasto.descripcion_gasto_compra)}`
+                    : '';
+
+                listaGastos += `<li>${escapeHtml(tipo)}${detalle}: C$ ${parseFloat(gasto.monto_gasto_compra).toFixed(2)}</li>`;
+            });
+
+            $('#listaGastosCompraDetalle').html(listaGastos);
+            $('#seccionGastosCompra').toggle(gastos.length > 0);
+
             $('#subtotalCompra').text(`C$ ${parseFloat(compra.subtotal_compra).toFixed(2)}`);
             $('#descuentoCompra').text(`C$ ${parseFloat(compra.descuento_compra).toFixed(2)}`);
             $('#impuestoCompra').text(`C$ ${parseFloat(compra.impuesto_compra).toFixed(2)}`);
+            $('#gastosCompra').text(`C$ ${parseFloat(compra.gastos_compra ?? 0).toFixed(2)}`);
             $('#totalCompra').text(`C$ ${parseFloat(compra.total_compra).toFixed(2)}`);
 
             const modal = new bootstrap.Modal(document.getElementById('modalDetalleCompra'));

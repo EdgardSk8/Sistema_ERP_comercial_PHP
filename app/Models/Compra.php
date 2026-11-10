@@ -11,6 +11,7 @@ class Compra extends Model
     protected $primaryKey = 'id_compra';
 
     public $incrementing = true;
+
     protected $keyType = 'int';
 
     public $timestamps = false;
@@ -23,12 +24,13 @@ class Compra extends Model
         'subtotal_compra',
         'descuento_compra',
         'impuesto_compra',
+        'gastos_compra',
         'total_compra',
         'estado_compra',
         'id_caja',
         'id_cuenta',
         'id_metodo_pago',
-        'id_tipo_factura'
+        'id_tipo_factura',
     ];
 
     // 🔹 Relación: compra pertenece a proveedor
@@ -60,6 +62,13 @@ class Compra extends Model
     {
         return $this->hasMany(DetalleCompra::class, 'id_compra', 'id_compra');
     }
+
+    // 🔹 Relación: gastos adicionales de la compra (transporte, comida, etc.)
+    public function gastosAdicionales()
+    {
+        return $this->hasMany(GastoCompra::class, 'id_compra', 'id_compra');
+    }
+
     public function metodoPago()
     {
         return $this->belongsTo(MetodoPago::class, 'id_metodo_pago', 'id_metodo_pago');
@@ -69,7 +78,6 @@ class Compra extends Model
     {
         return $this->belongsTo(TipoFactura::class, 'id_tipo_factura', 'id_tipo_factura');
     }
-
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

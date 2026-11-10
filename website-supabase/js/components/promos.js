@@ -292,7 +292,13 @@
     }
 
     function urlImagenPromocion(nombre) {
-        return nombre ? `/imagenes/promociones/${encodeURIComponent(nombre)}` : '';
+        const texto = String(nombre ?? '').trim();
+
+        if (!texto) return '';
+        if (/^https?:\/\//i.test(texto) || texto.startsWith('/')) return texto;
+        if (/^[a-z0-9._\-/]+$/i.test(texto)) return `/imagenes/promociones/${encodeURIComponent(texto)}`;
+
+        return '';
     }
 
     function textoDescuento(tipo, valor) {

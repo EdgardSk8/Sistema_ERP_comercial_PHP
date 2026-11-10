@@ -80,9 +80,11 @@ export default function initRespaldo() {
             });
 
             btn.disabled = true;
+            btn.classList.add('is-loading');
+            btn.setAttribute('aria-busy', 'true');
             btn.innerHTML = `
-                <span class="spinner-border spinner-border-sm me-2"></span>
-                Exportando...
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Exportando…
             `;
 
             // =============================
@@ -155,6 +157,8 @@ export default function initRespaldo() {
         } finally {
 
             btn.disabled = false;
+            btn.classList.remove('is-loading');
+            btn.removeAttribute('aria-busy');
             btn.innerHTML = `
                 <i class="ph ph-download-simple me-1"></i>
                 Exportar Todo

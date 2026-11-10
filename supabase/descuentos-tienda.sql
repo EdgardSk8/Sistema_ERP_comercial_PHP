@@ -390,6 +390,10 @@ begin
         if v_base_cupon > 0 then
             if v_cupon.tipo_descuento_cupon = 'porcentaje' then
                 v_descuento := round((v_base_cupon * coalesce(v_cupon.valor_descuento_cupon, 0) / 100)::numeric, 2);
+
+                if coalesce(v_cupon.tope_descuento_cupon, 0) > 0 then
+                    v_descuento := least(v_descuento, v_cupon.tope_descuento_cupon);
+                end if;
             elsif v_cupon.tipo_descuento_cupon = 'monto' then
                 v_descuento := least(v_base_cupon, coalesce(v_cupon.valor_descuento_cupon, 0));
             end if;

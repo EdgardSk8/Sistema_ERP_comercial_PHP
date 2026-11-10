@@ -559,7 +559,8 @@
                                     <tr><td>Producto y cantidad</td><td>Qué se recibe y cuántas unidades.</td></tr>
                                     <tr><td>Descuento</td><td>Rebaja aplicada por el proveedor.</td></tr>
                                     <tr><td>IVA incluido</td><td>Si está marcado, los precios ya incluyen impuesto; si no, se suma al total.</td></tr>
-                                    <tr><td>Total</td><td>Monto final de la compra.</td></tr>
+                                    <tr><td>Gastos</td><td>Gastos adicionales de la compra (transporte, comida, fletes, etc.). Se agregan con el botón <strong>+</strong>: se elige el tipo de gasto, el monto y un detalle opcional. Se suman al total pagado y se reparten entre los productos según su valor, aumentando su costo real.</td></tr>
+                                    <tr><td>Total</td><td>Monto final de la compra (productos + impuesto + gastos − descuento).</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -568,7 +569,7 @@
                             <i class="ph ph-lightbulb"></i>
                             <div>
                                 <strong>Ejemplo</strong>
-                                <p>10 camisas a C$ 100 cada una, IVA 15% e IVA incluido desmarcado: subtotal C$ 1,000, impuesto C$ 150, total C$ 1,150. El stock de cada camisa sube 10 unidades y se registra una entrada en el Kardex.</p>
+                                <p>10 camisas a C$ 100 cada una, IVA 15% e IVA incluido desmarcado: subtotal C$ 1,000, impuesto C$ 150, total C$ 1,150. Si además pagas C$ 150 de transporte, el total pagado es C$ 1,300 y cada camisa entra al inventario con un costo real de C$ 115 (C$ 100 + C$ 15 de flete). El stock de cada camisa sube 10 unidades y se registra una entrada en el Kardex.</p>
                             </div>
                         </div>
 
@@ -592,9 +593,9 @@
                             </div>
                         </div>
 
-                        <p>Cada compra muestra factura, proveedor, usuario, fecha, subtotal, descuento, impuesto, total, método de pago y estado.</p>
+                        <p>Cada compra muestra factura, proveedor, usuario, fecha, subtotal, descuento, impuesto, gastos, total, método de pago y estado.</p>
                         <ul>
-                            <li><i class="ph ph-eye"></i><strong>Detalle:</strong> Muestra los productos recibidos, las cantidades y los costos.</li>
+                            <li><i class="ph ph-eye"></i><strong>Detalle:</strong> Muestra los productos recibidos, las cantidades, los costos y el gasto adicional prorrateado en cada línea.</li>
                             <li><i class="ph ph-x-circle"></i><strong>Anular:</strong> Revierte el stock y el movimiento de dinero asociado. La compra queda registrada como anulada.</li>
                         </ul>
                     </article>

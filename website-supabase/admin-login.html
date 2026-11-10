@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5EEDE">
+  <meta name="color-scheme" content="light">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Panel administrativo · Tellez Nic Store</title>
+  <meta name="description" content="Acceso al panel administrativo de Tellez Nic Store.">
+
+  <link rel="preload" href="/tienda/recursos/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" type="image/png" sizes="32x32" href="/tienda/recursos/img/favicon-navidad.png?v=20261030h">
+  <link rel="apple-touch-icon" sizes="180x180" href="/tienda/recursos/img/apple-touch-navidad.png?v=20261030h">
+  <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
+
+  <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-utilidades.css?v=20261110a">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/admin.css?v=20261110b">
+</head>
+<body class="admin-login-pagina">
+
+  <main class="admin-login">
+    <section class="admin-login__card" aria-labelledby="adminLoginTitulo">
+
+      <a class="admin-login__marca" href="/tienda">
+        <img src="/tienda/recursos/img/minilogo.png" alt="">
+        <span>Tellez Nic Store</span>
+      </a>
+
+      <span class="admin-eyebrow">Acceso restringido</span>
+      <h1 id="adminLoginTitulo">Panel administrativo</h1>
+      <p class="admin-login__texto">
+        Ingresa con tu usuario y contraseña del ERP para controlar pedidos,
+        promociones, cupones, repartidores y cuentas por cobrar desde tu celular.
+      </p>
+
+      <form id="adminLoginForm" novalidate autocomplete="on">
+
+        <div class="admin-campo">
+          <label for="adminUsuario">Usuario</label>
+          <div class="admin-campo__control">
+            <i class="bi bi-person" aria-hidden="true"></i>
+            <input
+              id="adminUsuario"
+              name="usuario"
+              type="text"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="60"
+              placeholder="Tu usuario del ERP"
+              required>
+          </div>
+        </div>
+
+        <div class="admin-campo">
+          <label for="adminClave">Contraseña</label>
+          <div class="admin-campo__control">
+            <i class="bi bi-shield-lock" aria-hidden="true"></i>
+            <input
+              id="adminClave"
+              name="clave"
+              type="password"
+              autocomplete="current-password"
+              maxlength="200"
+              placeholder="Tu contraseña"
+              required>
+            <button
+              type="button"
+              class="admin-campo__ojo"
+              id="adminVerClave"
+              aria-label="Mostrar contraseña"
+              aria-pressed="false">
+              <i class="bi bi-eye" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+
+        <p class="admin-alerta" id="adminLoginError" role="alert" hidden></p>
+
+        <button class="admin-btn admin-btn--primario admin-btn--bloque" type="submit" id="adminLoginBtn">
+          <span class="admin-btn__texto">Entrar al panel</span>
+          <span class="admin-spinner" id="adminLoginSpinner" aria-hidden="true" hidden></span>
+        </button>
+      </form>
+
+      <p class="admin-login__nota">
+        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <span>Sesión de 12 horas. No compartas este acceso ni lo guardes en equipos ajenos.</span>
+      </p>
+
+      <a class="admin-login__volver" href="/tienda">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        Volver a la tienda
+      </a>
+
+    </section>
+  </main>
+
+  <script src="/tienda/recursos/js/core/supabase-config.js?v=20261110a" defer></script>
+  <script src="/tienda/recursos/js/pages/admin-login.js?v=20261110a" defer></script>
+</body>
+</html>

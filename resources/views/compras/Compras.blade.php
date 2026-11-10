@@ -16,6 +16,7 @@
                     <th>Subtotal</th>
                     <th>Desc</th>
                     <th>Impuesto</th>
+                    <th>Gastos</th>
                     <th>Total</th>
                     <th>Método Pago</th>
                     <th>Estado</th>
@@ -27,6 +28,7 @@
 
             <tfoot>
                     <tr>
+                        <th></th>
                         <th></th>
                         <th></th>
                         <th></th>

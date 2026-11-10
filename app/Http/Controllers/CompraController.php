@@ -6,6 +6,7 @@ use App\Models\Caja;
 use App\Models\Compra;
 use App\Models\Cuenta;
 use App\Models\DetalleCompra;
+use App\Models\GastoCompra;
 use App\Models\LoteInventario;
 use App\Models\Medida;
 use App\Models\MetodoPago;
@@ -15,6 +16,7 @@ use App\Models\MovimientoInventario;
 use App\Models\Producto;
 use App\Models\Proveedor;
 use App\Models\TipoFactura;
+use App\Models\TipoGasto;
 use App\Models\VariacionTalla;
 use App\Services\CosteoInventarioService;
 use App\Support\Busqueda;
@@ -48,6 +50,10 @@ class CompraController extends Controller
                 'carrito.*.id_variacion_talla' => 'nullable|exists:variacion_tallas,id_variacion_talla',
                 'carrito.*.cantidad' => 'required|numeric|min:1',
                 'carrito.*.precio' => 'required|numeric|min:0',
+                'gastos' => 'nullable|array',
+                'gastos.*.id_tipo_gasto' => 'required|exists:tipo_gasto,id_tipo_gasto',
+                'gastos.*.monto' => 'required|numeric|min:0.01',
+                'gastos.*.descripcion' => 'nullable|string|max:200',
             ]);
 
             if ($validator->fails()) {
@@ -86,9 +92,21 @@ class CompraController extends Controller
                 $subtotalGeneral += $item['precio'] * $item['cantidad'];
             }
 
-            $descuento = $request->descuento ?? 0;
-            $impuesto = $request->impuesto ?? 0;
-            $totalCalculado = $subtotalGeneral - $descuento + $impuesto;
+            $descuento = (float) ($request->descuento ?? 0);
+            $impuesto = (float) ($request->impuesto ?? 0);
+
+            // 🚚 Gastos adicionales de la compra (transporte, comida, etc.).
+            // Se suman al total pagado y luego se prorratean al costo real.
+            $gastosCompra = collect($request->input('gastos', []))
+                ->map(fn ($gasto) => [
+                    'id_tipo_gasto' => (int) $gasto['id_tipo_gasto'],
+                    'descripcion_gasto_compra' => $gasto['descripcion'] ?? null,
+                    'monto_gasto_compra' => round((float) $gasto['monto'], 2),
+                ]);
+
+            $totalGastos = round((float) $gastosCompra->sum('monto_gasto_compra'), 2);
+
+            $totalCalculado = round($subtotalGeneral - $descuento + $impuesto + $totalGastos, 2);
 
             if ($totalCalculado < 0) {
                 return response()->json(['success' => false, 'mensaje' => 'Total inválido'], 422);
@@ -108,8 +126,19 @@ class CompraController extends Controller
                 'subtotal_compra' => $subtotalGeneral,
                 'descuento_compra' => $descuento,
                 'impuesto_compra' => $impuesto,
+                'gastos_compra' => $totalGastos,
                 'total_compra' => $totalCalculado,
             ]);
+
+            // =====================
+            // 4️⃣.b GASTOS ADICIONALES DE LA COMPRA
+            // =====================
+            foreach ($gastosCompra as $gasto) {
+                GastoCompra::create([
+                    'id_compra' => $compra->id_compra,
+                    ...$gasto,
+                ]);
+            }
 
             // =====================
             // 5️⃣ DETALLES, STOCK Y KARDEX
@@ -118,6 +147,14 @@ class CompraController extends Controller
                 $producto = Producto::where('id_producto', $item['id'])->lockForUpdate()->first();
                 $cantidad = $item['cantidad'];
                 $precio = $item['precio'];
+
+                // 🚚 El gasto adicional se reparte proporcional al valor de cada
+                // línea y se suma al costo unitario que entra al lote FIFO.
+                $subtotalItem = (float) $precio * (float) $cantidad;
+                $proporcion = $subtotalGeneral > 0 ? $subtotalItem / $subtotalGeneral : 0;
+                $gastoProrrateado = round($totalGastos * $proporcion, 2);
+                $costoUnitarioReal = (float) $precio + ($cantidad > 0 ? $gastoProrrateado / $cantidad : 0);
+
                 $variacionTalla = null;
                 if (! empty($item['id_variacion_talla'])) {
                     $variacionTalla = VariacionTalla::with(['variacion', 'talla'])
@@ -142,6 +179,7 @@ class CompraController extends Controller
                     'cantidad_compra' => $cantidad,
                     'precio_unitario_compra' => $precio,
                     'subtotal_detalle_compra' => $precio * $cantidad,
+                    'gastos_detalle_compra' => $gastoProrrateado,
                 ]);
 
                 // 📦 Stock: solo se mueve la existencia. El precio de compra del
@@ -160,7 +198,7 @@ class CompraController extends Controller
                     $producto->id_producto,
                     $variacionTalla?->id_variacion_talla,
                     (int) $cantidad,
-                    (float) $precio,
+                    (float) $costoUnitarioReal,
                     $detalleCompra->id_detalle_compra,
                     session('usuario.id')
                 );
@@ -457,6 +495,34 @@ class CompraController extends Controller
         }
     }
 
+    /*  ╔══════════ Mostrar Tipos de Gasto ══════════╗
+        ╚══════════════════════════════════════════════╝ */
+
+    public function MostrarTiposGastoCompras()
+    {
+        try {
+
+            $tipos = TipoGasto::where('estado_tipo_gasto', 1)
+                ->orderBy('nombre_tipo_gasto', 'asc')
+                ->get(['id_tipo_gasto', 'nombre_tipo_gasto']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $tipos->map(fn ($tipo) => [
+                    'id' => $tipo->id_tipo_gasto,
+                    'text' => $tipo->nombre_tipo_gasto,
+                ]),
+            ], 200);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'Error al obtener los tipos de gasto',
+            ], 500);
+        }
+    }
+
     /*  ╔════════════ Proceso de cajas ═══════════╗
         ╚═════════════════════════════════════════╝ */
 
@@ -606,7 +672,9 @@ class CompraController extends Controller
 
             $productos = $query
                 ->orderBy('nombre_producto', 'asc')
-                // ->limit(20) limite datos cargadis en select2
+                // Select2 solo necesita una página de resultados: antes se
+                // enviaba el catálogo completo en cada búsqueda.
+                ->limit(30)
                 ->get();
 
             // FORMATO SELECT2
@@ -632,7 +700,7 @@ class CompraController extends Controller
                     'precio' => $p->precio_compra ?? 0,
                     'impuesto' => $impuesto,
                 ]];
-            });
+            })->take(60);
 
             return response()->json([
                 'success' => true,
@@ -828,14 +896,15 @@ class CompraController extends Controller
                     5 => ['col' => 'subtotal_compra'],
                     6 => ['col' => 'descuento_compra'],
                     7 => ['col' => 'impuesto_compra'],
-                    8 => ['col' => 'total_compra'],
-                    9 => ['rel' => 'metodoPago', 'col' => 'nombre_metodo_pago'],
-                    10 => ['col' => 'estado_compra'],
+                    8 => ['col' => 'gastos_compra'],
+                    9 => ['col' => 'total_compra'],
+                    10 => ['rel' => 'metodoPago', 'col' => 'nombre_metodo_pago'],
+                    11 => ['col' => 'estado_compra'],
                 ],
                 'orden' => [
                     2 => '(select nombre_proveedor from proveedores where proveedores.id_proveedor = compras.id_proveedor)',
                     3 => '(select nombre_usuario from usuarios where usuarios.id_usuario = compras.id_usuario)',
-                    9 => '(select nombre_metodo_pago from metodos_pago where metodos_pago.id_metodo_pago = compras.id_metodo_pago)',
+                    10 => '(select nombre_metodo_pago from metodos_pago where metodos_pago.id_metodo_pago = compras.id_metodo_pago)',
                 ],
                 'ordenDefault' => ['columna' => 'id_compra', 'dir' => 'desc'],
                 'extras' => ['opciones' => $this->opcionesFiltrosCompras()],
@@ -877,7 +946,7 @@ class CompraController extends Controller
                     ->pluck('usuarios.nombre_usuario')
                     ->all(),
 
-                9 => DB::table('compras')
+                10 => DB::table('compras')
                     ->join('metodos_pago', 'compras.id_metodo_pago', '=', 'metodos_pago.id_metodo_pago')
                     ->distinct()
                     ->orderBy('metodos_pago.nombre_metodo_pago')
@@ -895,6 +964,7 @@ class CompraController extends Controller
             'usuario',
             'metodoPago',
             'detalles.producto',
+            'gastosAdicionales.tipoGasto',
         ])->findOrFail($id);
 
         return response()->json([

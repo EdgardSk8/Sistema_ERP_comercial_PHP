@@ -9,6 +9,9 @@
 /tienda/perfil         /perfil       301
 /tienda/trabajador     /trabajador   301
 /tienda/trabaja-con-nosotros  /trabaja-con-nosotros 301
+/tienda/admin          /admin        301
+/tienda/admin/         /admin        301
+/tienda/admin-login    /admin-login  301
 /tienda/ayuda          /ayuda        301
 /tienda/quienes-somos  /quienes-somos 301
 /tienda/terminos       /terminos     301

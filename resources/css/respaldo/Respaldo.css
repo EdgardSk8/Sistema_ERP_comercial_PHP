@@ -57,6 +57,24 @@
 .btn-exportar,.btn-restaurar{min-height:35px;border:0;border-radius:8px;font-size:12px;font-weight:700}
 .btn-exportar{background:var(--verde);color:var(--text-on-accent)}
 .btn-exportar:hover{background:var(--verde-hover);color:var(--text-on-accent)}
+
+/* La tarjeta puede comprimirse: evita que el contenido se encime al botón. */
+.card-exportacion .card-body{ overflow-y:auto; }
+.card-exportacion .card-body > *{ flex-shrink:0; }
+
+/* Estado de carga del botón Exportar */
+.btn-exportar:disabled,
+.btn-exportar.is-loading{
+    opacity:1;
+    cursor:progress;
+    background:var(--verde-hover);
+    color:var(--text-on-accent);
+}
+.btn-exportar .spinner-border{
+    width:1rem;
+    height:1rem;
+    border-width:.16em;
+}
 .btn-restaurar{background:var(--rojo);color:var(--text-on-accent)}
 .btn-restaurar:hover{background:var(--rojo-hover);color:var(--text-on-accent)}
 .alerta-restauracion{padding:9px 10px;border:1px solid color-mix(in srgb,var(--rojo) 24%,var(--border));border-radius:9px;background:var(--rojo-soft);color:var(--text);font-size:11px}

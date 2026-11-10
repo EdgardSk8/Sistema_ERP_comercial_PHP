@@ -3199,3 +3199,59 @@ body.modal-datos-abierto { overflow: hidden; }
     font-size: .78rem;
     font-weight: 600;
 }
+
+/* ── Acceso al panel administrativo (debajo de «Trabaja con nosotros») ── */
+.perfil-admin-acceso {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: var(--e-4);
+    padding: 12px 14px;
+    border: 1px dashed var(--borde);
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--primario-claro) 70%, #fff);
+    color: var(--secundario);
+    text-decoration: none;
+    transition: border-color .18s ease, background .18s ease;
+}
+
+.perfil-admin-acceso:hover {
+    border-color: var(--primario-hondo);
+    background: var(--primario-claro);
+}
+
+.perfil-admin-acceso__icono {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    background: var(--superficie);
+    color: var(--secundario);
+    font-size: 1rem;
+}
+
+.perfil-admin-acceso__texto {
+    display: grid;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.perfil-admin-acceso__texto strong {
+    font-size: .8rem;
+    font-weight: 700;
+}
+
+.perfil-admin-acceso__texto small {
+    color: var(--texto-suave);
+    font-size: .7rem;
+    line-height: 1.4;
+}
+
+.perfil-admin-acceso__flecha {
+    color: var(--texto-suave);
+    font-size: .8rem;
+}
