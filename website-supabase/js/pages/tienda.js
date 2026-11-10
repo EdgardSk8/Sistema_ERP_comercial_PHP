@@ -75,19 +75,11 @@ function colorHex(nombre) {
 }
 
 function moneda(valor) {
-    return 'C$ ' + Number(valor || 0).toLocaleString('es-NI', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+    return window.TiendaUtil.moneda(valor);
 }
 
 function escapar(valor) {
-    return String(valor ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    return window.TiendaUtil.escapar(valor);
 }
 
 /* ── Calificación compacta (estrellas + opiniones) ───────────── */
@@ -784,7 +776,7 @@ function iniciarCatalogo(productos, tallasReferencia) {
             deseosCatalogo = new Set(
                 (datos?.deseos || []).map((deseo) => String(deseo.id_producto))
             );
-        } catch (error) {
+        } catch {
             deseosCatalogo = new Set();
         } finally {
             deseosCatalogoCargados = true;

@@ -557,6 +557,7 @@ as $$
 declare
     v_trabajador public.trabajadores%rowtype;
     v_pedido public.pedidos_web%rowtype;
+    v_pago public.pedidos_web.estado_pago%type;
 begin
     if auth.uid() is null then
         raise exception 'Inicia sesión para continuar.';
@@ -572,8 +573,8 @@ begin
         raise exception 'Tu cuenta de trabajador no está aprobada.';
     end if;
 
-    if p_estado is distinct from 'enviado' then
-        raise exception 'Solo puedes marcar el pedido en camino. La tienda confirma la entrega.';
+    if p_estado is null or p_estado not in ('enviado', 'entregado', 'devuelto') then
+        raise exception 'Estado no válido para el repartidor.';
     end if;
 
     select p.* into v_pedido
@@ -583,6 +584,82 @@ begin
 
     if v_pedido.id_pedido is null or v_pedido.id_trabajador is distinct from v_trabajador.id_trabajador then
         raise exception 'Este pedido no está asignado a tu cuenta.';
+    end if;
+
+    /* Devuelto: el cliente canceló al recibir; el producto regresa a la tienda. */
+    if p_estado = 'devuelto' then
+        if v_pedido.estado_pedido = 'devuelto' then
+            return jsonb_build_object('success', true, 'id_pedido', p_id, 'estado_pedido', 'devuelto');
+        end if;
+
+        if v_pedido.estado_pedido <> 'enviado' then
+            raise exception 'Solo puedes devolver un pedido que salió contigo.';
+        end if;
+
+        update public.pedidos_web
+        set estado_pedido = 'devuelto'
+        where id_pedido = p_id;
+
+        insert into public.pedido_web_estados (
+            id_pedido,
+            estado_anterior,
+            estado_nuevo,
+            estado_pago_anterior,
+            estado_pago_nuevo,
+            origen,
+            nota
+        ) values (
+            p_id,
+            v_pedido.estado_pedido,
+            'devuelto',
+            v_pedido.estado_pago,
+            v_pedido.estado_pago,
+            'trabajador',
+            'El repartidor ' || v_trabajador.nombre_trabajador || ' marcó el pedido como devuelto: el cliente no lo recibió.'
+        );
+
+        return jsonb_build_object('success', true, 'id_pedido', p_id, 'estado_pedido', 'devuelto');
+    end if;
+
+    /* Entregado: solo desde «En camino». Si es efectivo, se cobra al entregar. */
+    if p_estado = 'entregado' then
+        if v_pedido.estado_pedido = 'entregado' then
+            return jsonb_build_object('success', true, 'id_pedido', p_id, 'estado_pedido', 'entregado');
+        end if;
+
+        if v_pedido.estado_pedido <> 'enviado' then
+            raise exception 'Primero marca el pedido en camino para poder entregarlo.';
+        end if;
+
+        v_pago := case
+            when v_pedido.metodo_pago_web = 'efectivo' and v_pedido.estado_pago <> 'reembolsado' then 'pagado'
+            else v_pedido.estado_pago
+        end;
+
+        update public.pedidos_web
+        set estado_pedido = 'entregado',
+            estado_pago = v_pago
+        where id_pedido = p_id;
+
+        insert into public.pedido_web_estados (
+            id_pedido,
+            estado_anterior,
+            estado_nuevo,
+            estado_pago_anterior,
+            estado_pago_nuevo,
+            origen,
+            nota
+        ) values (
+            p_id,
+            v_pedido.estado_pedido,
+            'entregado',
+            v_pedido.estado_pago,
+            v_pago,
+            'trabajador',
+            'El repartidor ' || v_trabajador.nombre_trabajador || ' confirmó la entrega.'
+        );
+
+        return jsonb_build_object('success', true, 'id_pedido', p_id, 'estado_pedido', 'entregado', 'estado_pago', v_pago);
     end if;
 
     if v_pedido.estado_pedido = 'enviado' then

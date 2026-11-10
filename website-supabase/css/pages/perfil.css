@@ -152,37 +152,12 @@ html { scroll-behavior: smooth; }
     overflow: hidden;
 }
 
-.perfil-ayuda__tema {
-    padding: .5rem .6rem;
-    border: 0;
-    border-radius: var(--r-sm);
-    background: transparent;
-    font: inherit;
-    font-size: .8rem;
-    color: var(--texto-suave);
-    text-align: left;
-    cursor: pointer;
-    transition: background .5s ease, color .5s ease;
-}
-
-.perfil-ayuda__tema:hover,
-.perfil-ayuda__tema:focus-visible {
-    background: rgba(14, 90, 52, .08);
-    color: var(--secundario);
-}
-
 @keyframes perfil-ayuda-entra {
     from { opacity: 0; transform: translateY(-6px); }
     to { opacity: 1; transform: none; }
 }
 
 /* Atajos por sección dentro del desplegable. */
-.perfil-ayuda__grupo {
-    margin-top: 6px;
-    padding-top: 8px;
-    border-top: 1px dashed var(--borde);
-}
-
 .perfil-ayuda__subtitulo {
     margin: 0 0 6px;
     padding: 0 4px;
@@ -1724,112 +1699,6 @@ html { scroll-behavior: smooth; }
     white-space: nowrap;
 }
 
-/* ── Modal de confirmación (perfil) ─────────────────────────── */
-body.sin-scroll {
-    overflow: hidden;
-}
-
-.modal-perfil {
-    position: fixed;
-    inset: 0;
-    z-index: 1080;
-    display: grid;
-    place-items: center;
-    padding: var(--e-4);
-    opacity: 0;
-    transition: opacity .5s ease;
-}
-
-.modal-perfil.is-visible {
-    opacity: 1;
-}
-
-.modal-perfil__fondo {
-    position: absolute;
-    inset: 0;
-    background: rgba(17, 17, 17, .48);
-    backdrop-filter: blur(2px);
-}
-
-.modal-perfil__caja {
-    position: relative;
-    width: min(400px, 100%);
-    padding: var(--e-5);
-    text-align: center;
-    background: var(--superficie);
-    border: 1px solid var(--borde);
-    border-radius: var(--r-lg);
-    box-shadow: 0 18px 48px rgba(17, 17, 17, .22);
-    transform: translateY(10px) scale(.98);
-    transition: transform .5s ease;
-}
-
-.modal-perfil.is-visible .modal-perfil__caja {
-    transform: translateY(0) scale(1);
-}
-
-.modal-perfil__icono {
-    display: grid;
-    place-items: center;
-    width: 46px;
-    height: 46px;
-    margin: 0 auto var(--e-3);
-    border-radius: var(--r-pill);
-    background: rgba(230, 81, 63, .12);
-    color: var(--acento);
-    font-size: 1.25rem;
-}
-
-.modal-perfil__titulo {
-    margin: 0 0 var(--e-2);
-    font-family: var(--fuente-titulo);
-    font-size: 1.15rem;
-    font-weight: 600;
-}
-
-.modal-perfil__texto {
-    margin: 0 0 var(--e-4);
-    font-size: .86rem;
-    line-height: 1.5;
-    color: var(--texto-suave);
-}
-
-.modal-perfil__texto strong {
-    color: var(--secundario);
-}
-
-.modal-perfil__acciones {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--e-2);
-}
-
-.modal-perfil__acciones .btn-secundario,
-.modal-perfil__peligro {
-    flex: 1 1 140px;
-}
-
-.modal-perfil__peligro {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    height: 42px;
-    border: 1px solid var(--acento);
-    border-radius: var(--r-pill);
-    background: var(--acento);
-    color: #fff;
-    font-size: .8rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity .18s ease;
-}
-
-.modal-perfil__peligro:hover {
-    opacity: .88;
-}
-
 .perfil-btn-icono {
     display: grid;
     place-items: center;
@@ -3091,4 +2960,242 @@ html.tema-navidad .app-header #btnMenuPerfil:hover {
 
 .perfil-pedido__repartidor-wa:hover {
     background: #dcfce7;
+}
+
+/* ── Modal: completa los datos del 10% ───────────────────────── */
+.perfil-datos-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+    display: grid;
+    place-items: center;
+    padding: var(--e-4);
+}
+
+.perfil-datos-modal[hidden] { display: none; }
+
+.perfil-datos-modal__fondo {
+    position: absolute;
+    inset: 0;
+    background: rgba(12, 61, 36, .5);
+}
+
+.perfil-datos-modal__caja {
+    position: relative;
+    width: min(100%, 430px);
+    max-height: calc(100vh - var(--e-5));
+    overflow-y: auto;
+    /* El scrollbar-color heredado de <html> anula ::-webkit-scrollbar. */
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+    padding: var(--e-5);
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sombra-media);
+}
+
+/* Barra de desplazamiento más fina que la global. */
+.perfil-datos-modal__caja::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;
+}
+
+.perfil-datos-modal__caja::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.perfil-datos-modal__caja::-webkit-scrollbar-thumb {
+    background: rgba(12, 61, 36, .32);
+    border-radius: var(--r-pill);
+}
+
+.perfil-datos-modal__caja::-webkit-scrollbar-thumb:hover {
+    background: rgba(12, 61, 36, .5);
+}
+
+/* Firefox no admite ::-webkit-scrollbar. */
+@supports (-moz-appearance: none) {
+    .perfil-datos-modal__caja {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(12, 61, 36, .32) transparent;
+    }
+}
+
+.perfil-datos-modal__cerrar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--secundario);
+    opacity: .55;
+    cursor: pointer;
+}
+
+.perfil-datos-modal__cerrar:hover {
+    background: rgba(12, 61, 36, .06);
+    opacity: 1;
+}
+
+.perfil-datos-modal__titulo {
+    margin: 8px 0 4px;
+    font-family: var(--fuente-titulo);
+    font-size: 1.2rem;
+    line-height: 1.25;
+    color: var(--secundario);
+}
+
+.perfil-datos-modal__texto {
+    margin: 0 0 var(--e-4);
+    color: var(--texto-suave);
+    font-size: .86rem;
+}
+
+.perfil-datos-modal__form {
+    display: grid;
+    gap: var(--e-3);
+}
+
+.perfil-datos-modal__campo {
+    display: grid;
+    gap: 4px;
+}
+
+.perfil-datos-modal__campo label {
+    color: var(--secundario);
+    font-size: .78rem;
+    font-weight: 600;
+}
+
+.perfil-datos-modal__campo small {
+    color: var(--texto-suave);
+    font-size: .72rem;
+}
+
+.perfil-datos-modal__hecho {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    color: #14532d;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.perfil-datos-modal__direccion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--borde);
+    border-radius: var(--r-pill);
+    background: rgba(255, 255, 255, .8);
+    color: var(--secundario);
+    font-size: .82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.perfil-datos-modal__direccion:hover { background: var(--primario-medio); }
+
+.perfil-datos-modal__campo.is-falta .form-control,
+.perfil-datos-modal__dir.is-falta .perfil-datos-modal__direccion {
+    border-color: var(--acento);
+    box-shadow: 0 0 0 3px rgba(193, 18, 31, .14);
+}
+
+.perfil-datos-modal__acciones {
+    display: flex;
+    gap: var(--e-3);
+    margin-top: var(--e-2);
+}
+
+.perfil-datos-modal__acciones .btn-secundario,
+.perfil-datos-modal__acciones .btn-primario {
+    flex: 1 1 0;
+    justify-content: center;
+}
+
+/* «Ahora no» descarta lo escrito: se marca en rojo. */
+.perfil-datos-modal__acciones .btn-secundario,
+html.tema-navidad .perfil-datos-modal__acciones .btn-secundario {
+    border-color: var(--acento);
+    background: var(--acento);
+    color: #fff;
+}
+
+.perfil-datos-modal__acciones .btn-secundario:hover,
+html.tema-navidad .perfil-datos-modal__acciones .btn-secundario:hover {
+    border-color: color-mix(in srgb, var(--acento) 82%, #000);
+    background: color-mix(in srgb, var(--acento) 82%, #000);
+    color: #fff;
+}
+
+body.modal-datos-abierto { overflow: hidden; }
+
+/* Apertura y cierre con medio segundo de animación */
+.perfil-datos-modal {
+    opacity: 0;
+    transition: opacity .5s ease;
+}
+
+.perfil-datos-modal__caja {
+    opacity: 0;
+    transform: translateY(14px) scale(.98);
+    transition: opacity .5s ease, transform .5s cubic-bezier(.4, 0, .2, 1);
+}
+
+.perfil-datos-modal.is-visible { opacity: 1; }
+
+.perfil-datos-modal.is-visible .perfil-datos-modal__caja {
+    opacity: 1;
+    transform: none;
+}
+
+/* Dirección dentro del modal: mapa y referencia */
+.perfil-datos-modal__dir {
+    display: grid;
+    gap: 10px;
+}
+
+.perfil-datos-modal__mapa {
+    display: grid;
+    gap: 8px;
+}
+
+.perfil-datos-modal__mapa-vista {
+    overflow: hidden;
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    background: var(--primario-medio);
+}
+
+.perfil-datos-modal__mapa-vista iframe {
+    display: block;
+    width: 100%;
+    height: 170px;
+    border: 0;
+}
+
+.perfil-datos-modal__mapa-estado {
+    margin: 0;
+    color: var(--texto-suave);
+    font-size: .74rem;
+}
+
+.perfil-datos-modal__mapa-estado.is-error { color: var(--acento); }
+.perfil-datos-modal__mapa-estado.is-ok { color: #14532d; }
+
+.perfil-datos-modal__referencia {
+    color: var(--secundario);
+    font-size: .78rem;
+    font-weight: 600;
 }

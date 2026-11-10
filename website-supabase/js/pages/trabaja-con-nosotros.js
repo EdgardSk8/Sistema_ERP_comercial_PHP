@@ -6,7 +6,7 @@
     const contenedor = document.getElementById('trabajaToast');
     const cargando = document.getElementById('trabajaCargando');
 
-    const escapar = (valor) => String(valor ?? '');
+    const escapar = window.TiendaUtil.escapar;
 
     function mostrarToast(mensaje, tipo = 'exito') {
         if (!contenedor) return;

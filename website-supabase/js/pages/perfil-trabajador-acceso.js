@@ -17,12 +17,7 @@
         suspendido: { texto: 'Cuenta suspendida', clase: 'suspendido', icono: 'bi-slash-circle' },
     };
 
-    const escapar = (valor) => String(valor ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    const escapar = window.TiendaUtil.escapar;
 
     const enlaceSolicitud = (texto, clase = 'btn-primario') => `
         <div class="perfil-trabajador__acciones">

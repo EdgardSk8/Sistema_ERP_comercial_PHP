@@ -16,14 +16,9 @@
     let clienteActual = null;
     let enviando = false;
 
-    const escapar = (valor) => String(valor ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    const escapar = window.TiendaUtil.escapar;
 
-    const texto = (valor) => String(valor ?? '').trim();
+    const texto = window.TiendaUtil.texto;
 
     const fecha = (valor) => {
         if (!valor) return '—';

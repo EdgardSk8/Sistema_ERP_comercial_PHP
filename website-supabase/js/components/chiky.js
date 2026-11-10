@@ -276,10 +276,6 @@
         decir(texto || 'Algo no salió bien. Revisa los datos e inténtalo otra vez.', { tono: 'error' });
     }
 
-    function exito(texto) {
-        decir(texto, { tono: 'exito' });
-    }
-
     /* Acción principal + opción de continuar sin ayuda. */
     function accion(etiqueta, manejador) {
         if (!montar() || !accionesEl) return;
@@ -485,6 +481,58 @@
 
         if (!barra) guardarTarjeta(true);
 
+        /*
+           En móvil, al escribir en el campo señalado la guía se aparta para
+           dejar ver el teclado y vuelve al salir del campo o al elegir un
+           valor (fechas y listas).
+        */
+        let campoGuia = null;
+        let campoCambio = null;
+
+        const esCampo = (elemento) => Boolean(elemento)
+            && ['INPUT', 'SELECT', 'TEXTAREA'].includes(elemento.tagName);
+
+        const esMovil = () => window.matchMedia('(max-width: 767.98px)').matches;
+
+        const apartarGuia = () => document.documentElement.classList.add('chiky-guia-oculta');
+        const devolverGuia = () => document.documentElement.classList.remove('chiky-guia-oculta');
+
+        const alSalirCampo = () => {
+            /* Al salir del campo, la guía vuelve siempre. */
+            devolverGuia();
+        };
+
+        const soltarCampo = () => {
+            if (campoGuia) {
+                campoGuia.removeEventListener('focus', apartarGuia);
+                campoGuia.removeEventListener('blur', alSalirCampo);
+                campoGuia = null;
+            }
+
+            if (campoCambio) {
+                campoCambio.removeEventListener('change', devolverGuia);
+                campoCambio = null;
+            }
+
+            devolverGuia();
+        };
+
+        const tomarCampo = (elemento) => {
+            soltarCampo();
+
+            if (!esMovil() || !esCampo(elemento)) return;
+
+            campoGuia = elemento;
+            elemento.addEventListener('focus', apartarGuia);
+            elemento.addEventListener('blur', alSalirCampo);
+
+            /* Flatpickr avisa del cambio en el input original, que está oculto. */
+            campoCambio = [...document.querySelectorAll('input.flatpickr-input')]
+                .find((campo) => campo._flatpickr?.altInput === elemento) || null;
+
+            campoCambio?.addEventListener('change', devolverGuia);
+        };
+
         guiaActiva = crearDriver({
             showProgress: progreso,
             progressText: 'Paso {{current}} de {{total}}',
@@ -498,6 +546,8 @@
             popoverOffset: 12,
             steps: resueltos,
             onHighlightStarted: (_elemento, paso) => {
+                tomarCampo(_elemento);
+
                 /* Primero cambia la vista si el paso lo pide; después fija el mensaje. */
                 if (typeof paso?.alEntrar === 'function') {
                     try {
@@ -512,6 +562,8 @@
             },
             onDestroyed: () => {
                 guiaActiva = null;
+
+                soltarCampo();
 
                 if (barra) {
                     decir('Puedes seguir cuando quieras. Pulsa sobre mí para ver la guía otra vez.');
@@ -531,7 +583,7 @@
         guiaActiva?.destroy();
     }
 
-    window.Chiky = { montar, decir, paso, error, exito, accion, oferta, guiar, refrescarGuia, cerrarGuia, modoDiscreto, soloSi, spotlight, ocultar, mostrar, mensajes: MENSAJES, identidad: IDENTIDAD };
+    window.Chiky = { decir, paso, error, accion, oferta, guiar, refrescarGuia, cerrarGuia, modoDiscreto, soloSi, spotlight, mostrar };
 
     montar();
 })();

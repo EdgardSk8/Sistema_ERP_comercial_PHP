@@ -45,7 +45,7 @@ class PedidoWebController extends Controller
         'solicitado' => ['aceptado', 'rechazado', 'cancelado'],
         'aceptado' => ['enviado', 'listo_retiro', 'cancelado'],
         'preparando' => ['enviado', 'listo_retiro'],
-        'enviado' => ['entregado'],
+        'enviado' => ['entregado', 'devuelto'],
         'listo_retiro' => ['entregado'],
         'entregado' => ['devuelto'],
     ];

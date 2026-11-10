@@ -69,12 +69,7 @@
         return splideCargando;
     }
 
-    const escapar = (valor) => String(valor ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    const escapar = window.TiendaUtil.escapar;
 
     /* ╔══════════════════════════════════════════════════════════╗
        ║  Aviso de registro para visitantes sin sesión            ║

@@ -1024,19 +1024,11 @@ async function cargarEntrega(sesion) {
 }
 
 function moneda(valor) {
-    return 'C$ ' + Number(valor || 0).toLocaleString('es-NI', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+    return window.TiendaUtil.moneda(valor);
 }
 
 function escapar(valor) {
-    return String(valor ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    return window.TiendaUtil.escapar(valor);
 }
 
 /* Agrupa las tallas de un mismo producto+color en una sola tarjeta. */

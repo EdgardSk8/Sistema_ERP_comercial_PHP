@@ -49,12 +49,7 @@
     }
 
     function escapar(valor) {
-        return String(valor ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
+        return window.TiendaUtil.escapar(valor);
     }
 
     function esClaroAvatar(color) {

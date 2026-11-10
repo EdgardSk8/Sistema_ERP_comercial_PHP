@@ -518,7 +518,7 @@
             clienteActual = null;
             if (window.tiendaToast) window.tiendaToast('Sesión cerrada.', 'info');
             window.location.href = urlTienda();
-        } catch (error) {
+        } catch {
             if (window.tiendaToast) window.tiendaToast('No se pudo cerrar la sesión.', 'aviso');
         }
     });
@@ -1601,17 +1601,6 @@
 
     /* ── Reseñas ────────────────────────────────────────────── */
 
-    function fechaResenia(valor) {
-        if (!valor) return '';
-        const fecha = new Date(valor);
-        if (Number.isNaN(fecha.getTime())) return String(valor).slice(0, 16).replace('T', ' ');
-        const partes = new Intl.DateTimeFormat('sv-SE', {
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', hour12: false,
-        }).formatToParts(fecha).reduce((acc, parte) => ({ ...acc, [parte.type]: parte.value }), {});
-        return `${partes.year}-${partes.month}-${partes.day} ${partes.hour}:${partes.minute}`;
-    }
-
     async function reseniasApi(idProducto, limite = 0) {
         const { data, error } = await supabase.rpc('web_resenias', { p_id: Number(idProducto) });
 
@@ -1814,7 +1803,7 @@
         if (!esRutaAuth && window.sesionTiendaPromise) {
             try {
                 await window.sesionTiendaPromise;
-            } catch (error) {
+            } catch {
                 // Continúa sin sesión.
             }
         }

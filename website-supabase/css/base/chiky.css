@@ -363,3 +363,20 @@
 .driver-active .select2-dropdown * {
   pointer-events: auto;
 }
+
+/*
+  Móvil: mientras se escribe en el campo señalado, la guía se aparta para
+  dejar ver el teclado y vuelve al salir del campo (si quedó con contenido).
+*/
+html.chiky-guia-oculta .driver-popover,
+html.chiky-guia-oculta .driver-overlay {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Con la guía apartada, el resto de la página vuelve a responder al toque
+   para que el campo pueda perder el foco al tocar fuera. */
+html.chiky-guia-oculta .driver-active * {
+  pointer-events: auto !important;
+}

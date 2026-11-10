@@ -108,19 +108,11 @@ function porId(id) {
 }
 
 function escapar(valor) {
-    return String(valor ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    return window.TiendaUtil.escapar(valor);
 }
 
 function moneda(valor) {
-    return 'C$ ' + Number(valor || 0).toLocaleString('es-NI', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+    return window.TiendaUtil.moneda(valor);
 }
 
 function formatearFecha(fecha) {
@@ -275,12 +267,11 @@ function conectarMenuPerfil() {
 
     fondo.addEventListener('click', cerrar);
 
-    /* El resumen de Chiky solo despliega; las opciones y los temas sí cierran el panel. */
+    /* El resumen de Chiky solo despliega; los enlaces y atajos sí cierran el panel. */
     panel.addEventListener('click', (evento) => {
         if (evento.target.closest('.perfil-ayuda > summary')) return;
 
         const opcion = evento.target.closest('a.perfil-nav__item')
-            || evento.target.closest('.perfil-ayuda__tema')
             || evento.target.closest('.perfil-ayuda__atajo');
 
         if (opcion) cerrar();
@@ -325,11 +316,16 @@ function iniciarFechaNacimientoPerfil() {
         altInput: true,
         altFormat: 'j \\d\\e F \\d\\e Y',
         altInputClass: 'form-control',
-        allowInput: true,
+        allowInput: false,
         maxDate: 'today',
         locale: localeEspanol(),
         disableMobile: true,
     });
+
+    /* La fecha se elige en el calendario: el campo visible no acepta teclado. */
+    const visible = input._flatpickr?.altInput || input;
+    visible.readOnly = true;
+    visible.setAttribute('inputmode', 'none');
 }
 
 function iniciarCedulaPerfil() {
@@ -451,36 +447,6 @@ function avisarDatosFaltantes(cliente) {
     }
 }
 
-function iniciarGuiaCupones() {
-    window.Chiky?.guiar([
-        {
-            element: '#descuentos .perfil-grupo',
-            popover: {
-                title: 'Tu 10% de bienvenida',
-                description: 'Es 10% solo en zapatos y se aplica en tu primera compra. Se activa al completar los datos de tu perfil.',
-                side: 'bottom',
-                align: 'start',
-            },
-        },
-        {
-            element: '.perfil-fidelidad',
-            popover: {
-                title: 'Cupón de fidelidad',
-                description: 'Cada 10 pares completas un ciclo y ganas un cupón del 10% acumulado. La barra te dice cuánto te falta.',
-                side: 'bottom',
-            },
-        },
-        {
-            element: '#formCuponPerfil',
-            popover: {
-                title: 'Canjear un cupón',
-                description: 'Si tienes un código, escríbelo aquí y pulsa Canjear. Queda guardado en tu cuenta y lo aplicas en el carrito al pagar.',
-                side: 'top',
-            },
-        },
-    ], { clave: 'chiky_guia_cupones', forzar: true });
-}
-
 /* Evita que el aviso automático del descuento tape una ayuda que el cliente acaba de pedir. */
 let ultimaAyudaChiky = 0;
 
@@ -555,24 +521,9 @@ function ofrecerDescuento(cliente = window.clienteTienda) {
         return;
     }
 
-    /* La tarjeta se abre al pedir ayuda o con la guía del 10%. */
+    /* La tarjeta se abre al pedir ayuda o con el modal del 10%. */
     chiky.paso('descuentoBienvenida');
     chiky.accion('Ver cómo activarlo', irACupones);
-}
-
-/* El tema del 10% solo existe mientras el descuento esté disponible. */
-function ajustarTemasAyuda(cliente = window.clienteTienda) {
-    const botonDescuento = document.querySelector('#ayudaChiky [data-ayuda="descuento"]');
-    const botonFidelidad = document.querySelector('#ayudaChiky [data-ayuda="fidelidad"]');
-
-    const usado = Boolean(cliente?.descuento_primera_compra_usado);
-    const disponible = Boolean(cliente) && !usado;
-
-    if (botonDescuento) botonDescuento.hidden = !disponible;
-    if (botonFidelidad) botonFidelidad.hidden = !usado;
-
-    /* Chiky acompaña también mientras el 10% está pendiente de activar. */
-    window.Chiky?.soloSi(() => Boolean(window.clienteTienda));
 }
 
 /* Menú: cada pregunta abre a Chiky y la lleva a guiar por la pantalla. */
@@ -653,18 +604,17 @@ function conectarDesplegableAyuda() {
 function abrirDesplegable(lista, alTerminar) {
     clearTimeout(lista._temporizador);
 
+    lista.style.cssText = '';
     lista.style.maxHeight = '0px';
     lista.style.opacity = '0';
 
-    const alto = lista.scrollHeight;
+    /* Reflow forzado: la transición arranca desde 0 aunque rAF esté en pausa. */
+    void lista.offsetHeight;
 
-    requestAnimationFrame(() => {
-        lista.style.transition = 'max-height .5s ease, opacity .5s ease';
-        lista.style.maxHeight = `${alto}px`;
-        lista.style.opacity = '1';
-    });
+    lista.style.transition = 'max-height .5s ease, opacity .5s ease';
+    lista.style.maxHeight = `${lista.scrollHeight}px`;
+    lista.style.opacity = '1';
 
-    /* El cierre del estilo no depende del frame: si rAF se pausa, igual termina. */
     lista._temporizador = setTimeout(() => {
         lista.style.cssText = '';
         alTerminar?.();
@@ -674,14 +624,15 @@ function abrirDesplegable(lista, alTerminar) {
 function cerrarDesplegable(detalle, lista, alTerminar) {
     clearTimeout(lista._temporizador);
 
+    lista.style.cssText = '';
     lista.style.maxHeight = `${lista.scrollHeight}px`;
     lista.style.opacity = '1';
 
-    requestAnimationFrame(() => {
-        lista.style.transition = 'max-height .5s ease, opacity .5s ease';
-        lista.style.maxHeight = '0px';
-        lista.style.opacity = '0';
-    });
+    void lista.offsetHeight;
+
+    lista.style.transition = 'max-height .5s ease, opacity .5s ease';
+    lista.style.maxHeight = '0px';
+    lista.style.opacity = '0';
 
     lista._temporizador = setTimeout(() => {
         detalle.open = false;
@@ -690,107 +641,15 @@ function cerrarDesplegable(detalle, lista, alTerminar) {
     }, 500);
 }
 
+/* Cada atajo explica su secci?n; no hay recorridos generales. */
 function atenderAyudaChiky(tema) {
-    if (!window.Chiky) return;
+    if (!window.Chiky || !tema.startsWith('seccion:')) return;
 
     ultimaAyudaChiky = Date.now();
 
-    /* Un tema nuevo cierra cualquier guía o flujo anterior. */
     window.Chiky.cerrarGuia?.();
     window.Chiky.mostrar(true);
-    flujoDescuento?.observer?.disconnect();
-    flujoDescuento = null;
-
-    if (tema.startsWith('seccion:')) {
-        explicarSeccion(tema.slice(8));
-        return;
-    }
-
-    if (tema === 'secciones') {
-        explicarSecciones();
-        return;
-    }
-
-    if (tema === 'descuento') {
-        ayudaDescuento();
-        return;
-    }
-
-    if (tema === 'fidelidad') {
-        ayudaFidelidad();
-        return;
-    }
-
-    if (tema === 'cuenta') {
-        recorrerPasos([
-            {
-                elemento: consultar('#formPerfil .row.g-3', '#formPerfil'),
-                titulo: 'Tus datos',
-                mensaje: 'Aquí actualizas tu nombre, teléfono y fecha de nacimiento cuando algo cambie.',
-            },
-            {
-                elemento: consultar('#formPerfil button[type="submit"]'),
-                titulo: 'Guardar cambios',
-                mensaje: 'Cuando termines, guarda los cambios con este botón.',
-            },
-            {
-                elemento: consultar('#formPassword'),
-                titulo: 'Tu contraseña',
-                mensaje: 'Con tu correo y esta contraseña puedes entrar sin depender de Google.',
-            },
-            {
-                elemento: consultar('#formPassword button[type="submit"]'),
-                titulo: 'Actualizar contraseña',
-                mensaje: 'Usa 8 caracteres con una mayúscula, una minúscula y un número.',
-            },
-        ].filter((paso) => paso.elemento));
-
-        return;
-    }
-
-    if (tema === 'direcciones') {
-        recorrerPasos([
-            {
-                elemento: porId('btnNuevaDireccion'),
-                titulo: 'Nueva dirección',
-                mensaje: 'Aquí agregas una dirección y marcas el punto exacto en el mapa.',
-            },
-            {
-                elemento: porId('listaDirecciones'),
-                titulo: 'Tus direcciones',
-                mensaje: 'Con el lápiz la editas y con el bote la borras. La que marques como predeterminada se usa al pagar.',
-            },
-        ].filter((paso) => paso.elemento));
-
-        return;
-    }
-
-    if (tema === 'pedidos') {
-        window.Chiky?.mostrar();
-
-        recorrerPasos([
-            {
-                elemento: consultar('#listaPedidos', '#pedidosVacio', '#pedidosInvitado'),
-                titulo: 'Mis pedidos',
-                mensaje: 'Aquí sigues tus pedidos: si están activos, entregados o cancelados.',
-            },
-            {
-                elemento: document.querySelector('.perfil-pedidos-filtro'),
-                titulo: 'Filtros',
-                mensaje: 'Toca un filtro para ver solo los pedidos de ese estado.',
-            },
-            {
-                elemento: consultar('#listaHistorial', '#historialVacio', '#historialInvitado'),
-                titulo: 'Historial de compras',
-                mensaje: 'Y aquí queda el detalle de todo lo que ya compraste, con su total.',
-            },
-        ].filter((paso) => paso.elemento));
-
-        return;
-    }
-
-    /* Cómo comprar se retiró: no hace falta ese aviso. */
-    return;
+    explicarSeccion(tema.slice(8));
 }
 
 /* Primer elemento visible de los selectores dados (evita contenedores ocultos). */
@@ -947,94 +806,12 @@ function pasosDeSeccion(id) {
     return lista.filter((paso, indice) => lista.findIndex((otro) => otro.elemento === paso.elemento) === indice);
 }
 
-/* Cupones de fidelidad: reemplaza al tema del 10% cuando ya se usó. */
-function ayudaFidelidad() {
-    window.Chiky?.decir('Cada 10 pares que compras te dan un cupón por el 10% acumulado de esos pares.');
-
-    recorrerPasos([
-        {
-            elemento: porId('fidelidadBarra'),
-            titulo: '10 pares = 1 cupón',
-            mensaje: 'La barra avanza con cada par que compras; al llegar a 10 se genera tu cupón.',
-        },
-        {
-            elemento: porId('cuponPerfilCodigo'),
-            titulo: 'Canjear un código',
-            mensaje: 'Cuando tengas un código, escríbelo aquí y pulsa «Canjear».',
-        },
-    ].filter((paso) => paso.elemento));
-}
-
-/* Recorrido completo: foto, marco, datos y cada bloque de la cuenta. */
-function explicarSecciones() {
-    const pasos = SECCIONES_PERFIL.flatMap(([id]) => pasosDeSeccion(id));
-
-    if (!pasos.length) return;
-
-    /* Primero avisa de que empieza el recorrido, sin saltar directo a la primera sección. */
-    const boton = document.querySelector('#ayudaChiky [data-ayuda="secciones"]');
-    const intro = boton
-        ? [{
-            elemento: boton,
-            titulo: 'Te doy un recorrido',
-            mensaje: 'Vamos a ver tu foto, tu marco, tus datos y cada sección de tu cuenta, una por una. Avanza con «Siguiente» y cierra cuando quieras.',
-        }]
-        : [];
-
-    recorrerPasos([...intro, ...pasos]);
-}
-
 /* Atajo: explica una sola sección, sin recorrer las demás. */
 function explicarSeccion(id) {
     const pasos = pasosDeSeccion(id);
     if (!pasos.length) return;
 
     recorrerPasos(pasos, { progreso: pasos.length > 1 });
-}
-
-/* «¿Cómo uso mi 10%?» cambia según el estado del descuento. */
-function ayudaDescuento() {
-    window.Chiky?.mostrar();
-
-    const descuento = window.clienteTienda?.descuento;
-    const vigencia = descuento?.primera_compra ? vigenciaDescuento(descuento.expira) : '';
-
-    if (descuento?.primera_compra) {
-        const enlaceCatalogo = `${urlTienda()}?categoria=Zapatos`;
-        const respuesta = 'Para aplicar el 10% de descuento, ve al '
-            + `<a class="chiky__enlace" href="${escapar(enlaceCatalogo)}"><strong>catálogo de productos</strong></a>`
-            + ' (te lo dejo filtrado en Zapatos), elige un par con el sello de descuento y agrégalo al carrito.'
-            + (vigencia ? ` ${escapar(vigencia)}` : '');
-
-        window.Chiky?.decir(respuesta, { tono: 'festejo', html: true });
-        window.Chiky?.accion('Ir al catálogo de zapatos', () => {
-            window.location.href = enlaceCatalogo;
-        });
-
-        return;
-    }
-
-    if (window.clienteTienda?.descuento_primera_compra_usado) {
-        window.Chiky?.decir('Ya usaste tu 10% de bienvenida; ahora los cupones te llegan por fidelidad.');
-        window.Chiky?.accion('Ver cupones', () => alinearArriba(porId('descuentos')));
-
-        recorrerPasos([
-            {
-                elemento: porId('fidelidadBarra'),
-                titulo: '10 pares = 1 cupón',
-                mensaje: 'Cada 10 pares que compras te dan un cupón por el 10% acumulado de esos pares.',
-            },
-            {
-                elemento: porId('cuponPerfilCodigo'),
-                titulo: 'Canjear un código',
-                mensaje: 'Cuando tengas un código, escríbelo aquí y pulsa «Canjear».',
-            },
-        ].filter((paso) => paso.elemento));
-
-        return;
-    }
-
-    irACupones();
 }
 
 /* Primero lleva a la sección; la ayuda se ofrece después. */
@@ -1046,9 +823,6 @@ function irACupones() {
 
     sombrearContenedor(porId('contenidoDescuento') || seccion);
     window.Chiky?.spotlight(porId('contenidoDescuento') || seccion, { duracion: 1600 });
-
-    window.Chiky?.decir('Para activar tu 10% faltan estos datos. Si quieres, te acompaño paso a paso para completarlos.');
-    window.Chiky?.accion('Sí, ayúdame', iniciarPasosDescuento);
 }
 
 /* Sombra temporal sobre el contenedor al que se navega. */
@@ -1062,256 +836,388 @@ function sombrearContenedor(elemento) {
     setTimeout(() => elemento.classList.remove('chiky-sombra'), 1900);
 }
 
-/* ── Pasos guiados para completar el 10% ───────────────────── */
+/* ── Modal para completar los datos del 10% ─────────────────── */
 
-const NOMBRES_REQUISITO = {
-    'Teléfono registrado': 'tu teléfono',
-    'Fecha de nacimiento': 'tu fecha de nacimiento',
-    'Dirección con ubicación': 'tu dirección con ubicación',
-    'Contraseña de la cuenta': 'tu contraseña',
-};
-
-const GRUPOS_DESCUENTO = [
-    {
-        claves: ['Teléfono registrado', 'Fecha de nacimiento'],
-        seccion: 'perfil',
-        campos: {
-            'Teléfono registrado': 'perfilTelefono',
-            'Fecha de nacimiento': 'perfilFechaNacimiento',
-        },
-        intro: (faltan) => `Vamos paso a paso. Primero registramos ${listarRequisitos(faltan)}.`,
-    },
-    {
-        claves: ['Dirección con ubicación'],
-        seccion: 'direcciones',
-        campos: { 'Dirección con ubicación': 'btnNuevaDireccion' },
-        intro: () => 'Vamos con tu dirección. Pulsa «Nueva dirección» para abrir el formulario.',
-    },
-    {
-        claves: ['Contraseña de la cuenta'],
-        seccion: 'configuracion',
-        campos: { 'Contraseña de la cuenta': 'passwordNueva' },
-        intro: () => 'Por último, crea una contraseña para entrar también con tu correo.',    },
-];
-
-let flujoDescuento = null;
 let avisoDescuentoMostrado = false;
+let modalDescuentoIniciado = false;
+let temporizadorDescuento = 0;
 
-/* Variantes para no sonar repetitivo entre pasos. */
-const ANIMOS = ['¡Bien!', '¡Listo!', '¡Genial!', '¡Perfecto!', '¡Vamos bien!'];
-let turnoAnimo = 0;
+const ESPERA_MODAL = 500;
 
-function animo() {
-    return ANIMOS[turnoAnimo++ % ANIMOS.length];
+function mostrarModal(modal) {
+    if (!modal) return;
+
+    window.clearTimeout(temporizadorDescuento);
+
+    modal.hidden = false;
+    document.body.classList.add('modal-datos-abierto');
+
+    /* Fuerza un cuadro con opacidad 0 para que la transición se vea. */
+    void modal.offsetWidth;
+    window.setTimeout(() => modal.classList.add('is-visible'), 20);
 }
 
-function pendientesDescuento() {
-    return [...document.querySelectorAll('#contenidoDescuento .perfil-descuento__requisito')]
-        .filter((item) => !item.classList.contains('is-listo'))
-        .map((item) => item.querySelector('span')?.textContent.trim() || '');
+function ocultarModal(modal, alCerrar) {
+    if (!modal) return;
+
+    if (modal.hidden) {
+        alCerrar?.();
+        return;
+    }
+
+    modal.classList.remove('is-visible');
+
+    temporizadorDescuento = window.setTimeout(() => {
+        if (modal.classList.contains('is-visible')) return;
+
+        modal.hidden = true;
+        document.body.classList.remove('modal-datos-abierto');
+
+        alCerrar?.();
+    }, ESPERA_MODAL);
 }
 
-function listarRequisitos(claves) {
-    const nombres = claves.map((clave) => NOMBRES_REQUISITO[clave] || clave);
+function iniciarModalDescuento() {
+    const modal = porId('modalDescuento');
+    if (!modal || modalDescuentoIniciado) return;
 
-    if (nombres.length > 1) return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
-    return nombres[0] || 'este dato';
-}
+    modalDescuentoIniciado = true;
 
-function iniciarPasosDescuento(preferido = null) {
-    const contenedor = porId('contenidoDescuento');
+    modal.addEventListener('click', (evento) => {
+        if (evento.target.closest('[data-cerrar-descuento]')) cerrarModalDescuento();
+    });
 
-    if (!window.Chiky || !contenedor) return;
+    document.addEventListener('keydown', (evento) => {
+        if (evento.key === 'Escape' && !modal.hidden) cerrarModalDescuento();
+    });
 
-    flujoDescuento?.observer?.disconnect();
+    porId('modalBtnDireccion')?.addEventListener('click', alternarDireccionModal);
+    porId('formModalDescuento')?.addEventListener('submit', guardarModalDescuento);
+    porId('modalPassword')?.addEventListener('input', actualizarGuardarModal);
 
-    flujoDescuento = {
-        observer: new MutationObserver(() => continuarPasosDescuento()),
-        grupo: null,
-        pendientes: pendientesDescuento(),
-        preferido,
-        esperando: false,
-    };
+    const fecha = porId('modalFechaNacimiento');
 
-    flujoDescuento.observer.observe(contenedor, { childList: true, subtree: true });
-
-    empezarGrupoDescuento();
-}
-
-function empezarGrupoDescuento() {
-    const pendientes = pendientesDescuento();
-    const preferido = flujoDescuento.preferido;
-
-    flujoDescuento.pendientes = pendientes;
-    flujoDescuento.esperando = false;
-    flujoDescuento.preferido = null;
-
-    if (!pendientes.length) return terminarDescuento();
-
-    const grupoPreferido = GRUPOS_DESCUENTO.find(
-        (item) => item.claves.includes(preferido) && item.claves.some((clave) => pendientes.includes(clave)),
-    );
-    const grupo = grupoPreferido || GRUPOS_DESCUENTO.find((item) => item.claves.some((clave) => pendientes.includes(clave)));
-
-    if (!grupo) return terminarDescuento();
-
-    flujoDescuento.grupo = grupo;
-
-    const faltan = grupo.claves
-        .filter((clave) => pendientes.includes(clave))
-        .sort((a, b) => (a === preferido ? -1 : b === preferido ? 1 : 0));
-
-    const campo = porId(grupo.campos[faltan[0]]);
-    const visible = campoVisible(campo);
-    const destino = visible || porId(grupo.seccion);
-
-    if (!destino) return;
-
-    if (grupo.seccion === 'perfil') {
-        const formulario = porId('formPerfil');
-        const titulos = {
-            'Teléfono registrado': 'Tu teléfono',
-            'Fecha de nacimiento': 'Tu fecha de nacimiento',
-        };
-        const ayudas = {
-            'Teléfono registrado': 'Escribe tu número de teléfono; lo usamos para avisarte de tus pedidos.',
-            'Fecha de nacimiento': 'Ahora tu fecha de nacimiento: sirve para saludarte en tu cumpleaños.',
-        };
-
-        const pasos = faltan.map((clave, indice) => ({
-            elemento: campoVisible(porId(grupo.campos[clave])),
-            titulo: titulos[clave] || 'Tus datos',
-            mensaje: indice === 0 ? `${grupo.intro(faltan)} ${ayudas[clave] || ''}`.trim() : ayudas[clave],
-            foco: true,
-        }));
-
-        pasos.push({
-            elemento: formulario?.querySelector('button[type="submit"]'),
-            titulo: 'Guardar cambios',
-            mensaje: 'Cuando termines, pulsa «Guardar cambios».',
+    if (fecha && typeof window.flatpickr === 'function') {
+        window.flatpickr(fecha, {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'j \\d\\e F \\d\\e Y',
+            altInputClass: 'form-control',
+            allowInput: false,
+            maxDate: 'today',
+            locale: localeEspanol(),
+            disableMobile: true,
         });
 
-        recorrerPasos(pasos.filter((paso) => paso.elemento));
-
-        return;
+        const visible = fecha._flatpickr?.altInput || fecha;
+        visible.readOnly = true;
+        visible.setAttribute('inputmode', 'none');
     }
-
-    if (grupo.seccion === 'configuracion') {
-        const formulario = porId('formPassword');
-
-        recorrerPasos([
-            { elemento: visible || destino, titulo: 'Contraseña', mensaje: REGLA_PASSWORD, foco: true },
-            {
-                elemento: formulario?.querySelector('button[type="submit"]'),
-                titulo: 'Actualizar contraseña',
-                mensaje: 'Cuando cumpla la regla, pulsa «Actualizar contraseña».',
-            },
-        ].filter((paso) => paso.elemento));
-
-        return;
-    }
-
-    window.Chiky?.decir(grupo.intro(faltan));
-    guiarPista(campo || destino, 'Tu dirección', grupo.intro(faltan));
 }
 
-/* Los enlaces «Completar/Agregar/Crear» también arrancan la ayuda de Chiky. */
+/* Guardar queda desactivado mientras la contraseña visible esté vacía. */
+function actualizarGuardarModal() {
+    const campo = porId('modalPasswordCampo');
+    const input = porId('modalPassword');
+    const boton = porId('modalGuardar');
+
+    if (!campo || !input || !boton) return;
+
+    const pidePassword = !campo.hidden;
+
+    input.required = pidePassword;
+    boton.disabled = pidePassword && !input.value.trim();
+}
+
+function abrirModalDescuento(requisito = '') {
+    const modal = porId('modalDescuento');
+    if (!modal || !window.clienteTienda) return;
+
+    iniciarModalDescuento();
+
+    const cliente = window.clienteTienda;
+    const telefono = porId('modalTelefono');
+    const fecha = porId('modalFechaNacimiento');
+    const tieneTelefono = Boolean(String(cliente.telefono_cliente || '').trim());
+    const tieneFecha = Boolean(String(cliente.fecha_nacimiento_cliente || '').trim());
+    const tienePassword = Boolean(window.cuentaTienePassword?.());
+    const tieneDireccion = direccionesCache.some(direccionTieneUbicacion);
+
+    window.Chiky?.cerrarGuia?.();
+
+    /* Solo se muestran los datos que faltan. */
+    porId('modalTelefonoCampo').hidden = tieneTelefono;
+    porId('modalFechaCampo').hidden = tieneFecha;
+    porId('modalPasswordCampo').hidden = tienePassword;
+    porId('modalDireccionCampo').hidden = tieneDireccion;
+
+    if (telefono) telefono.value = tieneTelefono ? cliente.telefono_cliente : '';
+
+    if (fecha?._flatpickr) {
+        if (tieneFecha) {
+            fecha._flatpickr.setDate(cliente.fecha_nacimiento_cliente, false, 'Y-m-d');
+        } else {
+            fecha._flatpickr.clear();
+        }
+    }
+
+    porId('modalPassword').value = '';
+    porId('modalPasswordCampo').classList.remove('is-falta');
+    porId('modalDireccionCampo').classList.remove('is-falta');
+
+    /* La dirección en línea se reinicia cada vez. */
+    porId('modalDireccionInline').hidden = true;
+    porId('modalBtnDireccion').setAttribute('aria-expanded', 'false');
+    porId('modalReferencia').value = '';
+    porId('modalLat').value = '';
+    porId('modalLng').value = '';
+    porId('modalMapaUbicacion').src = '';
+    mostrarEstado('modalMapaEstado', '');
+
+    const faltan = [!tieneTelefono, !tieneFecha, !tienePassword, !tieneDireccion].filter(Boolean).length;
+    porId('modalTodoListo').hidden = faltan > 0;
+    porId('modalGuardar').hidden = faltan === 0;
+
+    actualizarGuardarModal();
+
+    mostrarModal(modal);
+
+    window.setTimeout(() => {
+        if (requisito.includes('Dirección') && !tieneDireccion) {
+            alternarDireccionModal();
+            return;
+        }
+
+        if (requisito.includes('Contraseña') && !tienePassword) {
+            porId('modalPassword')?.focus({ preventScroll: true });
+            return;
+        }
+
+        if (requisito.includes('Teléfono') && !tieneTelefono) {
+            telefono?.focus({ preventScroll: true });
+            return;
+        }
+
+        if (requisito.includes('Fecha') && !tieneFecha) {
+            fecha?._flatpickr?.open();
+            return;
+        }
+
+        const primero = !tieneTelefono
+            ? telefono
+            : (!tieneFecha ? (fecha?._flatpickr?.altInput || fecha) : (!tienePassword ? porId('modalPassword') : null));
+
+        primero?.focus({ preventScroll: true });
+    }, 620);
+}
+
+function cerrarModalDescuento(alCerrar) {
+    ocultarModal(porId('modalDescuento'), alCerrar);
+}
+
+/* Mapa y referencia dentro del mismo modal, sin abrir otro. */
+function alternarDireccionModal() {
+    const inline = porId('modalDireccionInline');
+    if (!inline) return;
+
+    const abrir = inline.hidden;
+
+    inline.hidden = !abrir;
+    porId('modalBtnDireccion').setAttribute('aria-expanded', String(abrir));
+
+    if (!abrir) return;
+
+    if (!porId('modalMapaUbicacion').getAttribute('src')) centrarMapaModal();
+    pedirUbicacionModal();
+    porId('modalReferencia')?.focus({ preventScroll: true });
+}
+
+/* Estados de texto del mapa: modal del 10% y formulario de direcci?n. */
+function mostrarEstado(id, texto, tipo = '') {
+    const estado = porId(id);
+    if (!estado) return;
+
+    estado.textContent = texto;
+    estado.hidden = texto === '';
+    estado.classList.toggle('is-error', tipo === 'error');
+    estado.classList.toggle('is-ok', tipo === 'ok');
+}
+
+function centrarMapaModal(lat = null, lng = null) {
+    const mapa = porId('modalMapaUbicacion');
+    if (!mapa) return;
+
+    const origen = window.TIENDA_DELIVERY?.origen || { lat: 12.4235, lng: -86.8473 };
+    const latitud = Number.isFinite(lat) ? lat : origen.lat;
+    const longitud = Number.isFinite(lng) ? lng : origen.lng;
+    const margen = 0.004;
+
+    mapa.src = `https://www.openstreetmap.org/export/embed.html?bbox=${longitud - margen}%2C${latitud - margen}%2C${longitud + margen}%2C${latitud + margen}&layer=mapnik&marker=${latitud}%2C${longitud}`;
+}
+
+function pedirUbicacionModal() {
+    if (!navigator.geolocation) {
+        mostrarEstado('modalMapaEstado', 'Tu navegador no permite compartir la ubicación.', 'error');
+        return;
+    }
+
+    mostrarEstado('modalMapaEstado', 'Obteniendo tu ubicación…');
+
+    navigator.geolocation.getCurrentPosition(
+        (posicion) => {
+            const lat = Number(posicion.coords.latitude.toFixed(7));
+            const lng = Number(posicion.coords.longitude.toFixed(7));
+
+            porId('modalLat').value = lat;
+            porId('modalLng').value = lng;
+            centrarMapaModal(lat, lng);
+            mostrarEstado('modalMapaEstado', 'Ubicación lista. Agrega una referencia.', 'ok');
+        },
+        (error) => {
+            const mensajes = {
+                1: 'Activa el permiso de ubicación para guardar tu dirección.',
+                2: 'No pudimos obtener tu ubicación. Intenta en un lugar abierto.',
+                3: 'La ubicación tardó demasiado. Intenta de nuevo.',
+            };
+
+            mostrarEstado('modalMapaEstado', mensajes[error.code] || 'No se pudo obtener la ubicación.', 'error');
+            centrarMapaModal();
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+}
+
+async function guardarModalDescuento(evento) {
+    evento.preventDefault();
+
+    const cliente = window.clienteTienda;
+    if (!cliente) return;
+
+    const boton = evento.currentTarget.querySelector('button[type="submit"]');
+    const texto = boton?.textContent;
+
+    const faltaTelefono = !porId('modalTelefonoCampo').hidden;
+    const faltaFecha = !porId('modalFechaCampo').hidden;
+    const faltaPassword = !porId('modalPasswordCampo').hidden;
+    const faltaDireccion = !porId('modalDireccionCampo').hidden;
+
+    const telefono = faltaTelefono
+        ? porId('modalTelefono').value.trim()
+        : String(cliente.telefono_cliente || '').trim();
+    const fecha = faltaFecha
+        ? porId('modalFechaNacimiento').value
+        : String(cliente.fecha_nacimiento_cliente || '').slice(0, 10);
+    const password = porId('modalPassword').value.trim();
+    const lat = Number(porId('modalLat').value);
+    const lng = Number(porId('modalLng').value);
+    const tieneUbicacion = faltaDireccion
+        && Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0;
+
+    if (faltaTelefono && !telefono) {
+        tiendaToast('Escribe tu teléfono.', 'aviso');
+        porId('modalTelefono').focus();
+        return;
+    }
+
+    if (faltaFecha && !fecha) {
+        tiendaToast('Elige tu fecha de nacimiento.', 'aviso');
+        porId('modalFechaNacimiento')._flatpickr?.open();
+        return;
+    }
+
+    if (faltaPassword && password) {
+        const problema = validarPassword(password, password);
+
+        if (problema) {
+            tiendaToast(problema, 'aviso');
+            porId('modalPassword').focus();
+            return;
+        }
+    }
+
+    bloquearBoton(boton, true);
+
+    try {
+        const datos = await window.TiendaAPI.put('/tienda/api/perfil', {
+            nombre_cliente: cliente.nombre_cliente || '',
+            usuario_cliente: cliente.usuario_cliente || '',
+            correo_cliente: cliente.correo_cliente || '',
+            telefono_cliente: telefono,
+            fecha_nacimiento_cliente: fecha,
+            cedula_cliente: cliente.cedula_cliente || '',
+        }, { cargando: true });
+
+        if (datos?.cliente) window.clienteTienda = datos.cliente;
+
+        if (faltaPassword && password) {
+            await window.TiendaAPI.put('/tienda/api/perfil/password', {
+                password_actual: '',
+                password_nueva: password,
+                password_nueva_confirmation: password,
+            }, { cargando: true });
+        }
+
+        if (tieneUbicacion) {
+            await window.TiendaAPI.post('/tienda/api/direcciones', {
+                nombre_direccion: 'Casa',
+                ubicacion_maps: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+                referencia_direccion: porId('modalReferencia').value.trim(),
+                direccion_manual: '',
+                latitud_direccion: lat,
+                longitud_direccion: lng,
+                predeterminada_direccion: direccionesCache.length === 0,
+            }, { cargando: true });
+
+            await cargarDirecciones();
+        }
+
+        /* El formulario grande del perfil queda en sintonía. */
+        porId('perfilTelefono').value = telefono;
+
+        const fechaPerfil = porId('perfilFechaNacimiento');
+        if (fechaPerfil?._flatpickr) fechaPerfil._flatpickr.setDate(fecha, false, 'Y-m-d');
+
+        const ahoraTieneDireccion = direccionesCache.some(direccionTieneUbicacion);
+        const ahoraTieneClave = Boolean(window.cuentaTienePassword?.()) || Boolean(password);
+
+        refrescarDescuento();
+
+        if (faltaDireccion && !ahoraTieneDireccion) {
+            porId('modalDireccionCampo').classList.add('is-falta');
+
+            tiendaToast('Ingresa tu ubicación para guardar la dirección.', 'aviso');
+            return;
+        }
+
+        if (faltaPassword && !ahoraTieneClave) {
+            porId('modalPasswordCampo').classList.add('is-falta');
+
+            tiendaToast('Datos guardados. Falta crear tu contraseña.', 'aviso');
+            return;
+        }
+
+        cerrarModalDescuento();
+        tiendaToast('¡Listo! Ya puedes aplicar tu 10%.');
+    } catch (error) {
+        mostrarError(error);
+    } finally {
+        bloquearBoton(boton, false);
+        if (texto) boton.textContent = texto;
+    }
+}
+
+/* Los enlaces «Completar/Agregar/Crear» abren el modal, sin saltar a los campos. */
 document.addEventListener('click', (evento) => {
     const enlace = evento.target.closest('#contenidoDescuento .perfil-descuento__requisito a');
 
-    if (!enlace || !window.Chiky) return;
+    if (!enlace) return;
 
     evento.preventDefault();
 
     const requisito = enlace.closest('li')?.querySelector('span')?.textContent.trim() || '';
 
-    window.Chiky.mostrar();
-    iniciarPasosDescuento(requisito);
+    abrirModalDescuento(requisito);
 });
-
-/* Al abrir el formulario, Chiky señala el botón de ubicación. */
-document.addEventListener('click', (evento) => {
-    if (!evento.target.closest('#btnNuevaDireccion') || !flujoDescuento) return;
-    if (flujoDescuento.grupo?.seccion !== 'direcciones') return;
-
-    const panel = porId('formDireccionDesplegable');
-    let avisado = false;
-
-    const avisar = () => {
-        if (avisado) return;
-
-        avisado = true;
-        guiarPista(
-            porId('btnUbicacion'),
-            'Ubicación en el mapa',
-            'Pulsa «Ubicación actual» y confirma el punto en el mapa.',
-        );
-    };
-
-    /* El panel se despliega: se avisa cuando ya tiene su tamaño final. */
-    const alAbrir = (terminado) => {
-        if (terminado.propertyName !== 'grid-template-rows') return;
-
-        panel.removeEventListener('transitionend', alAbrir);
-
-        if (panel.classList.contains('is-abierto')) setTimeout(avisar, 120);
-    };
-
-    panel?.addEventListener('transitionend', alAbrir);
-    setTimeout(avisar, 700);
-});
-
-/* Diálogo con botón: cada paso espera a que el usuario pulse «Siguiente». */
-const REGLA_PASSWORD = 'Usa al menos 8 caracteres, con una mayúscula, una minúscula y un número.';
-
-document.addEventListener('click', (evento) => {
-    if (!evento.target.closest('#btnUbicacion') || !flujoDescuento) return;
-
-    setTimeout(secuenciaDireccion, 500);
-});
-
-function secuenciaDireccion() {
-    if (!flujoDescuento) return;
-
-    const formulario = porId('formDireccion');
-    if (!formulario) return;
-
-    recorrerPasos([
-        {
-            elemento: porId('direccionReferencia'),
-            titulo: 'Referencia',
-            mensaje: 'Añade una referencia para encontrarte: color de la casa, portón o un negocio cercano.',
-            foco: true,
-        },
-        {
-            elemento: porId('direccionManual'),
-            titulo: 'Dirección escrita',
-            mensaje: 'Esta es la dirección escrita; si el mapa no quedó exacto, ajústala aquí.',
-        },
-        {
-            elemento: formulario.querySelector('button[type="submit"]'),
-            titulo: 'Guardar dirección',
-            mensaje: 'Cuando esté todo bien, pulsa «Guardar dirección».',
-        },
-    ].filter((paso) => paso.elemento));
-}
-
-/* Pista corta sobre un botón, con el mismo popover del login. */
-function guiarPista(elemento, titulo, mensaje, lado = 'bottom') {
-    if (!elemento || !window.Chiky) return;
-
-    window.Chiky.guiar([
-        {
-            element: elemento,
-            popover: { title: titulo, description: mensaje, side: lado, align: 'start' },
-            alEntrar: () => {
-                if (elemento.tagName !== 'BUTTON') return;
-
-                elemento.addEventListener('click', () => window.Chiky?.cerrarGuia(), { once: true });
-            },
-        },
-    ], { clave: 'chiky_pista', forzar: true, barra: false, progreso: false, recordar: false });
-}
 
 /* Pasos numerados («Paso 1 de N») con el popover de driver.js. */
 function recorrerPasos(pasos, { progreso = true } = {}) {
@@ -1326,7 +1232,11 @@ function recorrerPasos(pasos, { progreso = true } = {}) {
             align: 'start',
         },
         alEntrar: () => {
-            if (paso.foco) paso.elemento.focus({ preventScroll: true });
+            /* En móvil no se fuerza el foco: así el mensaje del paso se ve
+               completo y la guía solo se aparta cuando la persona toca el campo. */
+            const esMovil = window.matchMedia('(max-width: 767.98px)').matches;
+
+            if (paso.foco && !esMovil) paso.elemento.focus({ preventScroll: true });
 
             /* Al usar el botón del último paso, la guía se cierra sola. */
             if (indice === pasos.length - 1 && paso.elemento.tagName === 'BUTTON') {
@@ -1345,117 +1255,10 @@ function recorrerPasos(pasos, { progreso = true } = {}) {
     });
 }
 
-function continuarPasosDescuento() {
-    if (!flujoDescuento || !window.Chiky || flujoDescuento.esperando) return;
-
-    const pendientes = pendientesDescuento();
-    const grupo = flujoDescuento.grupo;
-    const antes = flujoDescuento.pendientes || [];
-    const completadas = grupo
-        ? grupo.claves.filter((clave) => antes.includes(clave) && !pendientes.includes(clave))
-        : [];
-
-    flujoDescuento.pendientes = pendientes;
-
-    if (!pendientes.length) return terminarDescuento();
-
-    if (!grupo) {
-        empezarGrupoDescuento();
-        return;
-    }
-
-    if (!completadas.length) return;
-
-    const restantes = grupo.claves.filter((clave) => pendientes.includes(clave));
-
-    if (restantes.length) {
-        /* Queda otro dato del mismo formulario: seguimos aquí. */
-        const campo = porId(grupo.campos[restantes[0]]);
-
-        window.Chiky.decir(`${animo()} Ahora completa ${listarRequisitos(restantes)}.`);
-
-        if (campo) irAlCampoDescuento(campo, campo);
-        return;
-    }
-
-    volverACupones(completadas, pendientes);
-}
-
-function volverACupones(completadas, pendientes) {
-    const seccion = porId('descuentos');
-    if (!seccion) return;
-
-    flujoDescuento.grupo = null;
-    flujoDescuento.esperando = true;
-
-    const destino = window.scrollY + seccion.getBoundingClientRect().top - 150;
-
-    window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
-
-    sombrearContenedor(porId('contenidoDescuento') || seccion);
-    window.Chiky?.spotlight(porId('contenidoDescuento') || seccion, { duracion: 1600 });
-
-    if (!pendientes.length) return terminarDescuento();
-
-    window.Chiky.decir(`${animo()} Ya quedó ${listarRequisitos(completadas)}. Falta ${listarRequisitos(pendientes)}.`);
-    window.Chiky.accion('Continuar', () => empezarGrupoDescuento());
-}
-
-function terminarDescuento() {
-    flujoDescuento?.observer?.disconnect();
-    flujoDescuento = null;
-
-    const mensaje = `${animo()} Ya completaste los datos. Pulsa «Aplicar descuento» para disfrutar tu 10%.`;
-
-    window.Chiky?.decir(mensaje);
-
-    const boton = porId('btnAplicarDescuento');
-    if (!boton) return;
-
-    guiarPista(boton, '¡Listo!', mensaje);
-}
-
-function irAlCampoDescuento(campo, destino) {
-    const visible = campoVisible(campo) || destino;
-
-    if (!visible) return;
-
-    llevarAlPaso(visible);
-    sombrearContenedor(visible.closest('.perfil-card, .perfil-grupo') || visible);
-    window.Chiky?.spotlight(visible, { duracion: 1800 });
-
-    if (!campo) return;
-
-    setTimeout(() => {
-        visible.focus({ preventScroll: true });
-        visible.classList.add('chiky-resalta');
-        setTimeout(() => visible.classList.remove('chiky-resalta'), 2300);
-    }, 450);
-}
-
-/* Flatpickr oculta el input original: se usa el que se ve. */
-function campoVisible(campo) {
-    if (!campo) return null;
-    return campo._flatpickr?.altInput || campo;
-}
-
-/* Área libre de la pantalla: debajo del header fijo. */
 function zonaLibre() {
     const header = 60;
 
     return { arriba: header + 16, abajo: window.innerHeight - 16 };
-}
-
-/* Coloca el elemento centrado en la zona libre, sin taparlo con el header. */
-function llevarAlPaso(elemento) {
-    if (!elemento) return;
-
-    const { arriba, abajo } = zonaLibre();
-    const caja = elemento.getBoundingClientRect();
-    const centro = arriba + Math.max(0, (abajo - arriba - caja.height) / 2);
-    const destino = window.scrollY + caja.top - centro;
-
-    window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
 }
 
 /* Deja la sección centrada si su contenido cabe; si no, bajo la tarjeta/header. */
@@ -2104,7 +1907,7 @@ function abrirFormDireccion(direccion = null) {
     }
 
     marcarTipoDireccion(direccion?.nombre_direccion || '');
-    mostrarEstadoUbicacion('');
+    mostrarEstado('estadoUbicacion', '');
 
     panel.inert = false;
     panel.classList.add('is-abierto');
@@ -2128,14 +1931,11 @@ function cerrarFormDireccion() {
         porId('direccionId').value = '';
         limpiarUbicacion();
         marcarTipoDireccion('');
-        mostrarEstadoUbicacion('');
+        mostrarEstado('estadoUbicacion', '');
     }, 500);
 }
 
 function desplazarFormDireccion(panel) {
-    /* Con Chiky guiando, el centrado lo hace ella sobre el campo que señala. */
-    if (flujoDescuento?.grupo?.seccion === 'direcciones') return;
-
     let desplazado = false;
 
     const desplazar = () => {
@@ -2192,8 +1992,9 @@ async function guardarDireccion(evento) {
             tiendaToast('Dirección agregada correctamente.');
         }
 
-        cerrarFormDireccion();
+        /* Primero se refresca la lista: el modal del 10% vuelve con el estado nuevo. */
         await cargarDirecciones();
+        cerrarFormDireccion();
     } catch (error) {
         mostrarError(error);
     } finally {
@@ -2235,27 +2036,17 @@ function marcarTipoDireccion(nombre) {
     seleccionarTipoDireccion(tipo);
 }
 
-function mostrarEstadoUbicacion(texto, tipo = '') {
-    const estado = porId('estadoUbicacion');
-    if (!estado) return;
-
-    estado.textContent = texto;
-    estado.hidden = texto === '';
-    estado.classList.toggle('is-error', tipo === 'error');
-    estado.classList.toggle('is-ok', tipo === 'ok');
-}
-
 function usarUbicacionActual() {
     const boton = porId('btnUbicacion');
     if (!boton) return;
 
     if (!('geolocation' in navigator)) {
-        mostrarEstadoUbicacion('Tu navegador no permite obtener la ubicación.', 'error');
+        mostrarEstado('estadoUbicacion', 'Tu navegador no permite obtener la ubicación.', 'error');
         return;
     }
 
     if (!window.isSecureContext) {
-        mostrarEstadoUbicacion('La ubicación solo funciona con HTTPS o en localhost.', 'error');
+        mostrarEstado('estadoUbicacion', 'La ubicación solo funciona con HTTPS o en localhost.', 'error');
         return;
     }
 
@@ -2263,7 +2054,7 @@ function usarUbicacionActual() {
 
     boton.disabled = true;
     boton.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Buscando…';
-    mostrarEstadoUbicacion('Obteniendo tu ubicación…');
+    mostrarEstado('estadoUbicacion', 'Obteniendo tu ubicación…');
 
     navigator.geolocation.getCurrentPosition(
         async (posicion) => {
@@ -2271,7 +2062,7 @@ function usarUbicacionActual() {
             const lng = Number(posicion.coords.longitude.toFixed(7));
 
             aplicarUbicacion(lat, lng);
-            mostrarEstadoUbicacion('Ubicación lista. Revisa la dirección y guarda.', 'ok');
+            mostrarEstado('estadoUbicacion', 'Ubicación lista. Revisa la dirección y guarda.', 'ok');
 
             boton.disabled = false;
             boton.innerHTML = contenido;
@@ -2285,7 +2076,7 @@ function usarUbicacionActual() {
                 3: 'La ubicación tardó demasiado. Intenta de nuevo.',
             };
 
-            mostrarEstadoUbicacion(mensajes[error.code] || 'No se pudo obtener la ubicación.', 'error');
+            mostrarEstado('estadoUbicacion', mensajes[error.code] || 'No se pudo obtener la ubicación.', 'error');
 
             boton.disabled = false;
             boton.innerHTML = contenido;
@@ -2343,7 +2134,7 @@ async function completarDireccion(lat, lng) {
         if (!manual.value.trim()) {
             manual.value = direccion;
         }
-    } catch (error) {
+    } catch {
         // Sin geocodificación inversa: el usuario puede escribir la dirección.
     }
 }
@@ -2810,7 +2601,15 @@ function conectarPedidos() {
         if (!boton) return;
 
         const factura = boton.closest('.perfil-compra')?.querySelector('.perfil-compra__factura')?.textContent?.trim() || '';
-        if (!(await confirmarCancelacionPedido(factura))) return;
+        const confirmado = await tiendaConfirmar({
+            titulo: '?Cancelar este pedido?',
+            mensaje: `${factura ? `El pedido ${factura} quedar? cancelado. ` : 'El pedido quedar? cancelado. '}Esta acci?n no se puede revertir.`,
+            textoAceptar: 'S?, cancelar',
+            textoCancelar: 'Volver',
+            peligro: true,
+        });
+
+        if (!confirmado) return;
 
         boton.disabled = true;
         boton.textContent = 'Cancelando…';
@@ -2824,55 +2623,6 @@ function conectarPedidos() {
             boton.textContent = 'Cancelar pedido';
             mostrarError(error);
         }
-    });
-}
-
-/* Modal de confirmación para cancelar un pedido */
-function confirmarCancelacionPedido(factura) {
-    return new Promise((resolve) => {
-        document.getElementById('modalCancelarPedido')?.remove();
-
-        const modal = document.createElement('div');
-        modal.id = 'modalCancelarPedido';
-        modal.className = 'modal-perfil';
-        modal.innerHTML = `
-            <div class="modal-perfil__fondo" data-modal-cerrar></div>
-            <div class="modal-perfil__caja" role="dialog" aria-modal="true" aria-labelledby="modalCancelarTitulo">
-                <span class="modal-perfil__icono"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
-                <h3 class="modal-perfil__titulo" id="modalCancelarTitulo">¿Cancelar este pedido?</h3>
-                <p class="modal-perfil__texto">
-                    ${factura ? `El pedido <strong>${escapar(factura)}</strong> quedará cancelado.` : 'El pedido quedará cancelado.'}
-                    Esta acción no se puede revertir.
-                </p>
-                <div class="modal-perfil__acciones">
-                    <button type="button" class="btn-secundario" data-modal-cerrar>Volver</button>
-                    <button type="button" class="modal-perfil__peligro" data-modal-aceptar>Sí, cancelar</button>
-                </div>
-            </div>`;
-
-        const cerrar = (resultado) => {
-            modal.classList.remove('is-visible');
-            document.removeEventListener('keydown', alPresionarTecla);
-            setTimeout(() => modal.remove(), 180);
-            resolve(resultado);
-        };
-
-        const alPresionarTecla = (evento) => {
-            if (evento.key === 'Escape') cerrar(false);
-        };
-
-        modal.addEventListener('click', (evento) => {
-            if (evento.target.closest('[data-modal-aceptar]')) return cerrar(true);
-            if (evento.target.closest('[data-modal-cerrar]')) cerrar(false);
-        });
-
-        document.addEventListener('keydown', alPresionarTecla);
-        document.body.appendChild(modal);
-        document.body.classList.add('sin-scroll');
-
-        modal.addEventListener('transitionend', () => document.body.classList.remove('sin-scroll'), { once: true });
-        requestAnimationFrame(() => modal.classList.add('is-visible'));
-        modal.querySelector('[data-modal-aceptar]').focus();
     });
 }
 
@@ -2950,7 +2700,7 @@ async function cargarEquivalenciasCmDeseo() {
         equivalenciasCmDeseo = new Map(
             (datos.tallas || []).map((talla) => [String(talla.eu), talla.cm])
         );
-    } catch (error) {
+    } catch {
         equivalenciasCmDeseo = new Map();
     }
 
@@ -3366,7 +3116,8 @@ function mostrarDescuento(cliente) {
     const contenedor = porId('contenidoDescuento');
     if (!contenedor) return;
 
-    ajustarTemasAyuda(cliente);
+    /* Chiky acompa?a solo con la sesi?n activa. */
+    window.Chiky?.soloSi(() => Boolean(window.clienteTienda));
     actualizarOfertaChiky(cliente);
 
     /* La oferta vive dentro de Chiky y debe quedar visible en el perfil. */

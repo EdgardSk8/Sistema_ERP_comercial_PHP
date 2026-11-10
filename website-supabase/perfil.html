@@ -30,9 +30,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261114d">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261116f">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261114b">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261115b">
 </head>
 <body>
 
@@ -168,13 +168,6 @@
         </summary>
 
         <div class="perfil-ayuda__lista">
-          <button type="button" class="perfil-ayuda__tema" data-ayuda="secciones">Recorrido por todas las secciones</button>
-          <button type="button" class="perfil-ayuda__tema" data-ayuda="descuento">¿Cómo uso mi 10%?</button>
-          <button type="button" class="perfil-ayuda__tema" data-ayuda="fidelidad" hidden>Cupones y fidelidad</button>
-          <button type="button" class="perfil-ayuda__tema" data-ayuda="cuenta">Mis datos y contraseña</button>
-          <button type="button" class="perfil-ayuda__tema" data-ayuda="direcciones">Mis direcciones</button>
-          <button type="button" class="perfil-ayuda__tema" data-ayuda="pedidos">Mis pedidos</button>
-
           <div class="perfil-ayuda__grupo">
             <p class="perfil-ayuda__subtitulo">Explicar una sección</p>
             <div class="perfil-ayuda__atajos">
@@ -763,17 +756,81 @@
     </div>
   </main>
 
+  <!-- Modal: completa los datos del 10% -->
+  <div class="perfil-datos-modal" id="modalDescuento" hidden>
+    <div class="perfil-datos-modal__fondo" data-cerrar-descuento></div>
+
+    <div class="perfil-datos-modal__caja" role="dialog" aria-modal="true" aria-labelledby="modalDescuentoTitulo">
+      <button type="button" class="perfil-datos-modal__cerrar" data-cerrar-descuento aria-label="Cerrar">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+
+      <span class="perfil-seccion__etiqueta">Descuento de bienvenida</span>
+      <h2 class="perfil-datos-modal__titulo" id="modalDescuentoTitulo">Completa estos datos y activa tu 10%</h2>
+      <p class="perfil-datos-modal__texto">Con estos datos podrás aplicar el descuento en tu primera compra de zapatos.</p>
+
+      <form class="perfil-datos-modal__form" id="formModalDescuento" novalidate>
+        <div class="perfil-datos-modal__campo" id="modalTelefonoCampo">
+          <label for="modalTelefono">Teléfono</label>
+          <input class="form-control" id="modalTelefono" name="telefono" type="tel" maxlength="20" autocomplete="tel" placeholder="8888-8888">
+        </div>
+
+        <div class="perfil-datos-modal__campo" id="modalFechaCampo">
+          <label for="modalFechaNacimiento">Fecha de nacimiento</label>
+          <input class="form-control" id="modalFechaNacimiento" name="nacimiento" type="text" placeholder="Elige tu fecha">
+        </div>
+
+        <div class="perfil-datos-modal__campo" id="modalPasswordCampo">
+          <label for="modalPassword">Contraseña</label>
+          <input class="form-control" id="modalPassword" name="password" type="password" autocomplete="new-password" placeholder="Mín. 8, mayúscula, minúscula y número" required>
+          <small>Así también puedes entrar con tu correo.</small>
+        </div>
+
+        <div class="perfil-datos-modal__dir" id="modalDireccionCampo">
+          <button type="button" class="perfil-datos-modal__direccion" id="modalBtnDireccion" aria-expanded="false">
+            <i class="bi bi-geo-alt" aria-hidden="true"></i>
+            <span id="modalDireccionTexto">Agregar dirección</span>
+          </button>
+
+          <div class="perfil-datos-modal__mapa" id="modalDireccionInline" hidden>
+            <div class="perfil-datos-modal__mapa-vista">
+              <iframe id="modalMapaUbicacion" title="Ubicación de tu dirección" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+
+            <p class="perfil-datos-modal__mapa-estado" id="modalMapaEstado" hidden></p>
+
+            <label class="perfil-datos-modal__referencia" for="modalReferencia">Referencia</label>
+            <input class="form-control" id="modalReferencia" maxlength="500" placeholder="Casa color crema, portón blanco...">
+
+            <input type="hidden" id="modalLat">
+            <input type="hidden" id="modalLng">
+          </div>
+        </div>
+
+        <p class="perfil-datos-modal__hecho" id="modalTodoListo" hidden>
+          <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Ya completaste todos tus datos.
+        </p>
+
+        <div class="perfil-datos-modal__acciones">
+          <button type="button" class="btn-secundario" data-cerrar-descuento>Ahora no</button>
+          <button type="submit" class="btn-primario" id="modalGuardar">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="/tienda/recursos/js/core/carrito-store.js?v=20261109d" defer></script>
+  <script src="/tienda/recursos/js/core/utilidades.js?v=20261116e" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261107c" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261113a" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261116a" defer></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js" defer></script>
   <script src="/tienda/recursos/js/core/cedula-nicaragua.js" defer></script>
-  <script src="/tienda/recursos/js/components/chiky.js?v=20261111d" defer></script>
-  <script src="/tienda/recursos/js/pages/perfil.js?v=20261114g" defer></script>
-  <script src="/tienda/recursos/js/pages/perfil-trabajador-acceso.js?v=20261114c" defer></script>
+  <script src="/tienda/recursos/js/components/chiky.js?v=20261116e" defer></script>
+  <script src="/tienda/recursos/js/pages/perfil.js?v=20261116f" defer></script>
+  <script src="/tienda/recursos/js/pages/perfil-trabajador-acceso.js?v=20261116a" defer></script>
 </body>
 </html>

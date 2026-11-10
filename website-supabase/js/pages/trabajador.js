@@ -40,12 +40,7 @@
     let cargandoPedidos = false;
     let vistaActual = 'disponibles';
 
-    const escapar = (valor) => String(valor ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    const escapar = window.TiendaUtil.escapar;
 
     const moneda = (valor) => `C$ ${Number(valor || 0).toLocaleString('es-NI', {
         minimumFractionDigits: 2,
@@ -278,7 +273,6 @@
     function renderPedido(pedido, tipo) {
         const esAsignado = tipo === 'asignado';
         const estado = estadoDe(pedido);
-        const cliente = pedido?.cliente || {};
         const numero = pedido?.numero_pedido || `VTA-${String(pedido?.id_pedido || '').padStart(5, '0')}`;
         const pago = ['cancelado', 'rechazado', 'devuelto'].includes(pedido?.estado_pedido)
             ? { texto: 'Sin cobro', clase: '' }
@@ -308,7 +302,14 @@
                 }
 
                 if (pedido?.estado_pedido === 'enviado') {
-                    return '<span class="trabajador-accion trabajador-accion--enviado"><i class="bi bi-truck" aria-hidden="true"></i> En camino</span>';
+                    return `<span class="trabajador-acciones">
+                        <button type="button" class="trabajador-accion" data-entregado="${Number(pedido.id_pedido)}">
+                            <i class="bi bi-check2-circle" aria-hidden="true"></i> Marcar entregado
+                        </button>
+                        <button type="button" class="trabajador-accion trabajador-accion--devolver" data-devuelto="${Number(pedido.id_pedido)}">
+                            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> No recibido
+                        </button>
+                    </span>`;
                 }
 
                 if (pedido?.estado_pedido === 'entregado') {
@@ -472,7 +473,13 @@
 
         if (!id) return;
 
-        if (!window.confirm('¿Tomar este pedido? Revisa que puedas cubrir la entrega.')) return;
+        const confirmado = await tiendaConfirmar({
+            titulo: '¿Tomar este pedido?',
+            mensaje: 'Revisa que puedas cubrir la entrega antes de aceptarlo.',
+            textoAceptar: 'Aceptar pedido',
+        });
+
+        if (!confirmado) return;
 
         boton.disabled = true;
         boton.innerHTML = '<i class="bi bi-hourglass-split" aria-hidden="true"></i> Aceptando…';
@@ -494,7 +501,13 @@
 
         if (!id) return;
 
-        if (!window.confirm('¿Confirmas que ya sales con este pedido?')) return;
+        const confirmado = await tiendaConfirmar({
+            titulo: '¿Ya sales con este pedido?',
+            mensaje: 'El cliente verá el pedido «En camino».',
+            textoAceptar: 'Sí, en camino',
+        });
+
+        if (!confirmado) return;
 
         boton.disabled = true;
         boton.innerHTML = '<i class="bi bi-hourglass-split" aria-hidden="true"></i> Actualizando…';
@@ -507,6 +520,62 @@
             mostrarToast(error?.message || 'No se pudo actualizar el pedido.', 'error');
             boton.disabled = false;
             boton.innerHTML = '<i class="bi bi-truck" aria-hidden="true"></i> Marcar en camino';
+        }
+    }
+
+    async function marcarEntregado(boton) {
+        const id = Number(boton.dataset.entregado);
+
+        if (!id) return;
+
+        const confirmado = await tiendaConfirmar({
+            titulo: '¿Entregaste este pedido?',
+            mensaje: 'Confirma que el cliente recibió el pedido.',
+            textoAceptar: 'Sí, entregado',
+        });
+
+        if (!confirmado) return;
+
+        boton.disabled = true;
+        boton.innerHTML = '<i class="bi bi-hourglass-split" aria-hidden="true"></i> Actualizando…';
+
+        try {
+            await window.TiendaAPI.put(`/tienda/api/trabajador/pedidos/${id}/estado`, { estado: 'entregado' });
+            mostrarToast('Pedido marcado como entregado.');
+            await cargarPedidos(true);
+        } catch (error) {
+            mostrarToast(error?.message || 'No se pudo actualizar el pedido.', 'error');
+            boton.disabled = false;
+            boton.innerHTML = '<i class="bi bi-check2-circle" aria-hidden="true"></i> Marcar entregado';
+        }
+    }
+
+    async function marcarDevuelto(boton) {
+        const id = Number(boton.dataset.devuelto);
+
+        if (!id) return;
+
+        const confirmado = await tiendaConfirmar({
+            titulo: '¿El cliente no recibió el pedido?',
+            mensaje: 'Se marcará como devuelto y regresará a la tienda. Si el pago estaba confirmado, la tienda lo reembolsará.',
+            textoAceptar: 'Sí, devolver',
+            textoCancelar: 'Volver',
+            peligro: true,
+        });
+
+        if (!confirmado) return;
+
+        boton.disabled = true;
+        boton.innerHTML = '<i class="bi bi-hourglass-split" aria-hidden="true"></i> Actualizando…';
+
+        try {
+            await window.TiendaAPI.put(`/tienda/api/trabajador/pedidos/${id}/estado`, { estado: 'devuelto' });
+            mostrarToast('Pedido marcado como devuelto. La tienda lo procesará.');
+            await cargarPedidos(true);
+        } catch (error) {
+            mostrarToast(error?.message || 'No se pudo actualizar el pedido.', 'error');
+            boton.disabled = false;
+            boton.innerHTML = '<i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> No recibido';
         }
     }
 
@@ -587,6 +656,20 @@
 
         if (enCamino) {
             marcarEnCamino(enCamino);
+            return;
+        }
+
+        const entregado = evento.target.closest('[data-entregado]');
+
+        if (entregado) {
+            marcarEntregado(entregado);
+            return;
+        }
+
+        const devuelto = evento.target.closest('[data-devuelto]');
+
+        if (devuelto) {
+            marcarDevuelto(devuelto);
         }
     });
 

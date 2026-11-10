@@ -10,35 +10,6 @@ window.favoritosTienda = window.favoritosTienda || new Set();
 
 let tallasReferencia = null;
 
-const COLORES = {
-    negro: '#22252A',
-    blanco: '#FFFFFF',
-    crudo: '#F1E9D8',
-    crema: '#F3ECDD',
-    beige: '#E2D5B9',
-    arena: '#E6DBC4',
-    gris: '#9AA0A6',
-    azul: '#2F5D8A',
-    celeste: '#8FB8D9',
-    rojo: '#C0392B',
-    vino: '#7B2231',
-    verde: '#3E7C59',
-    oliva: '#7C7A45',
-    amarillo: '#E3B23C',
-    mostaza: '#C9971E',
-    naranja: '#E07B39',
-    rosa: '#E4A3B8',
-    rosado: '#E4A3B8',
-    morado: '#6C4A8F',
-    violeta: '#7A5AA6',
-    cafe: '#7A5230',
-    marron: '#7A5230',
-    dorado: '#C9A227',
-    plateado: '#C0C4C8',
-    turquesa: '#3AAFA9',
-    caqui: '#A89A6B',
-};
-
 function normalizar(texto) {
     return String(texto || '')
         .toLowerCase()
@@ -47,35 +18,12 @@ function normalizar(texto) {
         .trim();
 }
 
-function colorHex(nombre) {
-    const clave = normalizar(nombre);
-    if (COLORES[clave]) return COLORES[clave];
-
-    // "Celeste con Negro" → toma el primer color conocido del texto
-    const palabra = clave.split(/\s+/).find(parte => COLORES[parte]);
-    if (palabra) return COLORES[palabra];
-
-    let hash = 0;
-    for (let i = 0; i < clave.length; i++) {
-        hash = clave.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return `hsl(${Math.abs(hash) % 360}, 45%, 62%)`;
-}
-
 function moneda(valor) {
-    return 'C$ ' + Number(valor || 0).toLocaleString('es-NI', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+    return window.TiendaUtil.moneda(valor);
 }
 
 function escapar(valor) {
-    return String(valor ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    return window.TiendaUtil.escapar(valor);
 }
 
 /* ── Datos para el carrito ───────────────────────────────────── */

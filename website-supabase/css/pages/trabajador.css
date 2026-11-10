@@ -20,6 +20,8 @@
     --trabajador-gris: #68736d;
     --trabajador-borde: #e4e0d6;
     --trabajador-fondo: #f8f5ee;
+    --trabajador-rojo: #b42318;
+    --trabajador-rojo-suave: #fdecea;
     --trabajador-radio: 18px;
     background: var(--trabajador-fondo);
     color: var(--trabajador-tinta);
@@ -777,6 +779,7 @@
     border: 1px solid var(--trabajador-borde);
     background: #fff;
     color: var(--trabajador-tinta);
+    cursor: default;
 }
 
 .trabajador-accion--secundaria:hover:not(:disabled) {
@@ -785,14 +788,25 @@
     color: var(--trabajador-verde-oscuro);
 }
 
-.trabajador-accion--enviado,
-.trabajador-accion--secundaria {
-    cursor: default;
+/* Acciones de una entrega en curso: entregar o registrar que el cliente no recibió. */
+.trabajador-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-left: auto;
 }
 
-.trabajador-accion--enviado {
-    background: #e8f0fb;
-    color: #2b5d9a;
+.trabajador-accion--devolver {
+    border: 1px solid rgba(180, 35, 24, .35);
+    background: #fff;
+    color: var(--trabajador-rojo);
+}
+
+.trabajador-accion--devolver:hover:not(:disabled) {
+    border-color: var(--trabajador-rojo);
+    background: var(--trabajador-rojo-suave);
+    color: var(--trabajador-rojo);
 }
 
 .trabajador-accion:focus-visible,
