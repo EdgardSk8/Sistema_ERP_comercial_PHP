@@ -77,6 +77,41 @@
         </p>
     </section>
 
+    <div class="modal fade" id="modalArqueoTrabajador" tabindex="-1" aria-labelledby="modalArqueoTrabajadorTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalArqueoTrabajadorTitulo">Arqueo del repartidor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="trabajadores-arqueo__filtros">
+                        <label for="arqueoErpDesde">
+                            <span>Desde</span>
+                            <input type="date" id="arqueoErpDesde" class="form-control form-control-sm">
+                        </label>
+                        <label for="arqueoErpHasta">
+                            <span>Hasta</span>
+                            <input type="date" id="arqueoErpHasta" class="form-control form-control-sm">
+                        </label>
+                        <button type="button" class="btn btn-sm btn-outline-success" id="btnFiltrarArqueoErp">
+                            <i class="ph ph-funnel"></i> Ver
+                        </button>
+                    </div>
+
+                    <div id="trabajadorArqueoErpDetalle">
+                        <p class="trabajadores-sub">Selecciona un repartidor para ver su arqueo.</p>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalTrabajador" tabindex="-1" aria-labelledby="modalTrabajadorTitulo" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">

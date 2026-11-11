@@ -51,8 +51,9 @@
 }
 
 .admin-login__marca {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     margin-bottom: 22px;
     color: var(--secundario);
@@ -74,6 +75,7 @@
     font-size: .68rem;
     font-weight: 800;
     letter-spacing: .14em;
+    text-align: center;
     text-transform: uppercase;
 }
 
@@ -82,6 +84,7 @@
     font-size: clamp(1.55rem, 6vw, 1.9rem);
     line-height: 1.08;
     letter-spacing: -.035em;
+    text-align: center;
 }
 
 .admin-login__texto {
@@ -543,7 +546,7 @@
     bottom: 0;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 2px;
     padding: 5px 6px calc(5px + env(safe-area-inset-bottom));
     background: color-mix(in srgb, var(--superficie) 96%, transparent);
@@ -574,6 +577,16 @@
 }
 
 .admin-nav__item i { font-size: 1.15rem; line-height: 1; }
+
+@media (max-width: 360px) {
+    .admin-nav__item {
+        font-size: .56rem;
+    }
+
+    .admin-nav__item i {
+        font-size: 1.05rem;
+    }
+}
 
 .admin-nav__item.is-activo {
     background: var(--admin-verde-suave);
@@ -1310,6 +1323,343 @@
 
 @media (max-width: 340px) {
     .admin-cuenta__resumen { grid-template-columns: 1fr; }
+}
+
+/* ───────────────────────────── Cierre de delivery ───────────────────────────── */
+
+.admin-cierre__fechas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.admin-cierre__fechas label {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+    color: var(--admin-gris);
+    font-size: .62rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.admin-cierre__fechas input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 42px;
+    padding: 8px 9px;
+    border: 1px solid var(--admin-borde-fuerte);
+    border-radius: 11px;
+    background: #fff;
+    color: var(--secundario);
+    font: inherit;
+    font-size: .78rem;
+}
+
+.admin-cierre__fechas input:focus {
+    border-color: var(--admin-verde);
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(31, 122, 77, .10);
+}
+
+.admin-cierre__global {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin: -4px 0 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--admin-borde);
+    border-radius: 10px;
+    background: var(--superficie);
+    color: var(--admin-gris);
+    font-size: .62rem;
+    font-weight: 700;
+}
+
+.admin-cierre__global strong {
+    color: var(--secundario);
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-cierre__card {
+    padding: 10px 12px;
+    border-radius: 14px;
+}
+
+.admin-cierre__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.admin-cierre__nombre {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 8px;
+    min-width: 0;
+}
+
+.admin-cierre__nombre strong {
+    overflow: hidden;
+    color: var(--secundario);
+    font-size: .82rem;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-cierre__nombre span {
+    color: var(--admin-gris);
+    font-size: .64rem;
+    font-weight: 600;
+}
+
+.admin-cierre__linea-datos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 10px;
+    margin-top: 6px;
+    color: var(--admin-gris);
+    font-size: .65rem;
+}
+
+.admin-cierre__linea-datos strong {
+    color: var(--secundario);
+    font-size: .68rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-cierre__linea-datos--delivery {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed var(--admin-borde);
+}
+
+.admin-cierre__linea-total {
+    margin-left: auto;
+    color: var(--secundario);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.admin-cierre__total-linea {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--admin-borde);
+    color: var(--secundario);
+    font-size: .7rem;
+    font-weight: 800;
+}
+
+.admin-cierre__total-linea strong {
+    font-size: .76rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.admin-cierre__arquear {
+    min-height: 30px;
+    padding: 0 9px;
+    border-radius: 8px;
+    font-size: .64rem;
+    gap: 4px;
+}
+
+.admin-cierre__fila-acciones {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 5px;
+}
+
+.admin-cierre__ver {
+    width: 30px;
+    min-height: 30px;
+    padding: 0;
+    border-radius: 8px;
+}
+
+.admin-cierre__dias {
+    display: grid;
+    gap: 6px;
+}
+
+.admin-cierre__dia {
+    border: 1px solid var(--admin-borde);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.admin-cierre__dia > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+    padding: 8px 9px;
+    cursor: pointer;
+}
+
+.admin-cierre__dia > summary::-webkit-details-marker {
+    display: none;
+}
+
+.admin-cierre__dia > summary > span {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    gap: 1px;
+}
+
+.admin-cierre__dia > summary strong {
+    font-size: .78rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-cierre__dia > summary small {
+    color: var(--admin-gris);
+    font-size: .66rem;
+}
+
+.admin-cierre__dia > summary > strong {
+    white-space: nowrap;
+}
+
+.admin-cierre__dia > summary i {
+    color: var(--admin-gris);
+    font-size: .72rem;
+    transition: transform .18s ease;
+}
+
+.admin-cierre__dia[open] > summary i {
+    transform: rotate(180deg);
+}
+
+.admin-cierre__dia-cuerpo {
+    padding: 0 9px 8px;
+}
+
+.admin-cierre__metodos,
+.admin-cierre__delivery {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin: 10px 0;
+}
+
+.admin-cierre__metodos > div,
+.admin-cierre__delivery > div {
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid var(--admin-borde);
+    border-radius: 11px;
+    background: var(--admin-gris-suave);
+}
+
+.admin-cierre__metodos span,
+.admin-cierre__delivery span {
+    display: block;
+    color: var(--admin-gris);
+    font-size: .58rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+}
+
+.admin-cierre__metodos strong,
+.admin-cierre__delivery strong {
+    display: block;
+    margin-top: 3px;
+    color: var(--secundario);
+    font-size: .8rem;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.admin-cierre__delivery > div {
+    background: var(--superficie);
+}
+
+.admin-cierre__total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 12px 0;
+    padding: 11px 12px;
+    border: 1px solid rgba(31, 122, 77, .22);
+    border-radius: 12px;
+    background: var(--admin-verde-suave);
+}
+
+.admin-cierre__total span {
+    color: var(--admin-verde-hondo);
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.admin-cierre__total strong {
+    color: var(--admin-verde-hondo);
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.admin-cierre__diferencia {
+    margin: -4px 0 12px;
+    padding: 8px 10px;
+    border-radius: 9px;
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+.admin-cierre__diferencia--ok {
+    background: var(--admin-verde-suave);
+    color: var(--admin-verde-hondo);
+}
+
+.admin-cierre__diferencia--falta {
+    background: var(--admin-rojo-suave);
+    color: var(--admin-rojo);
+}
+
+.admin-cierre__diferencia--sobra {
+    background: var(--admin-ambar-suave);
+    color: var(--admin-ambar);
+}
+
+@media (max-width: 340px) {
+    .admin-cierre__metodos,
+    .admin-cierre__delivery {
+        gap: 5px;
+    }
+
+    .admin-cierre__metodos > div,
+    .admin-cierre__delivery > div {
+        padding: 8px 7px;
+    }
+
+    .admin-cierre__metodos span,
+    .admin-cierre__delivery span {
+        font-size: .54rem;
+    }
+
+    .admin-cierre__metodos strong,
+    .admin-cierre__delivery strong {
+        font-size: .72rem;
+    }
 }
 
 /* ───────────────────────────── Cobro en línea ───────────────────────────── */

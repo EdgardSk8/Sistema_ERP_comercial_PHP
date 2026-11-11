@@ -8,8 +8,8 @@
 -- Incluye el cobro en linea (Lafise / billetera movil): registra el pago,
 -- factura la venta, descuenta inventario y guarda el historial.
 -- Tambien permite aceptar/facturar (efectivo puede quedar pendiente de pago),
--- registrar ese pago despues y abonar cuentas por cobrar (parcial o total)
--- desde caja o una cuenta activa.
+-- cerrar el delivery por periodo (productos, delivery, comision y ganancia)
+-- y abonar cuentas por cobrar (parcial o total) desde caja o una cuenta activa.
 -- La verificacion usa bcrypt ($2y$/$2a$) con pgcrypto. Si el ERP cambia a
 -- Argon2, hay que reemplazar la comprobacion de web_admin_login.
 -- ============================================================================
@@ -82,6 +82,53 @@ alter table public.pedidos_web_pagos enable row level security;
 
 revoke all on table public.pedidos_web_pagos from public, anon, authenticated;
 revoke all on sequence public.pedidos_web_pagos_id_pago_pedido_seq from public, anon, authenticated;
+
+-- ----------------------------------------------------------------------------
+-- 1.2) Cierres de delivery (arqueo por periodo)
+-- ----------------------------------------------------------------------------
+
+create table if not exists public.repartidor_cierres (
+    id_cierre bigserial primary key,
+    id_trabajador integer not null references public.trabajadores (id_trabajador) on delete restrict,
+    fecha_desde date not null,
+    fecha_hasta date not null,
+    total_pedidos integer not null default 0,
+    total_efectivo numeric(12, 2) not null default 0,
+    total_billetera numeric(12, 2) not null default 0,
+    total_lafise numeric(12, 2) not null default 0,
+    total_otros numeric(12, 2) not null default 0,
+    total_productos numeric(12, 2) not null default 0,
+    total_delivery numeric(12, 2) not null default 0,
+    porcentaje_comision numeric(5, 2) not null default 0,
+    comision_empresa numeric(12, 2) not null default 0,
+    ganancia_delivery numeric(12, 2) not null default 0,
+    total_empresa numeric(12, 2) not null default 0,
+    monto_entregado numeric(12, 2) not null default 0,
+    diferencia numeric(12, 2) not null default 0,
+    nota varchar(255),
+    id_usuario integer references public.usuarios (id_usuario) on delete set null,
+    fecha_cierre timestamptz not null default now()
+);
+
+create table if not exists public.repartidor_cierre_pedidos (
+    id_cierre bigint not null references public.repartidor_cierres (id_cierre) on delete cascade,
+    id_pedido integer not null unique references public.pedidos_web (id_pedido) on delete restrict,
+    metodo_pago varchar(20) not null,
+    total_producto numeric(12, 2) not null default 0,
+    costo_envio numeric(12, 2) not null default 0,
+    total_pedido numeric(12, 2) not null default 0,
+    primary key (id_cierre, id_pedido)
+);
+
+create index if not exists idx_repartidor_cierres_trabajador
+    on public.repartidor_cierres (id_trabajador, fecha_cierre desc);
+
+alter table public.repartidor_cierres enable row level security;
+alter table public.repartidor_cierre_pedidos enable row level security;
+
+revoke all on table public.repartidor_cierres from public, anon, authenticated;
+revoke all on table public.repartidor_cierre_pedidos from public, anon, authenticated;
+revoke all on sequence public.repartidor_cierres_id_cierre_seq from public, anon, authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 2) Validacion de sesion (uso interno de las demas funciones)
@@ -2165,6 +2212,399 @@ begin
     return new;
 end;
 $$;
+
+-- ----------------------------------------------------------------------------
+-- 8.1) Cierre de delivery
+-- ----------------------------------------------------------------------------
+
+create or replace function public.web_admin_cierre_delivery(
+    p_token text,
+    p_desde date default current_date,
+    p_hasta date default current_date
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, extensions
+as $$
+declare
+    v_admin integer := public.web_admin_sesion(p_token);
+    v_desde date := coalesce(p_desde, current_date);
+    v_hasta date := coalesce(p_hasta, current_date);
+    v_repartidores jsonb := '[]'::jsonb;
+    v_reg record;
+    v_comision numeric(12, 2);
+    v_ganancia numeric(12, 2);
+    v_total_empresa numeric(12, 2);
+    v_t_pedidos integer := 0;
+    v_t_productos numeric(12, 2) := 0;
+    v_t_efectivo numeric(12, 2) := 0;
+    v_t_billetera numeric(12, 2) := 0;
+    v_t_lafise numeric(12, 2) := 0;
+    v_t_otros numeric(12, 2) := 0;
+    v_t_delivery numeric(12, 2) := 0;
+    v_t_comision numeric(12, 2) := 0;
+    v_t_ganancia numeric(12, 2) := 0;
+    v_t_total_empresa numeric(12, 2) := 0;
+begin
+    if v_admin is null then
+        return jsonb_build_object('success', false, 'sesion', false, 'mensaje', 'Sesión expirada. Inicia sesión de nuevo.');
+    end if;
+
+    if v_hasta < v_desde then
+        return jsonb_build_object('success', false, 'mensaje', 'La fecha final no puede ser anterior a la inicial.');
+    end if;
+
+    for v_reg in
+        with entregados as (
+            select
+                p.id_pedido,
+                p.id_trabajador,
+                p.numero_pedido,
+                coalesce(p.metodo_pago_web, 'efectivo') as metodo_pago,
+                p.nombre_recibe,
+                p.fecha_entregado,
+                p.costo_envio_pedido,
+                p.total_pedido,
+                round(greatest(p.total_pedido - p.costo_envio_pedido, 0), 2) as total_producto,
+                exists (
+                    select 1
+                    from public.repartidor_cierre_pedidos cp
+                    where cp.id_pedido = p.id_pedido
+                ) as cerrado
+            from public.pedidos_web p
+            where p.estado_pedido = 'entregado'
+              and p.estado_pago <> 'reembolsado'
+              and coalesce(p.fecha_entregado, p.fecha_actualizacion_pedido)::date between v_desde and v_hasta
+        )
+        select
+            t.id_trabajador,
+            t.nombre_trabajador,
+            t.telefono_trabajador,
+            coalesce(t.porcentaje_comision, 0) as porcentaje_comision,
+            (count(q.id_pedido) filter (where not q.cerrado))::integer as pedidos,
+            (count(q.id_pedido) filter (where q.cerrado))::integer as cerrados,
+            coalesce(sum(q.total_producto) filter (where not q.cerrado), 0) as total_productos,
+            coalesce(sum(q.total_producto) filter (where not q.cerrado and q.metodo_pago = 'efectivo'), 0) as total_efectivo,
+            coalesce(sum(q.total_producto) filter (where not q.cerrado and q.metodo_pago = 'billetera_movil'), 0) as total_billetera,
+            coalesce(sum(q.total_producto) filter (where not q.cerrado and q.metodo_pago = 'lafise'), 0) as total_lafise,
+            coalesce(sum(q.total_producto) filter (where not q.cerrado and q.metodo_pago not in ('efectivo', 'billetera_movil', 'lafise')), 0) as total_otros,
+            coalesce(sum(q.costo_envio_pedido) filter (where not q.cerrado), 0) as total_delivery,
+            coalesce(
+                jsonb_agg(
+                    jsonb_build_object(
+                        'id_pedido', q.id_pedido,
+                        'numero', q.numero_pedido,
+                        'fecha', q.fecha_entregado,
+                        'metodo', q.metodo_pago,
+                        'cliente', q.nombre_recibe,
+                        'productos', q.total_producto,
+                        'delivery', q.costo_envio_pedido,
+                        'total', q.total_pedido
+                    )
+                    order by q.fecha_entregado, q.id_pedido
+                ) filter (where not q.cerrado),
+                '[]'::jsonb
+            ) as detalle
+        from public.trabajadores t
+        join entregados q on q.id_trabajador = t.id_trabajador
+        group by t.id_trabajador, t.nombre_trabajador, t.telefono_trabajador, t.porcentaje_comision
+        order by t.nombre_trabajador
+    loop
+        v_comision := round(v_reg.total_delivery * v_reg.porcentaje_comision / 100, 2);
+        v_ganancia := round(v_reg.total_delivery - v_comision, 2);
+        v_total_empresa := round(v_reg.total_productos + v_comision, 2);
+
+        v_repartidores := v_repartidores || jsonb_build_array(jsonb_build_object(
+            'id_trabajador', v_reg.id_trabajador,
+            'nombre', v_reg.nombre_trabajador,
+            'telefono', v_reg.telefono_trabajador,
+            'comision', v_reg.porcentaje_comision,
+            'pedidos', v_reg.pedidos,
+            'cerrados', v_reg.cerrados,
+            'efectivo', v_reg.total_efectivo,
+            'billetera', v_reg.total_billetera,
+            'lafise', v_reg.total_lafise,
+            'otros', v_reg.total_otros,
+            'productos', v_reg.total_productos,
+            'delivery', v_reg.total_delivery,
+            'comision_empresa', v_comision,
+            'ganancia_delivery', v_ganancia,
+            'total_empresa', v_total_empresa,
+            'detalle', v_reg.detalle
+        ));
+
+        v_t_pedidos := v_t_pedidos + v_reg.pedidos;
+        v_t_productos := v_t_productos + v_reg.total_productos;
+        v_t_efectivo := v_t_efectivo + v_reg.total_efectivo;
+        v_t_billetera := v_t_billetera + v_reg.total_billetera;
+        v_t_lafise := v_t_lafise + v_reg.total_lafise;
+        v_t_otros := v_t_otros + v_reg.total_otros;
+        v_t_delivery := v_t_delivery + v_reg.total_delivery;
+        v_t_comision := v_t_comision + v_comision;
+        v_t_ganancia := v_t_ganancia + v_ganancia;
+        v_t_total_empresa := v_t_total_empresa + v_total_empresa;
+    end loop;
+
+    return jsonb_build_object(
+        'success', true,
+        'desde', v_desde,
+        'hasta', v_hasta,
+        'repartidores', v_repartidores,
+        'totales', jsonb_build_object(
+            'pedidos', v_t_pedidos,
+            'productos', v_t_productos,
+            'efectivo', v_t_efectivo,
+            'billetera', v_t_billetera,
+            'lafise', v_t_lafise,
+            'otros', v_t_otros,
+            'delivery', v_t_delivery,
+            'comision_empresa', v_t_comision,
+            'ganancia_delivery', v_t_ganancia,
+            'total_empresa', v_t_total_empresa
+        )
+    );
+end;
+$$;
+
+revoke all on function public.web_admin_cierre_delivery(text, date, date) from public;
+grant execute on function public.web_admin_cierre_delivery(text, date, date) to anon, authenticated;
+
+create or replace function public.web_admin_cierre_delivery_guardar(
+    p_token text,
+    p_id_trabajador integer,
+    p_desde date default current_date,
+    p_hasta date default current_date,
+    p_monto_entregado numeric default null,
+    p_nota text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+    v_admin integer := public.web_admin_sesion(p_token);
+    v_desde date := coalesce(p_desde, current_date);
+    v_hasta date := coalesce(p_hasta, current_date);
+    v_trabajador public.trabajadores%rowtype;
+    v_pedido record;
+    v_pedidos integer := 0;
+    v_productos numeric(12, 2) := 0;
+    v_efectivo numeric(12, 2) := 0;
+    v_billetera numeric(12, 2) := 0;
+    v_lafise numeric(12, 2) := 0;
+    v_otros numeric(12, 2) := 0;
+    v_delivery numeric(12, 2) := 0;
+    v_porcentaje numeric(5, 2);
+    v_comision numeric(12, 2);
+    v_ganancia numeric(12, 2);
+    v_total_empresa numeric(12, 2);
+    v_monto_entregado numeric(12, 2);
+    v_diferencia numeric(12, 2);
+    v_id_cierre bigint;
+begin
+    if v_admin is null then
+        return jsonb_build_object('success', false, 'sesion', false, 'mensaje', 'Sesión expirada. Inicia sesión de nuevo.');
+    end if;
+
+    if p_id_trabajador is null then
+        return jsonb_build_object('success', false, 'mensaje', 'Selecciona un repartidor.');
+    end if;
+
+    if v_hasta < v_desde then
+        return jsonb_build_object('success', false, 'mensaje', 'La fecha final no puede ser anterior a la inicial.');
+    end if;
+
+    select * into v_trabajador
+    from public.trabajadores
+    where id_trabajador = p_id_trabajador
+    for update;
+
+    if v_trabajador.id_trabajador is null then
+        return jsonb_build_object('success', false, 'mensaje', 'Repartidor no encontrado.');
+    end if;
+
+    for v_pedido in
+        select
+            p.id_pedido,
+            coalesce(p.metodo_pago_web, 'efectivo') as metodo_pago,
+            p.costo_envio_pedido,
+            p.total_pedido,
+            round(greatest(p.total_pedido - p.costo_envio_pedido, 0), 2) as total_producto
+        from public.pedidos_web p
+        where p.id_trabajador = p_id_trabajador
+          and p.estado_pedido = 'entregado'
+          and p.estado_pago <> 'reembolsado'
+          and coalesce(p.fecha_entregado, p.fecha_actualizacion_pedido)::date between v_desde and v_hasta
+          and not exists (
+              select 1
+              from public.repartidor_cierre_pedidos cp
+              where cp.id_pedido = p.id_pedido
+          )
+        for update
+    loop
+        v_pedidos := v_pedidos + 1;
+        v_productos := v_productos + v_pedido.total_producto;
+        v_delivery := v_delivery + v_pedido.costo_envio_pedido;
+
+        v_efectivo := v_efectivo + case when v_pedido.metodo_pago = 'efectivo' then v_pedido.total_producto else 0 end;
+        v_billetera := v_billetera + case when v_pedido.metodo_pago = 'billetera_movil' then v_pedido.total_producto else 0 end;
+        v_lafise := v_lafise + case when v_pedido.metodo_pago = 'lafise' then v_pedido.total_producto else 0 end;
+        v_otros := v_otros + case
+            when v_pedido.metodo_pago not in ('efectivo', 'billetera_movil', 'lafise') then v_pedido.total_producto
+            else 0
+        end;
+    end loop;
+
+    if v_pedidos = 0 then
+        return jsonb_build_object('success', false, 'mensaje', 'No hay pedidos entregados pendientes de cierre en ese periodo.');
+    end if;
+
+    v_productos := round(v_productos, 2);
+    v_delivery := round(v_delivery, 2);
+    v_porcentaje := round(coalesce(v_trabajador.porcentaje_comision, 0), 2);
+    v_comision := round(v_delivery * v_porcentaje / 100, 2);
+    v_ganancia := round(v_delivery - v_comision, 2);
+    v_total_empresa := round(v_productos + v_comision, 2);
+    v_monto_entregado := round(coalesce(p_monto_entregado, v_total_empresa), 2);
+
+    if v_monto_entregado < 0 then
+        return jsonb_build_object('success', false, 'mensaje', 'El monto entregado no puede ser negativo.');
+    end if;
+
+    if abs(coalesce(p_monto_entregado, v_total_empresa) * 100 - v_monto_entregado * 100) > 0.000001 then
+        return jsonb_build_object('success', false, 'mensaje', 'Usa como máximo dos decimales en el monto entregado.');
+    end if;
+
+    v_diferencia := round(v_monto_entregado - v_total_empresa, 2);
+
+    insert into public.repartidor_cierres (
+        id_trabajador, fecha_desde, fecha_hasta, total_pedidos,
+        total_efectivo, total_billetera, total_lafise, total_otros,
+        total_productos, total_delivery, porcentaje_comision,
+        comision_empresa, ganancia_delivery, total_empresa,
+        monto_entregado, diferencia, nota, id_usuario
+    ) values (
+        p_id_trabajador, v_desde, v_hasta, v_pedidos,
+        round(v_efectivo, 2), round(v_billetera, 2), round(v_lafise, 2), round(v_otros, 2),
+        v_productos, v_delivery, v_porcentaje,
+        v_comision, v_ganancia, v_total_empresa,
+        v_monto_entregado, v_diferencia, left(nullif(btrim(coalesce(p_nota, '')), ''), 255), v_admin
+    )
+    returning id_cierre into v_id_cierre;
+
+    insert into public.repartidor_cierre_pedidos (
+        id_cierre, id_pedido, metodo_pago,
+        total_producto, costo_envio, total_pedido
+    )
+    select
+        v_id_cierre,
+        p.id_pedido,
+        coalesce(p.metodo_pago_web, 'efectivo'),
+        round(greatest(p.total_pedido - p.costo_envio_pedido, 0), 2),
+        p.costo_envio_pedido,
+        p.total_pedido
+    from public.pedidos_web p
+    where p.id_trabajador = p_id_trabajador
+      and p.estado_pedido = 'entregado'
+      and p.estado_pago <> 'reembolsado'
+      and coalesce(p.fecha_entregado, p.fecha_actualizacion_pedido)::date between v_desde and v_hasta
+      and not exists (
+          select 1
+          from public.repartidor_cierre_pedidos cp
+          where cp.id_pedido = p.id_pedido
+      )
+    order by p.fecha_entregado, p.id_pedido;
+
+    update public.pedidos_web p
+    set estado_pago = 'pagado',
+        fecha_actualizacion_pedido = now()
+    where p.id_pedido in (
+        select cp.id_pedido
+        from public.repartidor_cierre_pedidos cp
+        where cp.id_cierre = v_id_cierre
+    )
+      and p.estado_pago <> 'reembolsado';
+
+    return jsonb_build_object(
+        'success', true,
+        'mensaje', 'Cierre de delivery registrado.',
+        'id_cierre', v_id_cierre,
+        'pedidos', v_pedidos,
+        'productos', v_productos,
+        'efectivo', round(v_efectivo, 2),
+        'billetera', round(v_billetera, 2),
+        'lafise', round(v_lafise, 2),
+        'otros', round(v_otros, 2),
+        'delivery', v_delivery,
+        'comision_empresa', v_comision,
+        'ganancia_delivery', v_ganancia,
+        'total_empresa', v_total_empresa,
+        'monto_entregado', v_monto_entregado,
+        'diferencia', v_diferencia
+    );
+end;
+$$;
+
+revoke all on function public.web_admin_cierre_delivery_guardar(text, integer, date, date, numeric, text) from public;
+grant execute on function public.web_admin_cierre_delivery_guardar(text, integer, date, date, numeric, text) to anon, authenticated;
+
+create or replace function public.web_admin_cierres_delivery(
+    p_token text,
+    p_limite integer default 12
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, extensions
+as $$
+declare
+    v_admin integer := public.web_admin_sesion(p_token);
+    v_limite integer := greatest(1, least(coalesce(p_limite, 12), 50));
+begin
+    if v_admin is null then
+        return jsonb_build_object('success', false, 'sesion', false, 'mensaje', 'Sesión expirada. Inicia sesión de nuevo.');
+    end if;
+
+    return jsonb_build_object(
+        'success', true,
+        'cierres', coalesce((
+            select jsonb_agg(jsonb_build_object(
+                'id_cierre', c.id_cierre,
+                'repartidor', t.nombre_trabajador,
+                'desde', c.fecha_desde,
+                'hasta', c.fecha_hasta,
+                'pedidos', c.total_pedidos,
+                'productos', c.total_productos,
+                'efectivo', c.total_efectivo,
+                'billetera', c.total_billetera,
+                'lafise', c.total_lafise,
+                'delivery', c.total_delivery,
+                'comision_empresa', c.comision_empresa,
+                'ganancia_delivery', c.ganancia_delivery,
+                'total_empresa', c.total_empresa,
+                'monto_entregado', c.monto_entregado,
+                'diferencia', c.diferencia,
+                'nota', c.nota,
+                'fecha_cierre', c.fecha_cierre
+            ) order by c.fecha_cierre desc)
+            from (
+                select *
+                from public.repartidor_cierres
+                order by fecha_cierre desc
+                limit v_limite
+            ) c
+            join public.trabajadores t on t.id_trabajador = c.id_trabajador
+        ), '[]'::jsonb)
+    );
+end;
+$$;
+
+revoke all on function public.web_admin_cierres_delivery(text, integer) from public;
+grant execute on function public.web_admin_cierres_delivery(text, integer) to anon, authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 9) Cuentas por cobrar (consulta)

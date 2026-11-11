@@ -64,9 +64,48 @@
 .trabajadores-editor .form-control,.trabajadores-editor .form-select{font-size:12.5px}
 .trabajadores-editor .form-text{font-size:11px}
 
+#modalArqueoTrabajador .modal-body{font-size:13px}
+#modalArqueoTrabajador .modal-dialog{max-width:min(760px,calc(100vw - 1rem))}
+.trabajadores-arqueo__filtros{display:flex;flex-wrap:wrap;align-items:end;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.trabajadores-arqueo__filtros label{display:grid;gap:3px;min-width:0;color:var(--text-soft);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.trabajadores-arqueo__filtros input{min-width:140px;font-size:12px}
+.trabajadores-arqueo__hero{display:grid;gap:2px;margin-bottom:9px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--verde) 28%,var(--border));border-radius:6px;background:var(--verde-soft)}
+.trabajadores-arqueo__hero span,.trabajadores-arqueo__hero small{color:var(--success-text);font-size:11px;font-weight:600}
+.trabajadores-arqueo__hero strong{color:var(--success-text);font-size:21px;line-height:1.15;font-variant-numeric:tabular-nums}
+.trabajadores-arqueo__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.trabajadores-arqueo__grid>div{min-width:0;padding:7px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface-muted)}
+.trabajadores-arqueo__grid span,.trabajadores-arqueo__mini span{display:block;color:var(--text-soft);font-size:10.5px;font-weight:600}
+.trabajadores-arqueo__grid strong,.trabajadores-arqueo__mini strong{display:block;margin-top:2px;color:var(--text);font-size:12px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.trabajadores-arqueo__titulo{margin:14px 0 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-soft)}
+.trabajadores-arqueo__dias,.trabajadores-arqueo__historial{display:grid;gap:5px}
+.trabajadores-arqueo__dia{border:1px solid var(--border);border-radius:6px;background:var(--surface)}
+.trabajadores-arqueo__dia>summary{display:flex;align-items:center;gap:8px;list-style:none;padding:7px 9px;cursor:pointer}
+.trabajadores-arqueo__dia>summary::-webkit-details-marker{display:none}
+.trabajadores-arqueo__dia>summary>span{display:grid;flex:1;min-width:0;gap:1px}
+.trabajadores-arqueo__dia>summary strong{font-size:12px;font-variant-numeric:tabular-nums}
+.trabajadores-arqueo__dia>summary small{color:var(--text-soft);font-size:11px}
+.trabajadores-arqueo__dia>summary>strong{white-space:nowrap}
+.trabajadores-arqueo__dia>summary i{color:var(--text-soft);font-size:12px;transition:transform .18s ease}
+.trabajadores-arqueo__dia[open]>summary i{transform:rotate(180deg)}
+.trabajadores-arqueo__dia-cuerpo{padding:0 9px 9px}
+.trabajadores-arqueo__mini{display:flex;flex-wrap:wrap;gap:4px 12px;padding-top:6px;border-top:1px dashed var(--border)}
+.trabajadores-arqueo__mini span{display:inline-flex;gap:4px;align-items:baseline}
+.trabajadores-arqueo__mini strong{display:inline;margin:0}
+.trabajadores-arqueo__pedidos{display:grid;gap:3px;margin:6px 0 0;padding:0;list-style:none}
+.trabajadores-arqueo__pedidos li,.trabajadores-arqueo__historial-linea{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;font-size:11px}
+.trabajadores-arqueo__pedidos li span,.trabajadores-arqueo__historial-linea span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trabajadores-arqueo__pedidos li strong,.trabajadores-arqueo__historial-linea>strong{flex:0 0 auto;font-variant-numeric:tabular-nums}
+.trabajadores-arqueo__historial-linea{padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface-muted)}
+.trabajadores-arqueo__historial-linea span{display:grid;gap:1px}
+.trabajadores-arqueo__historial-linea small{color:var(--text-soft);font-size:10.5px;white-space:normal}
+
 @media (max-width: 820px) {
     .trabajadores-busqueda{width:100%;margin-left:0}
     .trabajadores-busqueda .form-control{min-width:0;flex:1 1 auto}
     .trabajadores-resumen{width:100%}
     .trabajadores-chip{flex:1 1 auto}
+    .trabajadores-arqueo__filtros label{flex:1 1 120px}
+    .trabajadores-arqueo__filtros input{width:100%}
+    .trabajadores-arqueo__filtros button{width:100%}
+    .trabajadores-arqueo__grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }

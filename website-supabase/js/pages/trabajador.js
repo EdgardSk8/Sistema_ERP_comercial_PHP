@@ -39,6 +39,8 @@
     let disponible = false;
     let cargandoPedidos = false;
     let vistaActual = 'disponibles';
+    let rangoAsignados = 'hoy';
+    let cargandoArqueo = false;
 
     const escapar = window.TiendaUtil.escapar;
 
@@ -61,6 +63,29 @@
         });
     };
 
+    const fechaParaInput = (fecha = new Date()) => [
+        fecha.getFullYear(),
+        String(fecha.getMonth() + 1).padStart(2, '0'),
+        String(fecha.getDate()).padStart(2, '0'),
+    ].join('-');
+
+    const fechaDia = (valor) => {
+        if (!valor) return '—';
+
+        const texto = String(valor).trim();
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+            const [anio, mes, dia] = texto.split('-');
+            return `${dia}/${mes}/${anio}`;
+        }
+
+        const fecha = new Date(texto.replace(' ', 'T'));
+
+        return Number.isNaN(fecha.getTime())
+            ? texto
+            : fecha.toLocaleDateString('es-NI', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    };
+
     const fechaPedido = (valor) => {
         if (!valor) return '—';
         const fecha = new Date(String(valor).replace(' ', 'T'));
@@ -74,6 +99,22 @@
             ? `Hoy, ${fecha.toLocaleTimeString('es-NI', { hour: 'numeric', minute: '2-digit' })}`
             : fecha.toLocaleString('es-NI', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' });
     };
+
+    const esMismoDia = (valor) => {
+        if (!valor) return false;
+
+        const fecha = new Date(String(valor).replace(' ', 'T'));
+
+        return !Number.isNaN(fecha.getTime()) && fecha.toDateString() === new Date().toDateString();
+    };
+
+    const pedidoDeHoy = (pedido) => ['aceptado', 'preparando', 'enviado', 'listo_retiro'].includes(pedido?.estado_pedido)
+        || [
+            pedido?.fecha_pedido,
+            pedido?.fecha_aceptado_trabajador,
+            pedido?.fecha_enviado,
+            pedido?.fecha_entregado,
+        ].some(esMismoDia);
 
     const hora = (valor) => {
         if (!valor) return '';
@@ -370,23 +411,64 @@
             </article>`;
     }
 
+    function renderPedidoCompacto(pedido) {
+        const numero = pedido?.numero_pedido || `VTA-${String(pedido?.id_pedido || '').padStart(5, '0')}`;
+        const cliente = pedido?.nombre_recibe || pedido?.cliente?.nombre || 'Cliente';
+
+        return `
+            <details class="trabajador-pedido-mini" data-pedido="${Number(pedido.id_pedido)}">
+                <summary class="trabajador-pedido-mini__resumen">
+                    <span class="trabajador-pedido-mini__principal">
+                        <strong>${escapar(numero)}</strong>
+                        <span>${escapar(cliente)}</span>
+                    </span>
+                    <span class="trabajador-pedido-mini__lado">
+                        ${badgeEstado(pedido)}
+                        <strong>${moneda(pedido.total_pedido)}</strong>
+                    </span>
+                    <i class="bi bi-chevron-down trabajador-pedido-mini__chevron" aria-hidden="true"></i>
+                </summary>
+                ${renderPedido(pedido, 'asignado')}
+            </details>`;
+    }
+
     function renderListas() {
         const disponibles = Array.isArray(pedidosActuales.disponibles) ? pedidosActuales.disponibles : [];
         const asignados = Array.isArray(pedidosActuales.asignados) ? pedidosActuales.asignados : [];
+        const asignadosVisibles = rangoAsignados === 'hoy' ? asignados.filter(pedidoDeHoy) : asignados;
         const activos = asignados.filter((pedido) => ['aceptado', 'preparando', 'enviado'].includes(pedido.estado_pedido));
         const entregados = asignados.filter((pedido) => pedido.estado_pedido === 'entregado');
 
         listaDisponibles.innerHTML = disponibles.map((pedido) => renderPedido(pedido, 'disponible')).join('');
-        listaAsignados.innerHTML = asignados.map((pedido) => renderPedido(pedido, 'asignado')).join('');
+        listaAsignados.innerHTML = asignadosVisibles.map((pedido) => renderPedidoCompacto(pedido)).join('');
 
         vacioDisponibles.hidden = disponibles.length > 0;
-        vacioAsignados.hidden = asignados.length > 0;
+        vacioAsignados.hidden = asignadosVisibles.length > 0;
+
+        if (!asignadosVisibles.length) {
+            const hayAnteriores = rangoAsignados === 'hoy' && asignados.length > 0;
+            const tituloVacio = vacioAsignados.querySelector('strong');
+            const textoVacio = vacioAsignados.querySelector('span');
+
+            if (tituloVacio) tituloVacio.textContent = hayAnteriores ? 'No tienes entregas hoy' : 'Todavía no tienes entregas';
+            if (textoVacio) {
+                textoVacio.textContent = hayAnteriores
+                    ? 'Cambia a “Todas” para ver tus entregas anteriores.'
+                    : 'Acepta un pedido de la pestaña “Disponibles”.';
+            }
+        }
+
+        document.querySelectorAll('#filtrosAsignados [data-rango]').forEach((boton) => {
+            const activo = boton.dataset.rango === rangoAsignados;
+            boton.classList.toggle('is-active', activo);
+            boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
+        });
 
         porId('statDisponibles').textContent = disponibles.length;
         porId('statAsignados').textContent = activos.length;
         porId('statEntregados').textContent = entregados.length;
         porId('badgeDisponibles').textContent = disponibles.length;
-        porId('badgeAsignados').textContent = asignados.length;
+        porId('badgeAsignados').textContent = asignadosVisibles.length;
 
         actualizarDisponibilidadUI();
     }
@@ -579,6 +661,184 @@
         }
     }
 
+    function abrirArqueo() {
+        const modal = porId('trabajadorArqueo');
+        const desde = porId('arqueoDesde');
+        const hasta = porId('arqueoHasta');
+
+        if (!modal || !desde || !hasta) return;
+
+        if (!desde.value) {
+            const inicio = new Date();
+            inicio.setDate(inicio.getDate() - 6);
+            desde.value = fechaParaInput(inicio);
+        }
+
+        if (!hasta.value) hasta.value = fechaParaInput();
+
+        modal.hidden = false;
+        document.body.classList.add('trabajador-modal-abierto');
+        cargarArqueo();
+        window.setTimeout(() => desde.focus(), 60);
+    }
+
+    function cerrarArqueo() {
+        const modal = porId('trabajadorArqueo');
+
+        if (!modal) return;
+
+        modal.hidden = true;
+        document.body.classList.remove('trabajador-modal-abierto');
+    }
+
+    function metodoArqueo(valor) {
+        return {
+            efectivo: 'Efectivo',
+            billetera_movil: 'Billetera',
+            lafise: 'Lafise',
+        }[valor] || 'Otro';
+    }
+
+    function renderArqueo(datos = {}) {
+        const contenedor = porId('trabajadorArqueoContenido');
+        if (!contenedor) return;
+
+        const pendiente = datos.pendiente || {};
+        const dias = Array.isArray(pendiente.dias) ? pendiente.dias : [];
+        const historial = Array.isArray(datos.historial) ? datos.historial : [];
+        const total = Number(pendiente.total_empresa) || 0;
+        const cobrado = (Number(pendiente.productos) || 0) + (Number(pendiente.delivery) || 0);
+
+        const metodos = [
+            ['Efectivo', pendiente.efectivo],
+            ['Billetera', pendiente.billetera],
+            ['Lafise', pendiente.lafise],
+        ];
+
+        const diasHtml = dias.length
+            ? dias.map((dia) => {
+                const detalle = Array.isArray(dia.detalle) ? dia.detalle : [];
+                const pedidos = detalle.map((pedido) => `
+                    <li>
+                        <span>${escapar(pedido.numero || 'Pedido')} · ${escapar(metodoArqueo(pedido.metodo))}</span>
+                        <strong>${moneda(pedido.total)}</strong>
+                    </li>
+                `).join('');
+
+                return `
+                    <details class="trabajador-arqueo__dia">
+                        <summary>
+                            <span>
+                                <strong>${escapar(fechaDia(dia.fecha))}</strong>
+                                <small>${Number(dia.pedidos) || 0} pedido(s) · Delivery ${moneda(dia.delivery)}</small>
+                            </span>
+                            <strong>${moneda(dia.total_empresa)}</strong>
+                            <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                        </summary>
+                        <div class="trabajador-arqueo__dia-cuerpo">
+                            <div class="trabajador-arqueo__mini">
+                                ${metodos.map(([etiqueta, valor]) => `<span>${etiqueta} <strong>${moneda(dia[etiqueta.toLowerCase()] ?? valor)}</strong></span>`).join('')}
+                            </div>
+                            <div class="trabajador-arqueo__mini">
+                                <span>Delivery <strong>${moneda(dia.delivery)}</strong></span>
+                                <span>Empresa <strong>${moneda(dia.comision_empresa)}</strong></span>
+                                <span>Ganancia <strong>${moneda(dia.ganancia_delivery)}</strong></span>
+                            </div>
+                            <ul class="trabajador-arqueo__pedidos">${pedidos}</ul>
+                        </div>
+                    </details>`;
+            }).join('')
+            : '<p class="trabajador-vacio trabajador-vacio--arqueo">No tienes cobros pendientes en estas fechas.</p>';
+
+        const historialHtml = historial.length
+            ? historial.map((cierre) => {
+                const diferencia = Number(cierre.diferencia) || 0;
+                const estado = Math.abs(diferencia) < 0.005
+                    ? 'Cuadra'
+                    : (diferencia > 0 ? `Sobra ${moneda(diferencia)}` : `Falta ${moneda(Math.abs(diferencia))}`);
+
+                return `
+                    <div class="trabajador-arqueo__historial-linea">
+                        <span>
+                            <strong>${escapar(fechaDia(cierre.desde))} al ${escapar(fechaDia(cierre.hasta))}</strong>
+                            <small>${Number(cierre.pedidos) || 0} pedido(s) · ${escapar(estado)}</small>
+                        </span>
+                        <strong>${moneda(cierre.monto_entregado)}</strong>
+                    </div>`;
+            }).join('')
+            : '<p class="trabajador-vacio trabajador-vacio--arqueo">Aún no hay cierres registrados.</p>';
+
+        contenedor.innerHTML = `
+            <div class="trabajador-arqueo__hero">
+                <span>Total a entregar a la empresa</span>
+                <strong>${moneda(total)}</strong>
+                <small>Cobrado en mano: ${moneda(cobrado)} · Tu ganancia: ${moneda(pendiente.ganancia_delivery)}</small>
+            </div>
+
+            <div class="trabajador-arqueo__grid">
+                ${metodos.map(([etiqueta, valor]) => `
+                    <div>
+                        <span>${etiqueta}</span>
+                        <strong>${moneda(valor)}</strong>
+                    </div>`).join('')}
+                <div>
+                    <span>Productos</span>
+                    <strong>${moneda(pendiente.productos)}</strong>
+                </div>
+                <div>
+                    <span>Delivery</span>
+                    <strong>${moneda(pendiente.delivery)}</strong>
+                </div>
+                <div>
+                    <span>Ganancia</span>
+                    <strong>${moneda(pendiente.ganancia_delivery)}</strong>
+                </div>
+            </div>
+
+            <h3 class="trabajador-arqueo__titulo">Pendiente por día</h3>
+            <div class="trabajador-arqueo__dias">${diasHtml}</div>
+
+            <h3 class="trabajador-arqueo__titulo">Historial de arqueos</h3>
+            <div class="trabajador-arqueo__historial">${historialHtml}</div>
+        `;
+    }
+
+    async function cargarArqueo() {
+        if (cargandoArqueo) return;
+
+        const desde = porId('arqueoDesde');
+        const hasta = porId('arqueoHasta');
+        const contenedor = porId('trabajadorArqueoContenido');
+
+        if (!desde || !hasta || !contenedor) return;
+
+        if (!desde.value || !hasta.value) {
+            contenedor.innerHTML = '<p class="trabajador-error">Selecciona las dos fechas.</p>';
+            return;
+        }
+
+        if (hasta.value < desde.value) {
+            contenedor.innerHTML = '<p class="trabajador-error">La fecha final no puede ser anterior a la inicial.</p>';
+            return;
+        }
+
+        cargandoArqueo = true;
+        contenedor.innerHTML = '<p class="trabajador-vacio">Cargando arqueo…</p>';
+
+        try {
+            const datos = await window.TiendaAPI.post('/tienda/api/trabajador/arqueos', {
+                desde: desde.value,
+                hasta: hasta.value,
+            });
+
+            renderArqueo(datos);
+        } catch (error) {
+            contenedor.innerHTML = `<p class="trabajador-error">${escapar(error?.message || 'No se pudo cargar el arqueo.')}</p>`;
+        } finally {
+            cargandoArqueo = false;
+        }
+    }
+
     async function iniciar() {
         try {
             if (typeof window.cargarSupabase === 'function') await window.cargarSupabase();
@@ -640,6 +900,14 @@
             return;
         }
 
+        const rango = evento.target.closest('#filtrosAsignados [data-rango]');
+
+        if (rango) {
+            rangoAsignados = rango.dataset.rango === 'todas' ? 'todas' : 'hoy';
+            renderListas();
+            return;
+        }
+
         if (evento.target.closest('[data-refrescar]')) {
             cargarPedidos(true);
             return;
@@ -674,6 +942,21 @@
     });
 
     switchDisponible?.addEventListener('change', cambiarDisponibilidad);
+
+    porId('btnMiArqueo')?.addEventListener('click', abrirArqueo);
+    porId('btnFiltrarArqueo')?.addEventListener('click', cargarArqueo);
+    porId('arqueoDesde')?.addEventListener('change', cargarArqueo);
+    porId('arqueoHasta')?.addEventListener('change', cargarArqueo);
+
+    document.querySelectorAll('[data-cerrar-arqueo]').forEach((control) => {
+        control.addEventListener('click', cerrarArqueo);
+    });
+
+    document.addEventListener('keydown', (evento) => {
+        if (evento.key === 'Escape' && !porId('trabajadorArqueo')?.hidden) {
+            cerrarArqueo();
+        }
+    });
 
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden && trabajador?.estado_trabajador === 'aprobado') {

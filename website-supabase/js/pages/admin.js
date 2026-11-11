@@ -3,6 +3,7 @@
    - Login con usuario/contraseña del ERP (token propio).
    - Pedidos: consulta y logística segura.
    - Promociones, cupones y repartidores: control rápido.
+   - Cierre de delivery: arqueo por periodo.
    - Cuentas por cobrar: consulta y contacto.
    ========================================================================== */
 
@@ -19,11 +20,12 @@
 
     const estado = {
         vista: 'pedidos',
-        cargada: { pedidos: false, promociones: false, cupones: false, trabajadores: false, cobros: false },
+        cargada: { pedidos: false, promociones: false, cupones: false, trabajadores: false, cierre: false, cobros: false },
         pedidos: [],
         promociones: [],
         cupones: [],
         trabajadores: [],
+        cierre: { repartidores: [], historial: [] },
         cuentas: [],
         productos: null,
         filtros: { pedidos: 'todos', trabajadores: 'pendiente', cobros: 'todas' },
@@ -87,10 +89,26 @@
     }
 
     function fechaDia(valor) {
+        const texto = String(valor ?? '').trim();
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+            const [anio, mes, dia] = texto.split('-');
+            return `${dia}/${mes}/${anio}`;
+        }
+
         const dato = fecha(valor);
         if (!dato) return '—';
 
         return dato.toLocaleDateString('es-NI', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function hoyISO() {
+        const hoy = new Date();
+        return [
+            hoy.getFullYear(),
+            String(hoy.getMonth() + 1).padStart(2, '0'),
+            String(hoy.getDate()).padStart(2, '0'),
+        ].join('-');
     }
 
     function soloDigitos(valor) {
@@ -461,7 +479,7 @@
     /* ───────────────────────── Navegación ───────────────────────── */
 
     function mostrarVista(vista) {
-        if (!['pedidos', 'promociones', 'cupones', 'trabajadores', 'cobros'].includes(vista)) vista = 'pedidos';
+        if (!['pedidos', 'promociones', 'cupones', 'trabajadores', 'cierre', 'cobros'].includes(vista)) vista = 'pedidos';
 
         cerrarAyudas();
         estado.vista = vista;
@@ -488,6 +506,7 @@
             case 'promociones': return cargarPromociones();
             case 'cupones': return cargarCupones();
             case 'trabajadores': return cargarTrabajadores();
+            case 'cierre': return cargarCierre();
             case 'cobros': return cargarCobros();
             default: return cargarPedidos();
         }
@@ -555,7 +574,7 @@
             const etiquetaCancelar = esAceptado ? 'Cancelar' : 'Rechazar';
             const etiquetaPendiente = puedeCobrar
                 ? 'Por cobrar'
-                : (puedeAceptar ? (esAceptado ? 'Por facturar' : 'Por aceptar') : (puedePagar ? 'Por pagar' : ''));
+                : (puedeAceptar ? (esAceptado ? 'Por facturar' : 'Por aceptar') : (puedePagar ? 'Cobro en delivery' : ''));
             const puedeEnviar = pedido.facturado && pedido.estado === 'aceptado' && pedido.pago === 'pagado';
             const puedeEntregar = pedido.facturado && ['enviado', 'listo_retiro'].includes(pedido.estado) && pedido.pago === 'pagado';
 
@@ -597,10 +616,6 @@
                         ${puedeCobrar ? `
                             <button class="admin-btn admin-btn--verde" type="button" data-accion="pedido-cobrar" data-id="${Number(pedido.id_pedido)}">
                                 <i class="bi bi-cash-coin" aria-hidden="true"></i> Cobrar
-                            </button>` : ''}
-                        ${puedePagar ? `
-                            <button class="admin-btn admin-btn--verde" type="button" data-accion="pedido-pagar" data-id="${Number(pedido.id_pedido)}">
-                                <i class="bi bi-cash-coin" aria-hidden="true"></i> Pagar
                             </button>` : ''}
                         <button class="admin-btn admin-btn--suave" type="button" data-accion="pedido-detalle" data-id="${Number(pedido.id_pedido)}">
                             <i class="bi bi-receipt" aria-hidden="true"></i> Detalle
@@ -708,10 +723,7 @@
             const botonCobrar = pedido.puede_cobrar
                 ? `<button class="admin-btn admin-btn--verde" type="button" data-accion="pedido-cobrar" data-id="${Number(pedido.id_pedido)}"><i class="bi bi-cash-coin" aria-hidden="true"></i> Cobrar y facturar</button>`
                 : '';
-            const botonPagar = pedido.puede_pagar
-                ? `<button class="admin-btn admin-btn--verde" type="button" data-accion="pedido-pagar" data-id="${Number(pedido.id_pedido)}"><i class="bi bi-cash-coin" aria-hidden="true"></i> Registrar pago</button>`
-                : '';
-            const acciones = botonAceptar + botonCobrar + botonPagar + botonesEstado;
+            const acciones = botonAceptar + botonCobrar + botonesEstado;
 
             const contenido = `
                 <div class="admin-card__fila">
@@ -793,6 +805,11 @@
                     <div class="admin-linea"><span>Pagado</span><strong>${moneda(pedido.pagado)}</strong></div>
                     <div class="admin-linea"><span>Saldo</span><strong>${moneda(pedido.saldo)}</strong></div>
                     <div class="admin-lista-lineas">${pagosHtml}</div>
+                    ${pedido.puede_pagar ? `
+                        <p class="admin-pago__nota">
+                            <i class="bi bi-info-circle" aria-hidden="true"></i>
+                            <span>El cobro se registra al cerrar el delivery, no pedido por pedido.</span>
+                        </p>` : ''}
                 </div>
 
                 <div class="admin-detalle__bloque">
@@ -1622,6 +1639,399 @@
         });
     }
 
+    /* ───────────────────────── Cierre de delivery ───────────────────────── */
+
+    async function cargarCierre() {
+        const contenedor = $('#listaCierre');
+        if (!contenedor) return;
+
+        const desdeInput = $('#cierreDesde');
+        const hastaInput = $('#cierreHasta');
+        const hoy = hoyISO();
+
+        if (desdeInput && !desdeInput.value) desdeInput.value = hoy;
+        if (hastaInput && !hastaInput.value) hastaInput.value = hoy;
+
+        const desde = desdeInput?.value || hoy;
+        const hasta = hastaInput?.value || hoy;
+
+        if (hasta < desde) {
+            vacio(contenedor, 'bi-calendar-x', 'Fechas incorrectas', 'La fecha final no puede ser anterior a la inicial.');
+            return;
+        }
+
+        cargando(contenedor);
+
+        try {
+            const [datos, historial] = await Promise.all([
+                adminRpc('web_admin_cierre_delivery', { p_desde: desde, p_hasta: hasta }),
+                adminRpc('web_admin_cierres_delivery', { p_limite: 50 }).catch(() => ({ cierres: [] })),
+            ]);
+
+            estado.cierre.repartidores = Array.isArray(datos.repartidores) ? datos.repartidores : [];
+            estado.cierre.historial = Array.isArray(historial.cierres) ? historial.cierres : [];
+            estado.cargada.cierre = true;
+
+            renderCierre(datos.totales || {});
+            renderHistorialCierres();
+        } catch (error) {
+            vacio(contenedor, 'bi-exclamation-triangle', 'No se pudo cargar el cierre', error.message);
+        }
+    }
+
+    function renderCierre(totales = {}) {
+        const contenedor = $('#listaCierre');
+        if (!contenedor) return;
+
+        const lista = estado.cierre.repartidores.filter((repartidor) => (
+            Number(repartidor.pedidos) > 0 || Number(repartidor.cerrados) > 0
+        ));
+
+        actualizarContador($('#cierreContador'), lista.length);
+        $('#cierrePedidos').textContent = String(Number(totales.pedidos) || 0);
+        $('#cierreProductos').textContent = moneda(totales.productos);
+        $('#cierreTotal').textContent = moneda(totales.total_empresa);
+        $('#cierreGlobalEfectivo').textContent = moneda(totales.efectivo);
+        $('#cierreGlobalBilletera').textContent = moneda(totales.billetera);
+        $('#cierreGlobalLafise').textContent = moneda(totales.lafise);
+        $('#cierreGlobalDelivery').textContent = moneda(totales.delivery);
+        $('#cierreGlobalEmpresa').textContent = moneda(totales.comision_empresa);
+        $('#cierreGlobalGanancia').textContent = moneda(totales.ganancia_delivery);
+
+        if (!lista.length) {
+            vacio(
+                contenedor,
+                'bi-clipboard',
+                'Sin entregas por cerrar',
+                'No hay pedidos entregados pendientes en el periodo seleccionado.'
+            );
+            return;
+        }
+
+        contenedor.innerHTML = lista.map((repartidor) => {
+            const comision = Number(repartidor.comision) || 0;
+            const otros = Number(repartidor.otros) || 0;
+            const pendientes = Number(repartidor.pedidos) || 0;
+            const cerrados = Number(repartidor.cerrados) || 0;
+
+            return `
+                <article class="admin-card admin-cierre__card">
+                    <div class="admin-cierre__cabecera">
+                        <div class="admin-cierre__nombre">
+                            <strong>${escapar(repartidor.nombre || 'Repartidor')}</strong>
+                            <span>${pendientes + cerrados} pedidos hoy · Comisión ${comision.toFixed(2)}%</span>
+                        </div>
+                        <div class="admin-cierre__fila-acciones">
+                            <span class="admin-badge ${pendientes > 0 ? 'admin-badge--azul' : 'admin-badge--verde'}">${pendientes > 0 ? `${pendientes} por cerrar` : 'Cerrado'}</span>
+                            ${pendientes > 0 ? `
+                                <button class="admin-btn admin-btn--primario admin-cierre__arquear" type="button"
+                                    data-accion="cierre-detalle" data-id="${Number(repartidor.id_trabajador)}"
+                                    aria-label="Arquear a ${escapar(repartidor.nombre || 'repartidor')}">
+                                    <i class="bi bi-calculator" aria-hidden="true"></i> Arquear
+                                </button>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="admin-cierre__linea-datos">
+                        <span>Efectivo <strong>${moneda(repartidor.efectivo)}</strong></span>
+                        <span>Billetera <strong>${moneda(repartidor.billetera)}</strong></span>
+                        <span>Lafise <strong>${moneda(repartidor.lafise)}</strong></span>
+                        <span class="admin-cierre__linea-total">Total <strong>${moneda(repartidor.productos)}</strong></span>
+                    </div>
+
+                    <div class="admin-cierre__linea-datos admin-cierre__linea-datos--delivery">
+                        <span>Delivery <strong>${moneda(repartidor.delivery)}</strong></span>
+                        <span>Empresa <strong>${moneda(repartidor.comision_empresa)}</strong></span>
+                        <span>Ganancia <strong>${moneda(repartidor.ganancia_delivery)}</strong></span>
+                        <span class="admin-cierre__linea-total">Total delivery <strong>${moneda(repartidor.delivery)}</strong></span>
+                    </div>
+
+                    ${otros > 0 ? `<p class="admin-texto-suave">Otros métodos: ${moneda(otros)}</p>` : ''}
+
+                    <div class="admin-cierre__total-linea">
+                        <span>Total a entregar</span>
+                        <strong>${moneda(repartidor.total_empresa)}</strong>
+                    </div>
+                </article>
+            `;
+        }).join('');
+    }
+
+    function abrirCierre(idTrabajador) {
+        const repartidor = estado.cierre.repartidores.find((fila) => Number(fila.id_trabajador) === Number(idTrabajador));
+        if (!repartidor) return;
+
+        const detalle = Array.isArray(repartidor.detalle) ? repartidor.detalle : [];
+        const total = Number(repartidor.total_empresa) || 0;
+        const otros = Number(repartidor.otros) || 0;
+        const comision = Number(repartidor.comision) || 0;
+
+        const grupos = detalle.reduce((mapa, pedido) => {
+            const clave = String(pedido.fecha || '').slice(0, 10);
+            if (!mapa[clave]) mapa[clave] = [];
+            mapa[clave].push(pedido);
+
+            return mapa;
+        }, {});
+
+        const detalleHtml = Object.keys(grupos).length
+            ? Object.entries(grupos)
+                .sort(([a], [b]) => b.localeCompare(a))
+                .map(([dia, pedidos]) => {
+                    const totalDia = pedidos.reduce((suma, pedido) => {
+                        const productos = Number(pedido.productos) || 0;
+                        const delivery = Number(pedido.delivery) || 0;
+
+                        return suma + productos + (delivery * comision / 100);
+                    }, 0);
+
+                    return `
+                        <details class="admin-cierre__dia">
+                            <summary>
+                                <span>
+                                    <strong>${escapar(fechaDia(dia))}</strong>
+                                    <small>${pedidos.length} pedido(s) · Delivery ${moneda(pedidos.reduce((suma, pedido) => suma + (Number(pedido.delivery) || 0), 0))}</small>
+                                </span>
+                                <strong>${moneda(totalDia)}</strong>
+                                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                            </summary>
+                            <div class="admin-cierre__dia-cuerpo">
+                                ${pedidos.map((pedido) => `
+                                    <div class="admin-linea">
+                                        <span>
+                                            ${escapar(pedido.numero || 'Pedido')} · ${escapar(etiquetaMetodoPago(pedido.metodo))}
+                                            <br><small>Productos ${moneda(pedido.productos)} · Delivery ${moneda(pedido.delivery)}</small>
+                                        </span>
+                                        <strong>${moneda(pedido.total)}</strong>
+                                    </div>`).join('')}
+                            </div>
+                        </details>`;
+                }).join('')
+            : '<p class="admin-texto-suave">Sin pedidos en el periodo.</p>';
+
+        const contenido = `
+            <div class="admin-cierre__metodos">
+                <div>
+                    <span>Efectivo</span>
+                    <strong>${moneda(repartidor.efectivo)}</strong>
+                </div>
+                <div>
+                    <span>Billetera móvil</span>
+                    <strong>${moneda(repartidor.billetera)}</strong>
+                </div>
+                <div>
+                    <span>Lafise</span>
+                    <strong>${moneda(repartidor.lafise)}</strong>
+                </div>
+            </div>
+
+            ${otros > 0 ? `<p class="admin-texto-suave">Otros métodos: ${moneda(otros)}</p>` : ''}
+
+            <div class="admin-cierre__delivery">
+                <div>
+                    <span>Total delivery</span>
+                    <strong>${moneda(repartidor.delivery)}</strong>
+                </div>
+                <div>
+                    <span>Pago a la empresa</span>
+                    <strong>${moneda(repartidor.comision_empresa)}</strong>
+                </div>
+                <div>
+                    <span>Ganancia delivery</span>
+                    <strong>${moneda(repartidor.ganancia_delivery)}</strong>
+                </div>
+            </div>
+
+            <div class="admin-cierre__total">
+                <span>Total a entregar a la empresa</span>
+                <strong>${moneda(total)}</strong>
+            </div>
+
+            <div class="admin-detalle__bloque">
+                <h3>Pendiente por día</h3>
+                <div class="admin-cierre__dias">${detalleHtml}</div>
+            </div>
+
+            <form class="admin-form" id="formCierreDelivery" data-id="${Number(repartidor.id_trabajador)}">
+                <div class="admin-form__campo">
+                    <label for="cierreMonto">Monto entregado</label>
+                    <input id="cierreMonto" name="monto" type="number" inputmode="decimal" step="0.01" min="0"
+                        value="${total.toFixed(2)}" required>
+                </div>
+
+                <p class="admin-cierre__diferencia" id="cierreDiferencia"></p>
+
+                <div class="admin-form__campo">
+                    <label for="cierreNota">Nota (opcional)</label>
+                    <input id="cierreNota" name="nota" type="text" maxlength="255" placeholder="Observaciones del cierre">
+                </div>
+
+                <p class="admin-alerta admin-pago__error" id="cierreError" role="alert" hidden></p>
+
+                <div class="admin-form__acciones">
+                    <button class="admin-btn admin-btn--ghost" type="button" data-cerrar-sheet>Cancelar</button>
+                    <button class="admin-btn admin-btn--primario" type="submit" id="btnCerrarDelivery">
+                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                        <span>Registrar cierre</span>
+                    </button>
+                </div>
+            </form>
+
+            <p class="admin-pago__nota">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>El delivery entrega los productos más la comisión de la empresa por el envío; su ganancia es el resto del delivery.</span>
+            </p>
+        `;
+
+        const desde = $('#cierreDesde')?.value || hoyISO();
+        const hasta = $('#cierreHasta')?.value || hoyISO();
+
+        abrirSheet(`Cierre · ${repartidor.nombre || 'Delivery'}`, `${fechaDia(desde)} al ${fechaDia(hasta)}`, contenido);
+
+        const inputMonto = $('#cierreMonto');
+        const cajaError = $('#cierreError');
+        const diferencia = $('#cierreDiferencia');
+
+        const actualizarDiferencia = () => {
+            const monto = Number(inputMonto?.value) || 0;
+            const diferenciaCentavos = Math.round((monto - total) * 100);
+
+            if (!diferencia) return;
+
+            diferencia.classList.remove('admin-cierre__diferencia--ok', 'admin-cierre__diferencia--falta', 'admin-cierre__diferencia--sobra');
+
+            if (diferenciaCentavos === 0) {
+                diferencia.textContent = 'Cuadra exacto.';
+                diferencia.classList.add('admin-cierre__diferencia--ok');
+            } else if (diferenciaCentavos > 0) {
+                diferencia.textContent = `Sobran ${moneda(diferenciaCentavos / 100)}.`;
+                diferencia.classList.add('admin-cierre__diferencia--sobra');
+            } else {
+                diferencia.textContent = `Faltan ${moneda(Math.abs(diferenciaCentavos) / 100)}.`;
+                diferencia.classList.add('admin-cierre__diferencia--falta');
+            }
+        };
+
+        inputMonto?.addEventListener('input', () => {
+            if (cajaError) {
+                cajaError.hidden = true;
+                cajaError.textContent = '';
+            }
+            inputMonto.removeAttribute('aria-invalid');
+            actualizarDiferencia();
+        });
+
+        actualizarDiferencia();
+
+        $('#formCierreDelivery')?.addEventListener('submit', (evento) => {
+            registrarCierreDelivery(evento, repartidor, total);
+        });
+    }
+
+    async function registrarCierreDelivery(evento, repartidor, total) {
+        evento.preventDefault();
+
+        const form = evento.currentTarget;
+        const boton = $('#btnCerrarDelivery', form);
+        const cajaError = $('#cierreError', form);
+        const inputMonto = $('#cierreMonto', form);
+        const inputNota = $('#cierreNota', form);
+
+        const mostrarError = (mensaje) => {
+            if (cajaError) {
+                cajaError.textContent = mensaje;
+                cajaError.hidden = false;
+            }
+            inputMonto?.setAttribute('aria-invalid', 'true');
+            inputMonto?.focus();
+        };
+
+        if (cajaError) {
+            cajaError.hidden = true;
+            cajaError.textContent = '';
+        }
+        inputMonto?.removeAttribute('aria-invalid');
+
+        const monto = Number.parseFloat(String(inputMonto?.value || '').replace(',', '.'));
+        const montoCentavos = Number.isFinite(monto) ? Math.round(monto * 100) : 0;
+
+        if (!Number.isFinite(monto) || montoCentavos < 0) {
+            mostrarError('Ingresa un monto entregado válido.');
+            return;
+        }
+
+        if (Math.abs(monto * 100 - montoCentavos) > 0.000001) {
+            mostrarError('Usa como máximo dos decimales en el monto entregado.');
+            return;
+        }
+
+        const desde = $('#cierreDesde')?.value || hoyISO();
+        const hasta = $('#cierreHasta')?.value || hoyISO();
+
+        if (boton) {
+            boton.disabled = true;
+            boton.setAttribute('aria-busy', 'true');
+            boton.innerHTML = '<span class="admin-btn__spinner" aria-hidden="true"></span><span>Registrando…</span>';
+        }
+
+        try {
+            const datos = await adminRpc('web_admin_cierre_delivery_guardar', {
+                p_id_trabajador: Number(repartidor.id_trabajador),
+                p_desde: desde,
+                p_hasta: hasta,
+                p_monto_entregado: montoCentavos / 100,
+                p_nota: inputNota?.value?.trim() || null,
+            });
+
+            mostrarToast(datos.mensaje || 'Cierre registrado.');
+            estado.cargada.cierre = false;
+            estado.cargada.pedidos = false;
+            cerrarSheet();
+            await Promise.all([cargarCierre(), cargarResumen()]);
+        } catch (error) {
+            mostrarError(error.message);
+            mostrarToast(error.message, 'error');
+
+            if (boton) {
+                boton.disabled = false;
+                boton.removeAttribute('aria-busy');
+                boton.innerHTML = '<i class="bi bi-check2-circle" aria-hidden="true"></i><span>Registrar cierre</span>';
+            }
+        }
+    }
+
+    function renderHistorialCierres() {
+        const contenedor = $('#historialCierres');
+        if (!contenedor) return;
+
+        const cierres = estado.cierre.historial;
+
+        if (!cierres.length) {
+            contenedor.innerHTML = '<p class="admin-texto-suave">Aún no hay cierres registrados.</p>';
+            return;
+        }
+
+        contenedor.innerHTML = cierres.map((cierre) => {
+            const diferencia = Number(cierre.diferencia) || 0;
+            const etiquetaDiferencia = Math.abs(diferencia) < 0.005
+                ? 'Cuadra'
+                : (diferencia > 0 ? `Sobra ${moneda(diferencia)}` : `Falta ${moneda(Math.abs(diferencia))}`);
+
+            return `
+                <div class="admin-linea">
+                    <span>
+                        ${escapar(cierre.repartidor || 'Repartidor')}
+                        <br><small>${escapar(fechaCorta(cierre.fecha_cierre))} · ${Number(cierre.pedidos) || 0} pedido(s) · ${escapar(fechaDia(cierre.desde))} al ${escapar(fechaDia(cierre.hasta))}</small>
+                    </span>
+                    <span style="text-align:right">
+                        <strong>${moneda(cierre.monto_entregado)}</strong>
+                        <br><small>${escapar(etiquetaDiferencia)}</small>
+                    </span>
+                </div>
+            `;
+        }).join('');
+    }
+
     /* ───────────────────────── Cuentas por cobrar ───────────────────────── */
 
     async function cargarCobros() {
@@ -2082,6 +2492,9 @@
             }, 220);
         });
 
+        $('#cierreDesde')?.addEventListener('change', () => cargarCierre());
+        $('#cierreHasta')?.addEventListener('change', () => cargarCierre());
+
         /* Acciones delegadas */
         document.addEventListener('click', async (evento) => {
             const botonAyuda = evento.target.closest('[data-ayuda-boton]');
@@ -2106,7 +2519,6 @@
             if (accion === 'pedido-detalle') return abrirPedido(Number(boton.dataset.id));
             if (accion === 'pedido-aceptar') return aceptarPedido(Number(boton.dataset.id), boton, boton.dataset.modo === 'facturar');
             if (accion === 'pedido-cobrar') return abrirCobroPedido(Number(boton.dataset.id), 'cobrar');
-            if (accion === 'pedido-pagar') return abrirCobroPedido(Number(boton.dataset.id), 'pagar');
             if (accion === 'pedido-estado') return cambiarEstadoPedido(Number(boton.dataset.id), boton.dataset.estado, boton);
             if (accion === 'promo-editar') {
                 const promo = estado.promociones.find((fila) => Number(fila.id_promocion) === Number(boton.dataset.id));
@@ -2121,6 +2533,7 @@
                 if (trabajador) abrirFormularioTrabajador(trabajador, boton.dataset.modo);
                 return;
             }
+            if (accion === 'cierre-detalle') return abrirCierre(Number(boton.dataset.id));
             if (accion === 'cuenta-detalle') return abrirCuenta(Number(boton.dataset.id));
             if (accion === 'cuenta-pagar') return abrirPagoCuenta(Number(boton.dataset.id));
         });
@@ -2193,5 +2606,5 @@
     cargarResumen();
 
     const vistaInicial = (window.location.hash || '').replace('#', '');
-    mostrarVista(['pedidos', 'promociones', 'cupones', 'trabajadores', 'cobros'].includes(vistaInicial) ? vistaInicial : 'pedidos');
+    mostrarVista(['pedidos', 'promociones', 'cupones', 'trabajadores', 'cierre', 'cobros'].includes(vistaInicial) ? vistaInicial : 'pedidos');
 })();

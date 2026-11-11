@@ -65,10 +65,10 @@
   - `preparando` queda solo para pedidos antiguos (no se ofrece en el selector).
 - [x] **Estado de pago separado**: `pendiente` → `en_revision` → `pagado`; también `parcial` y `reembolsado`.
   - El cliente paga por billetera/transferencia y envía el comprobante por WhatsApp.
-  - Los pedidos en línea (`lafise`/`billetera_movil`) se aceptan cuando el pago está `pagado`; los de efectivo pueden aceptarse y facturarse con pago pendiente, que se registra después desde el panel.
+  - Los pedidos en línea (`lafise`/`billetera_movil`) se aceptan cuando el pago está `pagado`; los de efectivo pueden aceptarse y facturarse con pago pendiente, que se cuadra en el cierre del delivery, no pedido por pedido.
 - [x] **Quién cambia cada estado**
   - Cliente: crea el pedido (`solicitado` + pago `pendiente`) y solo puede cancelar mientras siga `solicitado` y sin pago confirmado.
-  - ERP y panel móvil: aceptar/facturar, rechazar/cancelar, preparar, enviar, entregar y devolver. En efectivo el pago puede quedar pendiente y registrarse después.
+  - ERP y panel móvil: aceptar/facturar, rechazar/cancelar, preparar, enviar, entregar y devolver. En efectivo el pago queda pendiente y se cuadra en el cierre del delivery.
   - Cada cambio queda en `pedido_web_estados` con origen (`web` / `erp` / `web_admin` / `sistema`).
 - [x] **Stock**: se descuenta al **aceptar** (cuando se factura), no al solicitar. Si se rechaza o cancela antes de aceptar, no hay stock que liberar.
 - [x] **Rechazo/cancelación**: el pedido queda cerrado, se avisa al cliente y no se prepara. Si ya había pago, el negocio gestiona el reembolso (`estado_pago = reembolsado`).
@@ -135,9 +135,12 @@
 ### 3.9 Administración
 - [x] Bandeja de pedidos con filtros por estado y pago (la zona queda pendiente).
 - [x] Aceptar/rechazar pedido desde el ERP.
-- [x] Panel admin móvil en `/tienda/admin` con usuario y contraseña del ERP: pedidos, promociones, cupones, repartidores y cuentas por cobrar. Ver README §10.
+- [x] Panel admin móvil en `/tienda/admin` con usuario y contraseña del ERP: pedidos, promociones, cupones, repartidores, cierre de delivery y cuentas por cobrar. Ver README §10.
 - [x] Cobro en línea desde el panel (Lafise / billetera móvil): monto exacto, factura, FIFO, ingreso en cuenta e historial de pagos.
-- [x] Aceptar y facturar desde el panel; en efectivo el pago puede quedar pendiente y registrarse después (caja o cuenta).
+- [x] Aceptar y facturar desde el panel; en efectivo el pago queda pendiente para el cierre del delivery.
+- [x] **Cierre de delivery** por rango de fechas y resumen de todos los repartidores que tuvieron entregas, incluso los que ya cerraron (aparecen como Cerrado): productos cobrados por efectivo, billetera móvil y Lafise; total delivery, comisión de la empresa y ganancia; monto entregado y diferencia.
+- [x] **Panel del repartidor:** “Mis entregas” muestra los pedidos de hoy en formato compacto y expandible, con filtro Hoy/Todas.
+- [x] **Arqueo del repartidor:** modal con rango de fechas, pendiente por día, historial de cierres y total a entregar a la empresa; misma información disponible en **Trabajadores → Arqueo** del ERP.
 - [x] Abonos manuales desde **Cuentas por cobrar**: parciales o totales, en efectivo con caja abierta o desde una cuenta activa; se aplican a las cuotas más antiguas y actualizan caja/cuentas.
 - [ ] Moderación de reseñas (`estado_resenia` ya existe, sin interfaz).
 - [x] Gestión de cupones sin tocar SQL desde el panel admin.

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ArqueoTrabajadorService;
 use App\Support\Busqueda;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -160,6 +161,46 @@ class TrabajadorController extends Controller
                 'success' => false,
                 'mensaje' => 'No se pudo actualizar la solicitud.',
                 'detalle' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function Arqueos(Request $request, $id, ArqueoTrabajadorService $arqueoService)
+    {
+        $validator = Validator::make($request->all(), [
+            'desde' => 'nullable|date_format:Y-m-d',
+            'hasta' => 'nullable|date_format:Y-m-d',
+        ], [
+            'date_format' => 'La fecha :attribute debe tener el formato AAAA-MM-DD.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $desde = $request->input('desde') ?: now()->subDays(6)->toDateString();
+        $hasta = $request->input('hasta') ?: now()->toDateString();
+
+        if ($hasta < $desde) {
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'La fecha final no puede ser anterior a la inicial.',
+            ], 422);
+        }
+
+        try {
+            return response()->json([
+                'success' => true,
+                ...$arqueoService->resumen((int) $id, $desde, $hasta),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'mensaje' => $e->getMessage()], 404);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'mensaje' => 'No se pudo calcular el arqueo del repartidor.',
             ], 500);
         }
     }

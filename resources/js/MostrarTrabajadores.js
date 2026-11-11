@@ -9,6 +9,11 @@ export default function initTrabajadores() {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const modalElemento = document.getElementById('modalTrabajador');
     const modal = bootstrap.Modal.getOrCreateInstance(modalElemento);
+    const modalArqueoElemento = document.getElementById('modalArqueoTrabajador');
+    const modalArqueo = modalArqueoElemento ? bootstrap.Modal.getOrCreateInstance(modalArqueoElemento) : null;
+    const arqueoDesde = document.getElementById('arqueoErpDesde');
+    const arqueoHasta = document.getElementById('arqueoErpHasta');
+    const arqueoDetalle = document.getElementById('trabajadorArqueoErpDetalle');
 
     const filtroEstado = document.getElementById('filtroEstadoTrabajador');
     const buscar = document.getElementById('buscarTrabajador');
@@ -33,8 +38,29 @@ export default function initTrabajadores() {
     };
 
     const numero = (valor) => Number(valor || 0);
+    const moneda = (valor) => `C$ ${Number(valor || 0).toLocaleString('es-NI', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })}`;
+    const fechaISO = (fecha) => [
+        fecha.getFullYear(),
+        String(fecha.getMonth() + 1).padStart(2, '0'),
+        String(fecha.getDate()).padStart(2, '0'),
+    ].join('-');
+    const fechaDia = (valor) => {
+        if (!valor) return '—';
+        const base = String(valor).slice(0, 10);
+        const [anio, mes, dia] = base.split('-');
+        return dia && mes && anio ? `${dia}/${mes}/${anio}` : String(valor);
+    };
+    const metodoTexto = (metodo) => ({
+        efectivo: 'Efectivo',
+        billetera_movil: 'Billetera móvil',
+        lafise: 'Lafise',
+    }[metodo] || 'Otro');
 
     let trabajadores = [];
+    let trabajadorArqueoId = null;
     let temporizador = null;
 
     function badgeEstado(estado) {
@@ -99,7 +125,10 @@ export default function initTrabajadores() {
                     <td>${badgeEstado(t.estado_trabajador)}</td>
                     <td><span class="trabajadores-sub">${fechaCorta(t.fecha_solicitud)}</span></td>
                     <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-outline-primary gestionarTrabajador" data-id="${Number(t.id_trabajador)}" title="Gestionar solicitud">
+                        <button type="button" class="btn btn-sm btn-outline-success arqueoTrabajador" data-id="${Number(t.id_trabajador)}" title="Ver arqueo">
+                            <i class="ph ph-cash-register"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary gestionarTrabajador ms-1" data-id="${Number(t.id_trabajador)}" title="Gestionar solicitud">
                             <i class="ph ph-eye"></i>
                         </button>
                     </td>
@@ -199,6 +228,149 @@ export default function initTrabajadores() {
                 ${t.motivo_rechazo ? `<p class="trabajadores-motivo"><strong>Motivo del rechazo:</strong> ${escapar(t.motivo_rechazo)}</p>` : ''}
                 ${t.nota_erp ? `<p><strong>Nota interna:</strong> ${escapar(t.nota_erp)}</p>` : ''}
             </div>`;
+    }
+
+    function renderArqueoErp(datos) {
+        if (!arqueoDetalle) return;
+
+        const pendiente = datos.pendiente || {};
+        const dias = Array.isArray(pendiente.dias) ? pendiente.dias : [];
+        const historial = Array.isArray(datos.historial) ? datos.historial : [];
+        const cobrado = (Number(pendiente.productos) || 0) + (Number(pendiente.delivery) || 0);
+        const metodos = [
+            ['Efectivo', pendiente.efectivo],
+            ['Billetera', pendiente.billetera],
+            ['Lafise', pendiente.lafise],
+        ];
+
+        const diasHtml = dias.length ? dias.map((dia) => {
+            const detalle = Array.isArray(dia.detalle) ? dia.detalle : [];
+
+            return `
+                <details class="trabajadores-arqueo__dia">
+                    <summary>
+                        <span>
+                            <strong>${fechaDia(dia.fecha)}</strong>
+                            <small>${Number(dia.pedidos) || 0} pedido(s) · Delivery ${moneda(dia.delivery)}</small>
+                        </span>
+                        <strong>${moneda(dia.total_empresa)}</strong>
+                        <i class="ph ph-caret-down"></i>
+                    </summary>
+                    <div class="trabajadores-arqueo__dia-cuerpo">
+                        <div class="trabajadores-arqueo__mini">
+                            ${metodos.map(([etiqueta, valor]) => `<span>${etiqueta} <strong>${moneda(dia[etiqueta.toLowerCase()] ?? valor)}</strong></span>`).join('')}
+                        </div>
+                        <div class="trabajadores-arqueo__mini">
+                            <span>Delivery <strong>${moneda(dia.delivery)}</strong></span>
+                            <span>Empresa <strong>${moneda(dia.comision_empresa)}</strong></span>
+                            <span>Ganancia <strong>${moneda(dia.ganancia_delivery)}</strong></span>
+                        </div>
+                        <ul class="trabajadores-arqueo__pedidos">
+                            ${detalle.map((pedido) => `
+                                <li>
+                                    <span>${escapar(pedido.numero || 'Pedido')} · ${escapar(metodoTexto(pedido.metodo))}</span>
+                                    <strong>${moneda(pedido.total)}</strong>
+                                </li>`).join('')}
+                        </ul>
+                    </div>
+                </details>`;
+        }).join('') : '<p class="trabajadores-sub">No hay entregas pendientes en estas fechas.</p>';
+
+        const historialHtml = historial.length ? historial.map((cierre) => {
+            const diferencia = numero(cierre.diferencia);
+            const estado = Math.abs(diferencia) < 0.005
+                ? 'Cuadra'
+                : (diferencia > 0 ? `Sobra ${moneda(diferencia)}` : `Falta ${moneda(Math.abs(diferencia))}`);
+
+            return `
+                <div class="trabajadores-arqueo__historial-linea">
+                    <span>
+                        <strong>${fechaDia(cierre.desde)} al ${fechaDia(cierre.hasta)}</strong>
+                        <small>${Number(cierre.pedidos) || 0} pedido(s) · ${estado}</small>
+                    </span>
+                    <strong>${moneda(cierre.monto_entregado)}</strong>
+                </div>`;
+        }).join('') : '<p class="trabajadores-sub">Aún no hay cierres registrados.</p>';
+
+        arqueoDetalle.innerHTML = `
+            <div class="trabajadores-arqueo__hero">
+                <span>Total a entregar a la empresa</span>
+                <strong>${moneda(pendiente.total_empresa)}</strong>
+                <small>Cobrado en mano: ${moneda(cobrado)} · Ganancia: ${moneda(pendiente.ganancia_delivery)}</small>
+            </div>
+
+            <div class="trabajadores-arqueo__grid">
+                ${metodos.map(([etiqueta, valor]) => `
+                    <div>
+                        <span>${etiqueta}</span>
+                        <strong>${moneda(valor)}</strong>
+                    </div>`).join('')}
+                <div><span>Productos</span><strong>${moneda(pendiente.productos)}</strong></div>
+                <div><span>Delivery</span><strong>${moneda(pendiente.delivery)}</strong></div>
+                <div><span>Ganancia</span><strong>${moneda(pendiente.ganancia_delivery)}</strong></div>
+            </div>
+
+            <h6 class="trabajadores-arqueo__titulo">Pendiente por día</h6>
+            <div class="trabajadores-arqueo__dias">${diasHtml}</div>
+
+            <h6 class="trabajadores-arqueo__titulo">Historial de arqueos</h6>
+            <div class="trabajadores-arqueo__historial">${historialHtml}</div>
+        `;
+    }
+
+    async function cargarArqueoErp(id) {
+        if (!arqueoDetalle || !arqueoDesde || !arqueoHasta) return;
+
+        if (!arqueoDesde.value || !arqueoHasta.value) {
+            arqueoDetalle.innerHTML = '<p class="trabajadores-sub">Selecciona las dos fechas.</p>';
+            return;
+        }
+
+        if (arqueoHasta.value < arqueoDesde.value) {
+            arqueoDetalle.innerHTML = '<p class="trabajadores-sub">La fecha final no puede ser anterior a la inicial.</p>';
+            return;
+        }
+
+        arqueoDetalle.innerHTML = '<p class="trabajadores-sub">Cargando arqueo…</p>';
+
+        try {
+            const parametros = new URLSearchParams({
+                desde: arqueoDesde.value,
+                hasta: arqueoHasta.value,
+            });
+            const respuesta = await fetch(`/trabajadores/${Number(id)}/arqueos?${parametros.toString()}`, {
+                headers: { Accept: 'application/json' },
+            });
+            const datos = await respuesta.json().catch(() => null);
+
+            if (!respuesta.ok || !datos?.success) {
+                throw new Error(datos?.mensaje || 'No se pudo cargar el arqueo.');
+            }
+
+            renderArqueoErp(datos);
+        } catch (error) {
+            arqueoDetalle.innerHTML = `<p class="trabajadores-sub">${escapar(error.message || 'No se pudo cargar el arqueo.')}</p>`;
+        }
+    }
+
+    function abrirArqueoErp(id) {
+        const trabajador = trabajadores.find((t) => Number(t.id_trabajador) === Number(id));
+
+        if (!trabajador || !modalArqueo) return;
+
+        trabajadorArqueoId = Number(id);
+        document.getElementById('modalArqueoTrabajadorTitulo').textContent = `Arqueo · ${trabajador.nombre_trabajador}`;
+
+        if (arqueoDesde && !arqueoDesde.value) {
+            const inicio = new Date();
+            inicio.setDate(inicio.getDate() - 6);
+            arqueoDesde.value = fechaISO(inicio);
+        }
+
+        if (arqueoHasta && !arqueoHasta.value) arqueoHasta.value = fechaISO(new Date());
+
+        modalArqueo.show();
+        cargarArqueoErp(trabajadorArqueoId);
     }
 
     function abrirModal(id) {
@@ -308,6 +480,13 @@ export default function initTrabajadores() {
     }
 
     tabla.addEventListener('click', (evento) => {
+        const arqueo = evento.target.closest('.arqueoTrabajador');
+
+        if (arqueo) {
+            abrirArqueoErp(arqueo.dataset.id);
+            return;
+        }
+
         const boton = evento.target.closest('.gestionarTrabajador');
 
         if (boton) abrirModal(boton.dataset.id);
@@ -336,6 +515,18 @@ export default function initTrabajadores() {
     document.getElementById('btnGuardarTrabajador')?.addEventListener('click', guardar);
     document.getElementById('btnEliminarTrabajador')?.addEventListener('click', eliminar);
     document.getElementById('trabajadorEstado')?.addEventListener('change', alternarMotivo);
+
+    document.getElementById('btnFiltrarArqueoErp')?.addEventListener('click', () => {
+        if (trabajadorArqueoId) cargarArqueoErp(trabajadorArqueoId);
+    });
+
+    arqueoDesde?.addEventListener('change', () => {
+        if (trabajadorArqueoId) cargarArqueoErp(trabajadorArqueoId);
+    });
+
+    arqueoHasta?.addEventListener('change', () => {
+        if (trabajadorArqueoId) cargarArqueoErp(trabajadorArqueoId);
+    });
 
     cargar();
 }

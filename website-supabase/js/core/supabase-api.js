@@ -1405,6 +1405,23 @@
         };
     }
 
+    async function arqueosTrabajadorApi(cuerpo) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_trabajador_arqueos', {
+            p_desde: cuerpo?.desde || null,
+            p_hasta: cuerpo?.hasta || null,
+        });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo cargar tu arqueo.'), 400);
+
+        return data || {
+            success: true,
+            pendiente: { dias: [], total_empresa: 0 },
+            historial: [],
+        };
+    }
+
     async function aceptarPedidoTrabajadorApi(id) {
         if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
 
@@ -1784,6 +1801,8 @@
             'PUT /tienda/api/trabajador/disponibilidad': () => disponibilidadTrabajadorApi(cuerpo),
 
             'GET /tienda/api/trabajador/pedidos': () => pedidosTrabajadorApi(),
+
+            'POST /tienda/api/trabajador/arqueos': () => arqueosTrabajadorApi(cuerpo),
 
             'POST /tienda/api/trabajador/foto': () => subirFotoTrabajadorApi(cuerpo),
 

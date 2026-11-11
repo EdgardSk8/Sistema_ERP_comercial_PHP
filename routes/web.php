@@ -357,6 +357,7 @@ Route::view('/pedidos-web', 'pedidosweb.PedidosWeb')->middleware('permiso:vista_
     ╚════════════════════════════════════════════════════════════╝ */
 
 Route::get('/trabajadores/mostrar', [TrabajadorController::class, 'Mostrar'])->middleware('permiso:mostrar_trabajadores');
+Route::get('/trabajadores/{id}/arqueos', [TrabajadorController::class, 'Arqueos'])->middleware('permiso:mostrar_trabajadores');
 Route::put('/trabajadores/{id}', [TrabajadorController::class, 'Actualizar'])->middleware('permiso:actualizar_trabajadores');
 Route::delete('/trabajadores/{id}', [TrabajadorController::class, 'Eliminar'])->middleware('permiso:eliminar_trabajadores');
 Route::view('/trabajadores', 'trabajadores.Trabajadores')->middleware('permiso:vista_trabajadores')->name('trabajadores');
