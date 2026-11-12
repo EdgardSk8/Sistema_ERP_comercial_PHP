@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-utilidades.css?v=20261110a">
   <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a">
   <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/admin.css?v=20261110r">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/admin.css?v=20261110v">
 </head>
 <body class="admin-pagina">
 
@@ -186,7 +186,7 @@
             </button>
             <div class="admin-ayuda__panel" id="ayudaCierre" role="note" tabindex="-1" hidden>
               <strong>Cómo funciona</strong>
-              <p>El cierre suma los pedidos entregados del periodo. El repartidor entrega los productos más la comisión de la empresa por el envío; su ganancia es el resto del delivery. Al registrar el cierre, los pedidos quedan pagados. Los repartidores que ya cerraron todo siguen apareciendo como Cerrado.</p>
+              <p>La tabla muestra a todos los repartidores con entregas en el periodo. Abre <strong>Detalles</strong> para ver métodos de pago y pendiente por día; usa <strong>Cargar</strong> para consultar el historial del repartidor. El repartidor entrega los productos más la comisión de la empresa por el envío; su ganancia es el resto del delivery. Al registrar el cierre, los pedidos quedan pagados.</p>
             </div>
           </div>
         </div>
@@ -227,13 +227,13 @@
         <span>Ganancia delivery <strong id="cierreGlobalGanancia">—</strong></span>
       </div>
 
-      <div class="admin-lista" id="listaCierre"></div>
+      <div class="admin-buscador admin-cierre__buscador">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input id="cierreBuscar" type="search" placeholder="Buscar repartidor por nombre o teléfono" autocomplete="off">
+      </div>
 
-      <div class="admin-detalle__bloque">
-        <h2>Últimos cierres</h2>
-        <div class="admin-lista-lineas" id="historialCierres">
-          <p class="admin-texto-suave">Aún no hay cierres registrados.</p>
-        </div>
+      <div class="admin-cierre__trabajadores-scroll">
+        <div class="admin-cierre__tabla-contenedor" id="listaCierre"></div>
       </div>
     </section>
 
@@ -351,6 +351,6 @@
   <div class="admin-toast" id="adminToast" role="status" aria-live="polite" hidden></div>
 
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261110a" defer></script>
-  <script src="/tienda/recursos/js/pages/admin.js?v=20261110y" defer></script>
+  <script src="/tienda/recursos/js/pages/admin.js?v=20261110ad" defer></script>
 </body>
 </html>

@@ -2606,6 +2606,64 @@ $$;
 revoke all on function public.web_admin_cierres_delivery(text, integer) from public;
 grant execute on function public.web_admin_cierres_delivery(text, integer) to anon, authenticated;
 
+create or replace function public.web_admin_cierres_trabajador(
+    p_token text,
+    p_id_trabajador integer,
+    p_limite integer default 50
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, extensions
+as $$
+declare
+    v_admin integer := public.web_admin_sesion(p_token);
+    v_limite integer := greatest(1, least(coalesce(p_limite, 50), 50));
+begin
+    if v_admin is null then
+        return jsonb_build_object('success', false, 'sesion', false, 'mensaje', 'Sesión expirada. Inicia sesión de nuevo.');
+    end if;
+
+    return jsonb_build_object(
+        'success', true,
+        'cierres', coalesce((
+            select jsonb_agg(jsonb_build_object(
+                'id_cierre', c.id_cierre,
+                'id_trabajador', c.id_trabajador,
+                'repartidor', t.nombre_trabajador,
+                'desde', c.fecha_desde,
+                'hasta', c.fecha_hasta,
+                'pedidos', c.total_pedidos,
+                'productos', c.total_productos,
+                'efectivo', c.total_efectivo,
+                'billetera', c.total_billetera,
+                'lafise', c.total_lafise,
+                'delivery', c.total_delivery,
+                'comision_empresa', c.comision_empresa,
+                'ganancia_delivery', c.ganancia_delivery,
+                'total_empresa', c.total_empresa,
+                'monto_entregado', c.monto_entregado,
+                'diferencia', c.diferencia,
+                'nota', c.nota,
+                'fecha_cierre', c.fecha_cierre
+            ) order by c.fecha_cierre desc)
+            from (
+                select *
+                from public.repartidor_cierres
+                where id_trabajador = p_id_trabajador
+                order by fecha_cierre desc
+                limit v_limite
+            ) c
+            join public.trabajadores t on t.id_trabajador = c.id_trabajador
+        ), '[]'::jsonb)
+    );
+end;
+$$;
+
+revoke all on function public.web_admin_cierres_trabajador(text, integer, integer) from public;
+grant execute on function public.web_admin_cierres_trabajador(text, integer, integer) to anon, authenticated;
+
 -- ----------------------------------------------------------------------------
 -- 9) Cuentas por cobrar (consulta)
 -- ----------------------------------------------------------------------------

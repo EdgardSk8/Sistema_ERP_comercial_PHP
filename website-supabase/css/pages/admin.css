@@ -1334,6 +1334,217 @@
     margin-bottom: 12px;
 }
 
+.admin-cierre__buscador {
+    margin-bottom: 9px;
+}
+
+.admin-cierre__trabajadores-scroll {
+    max-height: min(58vh, 600px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--admin-borde);
+    border-radius: 12px;
+    background: var(--superficie);
+}
+
+.admin-cierre__tabla-contenedor {
+    min-width: 0;
+}
+
+.admin-cierre__tabla {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: .7rem;
+}
+
+.admin-cierre__tabla thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--admin-borde);
+    background: var(--admin-gris-suave);
+    color: var(--admin-gris);
+    font-size: .56rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.admin-cierre__tabla thead th:last-child {
+    text-align: right;
+}
+
+.admin-cierre__tabla tbody td {
+    padding: 10px;
+    border-bottom: 1px solid var(--admin-borde);
+    vertical-align: middle;
+}
+
+.admin-cierre__tabla tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.admin-cierre__tabla tbody tr:hover {
+    background: var(--admin-gris-suave);
+}
+
+.admin-cierre__tabla-persona strong {
+    display: block;
+    overflow-wrap: anywhere;
+    color: var(--secundario);
+    font-size: .76rem;
+    line-height: 1.25;
+}
+
+.admin-cierre__tabla-persona small {
+    display: block;
+    margin-top: 2px;
+    color: var(--admin-gris);
+    font-size: .6rem;
+}
+
+.admin-cierre__tabla-pedidos {
+    white-space: nowrap;
+}
+
+.admin-cierre__tabla-pedidos strong {
+    font-size: .76rem;
+}
+
+.admin-cierre__tabla-pedidos small {
+    display: block;
+    margin-top: 2px;
+    color: var(--admin-gris);
+    font-size: .6rem;
+}
+
+.admin-cierre__tabla-total {
+    text-align: right;
+    color: var(--secundario);
+    font-size: .76rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.admin-cierre__tabla-estado {
+    white-space: nowrap;
+}
+
+.admin-cierre__tabla-acciones {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.admin-cierre__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.admin-cierre__accion {
+    min-height: 30px;
+    padding: 0 8px;
+    border-radius: 8px;
+    font-size: .62rem;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.admin-cierre__accion i {
+    font-size: .72rem;
+}
+
+@media (max-width: 700px) {
+    .admin-cierre__trabajadores-scroll {
+        max-height: 52vh;
+        border-radius: 10px;
+    }
+
+    .admin-cierre__tabla,
+    .admin-cierre__tabla tbody,
+    .admin-cierre__tabla tr,
+    .admin-cierre__tabla td {
+        display: block;
+        width: 100%;
+    }
+
+    .admin-cierre__tabla thead {
+        display: none;
+    }
+
+    .admin-cierre__tabla tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "persona estado"
+            "pedidos total"
+            "acciones acciones";
+        gap: 3px 10px;
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--admin-borde);
+    }
+
+    .admin-cierre__tabla tbody tr:last-child {
+        border-bottom: 0;
+    }
+
+    .admin-cierre__tabla tbody td {
+        padding: 0;
+        border: 0;
+    }
+
+    .admin-cierre__tabla-persona {
+        grid-area: persona;
+        min-width: 0;
+    }
+
+    .admin-cierre__tabla-pedidos {
+        grid-area: pedidos;
+        color: var(--admin-gris);
+        font-size: .62rem;
+        white-space: normal;
+    }
+
+    .admin-cierre__tabla-pedidos strong {
+        font-size: .7rem;
+    }
+
+    .admin-cierre__tabla-pedidos small {
+        display: inline;
+        margin-left: 3px;
+        font-size: .6rem;
+    }
+
+    .admin-cierre__tabla-total {
+        grid-area: total;
+        align-self: end;
+        font-size: .72rem;
+    }
+
+    .admin-cierre__tabla-estado {
+        grid-area: estado;
+        align-self: start;
+        justify-self: end;
+    }
+
+    .admin-cierre__tabla-acciones {
+        grid-area: acciones;
+        padding-top: 5px !important;
+    }
+
+    .admin-cierre__acciones {
+        justify-content: flex-end;
+    }
+}
+
 .admin-cierre__fechas label {
     display: grid;
     gap: 5px;
@@ -1384,108 +1595,192 @@
     font-variant-numeric: tabular-nums;
 }
 
-.admin-cierre__card {
-    padding: 10px 12px;
-    border-radius: 14px;
+.admin-cierre__historial-bloque {
+    margin-top: 14px;
 }
 
-.admin-cierre__cabecera {
+.admin-cierre__historial-cabecera {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 10px;
+    margin-bottom: 7px;
 }
 
-.admin-cierre__nombre {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 2px 8px;
-    min-width: 0;
+.admin-cierre__historial-cabecera h3 {
+    margin: 0;
+    font-size: .84rem;
 }
 
-.admin-cierre__nombre strong {
-    overflow: hidden;
-    color: var(--secundario);
-    font-size: .82rem;
-    line-height: 1.2;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.admin-cierre__nombre span {
-    color: var(--admin-gris);
-    font-size: .64rem;
-    font-weight: 600;
-}
-
-.admin-cierre__linea-datos {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px 10px;
-    margin-top: 6px;
-    color: var(--admin-gris);
-    font-size: .65rem;
-}
-
-.admin-cierre__linea-datos strong {
-    color: var(--secundario);
-    font-size: .68rem;
-    font-variant-numeric: tabular-nums;
-}
-
-.admin-cierre__linea-datos--delivery {
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px dashed var(--admin-borde);
-}
-
-.admin-cierre__linea-total {
-    margin-left: auto;
-    color: var(--secundario);
-    font-weight: 800;
-    white-space: nowrap;
-}
-
-.admin-cierre__total-linea {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px solid var(--admin-borde);
-    color: var(--secundario);
-    font-size: .7rem;
-    font-weight: 800;
-}
-
-.admin-cierre__total-linea strong {
-    font-size: .76rem;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-
-.admin-cierre__arquear {
+.admin-cierre__historial-btn {
     min-height: 30px;
     padding: 0 9px;
     border-radius: 8px;
-    font-size: .64rem;
+    font-size: .62rem;
     gap: 4px;
+    white-space: nowrap;
 }
 
-.admin-cierre__fila-acciones {
+.admin-cierre__historial-btn i {
+    font-size: .72rem;
+}
+
+.admin-cierre__historial-btn .admin-btn__spinner {
+    width: 12px;
+    height: 12px;
+    border-color: rgba(34, 37, 42, .18);
+    border-top-color: var(--secundario);
+}
+
+.admin-cierre__historial-aviso {
     display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    gap: 5px;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0;
+    padding: 9px 10px;
+    border: 1px dashed var(--admin-borde-fuerte);
+    border-radius: 9px;
+    background: var(--admin-gris-suave);
+    font-size: .64rem;
+    line-height: 1.4;
 }
 
-.admin-cierre__ver {
-    width: 30px;
-    min-height: 30px;
-    padding: 0;
-    border-radius: 8px;
+.admin-cierre__historial-aviso i {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: var(--admin-gris);
+}
+
+.admin-cierre__historial-aviso strong {
+    color: var(--secundario);
+}
+
+.admin-cierre__historial-error {
+    margin: 0;
+    padding: 9px 10px;
+    border-radius: 9px;
+    background: var(--admin-rojo-suave);
+    color: var(--admin-rojo);
+    font-size: .64rem;
+}
+
+.admin-cierre__historial-trabajador {
+    display: grid;
+    gap: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 3px;
+}
+
+.admin-cierre__historial-linea {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--admin-borde);
+    border-radius: 10px;
+    background: var(--superficie);
+}
+
+.admin-cierre__historial-fecha {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+
+.admin-cierre__historial-fecha strong {
+    font-size: .74rem;
+    line-height: 1.25;
+}
+
+.admin-cierre__historial-fecha small {
+    overflow-wrap: anywhere;
+    color: var(--admin-gris);
+    font-size: .61rem;
+    line-height: 1.35;
+}
+
+.admin-cierre__historial-nota {
+    font-style: italic;
+}
+
+.admin-cierre__historial-montos {
+    display: grid;
+    flex: 0 0 auto;
+    justify-items: end;
+    gap: 1px;
+    text-align: right;
+}
+
+.admin-cierre__historial-montos > strong {
+    font-size: .74rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.admin-cierre__historial-montos > small {
+    color: var(--admin-gris);
+    font-size: .59rem;
+    white-space: nowrap;
+}
+
+.admin-cierre__historial-estado {
+    display: inline-flex;
+    margin-top: 3px;
+    padding: 2px 6px;
+    border-radius: var(--r-pill);
+    font-size: .55rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.admin-cierre__historial-estado--ok {
+    background: var(--admin-verde-suave);
+    color: var(--admin-verde-hondo);
+}
+
+.admin-cierre__historial-estado--falta {
+    background: var(--admin-rojo-suave);
+    color: var(--admin-rojo);
+}
+
+.admin-cierre__historial-estado--sobra {
+    background: var(--admin-ambar-suave);
+    color: var(--admin-ambar);
+}
+
+.admin-cierre__sin-pendiente {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 12px 0;
+    padding: 9px 10px;
+    border: 1px solid rgba(31, 122, 77, .18);
+    border-radius: 10px;
+    background: var(--admin-verde-suave);
+    color: var(--admin-verde-hondo);
+    font-size: .68rem;
+    font-weight: 700;
+}
+
+.admin-cierre__sin-pendiente i {
+    flex: 0 0 auto;
+    margin-top: 1px;
+}
+
+@media (max-width: 380px) {
+    .admin-cierre__historial-linea {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .admin-cierre__historial-montos {
+        justify-items: start;
+        text-align: left;
+    }
 }
 
 .admin-cierre__dias {

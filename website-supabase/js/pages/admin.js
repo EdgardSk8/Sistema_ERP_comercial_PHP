@@ -25,11 +25,11 @@
         promociones: [],
         cupones: [],
         trabajadores: [],
-        cierre: { repartidores: [], historial: [] },
+        cierre: { repartidores: [], totales: {} },
         cuentas: [],
         productos: null,
         filtros: { pedidos: 'todos', trabajadores: 'pendiente', cobros: 'todas' },
-        busquedas: { pedidos: '', cobros: '' },
+        busquedas: { pedidos: '', cobros: '', cierre: '' },
         resumenCobros: {},
     };
 
@@ -365,7 +365,7 @@
         mostrarToast.temporizador = setTimeout(() => { toast.hidden = true; }, 3400);
     }
 
-    function abrirSheet(titulo, subtitulo, contenido) {
+    function abrirSheet(titulo, subtitulo, contenido, opciones = {}) {
         const sheet = $('#adminSheet');
         if (!sheet) return;
 
@@ -378,7 +378,9 @@
         $('#adminSheetContenido').scrollTop = 0;
 
         setTimeout(() => {
-            const primerCampo = $('#adminSheetContenido input, #adminSheetContenido select, #adminSheetContenido textarea, #adminSheetContenido button');
+            const primerCampo = opciones.enfocar === false
+                ? null
+                : $('#adminSheetContenido input, #adminSheetContenido select, #adminSheetContenido textarea, #adminSheetContenido button');
             (primerCampo || $('.admin-sheet__cerrar'))?.focus();
         }, 30);
     }
@@ -1663,29 +1665,30 @@
         cargando(contenedor);
 
         try {
-            const [datos, historial] = await Promise.all([
-                adminRpc('web_admin_cierre_delivery', { p_desde: desde, p_hasta: hasta }),
-                adminRpc('web_admin_cierres_delivery', { p_limite: 50 }).catch(() => ({ cierres: [] })),
-            ]);
+            const datos = await adminRpc('web_admin_cierre_delivery', { p_desde: desde, p_hasta: hasta });
 
             estado.cierre.repartidores = Array.isArray(datos.repartidores) ? datos.repartidores : [];
-            estado.cierre.historial = Array.isArray(historial.cierres) ? historial.cierres : [];
+            estado.cierre.totales = datos.totales || {};
             estado.cargada.cierre = true;
 
-            renderCierre(datos.totales || {});
-            renderHistorialCierres();
+            renderCierre();
         } catch (error) {
             vacio(contenedor, 'bi-exclamation-triangle', 'No se pudo cargar el cierre', error.message);
         }
     }
 
-    function renderCierre(totales = {}) {
+    function renderCierre() {
         const contenedor = $('#listaCierre');
         if (!contenedor) return;
 
-        const lista = estado.cierre.repartidores.filter((repartidor) => (
+        const totales = estado.cierre.totales || {};
+        const buscar = normalizar(estado.busquedas.cierre);
+        const listaBase = estado.cierre.repartidores.filter((repartidor) => (
             Number(repartidor.pedidos) > 0 || Number(repartidor.cerrados) > 0
         ));
+        const lista = buscar
+            ? listaBase.filter((repartidor) => normalizar(`${repartidor.nombre} ${repartidor.telefono}`).includes(buscar))
+            : listaBase;
 
         actualizarContador($('#cierreContador'), lista.length);
         $('#cierrePedidos').textContent = String(Number(totales.pedidos) || 0);
@@ -1702,62 +1705,74 @@
             vacio(
                 contenedor,
                 'bi-clipboard',
-                'Sin entregas por cerrar',
-                'No hay pedidos entregados pendientes en el periodo seleccionado.'
+                listaBase.length ? 'Sin repartidores con esa búsqueda' : 'Sin entregas por cerrar',
+                listaBase.length
+                    ? 'Prueba con otro nombre o teléfono.'
+                    : 'No hay pedidos entregados pendientes en el periodo seleccionado.'
             );
             return;
         }
 
-        contenedor.innerHTML = lista.map((repartidor) => {
-            const comision = Number(repartidor.comision) || 0;
-            const otros = Number(repartidor.otros) || 0;
-            const pendientes = Number(repartidor.pedidos) || 0;
-            const cerrados = Number(repartidor.cerrados) || 0;
+        contenedor.innerHTML = `
+            <table class="admin-cierre__tabla" aria-label="Repartidores con entregas en el periodo">
+                <thead>
+                    <tr>
+                        <th scope="col">Repartidor</th>
+                        <th scope="col">Pedidos</th>
+                        <th scope="col" class="admin-cierre__tabla-total">Total a entregar</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col" class="admin-cierre__tabla-acciones">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${lista.map((repartidor) => {
+                        const comision = Number(repartidor.comision) || 0;
+                        const pendientes = Number(repartidor.pedidos) || 0;
+                        const cerrados = Number(repartidor.cerrados) || 0;
+                        const totalPedidos = pendientes + cerrados;
+                        const nombre = repartidor.nombre || 'Repartidor';
+                        const telefono = repartidor.telefono ? escapar(repartidor.telefono) : '';
 
-            return `
-                <article class="admin-card admin-cierre__card">
-                    <div class="admin-cierre__cabecera">
-                        <div class="admin-cierre__nombre">
-                            <strong>${escapar(repartidor.nombre || 'Repartidor')}</strong>
-                            <span>${pendientes + cerrados} pedidos hoy · Comisión ${comision.toFixed(2)}%</span>
-                        </div>
-                        <div class="admin-cierre__fila-acciones">
-                            <span class="admin-badge ${pendientes > 0 ? 'admin-badge--azul' : 'admin-badge--verde'}">${pendientes > 0 ? `${pendientes} por cerrar` : 'Cerrado'}</span>
-                            ${pendientes > 0 ? `
-                                <button class="admin-btn admin-btn--primario admin-cierre__arquear" type="button"
-                                    data-accion="cierre-detalle" data-id="${Number(repartidor.id_trabajador)}"
-                                    aria-label="Arquear a ${escapar(repartidor.nombre || 'repartidor')}">
-                                    <i class="bi bi-calculator" aria-hidden="true"></i> Arquear
-                                </button>` : ''}
-                        </div>
-                    </div>
-
-                    <div class="admin-cierre__linea-datos">
-                        <span>Efectivo <strong>${moneda(repartidor.efectivo)}</strong></span>
-                        <span>Billetera <strong>${moneda(repartidor.billetera)}</strong></span>
-                        <span>Lafise <strong>${moneda(repartidor.lafise)}</strong></span>
-                        <span class="admin-cierre__linea-total">Total <strong>${moneda(repartidor.productos)}</strong></span>
-                    </div>
-
-                    <div class="admin-cierre__linea-datos admin-cierre__linea-datos--delivery">
-                        <span>Delivery <strong>${moneda(repartidor.delivery)}</strong></span>
-                        <span>Empresa <strong>${moneda(repartidor.comision_empresa)}</strong></span>
-                        <span>Ganancia <strong>${moneda(repartidor.ganancia_delivery)}</strong></span>
-                        <span class="admin-cierre__linea-total">Total delivery <strong>${moneda(repartidor.delivery)}</strong></span>
-                    </div>
-
-                    ${otros > 0 ? `<p class="admin-texto-suave">Otros métodos: ${moneda(otros)}</p>` : ''}
-
-                    <div class="admin-cierre__total-linea">
-                        <span>Total a entregar</span>
-                        <strong>${moneda(repartidor.total_empresa)}</strong>
-                    </div>
-                </article>
-            `;
-        }).join('');
+                        return `
+                            <tr>
+                                <td class="admin-cierre__tabla-persona">
+                                    <strong>${escapar(nombre)}</strong>
+                                    <small>${telefono ? `${telefono} · ` : ''}Comisión ${comision.toFixed(2)}%</small>
+                                </td>
+                                <td class="admin-cierre__tabla-pedidos">
+                                    <strong>${totalPedidos}</strong>
+                                    <small>${pendientes > 0
+                                        ? `${pendientes} por cerrar${cerrados > 0 ? ` · ${cerrados} cerrado${cerrados === 1 ? '' : 's'}` : ''}`
+                                        : `${cerrados} cerrado${cerrados === 1 ? '' : 's'}`}</small>
+                                </td>
+                                <td class="admin-cierre__tabla-total">${moneda(repartidor.total_empresa)}</td>
+                                <td class="admin-cierre__tabla-estado">
+                                    <span class="admin-badge ${pendientes > 0 ? 'admin-badge--azul' : 'admin-badge--verde'}">${pendientes > 0 ? `${pendientes} por cerrar` : 'Cerrado'}</span>
+                                </td>
+                                <td class="admin-cierre__tabla-acciones">
+                                    <div class="admin-cierre__acciones">
+                                        <button class="admin-btn admin-btn--ghost admin-cierre__accion" type="button"
+                                            data-accion="cierre-detalle" data-modo="detalle" data-id="${Number(repartidor.id_trabajador)}"
+                                            aria-label="Ver detalles de ${escapar(nombre)}">
+                                            <i class="bi bi-eye" aria-hidden="true"></i><span>Detalles</span>
+                                        </button>
+                                        ${pendientes > 0 ? `
+                                            <button class="admin-btn admin-btn--primario admin-cierre__accion" type="button"
+                                                data-accion="cierre-detalle" data-modo="arquear" data-id="${Number(repartidor.id_trabajador)}"
+                                                aria-label="Arquear a ${escapar(nombre)}">
+                                                <i class="bi bi-calculator" aria-hidden="true"></i><span>Arquear</span>
+                                            </button>` : ''}
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
     }
 
-    function abrirCierre(idTrabajador) {
+    function abrirCierre(idTrabajador, modo = 'detalle') {
         const repartidor = estado.cierre.repartidores.find((fila) => Number(fila.id_trabajador) === Number(idTrabajador));
         if (!repartidor) return;
 
@@ -1765,6 +1780,7 @@
         const total = Number(repartidor.total_empresa) || 0;
         const otros = Number(repartidor.otros) || 0;
         const comision = Number(repartidor.comision) || 0;
+        const pendientes = Number(repartidor.pedidos) || 0;
 
         const grupos = detalle.reduce((mapa, pedido) => {
             const clave = String(pedido.fecha || '').slice(0, 10);
@@ -1807,7 +1823,71 @@
                             </div>
                         </details>`;
                 }).join('')
-            : '<p class="admin-texto-suave">Sin pedidos en el periodo.</p>';
+            : '<p class="admin-texto-suave">Sin pedidos pendientes en el periodo.</p>';
+
+        const detalleBloque = pendientes > 0 ? `
+            <div class="admin-detalle__bloque">
+                <h3>Pendiente por día</h3>
+                <div class="admin-cierre__dias">${detalleHtml}</div>
+            </div>
+        ` : '';
+
+        const formularioHtml = pendientes > 0 ? `
+            <form class="admin-form" id="formCierreDelivery" data-id="${Number(repartidor.id_trabajador)}">
+                <div class="admin-form__campo">
+                    <label for="cierreMonto">Monto entregado</label>
+                    <input id="cierreMonto" name="monto" type="number" inputmode="decimal" step="0.01" min="0"
+                        value="${total.toFixed(2)}" required>
+                </div>
+
+                <p class="admin-cierre__diferencia" id="cierreDiferencia"></p>
+
+                <div class="admin-form__campo">
+                    <label for="cierreNota">Nota (opcional)</label>
+                    <input id="cierreNota" name="nota" type="text" maxlength="255" placeholder="Observaciones del cierre">
+                </div>
+
+                <p class="admin-alerta admin-pago__error" id="cierreError" role="alert" hidden></p>
+
+                <div class="admin-form__acciones">
+                    <button class="admin-btn admin-btn--ghost" type="button" data-cerrar-sheet>Cancelar</button>
+                    <button class="admin-btn admin-btn--primario" type="submit" id="btnCerrarDelivery">
+                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                        <span>Registrar cierre</span>
+                    </button>
+                </div>
+            </form>
+
+            <p class="admin-pago__nota">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>El delivery entrega los productos más la comisión de la empresa por el envío; su ganancia es el resto del delivery.</span>
+            </p>
+        ` : `
+            <p class="admin-texto-suave admin-cierre__sin-pendiente">
+                <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                Sin pedidos pendientes en el periodo.
+            </p>
+        `;
+
+        const historialBloque = `
+            <div class="admin-detalle__bloque admin-cierre__historial-bloque">
+                <div class="admin-cierre__historial-cabecera">
+                    <h3>Historial de cierres</h3>
+                    <button class="admin-btn admin-btn--ghost admin-cierre__historial-btn" type="button"
+                        data-accion="cierre-historial" data-id="${Number(repartidor.id_trabajador)}" data-cargado="0"
+                        aria-controls="cierreHistorialTrabajador">
+                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i><span>Cargar</span>
+                    </button>
+                </div>
+                <div class="admin-cierre__historial-trabajador" id="cierreHistorialTrabajador"
+                    data-id-trabajador="${Number(repartidor.id_trabajador)}" aria-live="polite">
+                    <p class="admin-texto-suave admin-cierre__historial-aviso">
+                        <i class="bi bi-clock-history" aria-hidden="true"></i>
+                        <span>Presiona <strong>Cargar</strong> para consultar los últimos cierres de este repartidor.</span>
+                    </p>
+                </div>
+            </div>
+        `;
 
         const contenido = `
             <div class="admin-cierre__metodos">
@@ -1847,85 +1927,135 @@
                 <strong>${moneda(total)}</strong>
             </div>
 
-            <div class="admin-detalle__bloque">
-                <h3>Pendiente por día</h3>
-                <div class="admin-cierre__dias">${detalleHtml}</div>
-            </div>
-
-            <form class="admin-form" id="formCierreDelivery" data-id="${Number(repartidor.id_trabajador)}">
-                <div class="admin-form__campo">
-                    <label for="cierreMonto">Monto entregado</label>
-                    <input id="cierreMonto" name="monto" type="number" inputmode="decimal" step="0.01" min="0"
-                        value="${total.toFixed(2)}" required>
-                </div>
-
-                <p class="admin-cierre__diferencia" id="cierreDiferencia"></p>
-
-                <div class="admin-form__campo">
-                    <label for="cierreNota">Nota (opcional)</label>
-                    <input id="cierreNota" name="nota" type="text" maxlength="255" placeholder="Observaciones del cierre">
-                </div>
-
-                <p class="admin-alerta admin-pago__error" id="cierreError" role="alert" hidden></p>
-
-                <div class="admin-form__acciones">
-                    <button class="admin-btn admin-btn--ghost" type="button" data-cerrar-sheet>Cancelar</button>
-                    <button class="admin-btn admin-btn--primario" type="submit" id="btnCerrarDelivery">
-                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
-                        <span>Registrar cierre</span>
-                    </button>
-                </div>
-            </form>
-
-            <p class="admin-pago__nota">
-                <i class="bi bi-info-circle" aria-hidden="true"></i>
-                <span>El delivery entrega los productos más la comisión de la empresa por el envío; su ganancia es el resto del delivery.</span>
-            </p>
+            ${detalleBloque}
+            ${modo === 'arquear' ? formularioHtml + historialBloque : historialBloque + formularioHtml}
         `;
 
         const desde = $('#cierreDesde')?.value || hoyISO();
         const hasta = $('#cierreHasta')?.value || hoyISO();
 
-        abrirSheet(`Cierre · ${repartidor.nombre || 'Delivery'}`, `${fechaDia(desde)} al ${fechaDia(hasta)}`, contenido);
+        const titulo = `${modo === 'arquear' ? 'Cierre' : 'Detalles'} · ${repartidor.nombre || 'Delivery'}`;
+        abrirSheet(titulo, `${fechaDia(desde)} al ${fechaDia(hasta)}`, contenido, { enfocar: modo === 'arquear' });
 
-        const inputMonto = $('#cierreMonto');
-        const cajaError = $('#cierreError');
-        const diferencia = $('#cierreDiferencia');
+        const formulario = $('#formCierreDelivery');
 
-        const actualizarDiferencia = () => {
-            const monto = Number(inputMonto?.value) || 0;
-            const diferenciaCentavos = Math.round((monto - total) * 100);
+        if (formulario) {
+            const inputMonto = $('#cierreMonto', formulario);
+            const cajaError = $('#cierreError', formulario);
+            const diferencia = $('#cierreDiferencia', formulario);
 
-            if (!diferencia) return;
+            const actualizarDiferencia = () => {
+                const monto = Number(inputMonto?.value) || 0;
+                const diferenciaCentavos = Math.round((monto - total) * 100);
 
-            diferencia.classList.remove('admin-cierre__diferencia--ok', 'admin-cierre__diferencia--falta', 'admin-cierre__diferencia--sobra');
+                if (!diferencia) return;
 
-            if (diferenciaCentavos === 0) {
-                diferencia.textContent = 'Cuadra exacto.';
-                diferencia.classList.add('admin-cierre__diferencia--ok');
-            } else if (diferenciaCentavos > 0) {
-                diferencia.textContent = `Sobran ${moneda(diferenciaCentavos / 100)}.`;
-                diferencia.classList.add('admin-cierre__diferencia--sobra');
-            } else {
-                diferencia.textContent = `Faltan ${moneda(Math.abs(diferenciaCentavos) / 100)}.`;
-                diferencia.classList.add('admin-cierre__diferencia--falta');
-            }
+                diferencia.classList.remove('admin-cierre__diferencia--ok', 'admin-cierre__diferencia--falta', 'admin-cierre__diferencia--sobra');
+
+                if (diferenciaCentavos === 0) {
+                    diferencia.textContent = 'Cuadra exacto.';
+                    diferencia.classList.add('admin-cierre__diferencia--ok');
+                } else if (diferenciaCentavos > 0) {
+                    diferencia.textContent = `Sobran ${moneda(diferenciaCentavos / 100)}.`;
+                    diferencia.classList.add('admin-cierre__diferencia--sobra');
+                } else {
+                    diferencia.textContent = `Faltan ${moneda(Math.abs(diferenciaCentavos) / 100)}.`;
+                    diferencia.classList.add('admin-cierre__diferencia--falta');
+                }
+            };
+
+            inputMonto?.addEventListener('input', () => {
+                if (cajaError) {
+                    cajaError.hidden = true;
+                    cajaError.textContent = '';
+                }
+                inputMonto.removeAttribute('aria-invalid');
+                actualizarDiferencia();
+            });
+
+            actualizarDiferencia();
+
+            formulario.addEventListener('submit', (evento) => {
+                registrarCierreDelivery(evento, repartidor, total);
+            });
+        }
+    }
+
+    async function cargarHistorialTrabajador(idTrabajador, boton = null) {
+        const destino = $('#cierreHistorialTrabajador');
+        if (!destino) return;
+
+        const yaCargado = boton?.dataset.cargado === '1' || Boolean(destino.querySelector('.admin-cierre__historial-linea'));
+
+        const restaurarBoton = (cargado) => {
+            if (!boton || !boton.isConnected) return;
+
+            boton.disabled = false;
+            boton.removeAttribute('aria-busy');
+            boton.dataset.cargado = cargado ? '1' : '0';
+            boton.innerHTML = `<i class="bi bi-arrow-clockwise" aria-hidden="true"></i><span>${cargado ? 'Actualizar' : 'Cargar'}</span>`;
         };
 
-        inputMonto?.addEventListener('input', () => {
-            if (cajaError) {
-                cajaError.hidden = true;
-                cajaError.textContent = '';
+        if (boton) {
+            boton.disabled = true;
+            boton.setAttribute('aria-busy', 'true');
+            boton.innerHTML = `<span class="admin-btn__spinner admin-cierre__historial-spinner" aria-hidden="true"></span><span>${yaCargado ? 'Actualizando…' : 'Cargando…'}</span>`;
+        }
+
+        try {
+            const datos = await adminRpc('web_admin_cierres_trabajador', {
+                p_id_trabajador: Number(idTrabajador),
+                p_limite: 50,
+            });
+
+            const actual = $('#cierreHistorialTrabajador');
+            if (!actual || actual.dataset.idTrabajador !== String(idTrabajador)) return;
+
+            renderHistorialTrabajador(actual, Array.isArray(datos.cierres) ? datos.cierres : []);
+            restaurarBoton(true);
+        } catch (error) {
+            const actual = $('#cierreHistorialTrabajador');
+            if (!actual || actual.dataset.idTrabajador !== String(idTrabajador)) return;
+
+            if (yaCargado) {
+                mostrarToast(`No se pudo actualizar el historial: ${error.message}`, 'error');
+            } else {
+                actual.innerHTML = `<p class="admin-texto-suave admin-cierre__historial-error">No se pudo cargar el historial: ${escapar(error.message)}</p>`;
             }
-            inputMonto.removeAttribute('aria-invalid');
-            actualizarDiferencia();
-        });
 
-        actualizarDiferencia();
+            restaurarBoton(yaCargado);
+        }
+    }
 
-        $('#formCierreDelivery')?.addEventListener('submit', (evento) => {
-            registrarCierreDelivery(evento, repartidor, total);
-        });
+    function renderHistorialTrabajador(contenedor, cierres) {
+        if (!cierres.length) {
+            contenedor.innerHTML = '<p class="admin-texto-suave">Aún no hay cierres registrados para este repartidor.</p>';
+            return;
+        }
+
+        contenedor.innerHTML = cierres.map((cierre) => {
+            const diferencia = Number(cierre.diferencia) || 0;
+            const cuadra = Math.abs(diferencia) < 0.005;
+            const clase = cuadra ? 'ok' : (diferencia > 0 ? 'sobra' : 'falta');
+            const etiqueta = cuadra
+                ? 'Cuadra'
+                : (diferencia > 0 ? `Sobra ${moneda(diferencia)}` : `Falta ${moneda(Math.abs(diferencia))}`);
+
+            return `
+                <div class="admin-cierre__historial-linea">
+                    <div class="admin-cierre__historial-fecha">
+                        <strong>${escapar(fechaCorta(cierre.fecha_cierre))}</strong>
+                        <small>${escapar(fechaDia(cierre.desde))} al ${escapar(fechaDia(cierre.hasta))} · ${Number(cierre.pedidos) || 0} pedido(s)</small>
+                        ${cierre.nota ? `<small class="admin-cierre__historial-nota">${escapar(cierre.nota)}</small>` : ''}
+                    </div>
+                    <div class="admin-cierre__historial-montos">
+                        <strong>${moneda(cierre.monto_entregado)}</strong>
+                        <small>Total ${moneda(cierre.total_empresa)}</small>
+                        <span class="admin-cierre__historial-estado admin-cierre__historial-estado--${clase}">${escapar(etiqueta)}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     async function registrarCierreDelivery(evento, repartidor, total) {
@@ -1998,38 +2128,6 @@
                 boton.innerHTML = '<i class="bi bi-check2-circle" aria-hidden="true"></i><span>Registrar cierre</span>';
             }
         }
-    }
-
-    function renderHistorialCierres() {
-        const contenedor = $('#historialCierres');
-        if (!contenedor) return;
-
-        const cierres = estado.cierre.historial;
-
-        if (!cierres.length) {
-            contenedor.innerHTML = '<p class="admin-texto-suave">Aún no hay cierres registrados.</p>';
-            return;
-        }
-
-        contenedor.innerHTML = cierres.map((cierre) => {
-            const diferencia = Number(cierre.diferencia) || 0;
-            const etiquetaDiferencia = Math.abs(diferencia) < 0.005
-                ? 'Cuadra'
-                : (diferencia > 0 ? `Sobra ${moneda(diferencia)}` : `Falta ${moneda(Math.abs(diferencia))}`);
-
-            return `
-                <div class="admin-linea">
-                    <span>
-                        ${escapar(cierre.repartidor || 'Repartidor')}
-                        <br><small>${escapar(fechaCorta(cierre.fecha_cierre))} · ${Number(cierre.pedidos) || 0} pedido(s) · ${escapar(fechaDia(cierre.desde))} al ${escapar(fechaDia(cierre.hasta))}</small>
-                    </span>
-                    <span style="text-align:right">
-                        <strong>${moneda(cierre.monto_entregado)}</strong>
-                        <br><small>${escapar(etiquetaDiferencia)}</small>
-                    </span>
-                </div>
-            `;
-        }).join('');
     }
 
     /* ───────────────────────── Cuentas por cobrar ───────────────────────── */
@@ -2495,6 +2593,11 @@
         $('#cierreDesde')?.addEventListener('change', () => cargarCierre());
         $('#cierreHasta')?.addEventListener('change', () => cargarCierre());
 
+        $('#cierreBuscar')?.addEventListener('input', (evento) => {
+            estado.busquedas.cierre = evento.target.value;
+            renderCierre();
+        });
+
         /* Acciones delegadas */
         document.addEventListener('click', async (evento) => {
             const botonAyuda = evento.target.closest('[data-ayuda-boton]');
@@ -2533,7 +2636,8 @@
                 if (trabajador) abrirFormularioTrabajador(trabajador, boton.dataset.modo);
                 return;
             }
-            if (accion === 'cierre-detalle') return abrirCierre(Number(boton.dataset.id));
+            if (accion === 'cierre-historial') return cargarHistorialTrabajador(Number(boton.dataset.id), boton);
+            if (accion === 'cierre-detalle') return abrirCierre(Number(boton.dataset.id), boton.dataset.modo || 'detalle');
             if (accion === 'cuenta-detalle') return abrirCuenta(Number(boton.dataset.id));
             if (accion === 'cuenta-pagar') return abrirPagoCuenta(Number(boton.dataset.id));
         });

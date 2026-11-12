@@ -138,7 +138,7 @@
 - [x] Panel admin móvil en `/tienda/admin` con usuario y contraseña del ERP: pedidos, promociones, cupones, repartidores, cierre de delivery y cuentas por cobrar. Ver README §10.
 - [x] Cobro en línea desde el panel (Lafise / billetera móvil): monto exacto, factura, FIFO, ingreso en cuenta e historial de pagos.
 - [x] Aceptar y facturar desde el panel; en efectivo el pago queda pendiente para el cierre del delivery.
-- [x] **Cierre de delivery** por rango de fechas y resumen de todos los repartidores que tuvieron entregas, incluso los que ya cerraron (aparecen como Cerrado): productos cobrados por efectivo, billetera móvil y Lafise; total delivery, comisión de la empresa y ganancia; monto entregado y diferencia.
+- [x] **Cierre de delivery** por rango de fechas en tabla resumen con todos los repartidores que tuvieron entregas, incluso los que ya cerraron (aparecen como Cerrado). **Detalles** muestra solo al abrir: productos cobrados por efectivo, billetera móvil y Lafise; total delivery, comisión de la empresa, ganancia y pendiente por día. Incluye el historial de cierres del repartidor, monto entregado y diferencia; se carga con el botón **Cargar** y luego se actualiza con **Actualizar** para no cargarlo automáticamente.
 - [x] **Panel del repartidor:** “Mis entregas” muestra los pedidos de hoy en formato compacto y expandible, con filtro Hoy/Todas.
 - [x] **Arqueo del repartidor:** modal con rango de fechas, pendiente por día, historial de cierres y total a entregar a la empresa; misma información disponible en **Trabajadores → Arqueo** del ERP.
 - [x] Abonos manuales desde **Cuentas por cobrar**: parciales o totales, en efectivo con caja abierta o desde una cuenta activa; se aplican a las cuotas más antiguas y actualizan caja/cuentas.
