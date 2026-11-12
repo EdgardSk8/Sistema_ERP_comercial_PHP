@@ -157,7 +157,10 @@ class WebsiteController extends Controller
     {
         return Producto::with([
             'categoria:id_categoria,nombre_categoria',
+            'marca:id_marca,nombre_marca',
             'impuesto',
+            'atributos.atributo:id_atributo,nombre_atributo',
+            'atributos.valor:id_valor,valor_atributo',
             'variaciones' => fn ($query) => $query->where('estado_variacion', 1),
             'variaciones.imagenes',
             'variaciones.tallas.talla.tipoTalla',
@@ -215,6 +218,8 @@ class WebsiteController extends Controller
             'colores' => $colores,
             'calificacion' => $this->datosCalificacion($calificacion),
             'stock' => (int) $variaciones->flatMap->tallas->sum('stock'),
+            'marca' => $producto->marca->nombre_marca ?? '',
+            'atributos' => $this->atributosProducto($producto),
         ];
     }
 
@@ -244,6 +249,7 @@ class WebsiteController extends Controller
                         'nombre' => $variacionTalla->talla->talla ?? 'Única',
                         'stock' => (int) $variacionTalla->stock,
                         'precio' => round($base * (1 + $impuesto / 100), 2),
+                        'tipo' => $variacionTalla->talla?->tipoTalla?->nombre_tipo_talla ?? '',
                     ];
                 })
                 ->sortBy(fn ($talla) => mb_strlen($talla['nombre']).$talla['nombre'])
@@ -270,7 +276,22 @@ class WebsiteController extends Controller
             'imagen' => $primera['imagenes'][0] ?? $this->urlImagenProducto($producto),
             'calificacion' => $this->datosCalificacion($calificacion),
             'variaciones' => $variaciones,
+            'marca' => $producto->marca->nombre_marca ?? '',
+            'atributos' => $this->atributosProducto($producto),
         ];
+    }
+
+    /** Atributos del producto con la misma forma que entrega el RPC web_productos. */
+    private function atributosProducto(Producto $producto): array
+    {
+        return $producto->atributos
+            ->map(fn ($atributo) => [
+                'atributo' => $atributo->atributo?->nombre_atributo,
+                'valor' => $atributo->valor?->valor_atributo,
+            ])
+            ->filter(fn ($atributo) => $atributo['atributo'] && $atributo['valor'])
+            ->values()
+            ->all();
     }
 
     /** Calificaciones agrupadas de varios productos en una sola consulta. */

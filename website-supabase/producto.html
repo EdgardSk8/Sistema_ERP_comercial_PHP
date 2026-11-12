@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261116n">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
 </head>
 <body class="pagina-producto">
@@ -157,9 +157,9 @@
 
       <p class="producto__atributos" id="productoAtributos" hidden></p>
 
-      <!-- Talla -->
+      <!-- Talla / Memoria u otra medida -->
       <div class="opcion opcion--tallas">
-        <p class="opcion__titulo">Tallas</p>
+        <p class="opcion__titulo" id="productoTallasTitulo">Tallas</p>
         <div class="tallas" id="productoTallas"></div>
         <label class="tallas__equiv" id="tallasEquiv" aria-live="polite"></label>
       </div>
@@ -447,13 +447,56 @@
     </div>
   </footer>
 
+  <!-- ── Términos para pedidos por WhatsApp de invitados ─────── -->
+  <div class="tienda-modal" id="modalTerminosWhatsapp" hidden>
+    <div class="tienda-modal__fondo" data-cerrar-terminos></div>
+    <div class="tienda-modal__caja tienda-modal__caja--terminos" role="dialog" aria-modal="true"
+         aria-labelledby="terminosTitulo" aria-describedby="terminosDescripcion">
+      <button type="button" class="tienda-modal__cerrar" data-cerrar-terminos aria-label="Cerrar">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+      <span class="tienda-modal__icono" aria-hidden="true"><i class="bi bi-check-circle-fill"></i></span>
+      <h3 class="tienda-modal__titulo" id="terminosTitulo">Compra como invitado</h3>
+      <p class="tienda-modal__mensaje" id="terminosDescripcion">
+        Antes de pedir por WhatsApp, revisa y acepta los términos y condiciones.
+      </p>
+
+      <div class="terminos-modal__texto">
+        <ul>
+          <li>El pedido por WhatsApp es una <strong>solicitud</strong> y queda sujeto a confirmación de disponibilidad y pago.</li>
+          <li>Los precios están en córdobas e incluyen los impuestos aplicables.</li>
+          <li>Puedes pagar en efectivo contra entrega, billetera móvil o transferencia; el pedido se prepara al verificarse el pago.</li>
+          <li>Delivery propio hasta 20 km (C$15 por km, mínimo C$30) o encomienda fuera de ese radio.</li>
+          <li>Cambios o devoluciones dentro de 7 días calendario, con el producto sin uso y en su empaque original.</li>
+          <li>Al continuar, tus datos y el detalle del producto se compartirán por WhatsApp para coordinar el pedido.</li>
+        </ul>
+        <a href="/tienda/terminos" target="_blank" rel="noopener noreferrer">Ver los términos y condiciones completos</a>
+      </div>
+
+      <label class="terminos-modal__check" for="aceptarTerminosWhatsapp">
+        <input type="checkbox" id="aceptarTerminosWhatsapp">
+        <span>
+          He leído y acepto los
+          <a href="/tienda/terminos" target="_blank" rel="noopener noreferrer">términos y condiciones</a>.
+        </span>
+      </label>
+
+      <div class="tienda-modal__acciones">
+        <button type="button" class="tienda-modal__boton tienda-modal__boton--cancelar" data-cerrar-terminos>Cancelar</button>
+        <button type="button" class="tienda-modal__boton tienda-modal__boton--aceptar" id="btnContinuarWhatsapp" disabled>
+          Continuar a WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js" defer></script>
   <script src="/tienda/recursos/js/core/carrito-store.js?v=20261109d" defer></script>
   <script src="/tienda/recursos/js/core/utilidades.js?v=20261116e" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261107c" defer></script>
   <script src="/tienda/recursos/js/core/supabase-api.js?v=20261116a" defer></script>
-  <script src="/tienda/recursos/js/pages/producto.js?v=20261116e" defer></script>
+  <script src="/tienda/recursos/js/pages/producto.js?v=20261116j" defer></script>
   <script src="/tienda/recursos/js/components/resenias.js?v=20261116a" defer></script>
   <script src="/tienda/recursos/js/components/promos.js?v=20261116b" defer></script>
   <script src="/tienda/recursos/js/components/mapa.js?v=20261102d" defer></script>

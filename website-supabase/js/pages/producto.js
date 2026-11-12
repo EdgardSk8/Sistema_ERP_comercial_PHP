@@ -10,12 +10,37 @@ window.favoritosTienda = window.favoritosTienda || new Set();
 
 let tallasReferencia = null;
 
+const TIPOS_TALLA_ESTANDAR = ['calzado', 'ropa adulto', 'ropa nino', 'unica', 'sin talla'];
+
 function normalizar(texto) {
     return String(texto || '')
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .trim();
+}
+
+/* "Calzado", "Ropa adulto", etc. se muestran como "Tallas"; el resto usa su tipo. */
+function etiquetaTipoTalla(tipo) {
+    const nombre = String(tipo || '').trim();
+
+    if (!nombre || TIPOS_TALLA_ESTANDAR.includes(normalizar(nombre))) return 'Tallas';
+
+    return nombre;
+}
+
+function etiquetaLineaTalla(talla) {
+    const etiqueta = etiquetaTipoTalla(talla?.tipo);
+
+    return etiqueta === 'Tallas' ? 'Talla' : etiqueta;
+}
+
+function tipoTallaVariacion(variacion) {
+    const tipos = [...new Set((variacion?.tallas || [])
+        .map((talla) => String(talla.tipo || '').trim())
+        .filter(Boolean))];
+
+    return tipos.length === 1 ? tipos[0] : '';
 }
 
 function moneda(valor) {
@@ -47,6 +72,7 @@ function datosParaCarrito() {
         color: variacionActual.color,
         tallaId: tallaActual.id,
         talla: tallaActual.nombre,
+        tallaEtiqueta: etiquetaLineaTalla(tallaActual),
         precio: tallaActual.precio ?? producto.precio,
         categoria: producto.categoria,
         imagen: variacionActual.imagenes?.[0] || producto.imagen,
@@ -229,7 +255,7 @@ function pintarGuiaTallas() {
     if (nota) nota.textContent = tallasReferencia.nota || '';
 
     const caja = $('guiaTallas');
-    if (caja) caja.hidden = false;
+    if (caja) caja.hidden = normalizar(tipoTallaVariacion(variacionActual)) !== 'calzado';
 }
 
 async function cargarTallasReferencia() {
@@ -250,6 +276,13 @@ async function cargarTallasReferencia() {
 function pintarTallas() {
     const contenedor = $('productoTallas');
     const tallas = (variacionActual?.tallas || []).filter(talla => Number(talla.stock) > 0);
+    const tipo = tipoTallaVariacion(variacionActual);
+    const etiqueta = etiquetaTipoTalla(tipo);
+    const titulo = $('productoTallasTitulo');
+    const guia = $('guiaTallas');
+
+    if (titulo) titulo.textContent = etiqueta;
+    if (guia) guia.hidden = normalizar(tipo) !== 'calzado';
 
     // Productos que no son ropa: una sola "talla" genérica → no se muestra el selector.
     const bloqueTallas = contenedor?.closest('.opcion--tallas');
@@ -259,7 +292,7 @@ function pintarTallas() {
     if (bloqueTallas) bloqueTallas.hidden = soloTallaUnica;
 
     if (!tallas.length) {
-        contenedor.innerHTML = '<span class="tallas__vacio">Sin tallas disponibles para este color.</span>';
+        contenedor.innerHTML = '<span class="tallas__vacio">Sin opciones disponibles para este color.</span>';
         return;
     }
 
@@ -285,7 +318,14 @@ function pintarEquivalencias() {
     if (!caja) return;
 
     if (!tallaActual) {
-        caja.textContent = 'Selecciona una talla para ver sus equivalencias.';
+        caja.textContent = 'Selecciona una opción para ver sus equivalencias.';
+        return;
+    }
+
+    const etiqueta = etiquetaLineaTalla(tallaActual);
+
+    if (etiqueta !== 'Talla') {
+        caja.textContent = `${etiqueta}: ${tallaActual.nombre}`;
         return;
     }
 
@@ -454,7 +494,7 @@ function enlaceWhatsappProducto() {
     const lineas = [`Hola, quiero pedir: ${producto.nombre}`];
 
     if (variacionActual?.color) lineas.push(`Color: ${variacionActual.color}`);
-    if (tallaActual?.nombre) lineas.push(`Talla: ${tallaActual.nombre}`);
+    if (tallaActual?.nombre) lineas.push(`${etiquetaLineaTalla(tallaActual)}: ${tallaActual.nombre}`);
 
     const precioBase = Number(tallaActual?.precio ?? producto.precio) || 0;
     const descuento = window.descuentoClienteActivo?.(producto.categoria);
@@ -816,6 +856,68 @@ document.addEventListener('DOMContentLoaded', () => {
         document.execCommand('copy');
         document.body.removeChild(campo);
     };
+
+    /* ── Términos antes de pedir por WhatsApp ────────────────── */
+    const btnWhatsapp = $('btnWhatsapp');
+    const modalTerminos = $('modalTerminosWhatsapp');
+    const checkTerminos = $('aceptarTerminosWhatsapp');
+    const btnContinuarTerminos = $('btnContinuarWhatsapp');
+    let focoAntesTerminos = null;
+    let overflowAntesTerminos = '';
+
+    const abrirTerminosWhatsapp = () => {
+        if (!modalTerminos) return;
+
+        focoAntesTerminos = document.activeElement;
+        overflowAntesTerminos = document.body.style.overflow;
+
+        if (checkTerminos) checkTerminos.checked = false;
+        if (btnContinuarTerminos) btnContinuarTerminos.disabled = true;
+
+        modalTerminos.hidden = false;
+        document.body.style.overflow = 'hidden';
+        requestAnimationFrame(() => modalTerminos.classList.add('tienda-modal--visible'));
+        checkTerminos?.focus({ preventScroll: true });
+    };
+
+    const cerrarTerminosWhatsapp = () => {
+        if (!modalTerminos || modalTerminos.hidden) return;
+
+        modalTerminos.classList.remove('tienda-modal--visible');
+        document.body.style.overflow = overflowAntesTerminos;
+
+        window.setTimeout(() => {
+            modalTerminos.hidden = true;
+            if (focoAntesTerminos instanceof HTMLElement) focoAntesTerminos.focus({ preventScroll: true });
+        }, 180);
+    };
+
+    btnWhatsapp?.addEventListener('click', (evento) => {
+        evento.preventDefault();
+        abrirTerminosWhatsapp();
+    });
+
+    checkTerminos?.addEventListener('change', () => {
+        if (btnContinuarTerminos) btnContinuarTerminos.disabled = !checkTerminos.checked;
+    });
+
+    modalTerminos?.querySelectorAll('[data-cerrar-terminos]').forEach((elemento) => {
+        elemento.addEventListener('click', cerrarTerminosWhatsapp);
+    });
+
+    document.addEventListener('keydown', (evento) => {
+        if (evento.key === 'Escape' && modalTerminos && !modalTerminos.hidden) {
+            evento.preventDefault();
+            cerrarTerminosWhatsapp();
+        }
+    });
+
+    btnContinuarTerminos?.addEventListener('click', () => {
+        if (!checkTerminos?.checked || !btnWhatsapp) return;
+
+        cerrarTerminosWhatsapp();
+        window.open(btnWhatsapp.href, '_blank', 'noopener');
+    });
 
     $('btnCompartir')?.addEventListener('click', async () => {
         const enlace = window.location.href;

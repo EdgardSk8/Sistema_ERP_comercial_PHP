@@ -57,6 +57,23 @@ function normalizar(texto) {
         .trim();
 }
 
+const TIPOS_TALLA_ESTANDAR = ['calzado', 'ropa adulto', 'ropa nino', 'unica', 'sin talla'];
+
+/* "Calzado", "Ropa adulto", etc. se muestran como "Tallas"; el resto usa su tipo. */
+function etiquetaTipoTalla(tipo) {
+    const nombre = String(tipo || '').trim();
+
+    if (!nombre || TIPOS_TALLA_ESTANDAR.includes(normalizar(nombre))) return 'Tallas';
+
+    return nombre;
+}
+
+function etiquetaLineaTalla(talla) {
+    const etiqueta = etiquetaTipoTalla(talla?.tipo);
+
+    return etiqueta === 'Tallas' ? 'Talla' : etiqueta;
+}
+
 function colorHex(nombre) {
     const clave = normalizar(nombre);
     if (COLORES[clave]) return COLORES[clave];
@@ -264,6 +281,20 @@ function iniciarCatalogo(productos, tallasReferencia) {
 
     const variantes = desagruparPorColor(productos);
     const categorias = [...new Set(variantes.map(variante => variante.categoria).filter(Boolean))];
+
+    /* Búsqueda libre: nombre, categoría, marca, color, descripción, atributos y tallas. */
+    const indiceBusqueda = new Map(variantes.map(variante => [
+        variante,
+        normalizar([
+            variante.nombre,
+            variante.categoria,
+            variante.marca,
+            variante.color,
+            variante.descripcion,
+            ...(variante.atributos || []).map(atributo => atributo?.valor),
+            ...(variante.tallas || []).map(talla => talla?.nombre),
+        ].filter(Boolean).join(' ')),
+    ]));
 
     /* Solo se muestra "Descuentos" si hay promociones reales del ERP. */
     const hayDescuentos = variantes.some(productoEnDescuento);
@@ -553,12 +584,11 @@ function iniciarCatalogo(productos, tallasReferencia) {
         ? Array.from(selectMarcas.selectedOptions).map(opcion => opcion.value)
         : [];
 
-    /* ── Filtros por atributo (Género, Tipo, ...) ─────────────── */
+    /* ── Filtros por atributo (Género, Deporte, Material, ...) ── */
     const contenedorAtributos = document.getElementById('filtrosAtributos');
-    const contenedorTipo = document.getElementById('filtroTipo');
-    const contenedoresAtributos = [contenedorAtributos, contenedorTipo].filter(Boolean);
+    const contenedoresAtributos = [contenedorAtributos].filter(Boolean);
 
-    /* { 'Género': ['Hombre'], 'Tipo': ['Zapatilla'] } */
+    /* { 'Género': ['Mujer', 'Unisex'], 'Tipo': ['Sandalia'] } */
     let atributosSeleccionados = {};
     let atributosPendientes = null;
 
@@ -616,16 +646,8 @@ function iniciarCatalogo(productos, tallasReferencia) {
                     `;
                 }
 
-                const destino = normalizar(nombre) === 'tipo' && contenedorTipo
-                    ? contenedorTipo
-                    : contenedorAtributos;
-
-                destino?.appendChild(bloque);
+                contenedorAtributos?.appendChild(bloque);
             });
-
-        if (contenedorTipo && !contenedorTipo.children.length) {
-            contenedorTipo.closest('.filtros__col')?.setAttribute('hidden', '');
-        }
 
         if (window.jQuery && window.jQuery.fn.select2) {
             window.jQuery(contenedoresAtributos).find('select').select2({
@@ -648,9 +670,10 @@ function iniciarCatalogo(productos, tallasReferencia) {
             });
 
             contenedor.querySelectorAll('.filtros__chips[data-atributo]').forEach(grupo => {
-                const activo = grupo.querySelector('.filtros__chip[aria-pressed="true"]');
+                const valores = Array.from(grupo.querySelectorAll('.filtros__chip[aria-pressed="true"]'))
+                    .map(chip => chip.dataset.valor);
 
-                if (activo) elegidos[grupo.dataset.atributo] = [activo.dataset.valor];
+                if (valores.length) elegidos[grupo.dataset.atributo] = valores;
             });
         });
 
@@ -815,6 +838,8 @@ function iniciarCatalogo(productos, tallasReferencia) {
 
     const pintar = (animar = false) => {
         const termino = normalizar(buscador ? buscador.value : '');
+        /* Cada palabra debe aparecer en algún dato del producto. */
+        const terminos = termino.split(/\s+/).filter(Boolean);
 
         const hayFiltro = Boolean(termino) || precioMin !== null || precioMax !== null
             || tallasSeleccionadas.length > 0 || coloresSeleccionados.length > 0
@@ -832,7 +857,8 @@ function iniciarCatalogo(productos, tallasReferencia) {
                         : categoriaActual === CATEGORIA_DESCUENTOS
                             ? productoEnDescuento(variante)
                             : variante.categoria === categoriaActual);
-            const coincideTexto = !termino || normalizar(variante.nombre).includes(termino);
+            const coincideTexto = !terminos.length
+                || terminos.every(parte => (indiceBusqueda.get(variante) || '').includes(parte));
             const precio = Number(variante.precio) || 0;
             const coincidePrecio = (precioMin === null || precio >= precioMin)
                 && (precioMax === null || precio <= precioMax);
@@ -843,9 +869,12 @@ function iniciarCatalogo(productos, tallasReferencia) {
             const coincideMarca = !marcasSeleccionadas.length
                 || marcasSeleccionadas.includes(String(variante.marca || '').trim());
             const coincideAtributos = Object.entries(atributosSeleccionados).every(([nombre, valores]) => {
-                const atributo = (variante.atributos || []).find(item => item?.atributo === nombre);
+                const valoresProducto = (variante.atributos || [])
+                    .filter(item => item?.atributo === nombre)
+                    .map(item => String(item.valor));
 
-                return Boolean(atributo) && valores.includes(String(atributo.valor));
+                return valoresProducto.length > 0
+                    && valores.some(valor => valoresProducto.includes(String(valor)));
             });
 
             if (!(coincideCategoria && coincideTexto && coincidePrecio && coincideTalla && coincideColor
@@ -918,11 +947,45 @@ function iniciarCatalogo(productos, tallasReferencia) {
 
     /* El buscador espera a que dejes de escribir: evita re-renderizar en cada tecla */
     let temporizadorBusqueda = 0;
+    const botonLimpiarBuscador = document.getElementById('limpiarBuscador');
+
+    const actualizarLimpiadorBuscador = () => {
+        if (botonLimpiarBuscador) botonLimpiarBuscador.hidden = !buscador?.value;
+    };
+
+    const limpiarBuscador = () => {
+        if (!buscador) return;
+
+        window.clearTimeout(temporizadorBusqueda);
+        buscador.value = '';
+        actualizarLimpiadorBuscador();
+        pintar();
+        buscador.focus();
+    };
+
+    actualizarLimpiadorBuscador();
 
     buscador?.addEventListener('input', () => {
+        actualizarLimpiadorBuscador();
         window.clearTimeout(temporizadorBusqueda);
         temporizadorBusqueda = window.setTimeout(() => pintar(), 250);
     });
+
+    /* Cubre también la limpieza nativa del navegador (Esc o aspa). */
+    buscador?.addEventListener('search', () => {
+        actualizarLimpiadorBuscador();
+        window.clearTimeout(temporizadorBusqueda);
+        pintar();
+    });
+
+    buscador?.addEventListener('keydown', (evento) => {
+        if (evento.key === 'Escape' && buscador.value) {
+            evento.preventDefault();
+            limpiarBuscador();
+        }
+    });
+
+    botonLimpiarBuscador?.addEventListener('click', limpiarBuscador);
 
     /* ── Eventos del slider de precio ─────────────────────────── */
     precioMinInput?.addEventListener('input', () => {
@@ -1030,19 +1093,16 @@ function iniciarCatalogo(productos, tallasReferencia) {
     contenedoresAtributos.forEach((contenedor) => {
         contenedor.addEventListener('change', alCambiarAtributos);
 
-        /* Los atributos con pocos valores son botones: uno solo activo a la vez. */
+        /* Los atributos con pocos valores son botones y pueden combinarse entre sí. */
         contenedor.addEventListener('click', (evento) => {
 
             const chip = evento.target.closest('.filtros__chip');
 
             if (!chip) return;
 
-            const grupo = chip.closest('.filtros__chips');
-            const yaActivo = chip.getAttribute('aria-pressed') === 'true';
+            const activo = chip.getAttribute('aria-pressed') === 'true';
 
-            grupo.querySelectorAll('.filtros__chip').forEach(boton => boton.setAttribute('aria-pressed', 'false'));
-
-            if (!yaActivo) chip.setAttribute('aria-pressed', 'true');
+            chip.setAttribute('aria-pressed', activo ? 'false' : 'true');
 
             alCambiarAtributos();
         });
@@ -1391,13 +1451,14 @@ function agregarDesdeQuickAdd(producto, variacion, talla) {
         color: variacion.color,
         tallaId: talla.id,
         talla: talla.nombre,
+        tallaEtiqueta: etiquetaLineaTalla(talla),
         precio: talla.precio ?? producto.precio,
         categoria: producto.categoria,
         imagen: variacion.imagenes?.[0] || producto.imagen,
         stock: talla.stock,
     }, 1);
 
-    tiendaToast(`Agregado al carrito · Talla ${talla.nombre}`, 'exito');
+    tiendaToast(`Agregado al carrito · ${etiquetaLineaTalla(talla)} ${talla.nombre}`, 'exito');
     cerrarQuickAdd();
 }
 
@@ -1451,6 +1512,10 @@ async function abrirQuickAdd(boton) {
         }
 
         const { popover, contenido } = crearQuickAdd();
+        const etiqueta = etiquetaTipoTalla(tallas[0]?.tipo);
+        popover.querySelector('.quick-add__titulo').textContent = etiqueta === 'Tallas'
+            ? 'Elige tu talla'
+            : `Elige ${etiqueta}`;
         let scrollListo = false;
         const temporizadorScroll = window.setTimeout(() => { scrollListo = true; }, 180);
         const alDesplazar = () => { if (scrollListo) cerrarQuickAdd(false); };
@@ -1478,7 +1543,7 @@ async function abrirQuickAdd(boton) {
             opcion.type = 'button';
             opcion.className = 'quick-add__talla';
             opcion.textContent = talla.nombre;
-            opcion.setAttribute('aria-label', `Agregar talla ${talla.nombre} al carrito`);
+            opcion.setAttribute('aria-label', `Agregar ${etiquetaLineaTalla(talla)} ${talla.nombre} al carrito`);
             opcion.addEventListener('click', () => agregarDesdeQuickAdd(producto, variacion, talla));
             lista.appendChild(opcion);
         });
@@ -1623,4 +1688,52 @@ document.addEventListener('click', async (evento) => {
             'aviso'
         );
     }
+});
+
+/* ── Foco breve en contacto con driver.js ───────────────────── */
+let contactoDriver = null;
+let contactoTimer = 0;
+
+function resaltarContacto() {
+    const lista = document.querySelector('#contacto .pie__lista');
+    const crearDriver = window.driver?.js?.driver;
+
+    if (!lista || !crearDriver) return;
+
+    contactoDriver?.destroy();
+    contactoDriver = crearDriver({
+        showProgress: false,
+        showButtons: [],
+        allowClose: true,
+        overlayColor: '#0c3d24',
+        overlayOpacity: 0.55,
+        stagePadding: 8,
+        stageRadius: 10,
+        animate: true,
+        smoothScroll: true,
+    });
+
+    contactoDriver.highlight({
+        element: lista,
+        popover: { title: '', description: '' },
+    });
+
+    window.clearTimeout(contactoTimer);
+    contactoTimer = window.setTimeout(() => {
+        contactoDriver?.destroy();
+        contactoDriver = null;
+    }, 1900);
+}
+
+document.addEventListener('click', (evento) => {
+    if (evento.defaultPrevented || evento.button !== 0
+        || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) return;
+
+    const enlace = evento.target.closest('a[href="#contacto"]');
+
+    if (!enlace || !window.driver?.js?.driver) return;
+
+    evento.preventDefault();
+    history.pushState(null, '', '#contacto');
+    resaltarContacto();
 });

@@ -191,6 +191,38 @@ button { font-family: inherit; }
 
 .buscador__campo::placeholder { color: var(--texto-suave); }
 
+.buscador__campo::-webkit-search-cancel-button,
+.buscador__campo::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.buscador__limpiar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--texto-suave);
+  -webkit-text-fill-color: currentColor;
+  forced-color-adjust: none;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.buscador__limpiar:hover,
+.buscador__limpiar:focus-visible {
+  background: rgba(12, 61, 36, .08);
+  color: var(--secundario);
+}
+
+.buscador__limpiar[hidden] { display: none; }
+.buscador__limpiar i { font-size: .85rem; color: inherit; }
+
 .catalogo-controles { display: block; }
 
 .categorias {
@@ -897,13 +929,13 @@ button { font-family: inherit; }
 .pie__grid { display: grid; gap: var(--e-5); }
 .pie__bloque--marca .marca { font-size: 1rem; }
 .pie__eslogan { margin: var(--e-2) 0 0; max-width: 30ch; font-size: .82rem; line-height: 1.6; opacity: .72; }
-.pie__redes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: var(--e-4); }
+.pie__redes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--e-4); }
 
 .pie__redes a {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
+  gap: 6px;
+  padding: 5px 10px;
   border: 1px solid rgba(245, 238, 222, .22);
   border-radius: var(--r-pill);
   font-size: .8rem;
@@ -911,7 +943,7 @@ button { font-family: inherit; }
   transition: background .18s ease, color .18s ease, transform .18s ease;
 }
 
-.pie__redes a i { font-size: 1rem; }
+.pie__redes a i { font-size: .95rem; }
 
 .pie__redes a[href*="instagram"] {
   background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
@@ -2273,6 +2305,90 @@ button { font-family: inherit; }
 
 .tienda-modal__boton:hover { opacity: .88; }
 
+.tienda-modal[hidden] { display: none; }
+
+.tienda-modal__caja--terminos {
+  width: min(470px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  text-align: left;
+}
+
+.tienda-modal__caja--terminos .tienda-modal__icono { margin-left: 0; }
+
+.tienda-modal__cerrar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--texto-suave);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color .16s ease, color .16s ease;
+}
+
+.tienda-modal__cerrar:hover,
+.tienda-modal__cerrar:focus-visible {
+  background: var(--primario-medio);
+  color: var(--secundario);
+}
+
+.terminos-modal__texto {
+  max-height: 176px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  overflow-y: auto;
+  border: 1px solid var(--borde);
+  border-radius: var(--r-sm);
+  background: var(--primario-claro);
+  color: var(--texto-suave);
+  font-size: .78rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.terminos-modal__texto ul { margin: 0 0 10px; padding-left: 18px; }
+.terminos-modal__texto li { margin-bottom: 5px; }
+
+.terminos-modal__texto a,
+.terminos-modal__check a {
+  color: var(--secundario);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.terminos-modal__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--texto-suave);
+  font-size: .78rem;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+
+.terminos-modal__check input {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  margin: 1px 0 0;
+  accent-color: var(--secundario);
+  cursor: pointer;
+}
+
+.tienda-modal__boton:disabled { opacity: .45; cursor: not-allowed; }
+
 /* ── 9c. Indicador de carga (spinner) ────────────────────────── */
 
 /* Bootstrap ya no se carga en portada/producto/carrito: base propia del spinner. */
@@ -2459,10 +2575,6 @@ button { font-family: inherit; }
 .filtros__atributos { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 12px; }
 .filtros__atributo { min-width: 0; }
 .filtros__atributo__nombre { display: block; margin-bottom: 6px; color: var(--texto-suave); font-size: .66rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
-
-.filtros__col--tipo .filtros__atributo__nombre {
-  display: none;
-}
 
 .filtros__titulo-fila {
   display: flex;
@@ -2860,13 +2972,13 @@ button { font-family: inherit; }
   }
 
   .filtros__fila--marcas {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     margin-top: 20px;
     padding-top: 20px;
   }
 
   .filtros__col--caracteristicas {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 
   .filtros__acciones {
@@ -2898,6 +3010,21 @@ button { font-family: inherit; }
   .filtros__cerrar {
     width: 40px;
     height: 40px;
+    border-color: var(--secundario);
+    background: var(--secundario);
+    color: var(--primario);
+    -webkit-text-fill-color: var(--primario);
+    forced-color-adjust: none;
+  }
+
+  .filtros__cerrar i {
+    color: inherit;
+    -webkit-text-fill-color: inherit;
+  }
+
+  .filtros__cerrar:hover {
+    background: var(--secundario);
+    border-color: var(--secundario);
   }
 
   .filtros__chip {
@@ -2914,6 +3041,10 @@ button { font-family: inherit; }
 @media (min-width: 560px) and (max-width: 991.98px) {
   .filtros__fila {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filtros__fila--marcas {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .filtros__fila > .filtros__col:last-child {
@@ -3478,7 +3609,7 @@ button { font-family: inherit; }
 
   /* Filtros: talla y precio en la misma fila */
   .filtros__fila { grid-template-columns: minmax(160px, .8fr) minmax(160px, .8fr) minmax(0, 1.2fr); gap: var(--e-5); }
-  .filtros__fila--marcas { grid-template-columns: minmax(180px, 1fr) minmax(150px, .8fr) minmax(0, 1.6fr); }
+  .filtros__fila--marcas { grid-template-columns: minmax(180px, .8fr) minmax(0, 2.2fr); }
 
   /* Pie en 4 columnas */
   .pie__grid { grid-template-columns: 1.3fr 1fr 1fr 1.5fr; }

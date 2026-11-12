@@ -823,7 +823,7 @@ function actualizarMotivoTransferencia() {
     const horaEntrega = String(document.getElementById('carritoHoraEntrega')?.value || '').trim();
 
     const productos = Carrito.items().map((item) => {
-        const variantes = [item.color, item.talla ? `Talla ${item.talla}` : '']
+        const variantes = [item.color, item.talla ? `${item.tallaEtiqueta || 'Talla'} ${item.talla}` : '']
             .filter(Boolean)
             .join(', ');
         const cantidad = Number(item.cantidad) || 1;
@@ -1054,10 +1054,11 @@ function tallaHTML(item) {
     const final = precioUnitarioConDescuento(item);
     const cantidad = Number(item.cantidad) || 0;
     const conDescuento = final < base;
+    const etiquetaTalla = item.tallaEtiqueta || 'Talla';
 
     return `
         <div class="carrito-talla" data-clave="${escapar(item.clave)}">
-            <span class="carrito-talla__nombre">Talla ${escapar(item.talla || 'Única')}</span>
+            <span class="carrito-talla__nombre">${escapar(etiquetaTalla)} ${escapar(item.talla || 'Única')}</span>
 
             <span class="carrito-talla__precio${conDescuento ? ' is-descuento' : ''}">
                 ${conDescuento
@@ -1072,7 +1073,7 @@ function tallaHTML(item) {
                 <button type="button" data-accion="sumar" aria-label="Agregar una unidad">+</button>
             </div>
 
-            <button type="button" class="carrito-item__quitar" data-accion="quitar" aria-label="Eliminar talla ${escapar(item.talla || '')}">
+            <button type="button" class="carrito-item__quitar" data-accion="quitar" aria-label="Eliminar ${escapar(etiquetaTalla)} ${escapar(item.talla || '')}">
                 <i class="bi bi-trash"></i>
             </button>
         </div>`;
@@ -1081,7 +1082,13 @@ function tallaHTML(item) {
 function itemHTML(grupo) {
     const primero = grupo.items[0];
     const tallas = grupo.items.map((item) => item.talla).filter(Boolean);
-    const detalle = [primero.color, tallas.length ? `Tallas ${tallas.join(' ')}` : '']
+    const etiquetaTalla = primero.tallaEtiqueta || 'Talla';
+    const detalleTallas = tallas.length
+        ? (etiquetaTalla === 'Talla'
+            ? `Tallas ${tallas.join(' ')}`
+            : `${etiquetaTalla}: ${tallas.join(', ')}`)
+        : '';
+    const detalle = [primero.color, detalleTallas]
         .filter(Boolean)
         .join(' · ');
 
@@ -1181,7 +1188,7 @@ function actualizarWhatsappCarrito(items, subtotal, descuento, total) {
     const lineas = ['Hola, quiero hacer este pedido:', ''];
 
     items.forEach((item) => {
-        const detalle = [item.nombre, item.color, item.talla ? `Talla ${item.talla}` : ''].filter(Boolean).join(' · ');
+        const detalle = [item.nombre, item.color, item.talla ? `${item.tallaEtiqueta || 'Talla'} ${item.talla}` : ''].filter(Boolean).join(' · ');
         const importe = precioUnitarioConDescuento(item) * Number(item.cantidad || 0);
         lineas.push(`• ${item.cantidad} × ${detalle} — ${moneda(importe)}`);
     });

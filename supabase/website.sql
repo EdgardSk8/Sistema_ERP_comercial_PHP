@@ -431,12 +431,14 @@ tallas as (
                'id', vt.id_variacion_talla,
                'nombre', coalesce(t.talla, 'Única'),
                'stock', coalesce(vt.stock, 0),
-               'precio', round((coalesce(vt.precio_venta, b.precio_venta) * (1 + b.impuesto / 100))::numeric, 2)
+               'precio', round((coalesce(vt.precio_venta, b.precio_venta) * (1 + b.impuesto / 100))::numeric, 2),
+               'tipo', coalesce(tt.nombre_tipo_talla, '')
            ) order by length(coalesce(t.talla, 'Única')), coalesce(t.talla, 'Única')) as tallas
     from public.variacion_tallas vt
     join variaciones v on v.id_variacion = vt.id_variacion
     cross join base b
     left join public.tallas t on t.id_talla = vt.id_talla
+    left join public.tipos_talla tt on tt.id_tipo_talla = t.id_tipo_talla
     group by v.id_variacion
 ),
 vars_json as (

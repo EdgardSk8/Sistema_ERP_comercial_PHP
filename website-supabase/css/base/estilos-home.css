@@ -197,6 +197,38 @@ button { font-family: inherit; }
 
 .buscador__campo::placeholder { color: var(--texto-suave); }
 
+.buscador__campo::-webkit-search-cancel-button,
+.buscador__campo::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.buscador__limpiar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--texto-suave);
+  -webkit-text-fill-color: currentColor;
+  forced-color-adjust: none;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.buscador__limpiar:hover,
+.buscador__limpiar:focus-visible {
+  background: rgba(12, 61, 36, .08);
+  color: var(--secundario);
+}
+
+.buscador__limpiar[hidden] { display: none; }
+.buscador__limpiar i { font-size: .85rem; color: inherit; }
+
 .categorias {
   display: flex;
   gap: var(--e-2);
@@ -901,13 +933,13 @@ button { font-family: inherit; }
 .pie__grid { display: grid; gap: var(--e-5); }
 .pie__bloque--marca .marca { font-size: 1rem; }
 .pie__eslogan { margin: var(--e-2) 0 0; max-width: 30ch; font-size: .82rem; line-height: 1.6; opacity: .72; }
-.pie__redes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: var(--e-4); }
+.pie__redes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--e-4); }
 
 .pie__redes a {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
+  gap: 6px;
+  padding: 5px 10px;
   border: 1px solid rgba(245, 238, 222, .22);
   border-radius: var(--r-pill);
   font-size: .8rem;
@@ -915,7 +947,7 @@ button { font-family: inherit; }
   transition: background .18s ease, color .18s ease, transform .18s ease;
 }
 
-.pie__redes a i { font-size: 1rem; }
+.pie__redes a i { font-size: .95rem; }
 
 .pie__redes a[href*="instagram"] {
   background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
@@ -959,6 +991,9 @@ button { font-family: inherit; }
 .pie__lista li { display: flex; align-items: center; gap: 8px; }
 .pie__lista i { font-size: .95rem; opacity: .75; }
 .pie__lista a:hover { text-decoration: underline; }
+
+/* Driver.js: el foco visual va sin tarjeta de texto. */
+.driver-popover { display: none !important; }
 .pie__mapa { overflow: hidden; border: 1px solid rgba(245, 238, 222, .18); border-radius: var(--r-md); }
 .pie__mapa iframe { display: block; width: 100%; height: 190px; border: 0; filter: grayscale(.15); }
 
@@ -1640,10 +1675,6 @@ button { font-family: inherit; }
 .filtros__atributo { min-width: 0; }
 .filtros__atributo__nombre { display: block; margin-bottom: 6px; color: var(--texto-suave); font-size: .66rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 
-.filtros__col--tipo .filtros__atributo__nombre {
-  display: none;
-}
-
 .filtros__titulo-fila {
   display: flex;
   flex-wrap: wrap;
@@ -2040,13 +2071,13 @@ button { font-family: inherit; }
   }
 
   .filtros__fila--marcas {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     margin-top: 20px;
     padding-top: 20px;
   }
 
   .filtros__col--caracteristicas {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 
   .filtros__acciones {
@@ -2078,6 +2109,21 @@ button { font-family: inherit; }
   .filtros__cerrar {
     width: 40px;
     height: 40px;
+    border-color: var(--secundario);
+    background: var(--secundario);
+    color: var(--primario);
+    -webkit-text-fill-color: var(--primario);
+    forced-color-adjust: none;
+  }
+
+  .filtros__cerrar i {
+    color: inherit;
+    -webkit-text-fill-color: inherit;
+  }
+
+  .filtros__cerrar:hover {
+    background: var(--secundario);
+    border-color: var(--secundario);
   }
 
   .filtros__chip {
@@ -2094,6 +2140,10 @@ button { font-family: inherit; }
 @media (min-width: 560px) and (max-width: 991.98px) {
   .filtros__fila {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filtros__fila--marcas {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .filtros__fila > .filtros__col:last-child {
@@ -2326,7 +2376,7 @@ button { font-family: inherit; }
 
   /* Filtros: talla y precio en la misma fila */
   .filtros__fila { grid-template-columns: minmax(160px, .8fr) minmax(160px, .8fr) minmax(0, 1.2fr); gap: var(--e-5); }
-  .filtros__fila--marcas { grid-template-columns: minmax(180px, 1fr) minmax(150px, .8fr) minmax(0, 1.6fr); }
+  .filtros__fila--marcas { grid-template-columns: minmax(180px, .8fr) minmax(0, 2.2fr); }
 
   /* Pie en 4 columnas */
   .pie__grid { grid-template-columns: 1.3fr 1fr 1fr 1.5fr; }
