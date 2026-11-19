@@ -1362,6 +1362,34 @@
         return { success: true, trabajador: data || null };
     }
 
+    async function trabajadorCambiosApi() {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_trabajador_cambios');
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudieron cargar tus solicitudes.'), 400);
+
+        return { success: true, cambios: Array.isArray(data) ? data : [] };
+    }
+
+    async function solicitarCambioTrabajadorApi(cuerpo) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_solicitar_cambio_trabajador', {
+            p_tipo: cuerpo?.tipo || '',
+            p_detalle: cuerpo?.detalle || null,
+            p_foto_url: cuerpo?.foto_url || null,
+        });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudo enviar la solicitud.'), 422);
+
+        return {
+            success: true,
+            cambio: data,
+            mensaje: 'Solicitud enviada. Queda pendiente de aprobación.',
+        };
+    }
+
     async function solicitarTrabajadorApi(cuerpo) {
         if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
 
@@ -1795,6 +1823,10 @@
             'POST /tienda/api/pedidos': () => crearPedidoApi(cuerpo),
 
             'GET /tienda/api/trabajador': () => miTrabajadorApi(),
+
+            'GET /tienda/api/trabajador/cambios': () => trabajadorCambiosApi(),
+
+            'POST /tienda/api/trabajador/cambios': () => solicitarCambioTrabajadorApi(cuerpo),
 
             'POST /tienda/api/trabajador/solicitud': () => solicitarTrabajadorApi(cuerpo),
 

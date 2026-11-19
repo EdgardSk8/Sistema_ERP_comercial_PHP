@@ -18,7 +18,7 @@ No depende del backend Laravel.
 
 - SQL ejecutado: `supabase/website.sql` (columna `auth_id`, trigger, RLS y funciones `web_productos`, `web_producto`, `web_favoritos`, `web_historial`).
 - Pedidos web: después de `php artisan migrate`, ejecutar `supabase/pedidos-web.sql` (tablas de pedidos, estados, RLS y RPC `web_crear_pedido`, `web_pedidos`, `web_pedido`, `web_cancelar_pedido`).
-- Trabajadores/repartidores: después de `php artisan migrate` y de `supabase/pedidos-web.sql`, ejecutar `supabase/trabajadores.sql` (tabla `trabajadores`, rol `clientes.rol_cliente`, RLS, RPC de solicitud/disponibilidad, asignación de repartidor a `pedidos_web`, RPC `web_trabajador_pedidos`, `web_trabajador_aceptar_pedido`, `web_trabajador_estado_pedido` y bucket público `trabajadores` para las fotos). La solicitud de reparto vive en `/tienda/trabaja-con-nosotros` y el panel del repartidor en `/tienda/trabajador`. Para el arqueo del repartidor ejecutar después `supabase/arqueos-trabajador.sql` (RPC `web_trabajador_arqueos`). En el ERP, **Trabajadores → Arqueo** muestra el pendiente y el historial.
+- Trabajadores/repartidores: después de `php artisan migrate` y de `supabase/pedidos-web.sql`, ejecutar `supabase/trabajadores.sql` (tabla `trabajadores`, rol `clientes.rol_cliente`, RLS, RPC de solicitud/disponibilidad, asignación de repartidor a `pedidos_web`, RPC `web_trabajador_pedidos`, `web_trabajador_aceptar_pedido`, `web_trabajador_estado_pedido` y bucket público `trabajadores` para las fotos). La solicitud de reparto vive en `/tienda/trabaja-con-nosotros`, el panel del repartidor en `/tienda/trabajador` y el perfil del trabajador en `/tienda/trabajador/perfil`. Después de `admin-web.sql`, ejecutar `supabase/cambios-trabajador.sql` para las solicitudes de cambio del trabajador (vehículo, fotos, baja u otras) con aprobación desde el panel admin. Para el arqueo del repartidor ejecutar después `supabase/arqueos-trabajador.sql` (RPC `web_trabajador_arqueos`). En el ERP, **Trabajadores → Arqueo** muestra el pendiente y el historial.
 - Imágenes copiadas desde `public/imagenes` a `imagenes/`.
 
 ## 2. Probar en local
@@ -109,14 +109,16 @@ En el panel de Supabase:
 - En Perfil → Descuento el cliente ve los requisitos: **teléfono**, **fecha de nacimiento**, **una dirección guardada** y **contraseña creada**.
 - El botón **Aplicar descuento** se habilita cuando todo está completo.
 - Al aplicarlo se guarda `descuento_primera_compra: true` en los metadatos de Auth y el descuento del **10%** se aplica a los productos de la categoría **Zapatos** vía `carrito-vista.js`.
-- El descuento se consume en la **primera compra que incluye zapatos**, aunque el cliente elija una promoción, un cupón o ningún descuento. Si el pedido se cancela o se rechaza, vuelve a quedar disponible.
+- El descuento se consume en la **primera compra que incluye zapatos**, aunque en el pedido se aplique una promoción o un cupón. Si el pedido se cancela o se rechaza, vuelve a quedar disponible.
+- En el carrito **no se elige ni se rechaza el descuento**: `mejorDescuento()` en `carrito-vista.js` compara bienvenida, descuentos de la cuenta, promociones y cupones, y aplica solo el de mayor ahorro (uno por pedido, no se acumulan). En caso de empate se prefiere la promoción o el descuento de la cuenta para no gastar el cupón.
+- El cupón ingresado por código se guarda en la cuenta y se aplica solo cuando resulta el mejor descuento; si no, queda disponible para otra compra. El ahorro de un cupón respeta su `tope_descuento_cupon`.
 
 ### Cupón de fidelidad (10% por par)
 
 - Cada **par** comprado aporta el **10%** de su precio neto (sin envío, después de descuentos) a un acumulado.
 - Al completar **10 pares**, el cliente puede **reclamar** un cupón de monto igual al acumulado, que equivale al precio promedio del par (ej.: 5 × C$ 220 + 5 × C$ 550 = cupón de C$ 385).
 - Progreso y reclamo: `web_fidelidad()` y `web_reclamar_fidelidad(p_ciclo)` en `supabase/fidelidad-tienda.sql`.
-- El cupón se crea en `cupones` (`tipo = monto`, `categoria = Zapatos`, un uso, vence a los 60 días) y se asigna en `cupones_clientes`; aparece en Perfil → Descuentos y cupones y como opción en el carrito.
+- El cupón se crea en `cupones` (`tipo = monto`, `categoria = Zapatos`, un uso, vence a los 60 días) y se asigna en `cupones_clientes`; aparece en Perfil → Descuentos y cupones y se aplica automáticamente en el carrito cuando es el mejor descuento.
 - Solo cuentan ventas con `estado_venta = true`.
 
 ## 8. Marcos de avatar por ventas
@@ -147,10 +149,10 @@ En el panel de Supabase:
 
 - **Rutas:** `/tienda/admin` (panel) y `/tienda/admin-login` (acceso). También funcionan `/admin` y `/admin-login` en local.
 - **Acceso:** usuario y contraseña del ERP (`usuarios` + `roles`). Solo entra un usuario con rol **Administrador** y cuenta activa. En el perfil de la tienda hay un enlace **Login administrador** debajo de «Trabaja con nosotros».
-- **SQL:** ejecutar `supabase/admin-web.sql` en el SQL Editor de Supabase antes de usar el panel. Crea las tablas `admin_web_sesiones`, `admin_web_intentos`, `pedidos_web_pagos`, `repartidor_cierres` y `repartidor_cierre_pedidos`, las RPC `web_admin_*` y ajusta el trigger `web_proteger_rol_cliente` para que el panel pueda aprobar repartidores. Si ya ejecutaste una versión anterior, vuelve a ejecutar el archivo para crear `web_admin_cierres_trabajador` (historial por repartidor). Después ejecutar `supabase/arqueos-trabajador.sql` para el arqueo del panel del repartidor.
+- **SQL:** ejecutar `supabase/admin-web.sql` en el SQL Editor de Supabase antes de usar el panel. Crea las tablas `admin_web_sesiones`, `admin_web_intentos`, `pedidos_web_pagos`, `repartidor_cierres` y `repartidor_cierre_pedidos`, las RPC `web_admin_*` y ajusta el trigger `web_proteger_rol_cliente` para que el panel pueda aprobar repartidores. Si ya ejecutaste una versión anterior, vuelve a ejecutar el archivo para crear `web_admin_cierres_trabajador` (historial por repartidor). Después ejecutar `supabase/arqueos-trabajador.sql` para el arqueo del panel del repartidor. Para la aceptación automática de pedidos ejecutar `supabase/autoaceptar-pedidos.sql` (tabla `tienda_config`, RPC `web_admin_configuracion*` y triggers de aceptación).
 - **Sesión:** token aleatorio de 256 bits; en la base solo se guarda su hash SHA-256. Dura **12 horas**, se borra al cerrar sesión y el login se bloquea 15 minutos tras 5 intentos fallidos.
 - **Seguridad:** el navegador solo usa la `publishable key`; nunca la `service_role`. Las RPC administrativas validan el token y están concedidas a `anon`/`authenticated`; las tablas de sesiones e intentos tienen RLS sin políticas. El token se guarda en `localStorage` para no pedir la clave en cada visita; el botón de salir lo elimina. La contraseña se verifica con **bcrypt** (`$2y$`/`$2a$`) usando `pgcrypto`; si el ERP cambia a Argon2, hay que ajustar `web_admin_login`.
-- **Pedidos:** lista y detalle con cliente, artículos, totales, pagos e historial. Acciones permitidas:
+- **Pedidos:** lista y detalle con cliente, artículos, totales, pagos e historial. El listado se filtra por **día** con el selector **Hoy / Ayer / Antier / Otro día** y el campo **Fecha** con Flatpickr para una fecha específica; usa tarjetas compactas con la acción a la derecha. La preferencia **Aceptación automática** se guarda en `tienda_config`; al activarla, los pedidos nuevos entran como **aceptados** sin pasar por «Solicitados». Requiere ejecutar `supabase/autoaceptar-pedidos.sql` en instalaciones nuevas. Acciones permitidas:
   - **Aceptar y facturar** desde **Aceptar** (o **Facturar pedido** si ya estaba aceptado): `web_admin_pedido_aceptar` crea la factura `VTA-YYYYMMDD-#####`, descuenta stock por FIFO y deja el pedido **aceptado**. Si el pedido está pagado, registra el ingreso; si es **efectivo con pago pendiente**, factura y deja el pago pendiente para el **cierre del delivery**.
   - **Cobrar un pedido en línea** (`lafise` o `billetera_movil`) desde **Cobrar**: se ingresa el monto recibido (con referencia opcional); debe ser **igual al total**, sin montos menores/mayores y con máximo dos decimales. Crea la factura, registra el ingreso y deja el pedido **aceptado + pagado**.
   - **Efectivo:** no se registra pago pedido por pedido. El cobro lo hace el repartidor y se cuadra en **Cierre de delivery**.
@@ -176,9 +178,12 @@ En el panel de Supabase:
 
 ## 11. Panel del repartidor
 
-- Ruta: `/tienda/trabajador`.
-- **Mis entregas** muestra por defecto los pedidos de **hoy** en una lista compacta; toca cada fila para expandir dirección, productos, ganancia y acciones.
+- Rutas: `/tienda/trabajador` (pedidos) y `/tienda/trabajador/perfil` (perfil del trabajador). La navegación superior enlaza **Pedidos**, **Mi perfil** y **Modo cliente**.
+- **Mis entregas** muestra por defecto los pedidos de **hoy**; las tarjetas ocupan una fila completa con el resumen a la izquierda (cliente, fecha, distancia, dirección, mapa, llamada/WhatsApp y cobro desglosado) y el detalle siempre visible a la derecha (factura, productos, ganancia y horas).
 - El filtro **Hoy / Todas** permite ver únicamente la jornada actual o el historial completo.
+- **Filtros de pedidos disponibles:** en la barra se puede filtrar por **distancia** (todas, cerca ≤ 3 km, lejos > 3 km) y por **precio de delivery** (todos, hasta C$ 30, C$ 31–60, más de C$ 60). Los contadores de disponibles reflejan la lista filtrada y, si no hay resultados, se indica que cambie los filtros.
+- **Mi perfil** muestra los datos personales, el vehículo y los documentos como imágenes: **licencia frente/reverso**, **circulación frente/reverso** y **seguro** (con número y vencimiento en el pie de cada imagen). Incluye **Solicitudes de cambio** (cambio de vehículo —moto o carro—, cambio de foto del vehículo, cambio de foto de circulación, baja u otro), que quedan en estado **pendiente** hasta que el encargado las revise. Al aprobar una foto, se aplica automáticamente en el perfil; el repartidor ve el estado y el motivo en **Mis solicitudes**.
+- **Panel admin → Cambios:** lista las solicitudes pendientes, aprobadas y rechazadas, con el detalle, la foto nueva y la foto actual. Permite aprobar o rechazar indicando el motivo; el repartidor no contacta a nadie más y espera la revisión.
 - En móvil, el resumen **Disponibles / Activas / Entregadas** permanece en una sola fila con sus iconos, y el selector de disponibilidad es más pequeño. En escritorio se redujeron espacios, ancho y altura del encabezado.
-- **Mi arqueo:** botón en la barra de pedidos que abre un modal con rango **Desde/Hasta**, total pendiente por entregar a la empresa, productos, delivery, ganancia y desglose por efectivo, billetera y Lafise. Incluye el pendiente agrupado por día y el **historial de cierres** ya registrados por el administrador.
-- La vista compacta se actualiza con `trabajador.js` y `trabajador.css`; recuerda subir sus `?v=` en `trabajador.html` al modificarlos. El arqueo usa `supabase/arqueos-trabajador.sql`.
+- **Mi arqueo:** botón en la barra de pedidos que abre un modal con rango **Desde/Hasta** (calendario Flatpickr en formato `dd/mm/aaaa`), total pendiente por entregar a la empresa, productos, delivery, ganancia y desglose por efectivo, billetera y Lafise. Incluye el pendiente agrupado por día y el **historial de cierres** ya registrados por el administrador.
+- La vista compacta se actualiza con `trabajador.js`, `trabajador-perfil.js` y `trabajador.css`; recuerda subir sus `?v=` al modificarlos. El arqueo usa `supabase/arqueos-trabajador.sql`.

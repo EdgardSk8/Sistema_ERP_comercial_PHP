@@ -3,13 +3,12 @@
    ╚══════════════════════════════════════════════════════════════╝ */
 
 const IMAGEN_FALLBACK = '/tienda/recursos/img/producto.png';
-const WHATSAPP_TIENDA = '50584774288';
+const WHATSAPP_TIENDA = '50589142260';
 
 let descuentoCliente = null;
 let clienteTienda = null;
 
-/* Descuentos elegibles: uno solo por pedido (no se acumulan). */
-const CLAVE_DESCUENTO_MODO = 'tienda_descuento_modo';
+/* Descuento del pedido: el carrito aplica solo el de mayor ahorro. */
 let descuentosTienda = { cliente: null, promociones: [] };
 let cuponesTienda = [];
 let descuentoModo = 'ninguno';
@@ -182,20 +181,25 @@ function aplicarDescuento(opcion, base, unidades = 0) {
     if (!opcion || base <= 0) return 0;
 
     const valor = Number(opcion.valor) || 0;
+    const tope = Number(opcion.tope) || 0;
+    let descuento = 0;
 
     if (opcion.tipo === 'porcentaje') {
-        return Math.min(base, Math.round((base * valor) / 100 * 100) / 100);
+        descuento = Math.min(base, Math.round((base * valor) / 100 * 100) / 100);
+
+        /* Los cupones pueden tener tope de ahorro. */
+        if (tope > 0) descuento = Math.min(descuento, tope);
     }
 
     if (opcion.tipo === 'monto') {
-        return Math.min(base, valor);
+        descuento = Math.min(base, valor);
     }
 
     if (opcion.tipo === 'precio' && unidades > 0) {
-        return Math.min(base, Math.max(0, base - valor * unidades));
+        descuento = Math.min(base, Math.max(0, base - valor * unidades));
     }
 
-    return 0;
+    return Math.max(0, Math.min(descuento, base));
 }
 
 function itemEsZapatos(item) {
@@ -212,15 +216,21 @@ function textoCategoria(valor) {
 
 function opcionCupon(cupon) {
     const categoria = cupon?.categoria ? String(cupon.categoria).trim() : null;
+    const tope = Number(cupon.tope) || 0;
+    const detalles = [];
+
+    if (categoria) detalles.push(`solo ${categoria}`);
+    if (tope > 0) detalles.push(`máx. ${moneda(tope)}`);
 
     return {
         id: `cupon:${cupon.codigo}`,
         codigo: cupon.codigo,
         titulo: cupon.nombre || `Cupón ${cupon.codigo}`,
-        detalle: categoria ? `Cupón · solo ${categoria}` : `Cupón ${cupon.codigo}`,
+        detalle: detalles.length ? `Cupón · ${detalles.join(' · ')}` : `Cupón ${cupon.codigo}`,
         etiqueta: cupon.etiqueta || '',
         tipo: cupon.tipo,
         valor: Number(cupon.valor) || 0,
+        tope,
         alcance: categoria ? 'categoria' : 'total',
         categorias: categoria ? [categoria] : null,
         fecha_fin: cupon.fecha_fin || null,
@@ -374,26 +384,50 @@ function opcionesDescuento(items) {
     return opciones;
 }
 
-function guardarModoDescuento(manual = false) {
-    try {
-        localStorage.setItem(CLAVE_DESCUENTO_MODO, descuentoModo);
-        if (manual) localStorage.setItem(`${CLAVE_DESCUENTO_MODO}_manual`, '1');
-    } catch {
-        /* sin almacenamiento: el modo se mantiene en memoria */
-    }
+/* El ahorro manda; en empate se prefiere la oferta que no consuma el cupón. */
+const PRIORIDAD_DESCUENTO = { promocion: 3, cuenta: 2, cupon: 1 };
+
+function prioridadDescuento(opcion) {
+    if (opcion.id.startsWith('promocion:')) return PRIORIDAD_DESCUENTO.promocion;
+    if (opcion.id.startsWith('cupon:')) return PRIORIDAD_DESCUENTO.cupon;
+
+    return PRIORIDAD_DESCUENTO.cuenta;
 }
 
-function eleccionManualDescuento() {
-    try {
-        return localStorage.getItem(`${CLAVE_DESCUENTO_MODO}_manual`) === '1';
-    } catch {
-        return false;
-    }
+/* Como en las grandes tiendas: el carrito aplica siempre la mejor oferta. */
+function mejorDescuento(items = Carrito.items()) {
+    let mejor = null;
+    let mejorAhorro = 0;
+
+    opcionesDescuento(items).forEach((opcion) => {
+        const ahorro = descuentoDeOpcion(opcion.id, items);
+
+        if (ahorro <= 0) return;
+
+        const ganaEmpate = mejor
+            && ahorro === mejorAhorro
+            && prioridadDescuento(opcion) > prioridadDescuento(mejor);
+
+        if (ahorro > mejorAhorro || ganaEmpate) {
+            mejor = opcion;
+            mejorAhorro = ahorro;
+        }
+    });
+
+    return mejor;
+}
+
+function aplicarMejorDescuento(items = Carrito.items()) {
+    descuentoModo = mejorDescuento(items)?.id || 'ninguno';
+
+    return descuentoModo;
 }
 
 function pintarDescuentos(items) {
     const caja = document.getElementById('carritoDescuentos');
     const lista = document.getElementById('carritoDescuentoOpciones');
+    const titulo = document.getElementById('carritoDescuentoTitulo');
+    const nota = document.getElementById('carritoDescuentoNota');
     const aviso = document.getElementById('carritoAvisoDescuento');
     if (!caja || !lista || !aviso) return;
 
@@ -406,52 +440,34 @@ function pintarDescuentos(items) {
 
     aviso.hidden = true;
 
-    const opciones = opcionesDescuento(items);
-
-    if (!opciones.length) {
-        caja.hidden = true;
-        descuentoModo = 'ninguno';
-        return;
-    }
-
-    /* La promoción del producto tiene prioridad; si no hay, va el descuento de la cuenta. */
-    seleccionarDescuentoPorDefecto(items);
-
-    if (descuentoModo !== 'ninguno' && !opciones.some((opcion) => opcion.id === descuentoModo)) {
-        descuentoModo = 'ninguno';
-        guardarModoDescuento();
-    }
+    /* No se ofrece rechazar la oferta: el carrito toma la más conveniente. */
+    const opcion = mejorDescuento(items);
+    descuentoModo = opcion?.id || 'ninguno';
 
     caja.hidden = false;
 
-    const tarjeta = (id, titulo, detalle, etiqueta, activo) => `
-        <label class="resumen__dto${activo ? ' is-activo' : ''}">
-            <input type="radio" name="descuento_carrito" value="${escapar(id)}" ${activo ? 'checked' : ''}>
+    if (titulo) {
+        titulo.textContent = opcion ? 'Descuento aplicado' : '¿Tienes un cupón?';
+    }
+
+    lista.hidden = !opcion;
+    lista.innerHTML = opcion
+        ? `
+        <div class="resumen__dto resumen__dto--aplicado">
+            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
             <span class="resumen__dto-texto">
-                <strong>${escapar(titulo)}</strong>
-                <small>${escapar(detalle)}</small>
+                <strong>${escapar(opcion.titulo)}</strong>
+                <small>${escapar(opcion.detalle)}</small>
             </span>
-            <span class="resumen__dto-sello">${escapar(etiqueta)}</span>
-        </label>`;
+            <span class="resumen__dto-sello">${escapar(opcion.etiqueta)}</span>
+        </div>`
+        : '';
 
-    lista.innerHTML = tarjeta('ninguno', 'Sin descuento', 'Pagar el precio normal', '—', descuentoModo === 'ninguno')
-        + opciones.map((opcion) => tarjeta(
-            opcion.id,
-            opcion.titulo,
-            opcion.detalle,
-            opcion.etiqueta,
-            descuentoModo === opcion.id
-        )).join('');
-
-    lista.querySelectorAll('input[name="descuento_carrito"]').forEach((radio) => {
-        radio.addEventListener('change', () => {
-            if (!radio.checked) return;
-
-            descuentoModo = radio.value;
-            guardarModoDescuento(true);
-            pintarCarrito();
-        });
-    });
+    if (nota) {
+        nota.textContent = opcion
+            ? 'Se aplicó sola la mejor oferta disponible para tu carrito.'
+            : 'Ingresa un código; si mejora tu compra, se aplica automáticamente.';
+    }
 }
 
 function normalizarDescuentoCliente(datos) {
@@ -489,26 +505,7 @@ function normalizarPromocion(fila) {
     };
 }
 
-/* Prioridad: la promoción del producto manda sobre el descuento de bienvenida. */
-function seleccionarDescuentoPorDefecto(items = Carrito.items()) {
-    if (eleccionManualDescuento()) return;
-
-    const promo = descuentosTienda.promociones.find((fila) => items.some(
-        (item) => String(item.productoId) === String(fila.id_producto)
-    ));
-
-    if (promo) {
-        descuentoModo = promo.id;
-        guardarModoDescuento();
-        return;
-    }
-
-    if (descuentosTienda.cliente) {
-        descuentoModo = descuentosTienda.cliente.id;
-        guardarModoDescuento();
-    }
-}
-
+/* Descuentos de la cuenta y promociones vigentes; el carrito elegirá el mejor. */
 async function cargarDescuentos() {
     if (!clienteTienda) {
         descuentosTienda = { cliente: null, promociones: [] };
@@ -524,7 +521,7 @@ async function cargarDescuentos() {
             promociones: (datos?.promociones || []).map(normalizarPromocion),
         };
 
-        seleccionarDescuentoPorDefecto();
+        aplicarMejorDescuento();
         return;
     } catch {
         /* Sin la función nueva: se usan las promociones que ya publica el ERP. */
@@ -542,7 +539,7 @@ async function cargarDescuentos() {
         promociones,
     };
 
-    seleccionarDescuentoPorDefecto();
+    aplicarMejorDescuento();
 }
 
 async function cargarCupones() {
@@ -1308,11 +1305,8 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarEnlaceBilletera();
     inicializarMetodoPago();
 
-    try {
-        descuentoModo = localStorage.getItem(CLAVE_DESCUENTO_MODO) || 'ninguno';
-    } catch {
-        descuentoModo = 'ninguno';
-    }
+    /* El descuento no se guarda entre visitas: se recalcula con el carrito actual. */
+    descuentoModo = 'ninguno';
 
     pintarCarrito();
 
@@ -1368,23 +1362,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const datos = await window.TiendaAPI.post('/tienda/api/cupones/canjear', { codigo });
-            tiendaToast(datos?.mensaje || 'Cupón agregado a tu cuenta.', 'exito');
+            await window.TiendaAPI.post('/tienda/api/cupones/canjear', { codigo });
 
             if (campo) campo.value = '';
 
             await cargarCupones();
+            pintarCarrito();
 
             const cupon = cuponesTienda.find(
                 (fila) => String(fila.codigo).toUpperCase() === codigo.toUpperCase()
             );
 
-            if (cupon) {
-                descuentoModo = `cupon:${cupon.codigo}`;
-                guardarModoDescuento(true);
+            if (cupon && descuentoModo === `cupon:${cupon.codigo}`) {
+                tiendaToast(`${cupon.nombre || 'Tu cupón'} aplicado a tu compra.`, 'exito');
+            } else {
+                tiendaToast(
+                    'Cupón guardado en tu cuenta. Se aplicará solo cuando sea el mejor descuento de tu compra.',
+                    'info'
+                );
             }
-
-            pintarCarrito();
         } catch (error) {
             tiendaToast(error?.data?.mensaje || error?.message || 'No se pudo usar el cupón.', 'aviso');
         }

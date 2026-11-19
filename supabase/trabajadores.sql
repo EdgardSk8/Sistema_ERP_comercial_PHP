@@ -36,7 +36,9 @@ create table if not exists public.trabajadores (
     foto_perfil text not null,
     foto_vehiculo text not null,
     foto_licencia text,
+    foto_licencia_reverso text,
     foto_circulacion text,
+    foto_circulacion_reverso text,
     foto_seguro text,
 
     porcentaje_comision numeric(5,2) not null default 20,
@@ -52,6 +54,11 @@ create table if not exists public.trabajadores (
 
 alter table public.clientes
     add column if not exists rol_cliente varchar(20) not null default 'cliente';
+
+-- Columnas nuevas para el reverso de licencia y circulación (bases ya existentes).
+alter table public.trabajadores
+    add column if not exists foto_licencia_reverso text,
+    add column if not exists foto_circulacion_reverso text;
 
 -- 2) Acceso: el cliente solo ve su propia solicitud.
 alter table public.trabajadores enable row level security;
@@ -184,7 +191,9 @@ begin
             foto_perfil = trim(p_datos->>'foto_perfil'),
             foto_vehiculo = trim(p_datos->>'foto_vehiculo'),
             foto_licencia = nullif(trim(coalesce(p_datos->>'foto_licencia', '')), ''),
+            foto_licencia_reverso = nullif(trim(coalesce(p_datos->>'foto_licencia_reverso', '')), ''),
             foto_circulacion = nullif(trim(coalesce(p_datos->>'foto_circulacion', '')), ''),
+            foto_circulacion_reverso = nullif(trim(coalesce(p_datos->>'foto_circulacion_reverso', '')), ''),
             foto_seguro = nullif(trim(coalesce(p_datos->>'foto_seguro', '')), ''),
             motivo_rechazo = case when v_estado_nuevo = 'pendiente' then null else v_existente.motivo_rechazo end,
             fecha_solicitud = case when v_existente.estado_trabajador = 'rechazado' then now() else v_existente.fecha_solicitud end,
@@ -200,7 +209,7 @@ begin
             licencia_numero, licencia_vencimiento, circulacion_numero, circulacion_vencimiento,
             seguro_aseguradora, seguro_numero, seguro_vencimiento,
             vehiculo_marca, vehiculo_modelo, vehiculo_anio, vehiculo_placa, vehiculo_color, color_usuario,
-            foto_perfil, foto_vehiculo, foto_licencia, foto_circulacion, foto_seguro,
+            foto_perfil, foto_vehiculo, foto_licencia, foto_licencia_reverso, foto_circulacion, foto_circulacion_reverso, foto_seguro,
             porcentaje_comision, disponible
         ) values (
             v_cliente.id_cliente, auth.uid(), 'pendiente',
@@ -222,7 +231,9 @@ begin
             coalesce(nullif(trim(p_datos->>'color_usuario'), ''), '#22c55e'),
             trim(p_datos->>'foto_perfil'), trim(p_datos->>'foto_vehiculo'),
             nullif(trim(coalesce(p_datos->>'foto_licencia', '')), ''),
+            nullif(trim(coalesce(p_datos->>'foto_licencia_reverso', '')), ''),
             nullif(trim(coalesce(p_datos->>'foto_circulacion', '')), ''),
+            nullif(trim(coalesce(p_datos->>'foto_circulacion_reverso', '')), ''),
             nullif(trim(coalesce(p_datos->>'foto_seguro', '')), ''),
             20, false
         )

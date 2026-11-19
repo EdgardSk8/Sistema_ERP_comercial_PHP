@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261118a">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
 </head>
 <body>
@@ -163,7 +163,7 @@
           <span class="pago-opcion__icono" aria-hidden="true"><i class="bi bi-phone"></i></span>
           <span class="pago-opcion__texto">
             <strong>Billetera móvil</strong>
-            <small>Envía al 8477 4288 y comparte el comprobante.</small>
+            <small>Envía al 8914 2260 y comparte el comprobante.</small>
           </span>
           <i class="bi bi-check-circle-fill pago-opcion__check" aria-hidden="true"></i>
         </label>
@@ -184,8 +184,8 @@
 
         <div class="pago-dato">
           <span class="pago-dato__label">Número</span>
-          <strong class="pago-dato__valor">8477 4288</strong>
-          <button type="button" class="pago-dato__copiar" data-copiar="84774288" aria-label="Copiar número de billetera móvil">Copiar</button>
+          <strong class="pago-dato__valor">8914 2260</strong>
+          <button type="button" class="pago-dato__copiar" data-copiar="89142260" aria-label="Copiar número de billetera móvil">Copiar</button>
         </div>
 
         <p class="pago-detalle__texto">Envía el pago a este número. Abre Billetera Móvil Banpro; si usas otra billetera, busca el número en tu app.</p>
@@ -194,7 +194,7 @@
           <a class="pago-detalle__btn" id="btnAbrirBilletera" href="https://www.banprogrupopromerica.com.ni/canales-de-atencion/billetera-movil/" target="_blank" rel="noopener noreferrer" aria-label="Abrir Billetera Móvil Banpro" title="Abrir Billetera Móvil Banpro">
             <i class="bi bi-phone"></i> Abrir app
           </a>
-          <a class="pago-detalle__btn pago-detalle__btn--secundario" href="https://wa.me/50584774288?text=Hola%2C%20env%C3%ADo%20mi%20comprobante%20de%20pago." target="_blank" rel="noopener noreferrer">
+          <a class="pago-detalle__btn pago-detalle__btn--secundario" href="https://wa.me/50589142260?text=Hola%2C%20env%C3%ADo%20mi%20comprobante%20de%20pago." target="_blank" rel="noopener noreferrer">
             <i class="bi bi-whatsapp"></i> Enviar comprobante
           </a>
         </div>
@@ -234,7 +234,7 @@
           <a class="pago-detalle__btn" href="https://digital.lafise.com/" target="_blank" rel="noopener noreferrer">
             <i class="bi bi-arrow-up-right"></i> Abrir Lafise Digital
           </a>
-          <a class="pago-detalle__btn pago-detalle__btn--secundario" href="https://wa.me/50584774288?text=Hola%2C%20env%C3%ADo%20mi%20comprobante%20de%20pago." target="_blank" rel="noopener noreferrer">
+          <a class="pago-detalle__btn pago-detalle__btn--secundario" href="https://wa.me/50589142260?text=Hola%2C%20env%C3%ADo%20mi%20comprobante%20de%20pago." target="_blank" rel="noopener noreferrer">
             <i class="bi bi-whatsapp"></i> Enviar comprobante
           </a>
         </div>
@@ -260,10 +260,10 @@
     <aside class="resumen" id="carritoResumen" hidden>
       <h2 class="resumen__titulo">Resumen del pedido</h2>
 
-      <!-- Descuentos: el cliente elige uno, no se acumulan -->
+      <!-- Descuento: se aplica solo la mejor oferta, sin opción de rechazarla -->
       <div class="resumen__descuentos" id="carritoDescuentos" hidden>
-        <p class="resumen__descuentos-titulo">Descuento a aplicar</p>
-        <div class="resumen__descuentos-lista" id="carritoDescuentoOpciones" role="radiogroup" aria-label="Descuento a aplicar"></div>
+        <p class="resumen__descuentos-titulo" id="carritoDescuentoTitulo">Descuento aplicado</p>
+        <div class="resumen__descuentos-lista" id="carritoDescuentoOpciones" aria-live="polite"></div>
 
         <form class="resumen__cupon" id="formCupon" autocomplete="off">
           <input class="resumen__cupon-campo" id="cuponCodigo" type="text" placeholder="Código de cupón"
@@ -271,7 +271,7 @@
           <button class="resumen__cupon-btn" type="submit">Canjear</button>
         </form>
 
-        <p class="resumen__descuentos-nota">La promoción aplica a su producto y tu bienvenida se mantiene en el resto de zapatos.</p>
+        <p class="resumen__descuentos-nota" id="carritoDescuentoNota">Se aplica sola la mejor oferta disponible para tu carrito.</p>
       </div>
 
       <div class="resumen__aviso-dto" id="carritoAvisoDescuento" hidden>
@@ -326,8 +326,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261107c" defer></script>
   <script src="/tienda/recursos/js/core/supabase-api.js?v=20261116a" defer></script>
+  <script src="/tienda/recursos/js/core/menu-trabajador.js?v=20261119a" defer></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
-  <script src="/tienda/recursos/js/pages/carrito-vista.js?v=20261116f" defer></script>
+  <script src="/tienda/recursos/js/pages/carrito-vista.js?v=20261118a" defer></script>
 </body>
 </html>

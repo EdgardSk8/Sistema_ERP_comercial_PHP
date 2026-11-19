@@ -15,9 +15,10 @@
   <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
 
   <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-utilidades.css?v=20261110a">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114b">
   <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/admin.css?v=20261110v">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/admin.css?v=20261119e">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 </head>
 <body class="admin-pagina">
 
@@ -53,6 +54,11 @@
           <p>Revisa los pedidos y avanza la logística desde tu celular.</p>
         </div>
         <div class="admin-vista__cabecera-acciones">
+          <button class="admin-autoaceptar" id="btnAutoAceptar" type="button" aria-pressed="false" disabled title="Cargando configuración de aceptación automática">
+            <i class="bi bi-lightning-charge" aria-hidden="true"></i>
+            <span>Aceptación automática</span>
+            <strong id="autoAceptarEstado">No</strong>
+          </button>
           <div class="admin-ayuda">
             <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaPedidos" aria-label="Más información sobre los pedidos">
               <i class="bi bi-info-circle" aria-hidden="true"></i>
@@ -65,9 +71,24 @@
         </div>
       </header>
 
-      <div class="admin-buscador">
-        <i class="bi bi-search" aria-hidden="true"></i>
-        <input id="pedidosBuscar" type="search" placeholder="Buscar número, cliente o teléfono" autocomplete="off">
+      <div class="admin-filtros-pedidos">
+        <div class="admin-buscador">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input id="pedidosBuscar" type="search" placeholder="Buscar número, cliente o teléfono" autocomplete="off">
+        </div>
+        <label class="admin-filtro-dia" for="pedidosRangoDia">
+          <i class="bi bi-calendar3" aria-hidden="true"></i>
+          <select id="pedidosRangoDia" aria-label="Día del pedido">
+            <option value="hoy">Hoy</option>
+            <option value="ayer">Ayer</option>
+            <option value="antier">Antier</option>
+            <option value="otro">Otro día</option>
+          </select>
+        </label>
+        <label class="admin-filtro-fecha" for="pedidosFechaEspecifica">
+          <span>Fecha</span>
+          <input id="pedidosFechaEspecifica" type="text" placeholder="dd/mm/aaaa" autocomplete="off" aria-label="Fecha específica">
+        </label>
       </div>
 
       <div class="admin-chips" id="pedidosFiltros" role="group" aria-label="Filtrar pedidos">
@@ -89,9 +110,8 @@
           <p>Activa ofertas y crea descuentos por producto.</p>
         </div>
         <div class="admin-vista__cabecera-acciones">
-          <button class="admin-btn admin-btn--primario admin-btn--icono" type="button" id="btnNuevaPromo" aria-label="Nueva promoción">
+          <button class="admin-btn admin-btn--verde admin-btn--icono" type="button" id="btnNuevaPromo" aria-label="Nueva promoción" title="Nueva promoción">
             <i class="bi bi-plus-lg" aria-hidden="true"></i>
-            <span>Nueva</span>
           </button>
           <div class="admin-ayuda">
             <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaPromociones" aria-label="Más información sobre las promociones">
@@ -105,6 +125,35 @@
         </div>
       </header>
 
+      <div class="admin-filtros-promocion">
+        <fieldset class="admin-filtros-promocion__grupo">
+          <legend>Filtrar por estado</legend>
+          <div class="admin-filtros-promocion__opciones">
+            <label class="admin-filtro-promo admin-filtro-promo--disponible">
+              <input type="radio" name="filtroPromociones" value="disponible" data-accion="promo-filtro">
+              <i class="bi bi-check2-circle" aria-hidden="true"></i>
+              <span>Disponibles</span>
+              <strong id="conteoPromosDisponibles">0</strong>
+            </label>
+            <label class="admin-filtro-promo admin-filtro-promo--pausada">
+              <input type="radio" name="filtroPromociones" value="pausada" data-accion="promo-filtro">
+              <span class="admin-filtro-promo__icono admin-filtro-promo__icono--pausa" aria-hidden="true"></span>
+              <span>Pausadas</span>
+              <strong id="conteoPromosPausadas">0</strong>
+            </label>
+            <label class="admin-filtro-promo admin-filtro-promo--vencida">
+              <input type="radio" name="filtroPromociones" value="vencida" data-accion="promo-filtro">
+              <i class="bi bi-clock" aria-hidden="true"></i>
+              <span>Vencidas</span>
+              <strong id="conteoPromosVencidas">0</strong>
+            </label>
+          </div>
+        </fieldset>
+        <button class="admin-filtros-promocion__todas" id="btnMostrarTodasPromos" type="button" hidden>
+          Mostrar todas
+        </button>
+      </div>
+
       <div class="admin-lista" id="listaPromos"></div>
     </section>
 
@@ -116,9 +165,8 @@
           <p>Crea códigos, controla usos y activa o pausa cupones.</p>
         </div>
         <div class="admin-vista__cabecera-acciones">
-          <button class="admin-btn admin-btn--primario admin-btn--icono" type="button" id="btnNuevoCupon" aria-label="Nuevo cupón">
+          <button class="admin-btn admin-btn--primario admin-btn--icono" type="button" id="btnNuevoCupon" aria-label="Nuevo cupón" title="Nuevo cupón">
             <i class="bi bi-plus-lg" aria-hidden="true"></i>
-            <span>Nuevo</span>
           </button>
           <div class="admin-ayuda">
             <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaCupones" aria-label="Más información sobre los cupones">
@@ -169,6 +217,39 @@
       <div class="admin-lista" id="listaTrabajadores"></div>
     </section>
 
+    <!-- ───────────── SOLICITUDES DE CAMBIO ───────────── -->
+    <section class="admin-vista" id="vistaCambios" data-vista="cambios" aria-labelledby="tituloCambios" hidden>
+      <header class="admin-vista__cabecera">
+        <div>
+          <div class="admin-vista__titulo">
+            <h1 id="tituloCambios">Solicitudes de cambio</h1>
+            <span class="admin-contador" id="cambiosContador" data-singular="solicitud" data-plural="solicitudes" aria-live="polite" aria-label="0 solicitudes">0 solicitudes</span>
+          </div>
+          <p>Revisa cambios de vehículo, fotos, bajas y otras consultas de los repartidores.</p>
+        </div>
+        <div class="admin-vista__cabecera-acciones">
+          <div class="admin-ayuda">
+            <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaCambios" aria-label="Más información sobre las solicitudes de cambio">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+            </button>
+            <div class="admin-ayuda__panel" id="ayudaCambios" role="note" tabindex="-1" hidden>
+              <strong>Cómo funciona</strong>
+              <p>El repartidor envía la solicitud y queda pendiente. Al aprobar una foto de vehículo o circulación, se actualiza en su perfil. Para cambios de vehículo o baja, usa el detalle para actualizar sus datos.</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-chips" id="cambiosFiltros" role="group" aria-label="Filtrar solicitudes">
+        <button class="admin-chip is-activo" type="button" data-estado="pendiente">Pendientes</button>
+        <button class="admin-chip" type="button" data-estado="aprobado">Aprobadas</button>
+        <button class="admin-chip" type="button" data-estado="rechazado">Rechazadas</button>
+        <button class="admin-chip" type="button" data-estado="todas">Todas</button>
+      </div>
+
+      <div class="admin-lista" id="listaCambios"></div>
+    </section>
+
     <!-- ───────────── CIERRE DE DELIVERY ───────────── -->
     <section class="admin-vista" id="vistaCierre" data-vista="cierre" aria-labelledby="tituloCierre" hidden>
       <header class="admin-vista__cabecera">
@@ -177,7 +258,6 @@
             <h1 id="tituloCierre">Cierre de delivery</h1>
             <span class="admin-contador" id="cierreContador" data-singular="repartidor" data-plural="repartidores" aria-live="polite" aria-label="0 repartidores">0 repartidores</span>
           </div>
-          <p>Cuadra lo cobrado por cada repartidor y lo que debe entregar a la empresa.</p>
         </div>
         <div class="admin-vista__cabecera-acciones">
           <div class="admin-ayuda">
@@ -186,13 +266,14 @@
             </button>
             <div class="admin-ayuda__panel" id="ayudaCierre" role="note" tabindex="-1" hidden>
               <strong>Cómo funciona</strong>
+              <p>Cuadra lo cobrado por cada repartidor y lo que debe entregar a la empresa.</p>
               <p>La tabla muestra a todos los repartidores con entregas en el periodo. Abre <strong>Detalles</strong> para ver métodos de pago y pendiente por día; usa <strong>Cargar</strong> para consultar el historial del repartidor. El repartidor entrega los productos más la comisión de la empresa por el envío; su ganancia es el resto del delivery. Al registrar el cierre, los pedidos quedan pagados.</p>
             </div>
           </div>
         </div>
       </header>
 
-      <div class="admin-cierre__fechas">
+      <div class="admin-cierre__fechas" role="group" aria-label="Periodo del cierre">
         <label for="cierreDesde">
           <span>Desde</span>
           <input id="cierreDesde" type="date">
@@ -309,6 +390,11 @@
       <span>Reparto</span>
       <em id="navBadgeTrabajadores" hidden>0</em>
     </button>
+    <button class="admin-nav__item" type="button" data-vista="cambios">
+      <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+      <span>Cambios</span>
+      <em id="navBadgeCambios" hidden>0</em>
+    </button>
     <button class="admin-nav__item" type="button" data-vista="cierre">
       <i class="bi bi-clipboard" aria-hidden="true"></i>
       <span>Cierre</span>
@@ -351,6 +437,8 @@
   <div class="admin-toast" id="adminToast" role="status" aria-live="polite" hidden></div>
 
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261110a" defer></script>
-  <script src="/tienda/recursos/js/pages/admin.js?v=20261110ad" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js" defer></script>
+  <script src="/tienda/recursos/js/pages/admin.js?v=20261119e" defer></script>
 </body>
 </html>

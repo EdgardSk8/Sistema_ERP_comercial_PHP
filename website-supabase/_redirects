@@ -8,6 +8,7 @@
 /tienda/carrito        /carrito      301
 /tienda/perfil         /perfil       301
 /tienda/trabajador     /trabajador   301
+/tienda/trabajador/perfil  /trabajador/perfil  301
 /tienda/trabaja-con-nosotros  /trabaja-con-nosotros 301
 /tienda/admin          /admin        301
 /tienda/admin/         /admin        301

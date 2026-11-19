@@ -1551,7 +1551,7 @@ button { font-family: inherit; }
 .resumen__wa--deshabilitado:hover { background: transparent; }
 .resumen__detalle { margin-top: -2px; padding-bottom: 4px; font-size: .68rem; line-height: 1.45; color: var(--texto-suave); }
 
-/* Descuentos elegibles en el carrito (uno solo, no se acumulan) */
+/* Descuento aplicado en el carrito (automático: no se puede rechazar) */
 .resumen__descuentos { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--borde); }
 .resumen__descuentos-titulo { margin: 0 0 8px; font-size: .68rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--texto-suave); }
 .resumen__descuentos-lista { display: grid; gap: 6px; }
@@ -1564,12 +1564,9 @@ button { font-family: inherit; }
   border: 1px solid var(--borde);
   border-radius: var(--r-md);
   background: var(--superficie);
-  cursor: pointer;
-  transition: border-color .18s ease, background .18s ease;
 }
-.resumen__dto:hover { border-color: var(--secundario); }
-.resumen__dto.is-activo { border-color: var(--secundario); background: var(--primario-claro); }
-.resumen__dto input { margin: 0; accent-color: var(--acento); }
+.resumen__dto--aplicado { border-color: var(--secundario); background: var(--primario-claro); }
+.resumen__dto--aplicado > .bi { font-size: 1rem; color: var(--secundario); }
 .resumen__dto-texto { display: flex; flex-direction: column; min-width: 0; }
 .resumen__dto-texto strong { font-size: .78rem; }
 .resumen__dto-texto small { font-size: .68rem; color: var(--texto-suave); }

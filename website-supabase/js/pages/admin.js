@@ -20,22 +20,25 @@
 
     const estado = {
         vista: 'pedidos',
-        cargada: { pedidos: false, promociones: false, cupones: false, trabajadores: false, cierre: false, cobros: false },
+        cargada: { pedidos: false, promociones: false, cupones: false, trabajadores: false, cambios: false, cierre: false, cobros: false },
         pedidos: [],
         promociones: [],
         cupones: [],
         trabajadores: [],
+        cambios: [],
         cierre: { repartidores: [], totales: {} },
         cuentas: [],
         productos: null,
-        filtros: { pedidos: 'todos', trabajadores: 'pendiente', cobros: 'todas' },
+        filtros: { pedidos: 'solicitado', pedidosDia: hoyISO(), promociones: '', trabajadores: 'pendiente', cambios: 'pendiente', cobros: 'todas' },
         busquedas: { pedidos: '', cobros: '', cierre: '' },
         resumenCobros: {},
+        config: { autoAceptar: false, cargada: false },
     };
 
     let temporizadorBusqueda = null;
     let resolverDialogo = null;
     let ultimoFoco = null;
+    let selectorFechaPedidos = null;
 
     /* ───────────────────────── Utilidades ───────────────────────── */
 
@@ -102,13 +105,25 @@
         return dato.toLocaleDateString('es-NI', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
-    function hoyISO() {
-        const hoy = new Date();
+    function fechaISO(valor) {
+        const dato = fecha(valor);
+        if (!dato) return '';
+
         return [
-            hoy.getFullYear(),
-            String(hoy.getMonth() + 1).padStart(2, '0'),
-            String(hoy.getDate()).padStart(2, '0'),
+            dato.getFullYear(),
+            String(dato.getMonth() + 1).padStart(2, '0'),
+            String(dato.getDate()).padStart(2, '0'),
         ].join('-');
+    }
+
+    function fechaDesdeISO(valor) {
+        const [anio, mes, dia] = String(valor ?? '').split('-').map(Number);
+        if (!anio || !mes || !dia) return new Date();
+        return new Date(anio, mes - 1, dia);
+    }
+
+    function hoyISO() {
+        return fechaISO(new Date());
     }
 
     function soloDigitos(valor) {
@@ -245,6 +260,53 @@
         if (tipo === 'porcentaje') return `${numero % 1 === 0 ? numero : numero.toFixed(2)}%`;
         if (tipo === 'precio') return `${moneda(numero)} final`;
         return `${moneda(numero)} menos`;
+    }
+
+    function rangoPromocion(promocion) {
+        const fechaInicio = fecha(promocion?.fecha_inicio);
+        const fechaFin = fecha(promocion?.fecha_fin);
+
+        if (!fechaInicio) {
+            return {
+                fecha: 'Sin fecha asignada',
+                detalle: 'Sin duración',
+                estado: 'neutral',
+            };
+        }
+
+        const fechaTexto = fechaFin
+            ? `${escapar(fechaDia(promocion.fecha_inicio))} al ${escapar(fechaDia(promocion.fecha_fin))}`
+            : `${escapar(fechaDia(promocion.fecha_inicio))} · sin fecha final`;
+
+        if (!fechaFin) {
+            return {
+                fecha: fechaTexto,
+                detalle: 'Sin fecha final',
+                estado: 'neutral',
+            };
+        }
+
+        const msDia = 1000 * 60 * 60 * 24;
+        const totalDias = Math.max(1, Math.ceil((fechaFin.getTime() - fechaInicio.getTime()) / msDia) + 1);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const diasRestantes = Math.max(0, Math.ceil((fechaFin.getTime() - hoy.getTime()) / msDia));
+        const vencida = diasRestantes <= 0;
+
+        return {
+            fecha: fechaTexto,
+            detalle: `${totalDias} días · quedan ${diasRestantes}`,
+            estado: vencida ? 'rojo' : 'verde',
+        };
+    }
+
+    function estadoPromocion(promocion) {
+        const fechaFin = fecha(promocion?.fecha_fin);
+        const vencida = fechaFin ? new Date(fechaFin.getFullYear(), fechaFin.getMonth(), fechaFin.getDate(), 23, 59, 59).getTime() < Date.now() : false;
+
+        if (vencida) return { nombre: 'Vencida', icono: 'bi-clock-history', clase: 'estado-vencida', filtro: 'vencida' };
+        if (promocion?.activa === false || promocion?.estado === false) return { nombre: 'Pausada', icono: 'bi-pause-circle', clase: 'estado-pausada', filtro: 'pausada' };
+        return { nombre: 'Disponible', icono: 'bi-check-circle', clase: 'estado-disponible', filtro: 'disponible' };
     }
 
     /* ───────────────────────── Sesión y API ───────────────────────── */
@@ -481,7 +543,7 @@
     /* ───────────────────────── Navegación ───────────────────────── */
 
     function mostrarVista(vista) {
-        if (!['pedidos', 'promociones', 'cupones', 'trabajadores', 'cierre', 'cobros'].includes(vista)) vista = 'pedidos';
+        if (!['pedidos', 'promociones', 'cupones', 'trabajadores', 'cambios', 'cierre', 'cobros'].includes(vista)) vista = 'pedidos';
 
         cerrarAyudas();
         estado.vista = vista;
@@ -508,6 +570,7 @@
             case 'promociones': return cargarPromociones();
             case 'cupones': return cargarCupones();
             case 'trabajadores': return cargarTrabajadores();
+            case 'cambios': return cargarCambios();
             case 'cierre': return cargarCierre();
             case 'cobros': return cargarCobros();
             default: return cargarPedidos();
@@ -516,7 +579,7 @@
 
     async function refrescar() {
         estado.cargada[estado.vista] = false;
-        await Promise.all([cargarResumen(), cargarVista()]);
+        await Promise.all([cargarResumen(), cargarVista(), cargarConfiguracionPedidos()]);
         mostrarToast('Datos actualizados.');
     }
 
@@ -537,14 +600,134 @@
         }
     }
 
+    function fechaRelativa(valor) {
+        const fechaBase = new Date();
+        const dias = valor === 'ayer' ? 1 : (valor === 'antier' ? 2 : 0);
+        fechaBase.setDate(fechaBase.getDate() - dias);
+        return fechaBase;
+    }
+
+    function presetParaFecha(diaISO) {
+        if (!diaISO) return 'hoy';
+        if (diaISO === hoyISO()) return 'hoy';
+        if (diaISO === fechaISO(fechaRelativa('ayer'))) return 'ayer';
+        if (diaISO === fechaISO(fechaRelativa('antier'))) return 'antier';
+        return 'otro';
+    }
+
+    function iniciarFechaPedidos() {
+        const input = $('#pedidosFechaEspecifica');
+        const preset = $('#pedidosRangoDia');
+        if (!input) return;
+
+        estado.filtros.pedidosDia = estado.filtros.pedidosDia || hoyISO();
+        if (preset) preset.value = presetParaFecha(estado.filtros.pedidosDia);
+
+        if (!window.flatpickr) {
+            input.value = fechaDia(estado.filtros.pedidosDia);
+            input.addEventListener('change', () => {
+                const partes = input.value.split('/');
+                if (partes.length !== 3) return;
+
+                const iso = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+
+                estado.filtros.pedidosDia = iso;
+                if (preset) preset.value = presetParaFecha(iso);
+                renderPedidos();
+            });
+            return;
+        }
+
+        selectorFechaPedidos = window.flatpickr(input, {
+            locale: window.flatpickr.l10ns?.es || 'es',
+            dateFormat: 'd/m/Y',
+            allowInput: true,
+            disableMobile: true,
+            maxDate: 'today',
+            defaultDate: fechaDesdeISO(estado.filtros.pedidosDia),
+            onChange: (fechas) => {
+                if (!fechas.length) {
+                    estado.filtros.pedidosDia = hoyISO();
+                    if (preset) preset.value = 'hoy';
+                    selectorFechaPedidos.setDate(fechaDesdeISO(estado.filtros.pedidosDia), false);
+                    renderPedidos();
+                    return;
+                }
+
+                const diaISO = fechaISO(fechas[0]);
+                estado.filtros.pedidosDia = diaISO;
+                if (preset) preset.value = presetParaFecha(diaISO);
+                renderPedidos();
+            },
+            onClose: () => {
+                if (preset) preset.value = presetParaFecha(estado.filtros.pedidosDia);
+            },
+        });
+    }
+
+    function pintarAutoAceptar() {
+        const boton = $('#btnAutoAceptar');
+        if (!boton) return;
+
+        const activo = Boolean(estado.config.autoAceptar);
+        const texto = $('#autoAceptarEstado');
+
+        boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
+        boton.disabled = !estado.config.cargada;
+        boton.title = estado.config.cargada
+            ? (activo ? 'Desactivar aceptación automática' : 'Activar aceptación automática')
+            : 'Configuración no disponible. Ejecuta supabase/autoaceptar-pedidos.sql en Supabase y recarga.';
+
+        if (texto) texto.textContent = activo ? 'Sí' : 'No';
+    }
+
+    async function cargarConfiguracionPedidos() {
+        const boton = $('#btnAutoAceptar');
+        if (!boton) return;
+
+        try {
+            const datos = await adminRpc('web_admin_configuracion');
+            estado.config.autoAceptar = Boolean(datos.auto_aceptar_pedidos);
+            estado.config.cargada = true;
+        } catch {
+            estado.config.cargada = false;
+        }
+
+        pintarAutoAceptar();
+    }
+
+    async function alternarAutoAceptar() {
+        if (!estado.config.cargada) return;
+
+        const boton = $('#btnAutoAceptar');
+        if (!boton) return;
+
+        const nuevo = !estado.config.autoAceptar;
+        boton.disabled = true;
+
+        try {
+            const datos = await adminRpc('web_admin_configuracion_actualizar', { p_auto_aceptar: nuevo });
+            estado.config.autoAceptar = Boolean(datos.auto_aceptar_pedidos ?? nuevo);
+            estado.config.cargada = true;
+            mostrarToast(estado.config.autoAceptar ? 'Aceptación automática activada.' : 'Aceptación automática desactivada.');
+        } catch (error) {
+            mostrarToast(error?.message || 'No se pudo guardar la configuración.', 'error');
+        } finally {
+            pintarAutoAceptar();
+        }
+    }
+
     function renderPedidos() {
         const contenedor = $('#listaPedidos');
         if (!contenedor) return;
 
         const filtro = estado.filtros.pedidos;
+        const dia = estado.filtros.pedidosDia;
         const buscar = normalizar(estado.busquedas.pedidos);
 
         const lista = estado.pedidos.filter((pedido) => {
+            if (dia && fechaISO(pedido.fecha) !== dia) return false;
             if (filtro === 'en_camino') return ['enviado', 'listo_retiro'].includes(pedido.estado);
             if (filtro !== 'todos' && pedido.estado !== filtro) return false;
             if (!buscar) return true;
@@ -559,7 +742,7 @@
                 contenedor,
                 'bi-bag',
                 estado.pedidos.length ? 'Sin pedidos con ese filtro' : 'Todavía no hay pedidos web',
-                estado.pedidos.length ? 'Prueba con otro estado o borra la búsqueda.' : 'Cuando un cliente compre, el pedido aparecerá aquí.'
+                estado.pedidos.length ? 'Prueba con otro estado, otro día o borra la búsqueda.' : 'Cuando un cliente compre, el pedido aparecerá aquí.'
             );
             return;
         }
@@ -1104,24 +1287,56 @@
         const contenedor = $('#listaPromos');
         if (!contenedor) return;
 
+        const conteos = { pausada: 0, vencida: 0, disponible: 0 };
+        estado.promociones.forEach((promocion) => {
+            conteos[estadoPromocion(promocion).filtro] += 1;
+        });
+
+        $('#conteoPromosPausadas').textContent = String(conteos.pausada);
+        $('#conteoPromosVencidas').textContent = String(conteos.vencida);
+        $('#conteoPromosDisponibles').textContent = String(conteos.disponible);
+        $('#btnMostrarTodasPromos').hidden = !estado.filtros.promociones;
+        $$('input[name="filtroPromociones"]').forEach((control) => {
+            control.checked = control.value === estado.filtros.promociones;
+        });
+
         if (!estado.promociones.length) {
             vacio(contenedor, 'bi-tag', 'Sin promociones', 'Crea una oferta para que aparezca en la tienda.');
             return;
         }
 
-        contenedor.innerHTML = estado.promociones.map((promocion) => {
+        const promocionesVisibles = estado.filtros.promociones
+            ? estado.promociones.filter((promocion) => estadoPromocion(promocion).filtro === estado.filtros.promociones)
+            : estado.promociones;
+
+        if (!promocionesVisibles.length) {
+            const estadoFiltro = {
+                pausada: 'pausadas',
+                vencida: 'vencidas',
+                disponible: 'disponibles',
+            }[estado.filtros.promociones];
+            vacio(contenedor, 'bi-funnel', 'Sin promociones en este estado', `No hay promociones ${estadoFiltro} en este momento.`);
+            return;
+        }
+
+        contenedor.innerHTML = promocionesVisibles.map((promocion) => {
             const imagen = urlImagenPromocion(promocion.imagen);
             const precios = Number(promocion.precio_venta) || 0;
             const oferta = Number(promocion.precio_oferta) || 0;
             const mostrarOferta = promocion.tipo && oferta > 0 && Math.abs(oferta - precios) > 0.009;
+            const rango = rangoPromocion(promocion);
+            const estadoActual = estadoPromocion(promocion);
 
             return `
                 <article class="admin-card">
                     <div class="admin-ficha">
-                        <div class="admin-ficha__media">
-                            ${imagen
-                                ? `<img src="${escapar(imagen)}" alt="" loading="lazy" onerror="this.style.display='none'"><i class="bi bi-tag"></i>`
-                                : '<i class="bi bi-tag" aria-hidden="true"></i>'}
+                        <div class="admin-ficha__producto-media">
+                            <div class="admin-ficha__media">
+                                ${imagen
+                                    ? `<img src="${escapar(imagen)}" alt="" loading="lazy" onerror="this.style.display='none'"><i class="bi bi-tag"></i>`
+                                    : '<i class="bi bi-tag" aria-hidden="true"></i>'}
+                            </div>
+                            <span class="admin-descuento-imagen">${escapar(valorDescuento(promocion.tipo, promocion.valor))}</span>
                         </div>
 
                         <div class="admin-ficha__cuerpo">
@@ -1131,23 +1346,27 @@
                                 ${mostrarOferta ? `<del>${moneda(precios)}</del>` : ''}
                             </div>
                             <div class="admin-datos">
-                                <span>${escapar(valorDescuento(promocion.tipo, promocion.valor))}</span>
-                                <span>${escapar(fechaDia(promocion.fecha_inicio))}${promocion.fecha_fin ? ` al ${escapar(fechaDia(promocion.fecha_fin))}` : ' · sin fecha final'}</span>
-                                <span class="admin-badge ${promocion.activa ? 'admin-badge--verde' : 'admin-badge--rojo'}">${promocion.activa ? 'Activa' : 'Pausada'}</span>
+                                <span>${rango.fecha}</span>
+                                <span class="admin-rango-promocion ${rango.estado === 'verde' ? 'admin-rango-promocion--verde' : 'admin-rango-promocion--rojo'}">${rango.detalle}</span>
                             </div>
                         </div>
 
-                        <label class="admin-switch" title="${promocion.estado ? 'Pausar promoción' : 'Activar promoción'}">
-                            <input type="checkbox" data-accion="promo-estado" data-id="${Number(promocion.id_promocion)}"
-                                ${promocion.estado ? 'checked' : ''} aria-label="Activar o pausar la promoción">
-                            <span></span>
-                        </label>
-                    </div>
+                        <div class="admin-ficha__acciones">
+                            <label class="admin-switch" title="${promocion.estado ? 'Pausar promoción' : 'Activar promoción'}">
+                                <input type="checkbox" data-accion="promo-estado" data-id="${Number(promocion.id_promocion)}"
+                                    ${promocion.estado ? 'checked' : ''} aria-label="Activar o pausar la promoción">
+                                <span></span>
+                            </label>
 
-                    <div class="admin-acciones">
-                        <button class="admin-btn admin-btn--suave" type="button" data-accion="promo-editar" data-id="${Number(promocion.id_promocion)}">
-                            <i class="bi bi-pencil" aria-hidden="true"></i> Editar
-                        </button>
+                            <button class="admin-btn admin-btn--suave admin-btn--icono" type="button" data-accion="promo-editar" data-id="${Number(promocion.id_promocion)}" aria-label="Editar promoción" title="Editar promoción">
+                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                            </button>
+
+                            <div class="admin-estado-radial ${estadoActual.clase}" aria-label="Estado de la promoción">
+                                <i class="${estadoActual.icono}" aria-hidden="true"></i>
+                                <span>${estadoActual.nombre}</span>
+                            </div>
+                        </div>
                     </div>
                 </article>
             `;
@@ -1188,7 +1407,7 @@
                         <small>La imagen se administra desde el ERP; no se puede cambiar ni ingresar aquí.</small>
                     </div>
 
-                    <div class="admin-form__fila">
+                    <div class="admin-form__fila admin-form__fila--dos-columnas">
                         <div class="admin-form__campo">
                             <label for="promoTipo">Tipo de descuento</label>
                             <select id="promoTipo" name="tipo">
@@ -1201,12 +1420,12 @@
 
                         <div class="admin-form__campo">
                             <label for="promoValor">Valor</label>
-                            <input id="promoValor" name="valor" type="number" min="0" step="0.01" inputmode="decimal"
+                            <input id="promoValor" name="valor" type="number" min="0" step="any" inputmode="decimal"
                                 value="${promocion?.valor != null ? escapar(promocion.valor) : ''}" placeholder="10">
                         </div>
                     </div>
 
-                    <div class="admin-form__fila">
+                    <div class="admin-form__fila admin-form__fila--dos-columnas">
                         <div class="admin-form__campo">
                             <label for="promoInicio">Inicio</label>
                             <input id="promoInicio" name="inicio" type="date" required
@@ -1633,6 +1852,159 @@
                 estado.cargada.trabajadores = false;
                 cerrarSheet();
                 await Promise.all([cargarTrabajadores(), cargarResumen()]);
+            } catch (error) {
+                mostrarToast(error.message, 'error');
+            } finally {
+                if (boton) boton.disabled = false;
+            }
+        });
+    }
+
+    /* ───────────────────── Solicitudes de cambio ───────────────────── */
+
+    function etiquetaCambio(valor) {
+        return {
+            cambio_vehiculo: 'Cambio de vehículo',
+            foto_vehiculo: 'Foto del vehículo',
+            foto_circulacion: 'Foto de circulación',
+            baja: 'Baja',
+            otro: 'Otro cambio o consulta',
+        }[valor] || valor || 'Solicitud';
+    }
+
+    async function cargarCambios() {
+        const contenedor = $('#listaCambios');
+        if (!contenedor) return;
+
+        cargando(contenedor);
+
+        try {
+            const datos = await adminRpc('web_admin_trabajador_cambios', { p_estado: 'todas' });
+            estado.cambios = Array.isArray(datos.cambios) ? datos.cambios : [];
+            estado.cargada.cambios = true;
+            renderCambios();
+            cargarBadgeCambios();
+        } catch (error) {
+            vacio(contenedor, 'bi-exclamation-triangle', 'No se pudieron cargar las solicitudes', error.message);
+        }
+    }
+
+    async function cargarBadgeCambios() {
+        const badge = $('#navBadgeCambios');
+        if (!badge) return;
+
+        try {
+            const datos = await adminRpc('web_admin_trabajador_cambios', { p_estado: 'pendiente' });
+            const total = Array.isArray(datos.cambios) ? datos.cambios.length : 0;
+            badge.textContent = total > 9 ? '9+' : String(total);
+            badge.hidden = total <= 0;
+        } catch {
+            badge.hidden = true;
+        }
+    }
+
+    function renderCambios() {
+        const contenedor = $('#listaCambios');
+        if (!contenedor) return;
+
+        const filtro = estado.filtros.cambios;
+        const lista = estado.cambios.filter((cambio) => filtro === 'todas' || cambio.estado === filtro);
+        actualizarContador($('#cambiosContador'), lista.length);
+
+        if (!lista.length) {
+            vacio(contenedor, 'bi-arrow-repeat', 'Sin solicitudes en este estado', 'Cuando un repartidor envíe un cambio aparecerá aquí.');
+            return;
+        }
+
+        contenedor.innerHTML = lista.map((cambio) => {
+            const pendiente = cambio.estado === 'pendiente';
+            const foto = String(cambio.foto_url || '').trim();
+            const fotoActual = String(cambio.foto_actual || '').trim();
+
+            return `
+                <article class="admin-card">
+                    <div class="admin-ficha">
+                        <div class="admin-ficha__cuerpo">
+                            <h2>${escapar(cambio.nombre || 'Repartidor')}</h2>
+                            <div class="admin-datos">
+                                <span>${escapar(cambio.vehiculo || 'Vehículo')}${cambio.placa ? ` · ${escapar(cambio.placa)}` : ''}</span>
+                                <span>${escapar(cambio.telefono || 'Sin teléfono')}</span>
+                                <span class="admin-badge ${claseTrabajador(cambio.estado)}">${escapar(etiquetaTrabajador(cambio.estado))}</span>
+                                <span><strong>${escapar(etiquetaCambio(cambio.tipo))}</strong></span>
+                                ${cambio.detalle ? `<span>${escapar(cambio.detalle)}</span>` : ''}
+                                ${cambio.respuesta ? `<span>Respuesta: ${escapar(cambio.respuesta)}</span>` : ''}
+                                <span>${fechaCorta(cambio.fecha_solicitud)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-acciones">
+                        ${foto ? `<a class="admin-btn admin-btn--suave" href="${escapar(foto)}" target="_blank" rel="noopener"><i class="bi bi-image"></i> Ver foto nueva</a>` : ''}
+                        ${foto && fotoActual ? `<a class="admin-btn admin-btn--ghost" href="${escapar(fotoActual)}" target="_blank" rel="noopener"><i class="bi bi-card-image"></i> Foto actual</a>` : ''}
+                        ${pendiente ? `<button class="admin-btn admin-btn--verde" type="button" data-accion="cambio-form" data-modo="aprobar" data-id="${Number(cambio.id_cambio)}"><i class="bi bi-check2"></i> Aprobar</button>
+                        <button class="admin-btn admin-btn--peligro" type="button" data-accion="cambio-form" data-modo="rechazar" data-id="${Number(cambio.id_cambio)}"><i class="bi bi-x-circle"></i> Rechazar</button>` : ''}
+                    </div>
+                </article>`;
+        }).join('');
+    }
+
+    function abrirFormularioCambio(cambio, modo) {
+        const esRechazo = modo === 'rechazar';
+
+        const contenido = `
+            <form class="admin-form" id="formCambio">
+                <div class="admin-datos">
+                    <span><strong>${escapar(cambio.nombre || 'Repartidor')}</strong></span>
+                    <span>${escapar(etiquetaCambio(cambio.tipo))}</span>
+                    ${cambio.detalle ? `<span>${escapar(cambio.detalle)}</span>` : ''}
+                    ${cambio.foto_url ? `<span><a href="${escapar(cambio.foto_url)}" target="_blank" rel="noopener">Ver foto enviada</a></span>` : ''}
+                </div>
+
+                <div class="admin-form__campo">
+                    <label for="cambioRespuesta">${esRechazo ? 'Motivo del rechazo' : 'Nota (opcional)'}</label>
+                    <textarea id="cambioRespuesta" maxlength="2000" ${esRechazo ? 'required' : ''}
+                        placeholder="${esRechazo ? 'Explica por qué se rechaza la solicitud.' : 'Nota visible para el repartidor.'}"></textarea>
+                </div>
+
+                <div class="admin-form__acciones">
+                    <button class="admin-btn admin-btn--ghost" type="button" data-cerrar-sheet>Cancelar</button>
+                    <button class="admin-btn ${esRechazo ? 'admin-btn--peligro' : 'admin-btn--primario'}" type="submit">
+                        ${esRechazo ? 'Rechazar solicitud' : 'Aprobar solicitud'}
+                    </button>
+                </div>
+            </form>`;
+
+        abrirSheet(
+            esRechazo ? 'Rechazar solicitud' : 'Aprobar solicitud',
+            esRechazo ? 'El repartidor verá el motivo en su perfil.' : 'La solicitud quedará aprobada.',
+            contenido
+        );
+
+        $('#formCambio')?.addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+
+            const respuesta = $('#cambioRespuesta').value.trim();
+
+            if (esRechazo && !respuesta) {
+                mostrarToast('Escribe el motivo del rechazo.', 'error');
+                return;
+            }
+
+            const boton = $('#formCambio button[type="submit"]');
+            if (boton) boton.disabled = true;
+
+            try {
+                await adminRpc('web_admin_trabajador_cambio_resolver', {
+                    p_id: Number(cambio.id_cambio),
+                    p_estado: esRechazo ? 'rechazado' : 'aprobado',
+                    p_respuesta: respuesta || null,
+                });
+
+                mostrarToast(esRechazo ? 'Solicitud rechazada.' : 'Solicitud aprobada.');
+                estado.cargada.cambios = false;
+                cerrarSheet();
+                await cargarCambios();
+                await cargarBadgeCambios();
             } catch (error) {
                 mostrarToast(error.message, 'error');
             } finally {
@@ -2553,6 +2925,28 @@
             renderPedidos();
         });
 
+        $('#pedidosRangoDia')?.addEventListener('change', (evento) => {
+            const valor = evento.target.value;
+
+            if (valor === 'otro') {
+                selectorFechaPedidos?.open();
+                return;
+            }
+
+            const fechaBase = fechaRelativa(valor);
+            const diaISO = fechaISO(fechaBase);
+            estado.filtros.pedidosDia = diaISO;
+
+            if (selectorFechaPedidos) {
+                selectorFechaPedidos.setDate(fechaBase, false);
+            } else {
+                const input = $('#pedidosFechaEspecifica');
+                if (input) input.value = fechaDia(diaISO);
+            }
+
+            renderPedidos();
+        });
+
         /* Filtros de repartidores */
         $('#trabajadoresFiltros')?.addEventListener('click', (evento) => {
             const chip = evento.target.closest('[data-estado]');
@@ -2561,6 +2955,16 @@
             estado.filtros.trabajadores = chip.dataset.estado;
             $$('#trabajadoresFiltros .admin-chip').forEach((boton) => boton.classList.toggle('is-activo', boton === chip));
             renderTrabajadores();
+        });
+
+        /* Filtros de solicitudes de cambio */
+        $('#cambiosFiltros')?.addEventListener('click', (evento) => {
+            const chip = evento.target.closest('[data-estado]');
+            if (!chip) return;
+
+            estado.filtros.cambios = chip.dataset.estado;
+            $$('#cambiosFiltros .admin-chip').forEach((boton) => boton.classList.toggle('is-activo', boton === chip));
+            renderCambios();
         });
 
         /* Filtros de cobros */
@@ -2636,6 +3040,11 @@
                 if (trabajador) abrirFormularioTrabajador(trabajador, boton.dataset.modo);
                 return;
             }
+            if (accion === 'cambio-form') {
+                const cambio = estado.cambios.find((fila) => Number(fila.id_cambio) === Number(boton.dataset.id));
+                if (cambio) abrirFormularioCambio(cambio, boton.dataset.modo);
+                return;
+            }
             if (accion === 'cierre-historial') return cargarHistorialTrabajador(Number(boton.dataset.id), boton);
             if (accion === 'cierre-detalle') return abrirCierre(Number(boton.dataset.id), boton.dataset.modo || 'detalle');
             if (accion === 'cuenta-detalle') return abrirCuenta(Number(boton.dataset.id));
@@ -2645,6 +3054,11 @@
         document.addEventListener('change', (evento) => {
             const control = evento.target.closest('[data-accion]');
             if (!control) return;
+
+            if (control.dataset.accion === 'promo-filtro') {
+                estado.filtros.promociones = control.value;
+                renderPromociones();
+            }
 
             if (control.dataset.accion === 'promo-estado') {
                 cambiarEstadoPromocion(control.dataset.id, control.checked, control);
@@ -2657,6 +3071,11 @@
 
         /* Botones de creación */
         $('#btnNuevaPromo')?.addEventListener('click', () => abrirFormularioPromocion());
+        $('#btnAutoAceptar')?.addEventListener('click', alternarAutoAceptar);
+        $('#btnMostrarTodasPromos')?.addEventListener('click', () => {
+            estado.filtros.promociones = '';
+            renderPromociones();
+        });
         $('#btnNuevoCupon')?.addEventListener('click', () => abrirFormularioCupon());
 
         /* Diálogo */
@@ -2707,8 +3126,11 @@
     }
 
     iniciarEventos();
+    iniciarFechaPedidos();
     cargarResumen();
+    cargarBadgeCambios();
+    cargarConfiguracionPedidos();
 
     const vistaInicial = (window.location.hash || '').replace('#', '');
-    mostrarVista(['pedidos', 'promociones', 'cupones', 'trabajadores', 'cierre', 'cobros'].includes(vistaInicial) ? vistaInicial : 'pedidos');
+    mostrarVista(['pedidos', 'promociones', 'cupones', 'trabajadores', 'cambios', 'cierre', 'cobros'].includes(vistaInicial) ? vistaInicial : 'pedidos');
 })();

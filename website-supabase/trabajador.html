@@ -18,7 +18,8 @@
   <link href="/tienda/recursos/css/base/bootstrap-utilidades.css?v=20261110a" rel="stylesheet">
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a" rel="stylesheet">
   <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/trabajador.css?v=20261116o">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/trabajador.css?v=20261119x">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
   <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261114b">
 </head>
@@ -30,12 +31,19 @@
         <i class="bi bi-arrow-left"></i>
       </a>
 
-      <a class="marca" href="/tienda">
-        <img class="marca__logo" src="/tienda/recursos/img/logonavidad-mini.png?v=20261102d" alt="">
-        Tellez Nic Store
+      <a class="marca" href="/tienda" aria-label="Tellez Nic Store">
+        <img class="marca__logo" src="/tienda/recursos/img/logonavidad-mini.png?v=20261102d" alt="Tellez Nic Store">
       </a>
 
-      <div class="header-acciones">
+      <div class="header-acciones trabajador-nav">
+        <a class="trabajador-nav__enlace is-active" href="/tienda/trabajador" aria-current="page">
+          <i class="bi bi-truck" aria-hidden="true"></i>
+          <span>Pedidos</span>
+        </a>
+        <a class="trabajador-nav__enlace" href="/tienda/trabajador/perfil">
+          <i class="bi bi-person-badge" aria-hidden="true"></i>
+          <span>Mi perfil</span>
+        </a>
         <a class="trabajador-modo-cliente" href="/tienda/perfil" aria-label="Cambiar a modo cliente">
           <i class="bi bi-person" aria-hidden="true"></i>
           <span>Modo cliente</span>
@@ -46,8 +54,11 @@
 
   <main class="trabajador-main contenedor">
     <section class="trabajador-cargando" id="trabajadorCargando" aria-live="polite">
-      <span class="trabajador-spinner" aria-hidden="true"></span>
-      <p>Cargando tu panel de trabajo…</p>
+      <div class="trabajador-cargando__circulo">
+        <span class="trabajador-spinner" aria-hidden="true"></span>
+        <img class="marca__logo trabajador-cargando__logo" src="/tienda/recursos/img/logonavidad-mini.png?v=20261102d" alt="Tellez Nic Store" width="64" height="64" decoding="async">
+      </div>
+      <p class="visually-hidden">Cargando tu panel de trabajo…</p>
     </section>
 
     <section class="trabajador-bloqueo" id="trabajadorBloqueo" hidden>
@@ -122,25 +133,47 @@
       </section>
 
       <div class="trabajador-barra">
-        <div class="trabajador-tabs" role="tablist" aria-label="Pedidos">
-          <button type="button" class="trabajador-tab is-active" data-vista="disponibles" role="tab" aria-selected="true">
-            Disponibles
-            <span id="badgeDisponibles">0</span>
+        <div class="trabajador-barra__principal">
+          <div class="trabajador-tabs" role="tablist" aria-label="Pedidos">
+            <button type="button" class="trabajador-tab is-active" data-vista="disponibles" role="tab" aria-selected="true">
+              Disponibles
+              <span id="badgeDisponibles">0</span>
+            </button>
+            <button type="button" class="trabajador-tab" data-vista="asignados" role="tab" aria-selected="false">
+              Mis entregas
+              <span id="badgeAsignados">0</span>
+            </button>
+          </div>
+
+          <button type="button" class="trabajador-refrescar" data-refrescar>
+            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+            <span>Actualizar</span>
           </button>
-          <button type="button" class="trabajador-tab" data-vista="asignados" role="tab" aria-selected="false">
-            Mis entregas
-            <span id="badgeAsignados">0</span>
+          <button type="button" class="trabajador-refrescar trabajador-arqueo-acceso" id="btnMiArqueo" aria-label="Ver mi arqueo">
+            <i class="bi bi-calculator" aria-hidden="true"></i>
+            <span>Arqueo</span>
           </button>
         </div>
 
-        <button type="button" class="trabajador-refrescar" data-refrescar>
-          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-          <span>Actualizar</span>
-        </button>
-        <button type="button" class="trabajador-refrescar trabajador-arqueo-acceso" id="btnMiArqueo" aria-label="Ver mi arqueo">
-          <i class="bi bi-calculator" aria-hidden="true"></i>
-          <span>Arqueo</span>
-        </button>
+        <div class="trabajador-barra__filtros" id="trabajadorFiltrosDisponibles">
+          <label class="trabajador-barra__campo" for="filtroDistancia">
+            <span>Distancia</span>
+            <select id="filtroDistancia">
+              <option value="todas">Todas</option>
+              <option value="cerca">Cerca (≤ 3 km)</option>
+              <option value="lejos">Lejos (&gt; 3 km)</option>
+            </select>
+          </label>
+          <label class="trabajador-barra__campo" for="filtroDelivery">
+            <span>Delivery</span>
+            <select id="filtroDelivery">
+              <option value="todos">Todos</option>
+              <option value="hasta30">Hasta C$ 30</option>
+              <option value="31a60">C$ 31 a 60</option>
+              <option value="mas60">Más de C$ 60</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       <section class="trabajador-vista" id="vistaDisponibles" role="tabpanel">
@@ -162,7 +195,7 @@
         <div class="trabajador-vista__cabecera">
           <div>
             <h2>Mis entregas</h2>
-            <p>Pedidos de hoy en vista compacta. Toca uno para ver dirección, productos y acciones.</p>
+            <p>Pedidos de hoy con resumen y detalle visible en cada tarjeta.</p>
           </div>
         </div>
         <div class="trabajador-filtros" id="filtrosAsignados" role="group" aria-label="Filtrar entregas">
@@ -197,11 +230,11 @@
       <div class="trabajador-arqueo__fechas">
         <label for="arqueoDesde">
           <span>Desde</span>
-          <input type="date" id="arqueoDesde">
+          <input type="text" id="arqueoDesde" autocomplete="off" placeholder="dd/mm/aaaa">
         </label>
         <label for="arqueoHasta">
           <span>Hasta</span>
-          <input type="date" id="arqueoHasta">
+          <input type="text" id="arqueoHasta" autocomplete="off" placeholder="dd/mm/aaaa">
         </label>
         <button type="button" class="trabajador-arqueo__filtrar" id="btnFiltrarArqueo">
           <i class="bi bi-funnel" aria-hidden="true"></i>
@@ -220,6 +253,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261107c" defer></script>
   <script src="/tienda/recursos/js/core/supabase-api.js?v=20261116f" defer></script>
-  <script src="/tienda/recursos/js/pages/trabajador.js?v=20261116l" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js" defer></script>
+  <script src="/tienda/recursos/js/pages/trabajador.js?v=20261119k" defer></script>
 </body>
 </html>

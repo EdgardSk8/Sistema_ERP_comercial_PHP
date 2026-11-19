@@ -2862,6 +2862,21 @@ html.tema-navidad .app-header #btnMenuPerfil:hover {
     font-weight: 700;
 }
 
+.perfil-trabajador__modo-ayuda {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0 0 12px;
+    color: #4b5a52;
+    font-size: .74rem;
+    line-height: 1.4;
+}
+
+.perfil-trabajador__modo-ayuda i {
+    margin-top: 1px;
+    color: #15803d;
+}
+
 @media (max-width: 480px) {
     .perfil-trabajador__modo {
         align-items: flex-start;

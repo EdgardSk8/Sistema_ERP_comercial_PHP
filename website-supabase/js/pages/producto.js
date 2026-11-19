@@ -486,7 +486,7 @@ function pintarPrecio() {
 }
 
 /* ── Pedido por WhatsApp ─────────────────────────────────────── */
-const WHATSAPP_NUMERO = '50584774288';
+const WHATSAPP_NUMERO = '50589142260';
 
 function enlaceWhatsappProducto() {
     if (!producto) return `https://wa.me/${WHATSAPP_NUMERO}`;

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es" class="tema-navidad trabajador-html">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5EEDE">
+  <meta name="color-scheme" content="light">
+  <link rel="preload" href="/tienda/recursos/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" type="image/png" sizes="32x32" href="/tienda/recursos/img/favicon-navidad.png?v=20261030h">
+  <link rel="apple-touch-icon" sizes="180x180" href="/tienda/recursos/img/apple-touch-navidad.png?v=20261030h">
+  <title>Mi perfil de trabajador · Tellez Nic Store</title>
+  <meta name="description" content="Perfil del trabajador: datos personales, vehículo, documentos y contacto con un encargado.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://tellezstorenic.pages.dev/trabajador/perfil">
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
+  <link href="/tienda/recursos/css/base/bootstrap-utilidades.css?v=20261110a" rel="stylesheet">
+  <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a" rel="stylesheet">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/trabajador.css?v=20261119x">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261114b">
+</head>
+<body class="trabajador-body">
+
+  <header class="app-header">
+    <div class="contenedor">
+      <a class="icono-btn" href="/tienda/trabajador" aria-label="Volver a mis pedidos">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+
+      <a class="marca" href="/tienda" aria-label="Tellez Nic Store">
+        <img class="marca__logo" src="/tienda/recursos/img/logonavidad-mini.png?v=20261102d" alt="Tellez Nic Store">
+      </a>
+
+      <div class="header-acciones trabajador-nav">
+        <a class="trabajador-nav__enlace" href="/tienda/trabajador">
+          <i class="bi bi-truck" aria-hidden="true"></i>
+          <span>Pedidos</span>
+        </a>
+        <a class="trabajador-nav__enlace is-active" href="/tienda/trabajador/perfil" aria-current="page">
+          <i class="bi bi-person-badge" aria-hidden="true"></i>
+          <span>Mi perfil</span>
+        </a>
+        <a class="trabajador-modo-cliente" href="/tienda/perfil" aria-label="Cambiar a modo cliente">
+          <i class="bi bi-person" aria-hidden="true"></i>
+          <span>Modo cliente</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="trabajador-main contenedor trabajador-perfil">
+    <section class="trabajador-cargando" id="perfilTrabajadorCargando" aria-live="polite">
+      <span class="trabajador-spinner" aria-hidden="true"></span>
+      <p>Cargando tu perfil de trabajador…</p>
+    </section>
+
+    <section class="trabajador-bloqueo" id="perfilTrabajadorBloqueo" hidden>
+      <span class="trabajador-bloqueo__icono" aria-hidden="true">
+        <i class="bi bi-shield-lock"></i>
+      </span>
+      <h1 id="perfilTrabajadorBloqueoTitulo">Perfil de trabajador</h1>
+      <p id="perfilTrabajadorBloqueoTexto"></p>
+      <a class="btn-primario" id="perfilTrabajadorBloqueoEnlace" href="/tienda/perfil#trabajo">
+        Ir a configuración
+      </a>
+    </section>
+
+    <div id="perfilTrabajadorPanel" hidden>
+      <section class="trabajador-hero trabajador-hero--perfil" aria-label="Resumen del trabajador">
+        <div class="trabajador-hero__avatar" id="perfilTrabajadorAvatar" aria-hidden="true"></div>
+
+        <div class="trabajador-hero__datos">
+          <span class="trabajador-hero__etiqueta" id="perfilTrabajadorEstado"></span>
+          <h1 id="perfilTrabajadorNombre">—</h1>
+          <p id="perfilTrabajadorVehiculo">—</p>
+          <div class="trabajador-hero__chips">
+            <span class="trabajador-chip" id="perfilTrabajadorPlaca"></span>
+            <span class="trabajador-chip" id="perfilTrabajadorColor"></span>
+            <span class="trabajador-chip" id="perfilTrabajadorGanancia"></span>
+            <span class="trabajador-chip" id="perfilTrabajadorDisponible"></span>
+          </div>
+        </div>
+
+        <div class="trabajador-perfil__acciones">
+          <a class="btn-secundario" href="/tienda/trabajador">
+            <i class="bi bi-truck" aria-hidden="true"></i> Mis pedidos
+          </a>
+        </div>
+      </section>
+
+      <div class="trabajador-perfil__grid">
+        <section class="trabajador-perfil-card">
+          <header>
+            <span class="trabajador-perfil-card__icono" aria-hidden="true"><i class="bi bi-person-vcard"></i></span>
+            <h2>Datos personales</h2>
+          </header>
+          <dl class="trabajador-perfil-datos">
+            <div><dt>Nombre</dt><dd id="perfilDatoNombre">—</dd></div>
+            <div><dt>Cédula</dt><dd id="perfilDatoCedula">—</dd></div>
+            <div><dt>Teléfono</dt><dd id="perfilDatoTelefono">—</dd></div>
+            <div><dt>Correo</dt><dd id="perfilDatoCorreo">—</dd></div>
+            <div><dt>Fecha de nacimiento</dt><dd id="perfilDatoNacimiento">—</dd></div>
+            <div class="trabajador-perfil-datos__ancho"><dt>Dirección</dt><dd id="perfilDatoDireccion">—</dd></div>
+          </dl>
+        </section>
+
+        <section class="trabajador-perfil-card">
+          <header>
+            <span class="trabajador-perfil-card__icono" aria-hidden="true"><i class="bi bi-truck"></i></span>
+            <h2>Vehículo y documentos</h2>
+          </header>
+          <dl class="trabajador-perfil-datos">
+            <div><dt>Vehículo</dt><dd id="perfilDatoVehiculo">—</dd></div>
+            <div><dt>Placa</dt><dd id="perfilDatoPlaca">—</dd></div>
+            <div><dt>Color del vehículo</dt><dd id="perfilDatoColorVehiculo">—</dd></div>
+          </dl>
+          <div class="trabajador-documentos" aria-label="Documentos del trabajador">
+            <div id="perfilFotoLicencia"></div>
+            <div id="perfilFotoLicenciaReverso"></div>
+            <div id="perfilFotoCirculacion"></div>
+            <div id="perfilFotoCirculacionReverso"></div>
+            <div id="perfilFotoSeguro"></div>
+          </div>
+          <div class="trabajador-perfil__fotos" id="perfilTrabajadorFotos"></div>
+        </section>
+      </div>
+
+      <section class="trabajador-perfil-card trabajador-perfil-contacto" id="perfilCambios">
+        <header>
+          <span class="trabajador-perfil-card__icono" aria-hidden="true"><i class="bi bi-arrow-repeat"></i></span>
+          <div>
+            <h2>Solicitudes de cambio</h2>
+            <p>Envía el cambio que necesitas y quedará pendiente hasta que el encargado lo revise y apruebe.</p>
+          </div>
+        </header>
+
+        <p class="trabajador-perfil__aviso" id="perfilCambioAviso" hidden></p>
+
+        <form class="trabajador-perfil-contacto__form" id="formCambioTrabajador">
+          <label for="cambioTipo">
+            <span>Tipo de cambio</span>
+            <select id="cambioTipo">
+              <option value="cambio_vehiculo">Cambio de vehículo (moto o carro)</option>
+              <option value="foto_vehiculo">Cambio de foto del vehículo</option>
+              <option value="foto_circulacion">Cambio de foto de circulación</option>
+              <option value="baja">Darme de baja</option>
+              <option value="otro">Otro cambio o consulta</option>
+            </select>
+          </label>
+          <label for="cambioDetalle">
+            <span>Detalle</span>
+            <textarea id="cambioDetalle" rows="3" placeholder="Describe el cambio que necesitas..."></textarea>
+          </label>
+          <label for="cambioFoto" id="cambioFotoCampo" hidden>
+            <span>Nueva foto</span>
+            <input id="cambioFoto" type="file" accept="image/png,image/jpeg,image/webp">
+            <small class="trabajador-perfil__ayuda">JPG, PNG o WebP de hasta 5 MB.</small>
+          </label>
+          <div class="trabajador-perfil-contacto__acciones">
+            <button type="submit" class="btn-primario" id="btnEnviarCambio">
+              <i class="bi bi-send" aria-hidden="true"></i> Enviar solicitud
+            </button>
+            <span class="trabajador-perfil-contacto__numero">Queda pendiente de aprobación.</span>
+          </div>
+        </form>
+      </section>
+
+      <section class="trabajador-perfil-card trabajador-perfil-solicitudes">
+        <header>
+          <span class="trabajador-perfil-card__icono" aria-hidden="true"><i class="bi bi-clock-history"></i></span>
+          <h2>Mis solicitudes</h2>
+        </header>
+        <div class="trabajador-cambios" id="perfilCambiosLista">
+          <p class="trabajador-vacio">Cargando tus solicitudes…</p>
+        </div>
+      </section>
+
+      <div class="trabajador-toasts" id="perfilTrabajadorToasts" aria-live="polite" aria-atomic="false"></div>
+    </div>
+  </main>
+
+  <script src="/tienda/recursos/js/core/carrito-store.js?v=20261109d" defer></script>
+  <script src="/tienda/recursos/js/core/utilidades.js?v=20261116e" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-config.js?v=20261107c" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261116f" defer></script>
+  <script src="/tienda/recursos/js/pages/trabajador-perfil.js?v=20261119c" defer></script>
+</body>
+</html>

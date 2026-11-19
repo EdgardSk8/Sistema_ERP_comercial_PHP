@@ -1,7 +1,7 @@
 # Notas · Tienda web (decisiones y pendientes)
 
 > Documento de trabajo. `[x]` = ya tocado/decidido en conversación · `[ ]` = pendiente de decidir o implementar.
-> Última actualización: 2026-11-03
+> Última actualización: 2026-11-19
 
 ---
 
@@ -17,7 +17,7 @@
 - [ ] **Descuento de primera compra al confirmar el correo** (futuro): al confirmar, asignar un descuento/cupón de bienvenida al cliente y mostrarlo en «Mi cuenta → Descuento».
 - [x] **Rutas adaptadas al hosting**: `urlTienda()` usa `/tienda/...` en local y la raíz en Cloudflare Pages; el login con Google y el registro ya apuntan al dominio actual.
 - [x] **Perfil del cliente ampliado**: historial de ventas, deudas por pagar, etc.
-- [x] **Centro de ayuda** (`/ayuda`): selectores de necesidad (contraseña, acceso, correo, cuenta desactivada, pedido, otro) y envío del caso por WhatsApp al +505 84774288 (también por correo).
+- [x] **Centro de ayuda** (`/ayuda`): selectores de necesidad (contraseña, acceso, correo, cuenta desactivada, pedido, otro) y envío del caso por WhatsApp al +505 89142260 (también por correo).
 - [x] **Contraseña temporal para el ejecutivo**: `php artisan tienda:password-temporal correo@dominio.com --password=123456` asigna la temporal y el cliente la cambia en Mi cuenta → Contraseñas.
 - [x] **Usuario derivado del nombre**: `tellez_software` en lugar de `u_b745…` (trigger `web_crear_cliente` + migración `2026_10_30_000002`).
 - [x] **Tipos de talla**: tabla `tipos_talla` (Calzado, Ropa adulto, Ropa niño, Única), `tallas.id_tipo_talla`, `tallas.orden_talla` y `categoria.id_tipo_talla` (migración `2026_10_30_000003`). CRUD dentro de la vista Tallas + permisos `mostrar/crear/editar/actualizar/cambiar_estado_tipos_tallas`.
@@ -135,11 +135,14 @@
 ### 3.9 Administración
 - [x] Bandeja de pedidos con filtros por estado y pago (la zona queda pendiente).
 - [x] Aceptar/rechazar pedido desde el ERP.
-- [x] Panel admin móvil en `/tienda/admin` con usuario y contraseña del ERP: pedidos, promociones, cupones, repartidores, cierre de delivery y cuentas por cobrar. Ver README §10.
+- [x] Panel admin móvil en `/tienda/admin` con usuario y contraseña del ERP: pedidos, promociones, cupones, repartidores, solicitudes de cambio, cierre de delivery y cuentas por cobrar. Ver README §10.
 - [x] Cobro en línea desde el panel (Lafise / billetera móvil): monto exacto, factura, FIFO, ingreso en cuenta e historial de pagos.
 - [x] Aceptar y facturar desde el panel; en efectivo el pago queda pendiente para el cierre del delivery.
+- [x] **Pedidos por día y aceptación automática:** filtro **Hoy / Ayer / Antier / Otro día** más una **fecha específica con Flatpickr**, tarjetas compactas y botón persistido en `tienda_config`; al activarlo, `web_autoaceptar_pedido` acepta los pedidos nuevos y `web_autoaceptar_historial` registra el cambio. SQL: `supabase/autoaceptar-pedidos.sql`.
 - [x] **Cierre de delivery** por rango de fechas en tabla resumen con todos los repartidores que tuvieron entregas, incluso los que ya cerraron (aparecen como Cerrado). **Detalles** muestra solo al abrir: productos cobrados por efectivo, billetera móvil y Lafise; total delivery, comisión de la empresa, ganancia y pendiente por día. Incluye el historial de cierres del repartidor, monto entregado y diferencia; se carga con el botón **Cargar** y luego se actualiza con **Actualizar** para no cargarlo automáticamente.
-- [x] **Panel del repartidor:** “Mis entregas” muestra los pedidos de hoy en formato compacto y expandible, con filtro Hoy/Todas.
+- [x] **Panel del repartidor:** tarjetas anchas de una por fila, con el resumen a la izquierda (cliente, fecha, distancia, dirección con referencia, mapa, llamada/WhatsApp y cobro desglosado) y el detalle siempre visible a la derecha (factura, productos, ganancia y horas), sin modal ni botón de detalles; filtro Hoy/Todas y filtros por **distancia (cerca/lejos)** y **precio de delivery** en la barra.
+- [x] **Perfil del trabajador:** página `/tienda/trabajador/perfil` con datos personales, vehículo y documentos como imágenes (**licencia frente/reverso, circulación frente/reverso y seguro**); incluye **solicitudes de cambio** (vehículo, foto de vehículo, foto de circulación, baja u otro) con estado **pendiente** hasta que el encargado las apruebe o rechace en **Panel admin → Cambios**; al aprobar una foto se actualiza el perfil. Accesible desde la barra superior del panel (Pedidos / Mi perfil / Modo cliente).
+- [x] **Acceso directo al modo repartidor:** si la solicitud está aprobada, el menú de la cuenta muestra «Modo trabajador». El interruptor «Entrar directo a tus pedidos al abrir la tienda» de Mi cuenta guarda la preferencia y, al entrar a `/tienda`, abre el panel de reparto en lugar de la interfaz de cliente (el enlace «Modo cliente» la desactiva).
 - [x] **Arqueo del repartidor:** modal con rango de fechas, pendiente por día, historial de cierres y total a entregar a la empresa; misma información disponible en **Trabajadores → Arqueo** del ERP.
 - [x] Abonos manuales desde **Cuentas por cobrar**: parciales o totales, en efectivo con caja abierta o desde una cuenta activa; se aplican a las cuotas más antiguas y actualizan caja/cuentas.
 - [ ] Moderación de reseñas (`estado_resenia` ya existe, sin interfaz).

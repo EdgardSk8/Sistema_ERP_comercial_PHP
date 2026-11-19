@@ -3,7 +3,7 @@
    ╚══════════════════════════════════════════════════════════════╝ */
 
 (() => {
-    const WHATSAPP_NUMERO = '50584774288';
+    const WHATSAPP_NUMERO = '50589142260';
     const CORREO_NEGOCIO = 'tellezstorenic@gmail.com';
 
     const formulario = document.getElementById('formAyuda');

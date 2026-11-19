@@ -16,6 +16,25 @@
     let clienteActual = null;
     let enviando = false;
 
+    const claveModo = () => `tienda_modo_trabajador${clienteActual?.id_cliente ? `:${clienteActual.id_cliente}` : ''}`;
+
+    const modoActivo = () => {
+        try {
+            return localStorage.getItem(claveModo()) === '1';
+        } catch {
+            return false;
+        }
+    };
+
+    const guardarModo = (activo) => {
+        try {
+            if (activo) localStorage.setItem(claveModo(), '1');
+            else localStorage.removeItem(claveModo());
+        } catch {
+            /* Sin almacenamiento local. */
+        }
+    };
+
     const escapar = window.TiendaUtil.escapar;
 
     const texto = window.TiendaUtil.texto;
@@ -97,14 +116,18 @@
             ? `<div class="perfil-trabajador__modo">
                     <div class="perfil-trabajador__modo-info">
                         <span class="perfil-trabajador__modo-etiqueta"><i class="bi bi-truck" aria-hidden="true"></i> Modo trabajador</span>
-                        <strong>Recibe pedidos y revisa los datos de tus clientes</strong>
+                        <strong>Entra directo a tus pedidos al abrir la tienda</strong>
                     </div>
                     <label class="perfil-trabajador__modo-switch">
-                        <input type="checkbox" id="checkModoTrabajador" role="switch" aria-label="Cambiar a modo trabajador">
+                        <input type="checkbox" id="checkModoTrabajador" role="switch" aria-label="Entrar directo al modo trabajador"${modoActivo() ? ' checked' : ''}>
                         <span class="perfil-trabajador__modo-slider" aria-hidden="true"></span>
-                        <span class="perfil-trabajador__modo-texto">Cambiar</span>
+                        <span class="perfil-trabajador__modo-texto">${modoActivo() ? 'Activado' : 'Desactivado'}</span>
                     </label>
-                </div>`
+                </div>
+                <p class="perfil-trabajador__modo-ayuda">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    Si está activo, al entrar a la tienda irás directo a tus pedidos de delivery; si lo desactivas, verás la interfaz de cliente.
+                </p>`
             : '';
 
         const comisionHtml = trabajador.estado_trabajador === 'aprobado'
@@ -123,17 +146,15 @@
                     <p>El porcentaje de comisión se asigna de forma individual cuando la tienda aprueba tu solicitud.</p>
                 </div>`;
 
-        if (trabajador.estado_trabajador === 'aprobado') {
-            document.getElementById('menuModoTrabajador')?.removeAttribute('hidden');
-        }
-
         const fotos = `
             <div class="perfil-trabajador__fotos">
                 ${foto(trabajador.foto_perfil, 'perfil-trabajador__foto-img', 'Foto del trabajador')}
                 ${foto(trabajador.foto_vehiculo, 'perfil-trabajador__foto-img', 'Foto del vehículo')}
-                ${foto(trabajador.foto_licencia, 'perfil-trabajador__foto-img', 'Foto de la licencia')}
-                ${foto(trabajador.foto_circulacion, 'perfil-trabajador__foto-img', 'Foto de la circulación')}
-                ${foto(trabajador.foto_seguro, 'perfil-trabajador__foto-img', 'Foto del seguro')}
+                ${foto(trabajador.foto_licencia, 'perfil-trabajador__foto-img', 'Licencia (frente)')}
+                ${foto(trabajador.foto_licencia_reverso, 'perfil-trabajador__foto-img', 'Licencia (reverso)')}
+                ${foto(trabajador.foto_circulacion, 'perfil-trabajador__foto-img', 'Circulación (frente)')}
+                ${foto(trabajador.foto_circulacion_reverso, 'perfil-trabajador__foto-img', 'Circulación (reverso)')}
+                ${foto(trabajador.foto_seguro, 'perfil-trabajador__foto-img', 'Seguro')}
             </div>`;
 
         const documentos = `
@@ -215,7 +236,7 @@
         asignar('trabColorUsuario', datos.color_usuario || '#22c55e');
 
         /* Las fotos ya subidas se conservan si el trabajador no elige nuevas. */
-        ['trabFotoPerfil', 'trabFotoVehiculo', 'trabFotoLicencia', 'trabFotoCirculacion', 'trabFotoSeguro'].forEach((id) => {
+        ['trabFotoPerfil', 'trabFotoVehiculo', 'trabFotoLicencia', 'trabFotoLicenciaReverso', 'trabFotoCirculacion', 'trabFotoCirculacionReverso', 'trabFotoSeguro'].forEach((id) => {
             const campo = document.getElementById(id);
             if (campo) campo.value = '';
         });
@@ -272,7 +293,9 @@
                 foto_perfil: archivo('trabFotoPerfil'),
                 foto_vehiculo: archivo('trabFotoVehiculo'),
                 foto_licencia: archivo('trabFotoLicencia'),
+                foto_licencia_reverso: archivo('trabFotoLicenciaReverso'),
                 foto_circulacion: archivo('trabFotoCirculacion'),
+                foto_circulacion_reverso: archivo('trabFotoCirculacionReverso'),
                 foto_seguro: archivo('trabFotoSeguro'),
             },
         };
@@ -313,8 +336,10 @@
         try {
             validarArchivo(datos.archivos.foto_perfil, !trabajadorActual?.foto_perfil, 'tu foto');
             validarArchivo(datos.archivos.foto_vehiculo, !trabajadorActual?.foto_vehiculo, 'la foto del vehículo');
-            validarArchivo(datos.archivos.foto_licencia, false, 'la foto de la licencia');
-            validarArchivo(datos.archivos.foto_circulacion, false, 'la foto de la circulación');
+            validarArchivo(datos.archivos.foto_licencia, false, 'la foto de la licencia (frente)');
+            validarArchivo(datos.archivos.foto_licencia_reverso, false, 'la foto de la licencia (reverso)');
+            validarArchivo(datos.archivos.foto_circulacion, false, 'la foto de la circulación (frente)');
+            validarArchivo(datos.archivos.foto_circulacion_reverso, false, 'la foto de la circulación (reverso)');
             validarArchivo(datos.archivos.foto_seguro, false, 'la foto del seguro');
 
             enviando = true;
@@ -328,7 +353,9 @@
                 foto_perfil: trabajadorActual?.foto_perfil || '',
                 foto_vehiculo: trabajadorActual?.foto_vehiculo || '',
                 foto_licencia: trabajadorActual?.foto_licencia || '',
+                foto_licencia_reverso: trabajadorActual?.foto_licencia_reverso || '',
                 foto_circulacion: trabajadorActual?.foto_circulacion || '',
+                foto_circulacion_reverso: trabajadorActual?.foto_circulacion_reverso || '',
                 foto_seguro: trabajadorActual?.foto_seguro || '',
             };
 
@@ -382,8 +409,21 @@
             cambiarDisponibilidad(evento.target.checked);
         }
 
-        if (evento.target?.id === 'checkModoTrabajador' && evento.target.checked) {
-            window.location.href = '/tienda/trabajador';
+        if (evento.target?.id === 'checkModoTrabajador') {
+            const activo = evento.target.checked;
+
+            guardarModo(activo);
+
+            const textoModo = contenido?.querySelector('.perfil-trabajador__modo-texto');
+
+            if (textoModo) textoModo.textContent = activo ? 'Activado' : 'Desactivado';
+
+            if (activo) {
+                window.location.href = '/tienda/trabajador';
+                return;
+            }
+
+            window.tiendaToast?.('Al entrar a la tienda verás la interfaz de cliente.', 'info');
         }
     });
 

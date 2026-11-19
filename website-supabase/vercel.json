@@ -7,6 +7,8 @@
     { "source": "/tienda/perfil", "destination": "/perfil.html" },
     { "source": "/tienda/trabajador", "destination": "/trabajador.html" },
     { "source": "/trabajador", "destination": "/trabajador.html" },
+    { "source": "/tienda/trabajador/perfil", "destination": "/trabajador/perfil.html" },
+    { "source": "/trabajador/perfil", "destination": "/trabajador/perfil.html" },
     { "source": "/tienda/admin", "destination": "/admin.html" },
     { "source": "/tienda/admin/", "destination": "/admin.html" },
     { "source": "/tienda/admin-login", "destination": "/admin-login.html" },

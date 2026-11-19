@@ -30,7 +30,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261116g">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261119a">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
   <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261115b">
 </head>
@@ -97,7 +97,7 @@
               <li><a class="perfil__item" href="/tienda/perfil#deseos"><i class="bi bi-star"></i> Lista de Deseos</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#pedidos"><i class="bi bi-bag"></i> Mis pedidos</a></li>
               <li><a class="perfil__item" href="/tienda/trabaja-con-nosotros"><i class="bi bi-truck"></i> Trabaja con nosotros</a></li>
-              <li id="menuModoTrabajador" hidden><a class="perfil__item" href="/tienda/trabajador"><i class="bi bi-truck"></i> Modo trabajador</a></li>
+              <li id="menuModoTrabajador" data-menu-trabajador hidden><a class="perfil__item" href="/tienda/trabajador"><i class="bi bi-truck"></i> Modo trabajador</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#historial"><i class="bi bi-receipt"></i> Historial de compras</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#descuentos"><i class="bi bi-ticket-perforated"></i> Descuentos y cupones</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#configuracion"><i class="bi bi-key"></i> Contraseñas</a></li>
@@ -834,6 +834,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261107c" defer></script>
   <script src="/tienda/recursos/js/core/supabase-api.js?v=20261116a" defer></script>
+  <script src="/tienda/recursos/js/core/menu-trabajador.js?v=20261119a" defer></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
@@ -841,6 +842,6 @@
   <script src="/tienda/recursos/js/core/cedula-nicaragua.js" defer></script>
   <script src="/tienda/recursos/js/components/chiky.js?v=20261116e" defer></script>
   <script src="/tienda/recursos/js/pages/perfil.js?v=20261116f" defer></script>
-  <script src="/tienda/recursos/js/pages/perfil-trabajador-acceso.js?v=20261116a" defer></script>
+  <script src="/tienda/recursos/js/pages/perfil-trabajador-acceso.js?v=20261119a" defer></script>
 </body>
 </html>

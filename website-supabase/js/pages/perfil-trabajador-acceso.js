@@ -19,6 +19,12 @@
 
     const escapar = window.TiendaUtil.escapar;
 
+    let clienteActual = null;
+
+    const modoActivo = () => window.tiendaModoTrabajador?.activo(clienteActual) ?? false;
+
+    const guardarModo = (activo) => window.tiendaModoTrabajador?.definir(clienteActual, activo);
+
     const enlaceSolicitud = (texto, clase = 'btn-primario') => `
         <div class="perfil-trabajador__acciones">
             <a class="${clase}" href="${RUTA_SOLICITUD}">
@@ -56,7 +62,7 @@
             : '';
 
         if (trabajador?.estado_trabajador === 'aprobado') {
-            document.getElementById('menuModoTrabajador')?.removeAttribute('hidden');
+            const activo = modoActivo();
 
             contenedor.innerHTML = `
                 <div class="perfil-trabajador__modo">
@@ -64,14 +70,18 @@
                         <span class="perfil-trabajador__modo-etiqueta">
                             <i class="bi bi-truck" aria-hidden="true"></i> Modo trabajador
                         </span>
-                        <strong>Recibe pedidos y revisa los datos de tus clientes</strong>
+                        <strong>Entra directo a tus pedidos al abrir la tienda</strong>
                     </div>
                     <label class="perfil-trabajador__modo-switch">
-                        <input type="checkbox" id="checkModoTrabajador" role="switch" aria-label="Cambiar a modo trabajador">
+                        <input type="checkbox" id="checkModoTrabajador" role="switch" aria-label="Entrar directo al modo trabajador"${activo ? ' checked' : ''}>
                         <span class="perfil-trabajador__modo-slider" aria-hidden="true"></span>
-                        <span class="perfil-trabajador__modo-texto">Cambiar</span>
+                        <span class="perfil-trabajador__modo-texto">${activo ? 'Activado' : 'Desactivado'}</span>
                     </label>
                 </div>
+                <p class="perfil-trabajador__modo-ayuda">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    Si está activo, al entrar a la tienda irás directo a tus pedidos de delivery; si lo desactivas, verás la interfaz de cliente.
+                </p>
                 <div class="perfil-trabajador__acciones">
                     <a class="btn-primario" href="${RUTA_PANEL}">
                         <i class="bi bi-truck" aria-hidden="true"></i> Ir a mis pedidos
@@ -112,6 +122,8 @@
                 return;
             }
 
+            clienteActual = cliente;
+
             const respuesta = await window.TiendaAPI.get('/tienda/api/trabajador');
             const trabajador = respuesta?.trabajador || null;
 
@@ -129,9 +141,22 @@
     }
 
     contenedor.addEventListener('change', (evento) => {
-        if (evento.target?.id === 'checkModoTrabajador' && evento.target.checked) {
+        if (evento.target?.id !== 'checkModoTrabajador') return;
+
+        const activo = evento.target.checked;
+
+        guardarModo(activo);
+
+        const texto = contenedor.querySelector('.perfil-trabajador__modo-texto');
+
+        if (texto) texto.textContent = activo ? 'Activado' : 'Desactivado';
+
+        if (activo) {
             window.location.href = RUTA_PANEL;
+            return;
         }
+
+        window.tiendaToast?.('Al entrar a la tienda verás la interfaz de cliente.', 'info');
     });
 
     if (document.readyState === 'loading') {

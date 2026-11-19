@@ -201,6 +201,7 @@ Flatpickr, Chart.js, Splide, Turbo, supabase-js e iconos).
 
 - **PHP**: sigue lo existente; el formateador del repo es **Laravel Pint**. Ejecuta `pint` antes de cerrar un cambio.
 - **Nombres**: dominio en español; clases/métodos PascalCase; variables y columnas en `snake_case`.
+- **Ortografía**: escribe siempre correctamente en español, con las tildes y los signos de apertura (`¿`, `¡`) donde correspondan. Conserva los textos en UTF-8; no omitas ni sustituyas caracteres acentuados.
 - **Comentarios**: el proyecto usa banners ASCII (`/* ╔═══ ... ═══╗ */`) para seccionar archivos grandes. Repítelo al añadir bloques a archivos que ya lo usan.
 - **JS**: módulos ES con `export default`; sin build adicional más allá de Vite.
 - No mezcles estilos: si el archivo usa jQuery, no introduzcas fetch/Vue/React.
@@ -217,6 +218,7 @@ Flatpickr, Chart.js, Splide, Turbo, supabase-js e iconos).
 - Usar transacciones en operaciones que tocan varias tablas (ventas, movimientos, caja, inventario).
 - Añadir el permiso correspondiente al crear funcionalidad nueva.
 - Mantener textos, toasts y mensajes de validación en **español**.
+- Como rutina semanal, revisar todos los textos visibles y las funcionalidades y flujos del ERP y la tienda; corregir errores de ortografía y tildes, detectar fallos y validar las correcciones con las pruebas pertinentes. Esta revisión debe hacerse cada semana, no solo al modificar un módulo.
 - Probar con `php artisan test` y formatear con `pint`.
 
 **No hacer:**

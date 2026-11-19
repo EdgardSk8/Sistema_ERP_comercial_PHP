@@ -40,6 +40,8 @@
     let cargandoPedidos = false;
     let vistaActual = 'disponibles';
     let rangoAsignados = 'hoy';
+    let filtroDistancia = 'todas';
+    let filtroDelivery = 'todos';
     let cargandoArqueo = false;
 
     const escapar = window.TiendaUtil.escapar;
@@ -179,18 +181,20 @@
     };
 
     const pagoPedido = (pedido) => {
+        const total = moneda(pedido?.total_pedido);
+
         if (pedido?.estado_pago === 'pagado') {
-            return { texto: 'Pagado', clase: '' };
+            return { texto: `Pagado ${total}`, clase: '' };
         }
 
         if (pedido?.metodo_pago_web === 'efectivo') {
-            return { texto: `Cobrar ${moneda(pedido.total_pedido)}`, clase: ' trabajador-pago--cobrar' };
+            return { texto: `Cobrar ${total}`, clase: ' trabajador-pago--cobrar' };
         }
 
         const metodo = METODOS_PAGO[pedido?.metodo_pago_web];
 
         return {
-            texto: metodo ? `Pago pendiente · ${metodo}` : 'Pago pendiente',
+            texto: metodo ? `Pago pendiente ${total} · ${metodo}` : `Pago pendiente ${total}`,
             clase: '',
         };
     };
@@ -270,26 +274,13 @@
         });
     }
 
-    function renderCliente(pedido) {
+    function datosContacto(pedido) {
         const cliente = pedido?.cliente || {};
         const nombre = pedido?.nombre_recibe || cliente.nombre || 'Cliente';
         const telefonoCliente = telefono(pedido?.telefono_contacto || cliente.telefono);
         const whatsappCliente = whatsapp(pedido?.telefono_contacto || cliente.telefono);
-        const nombreBase = String(cliente.nombre || '').trim();
-        const recibe = nombreBase && nombreBase !== nombre ? `Recibe: ${nombreBase}` : '';
 
-        return `
-            <div class="trabajador-cliente">
-                <span class="trabajador-cliente__icono" aria-hidden="true"><i class="bi bi-person"></i></span>
-                <div class="trabajador-cliente__datos">
-                    <strong>${escapar(nombre)}</strong>
-                    <span>${escapar(recibe || (telefonoCliente ? telefonoCliente : 'Datos de contacto del pedido'))}</span>
-                </div>
-                <div class="trabajador-cliente__acciones">
-                    ${telefonoCliente ? `<a href="tel:${escapar(telefonoCliente)}" aria-label="Llamar al cliente" title="Llamar"><i class="bi bi-telephone"></i></a>` : ''}
-                    ${whatsappCliente ? `<a href="https://wa.me/${escapar(whatsappCliente)}" target="_blank" rel="noopener noreferrer" aria-label="Escribir por WhatsApp" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>` : ''}
-                </div>
-            </div>`;
+        return { nombre, telefonoCliente, whatsappCliente };
     }
 
     function renderItems(pedido) {
@@ -311,9 +302,8 @@
         </ul>`;
     }
 
-    function renderPedido(pedido, tipo) {
+    function datosPedido(pedido, tipo) {
         const esAsignado = tipo === 'asignado';
-        const estado = estadoDe(pedido);
         const numero = pedido?.numero_pedido || `VTA-${String(pedido?.id_pedido || '').padStart(5, '0')}`;
         const pago = ['cancelado', 'rechazado', 'devuelto'].includes(pedido?.estado_pedido)
             ? { texto: 'Sin cobro', clase: '' }
@@ -334,36 +324,6 @@
         const entregaEstimada = pedido?.fecha_entrega_estimada
             ? fechaHora(pedido.fecha_entrega_estimada)
             : '';
-        const accion = esAsignado
-            ? (() => {
-                if (['aceptado', 'preparando'].includes(pedido?.estado_pedido)) {
-                    return `<button type="button" class="trabajador-accion" data-en-camino="${Number(pedido.id_pedido)}">
-                        <i class="bi bi-truck" aria-hidden="true"></i> Marcar en camino
-                    </button>`;
-                }
-
-                if (pedido?.estado_pedido === 'enviado') {
-                    return `<span class="trabajador-acciones">
-                        <button type="button" class="trabajador-accion" data-entregado="${Number(pedido.id_pedido)}">
-                            <i class="bi bi-check2-circle" aria-hidden="true"></i> Marcar entregado
-                        </button>
-                        <button type="button" class="trabajador-accion trabajador-accion--devolver" data-devuelto="${Number(pedido.id_pedido)}">
-                            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> No recibido
-                        </button>
-                    </span>`;
-                }
-
-                if (pedido?.estado_pedido === 'entregado') {
-                    return '<span class="trabajador-accion trabajador-accion--secundaria"><i class="bi bi-check2-circle" aria-hidden="true"></i> Entregado</span>';
-                }
-
-                return `<span class="trabajador-accion trabajador-accion--secundaria">${escapar(estado.texto)}</span>`;
-            })()
-            : `<button type="button" class="trabajador-accion" data-aceptar="${Number(pedido.id_pedido)}"
-                    ${disponible ? '' : 'disabled'} title="${disponible ? '' : 'Activa tu disponibilidad para aceptar pedidos.'}">
-                    <i class="bi bi-hand-index-thumb" aria-hidden="true"></i> Aceptar pedido
-               </button>`;
-
         const fechas = [
             horaPreferida ? `Hora preferida: ${horaPreferida}` : '',
             entregaEstimada ? `Entrega estimada: ${entregaEstimada}` : '',
@@ -371,30 +331,119 @@
             esAsignado && pedido?.fecha_enviado ? `En camino: ${fechaHora(pedido.fecha_enviado)}` : '',
             esAsignado && pedido?.fecha_entregado ? `Entregado: ${fechaHora(pedido.fecha_entregado)}` : '',
         ].filter(Boolean);
+        const cobro = pedido?.estado_pago === 'pagado'
+            ? { texto: 'Pagado', clase: '' }
+            : pedido?.metodo_pago_web === 'efectivo'
+                ? { texto: 'Cobrar', clase: ' trabajador-pago--cobrar' }
+                : { texto: 'Pendiente', clase: '' };
+        const delivery = Number(pedido?.costo_envio_pedido) || 0;
+        const items = Array.isArray(pedido?.items) ? pedido.items : [];
+        const productos = items.length
+            ? items.reduce((suma, item) => suma + (Number(item.subtotal) || 0), 0)
+            : Math.max(0, Number(pedido?.total_pedido) || 0) - delivery;
+
+        return { numero, pago, cobro, productos, delivery, ganancia, distancia, mapa, fechas };
+    }
+
+    function accionesPedido(pedido, tipo) {
+        const estado = estadoDe(pedido);
+
+        if (tipo !== 'asignado') {
+            return `<button type="button" class="trabajador-accion" data-aceptar="${Number(pedido.id_pedido)}"
+                    ${disponible ? '' : 'disabled'} title="${disponible ? '' : 'Activa tu disponibilidad para aceptar pedidos.'}">
+                    <i class="bi bi-hand-index-thumb" aria-hidden="true"></i> Aceptar pedido
+               </button>`;
+        }
+
+        if (['aceptado', 'preparando'].includes(pedido?.estado_pedido)) {
+            return `<button type="button" class="trabajador-accion" data-en-camino="${Number(pedido.id_pedido)}">
+                <i class="bi bi-truck" aria-hidden="true"></i> Marcar en camino
+            </button>`;
+        }
+
+        if (pedido?.estado_pedido === 'enviado') {
+            return `<span class="trabajador-acciones">
+                <button type="button" class="trabajador-accion" data-entregado="${Number(pedido.id_pedido)}">
+                    <i class="bi bi-check2-circle" aria-hidden="true"></i> Marcar entregado
+                </button>
+                <button type="button" class="trabajador-accion trabajador-accion--devolver" data-devuelto="${Number(pedido.id_pedido)}">
+                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> No recibido
+                </button>
+            </span>`;
+        }
+
+        if (pedido?.estado_pedido === 'entregado') {
+            return '<span class="trabajador-accion trabajador-accion--secundaria"><i class="bi bi-check2-circle" aria-hidden="true"></i> Entregado</span>';
+        }
+
+        return `<span class="trabajador-accion trabajador-accion--secundaria">${escapar(estado.texto)}</span>`;
+    }
+
+    /* Tarjeta ancha: resumen a la izquierda y detalle siempre visible a la derecha. */
+    function renderPedido(pedido, tipo) {
+        const estado = estadoDe(pedido);
+        const { pago, cobro, productos, delivery, distancia, mapa } = datosPedido(pedido, tipo);
+        const contacto = datosContacto(pedido);
 
         return `
             <article class="trabajador-pedido trabajador-pedido--${escapar(estado.clase)}" data-pedido="${Number(pedido.id_pedido)}">
-                <header class="trabajador-pedido__cabecera">
-                    <div>
-                        <strong class="trabajador-pedido__numero">${escapar(numero)}</strong>
-                        <span class="trabajador-pedido__fecha">${fechaPedido(pedido.fecha_pedido)}</span>
-                        ${esAsignado ? `<div style="margin-top:6px">${badgeEstado(pedido)}</div>` : ''}
+                <div class="trabajador-pedido__resumen">
+                    <div class="trabajador-pedido__fila">
+                        <span class="trabajador-pedido__cliente" title="${escapar(contacto.nombre)}">
+                            <i class="bi bi-person" aria-hidden="true"></i> ${escapar(contacto.nombre)}
+                        </span>
+                        <span class="trabajador-pedido__dato">
+                            <i class="bi bi-calendar3" aria-hidden="true"></i> ${fechaPedido(pedido.fecha_pedido)}
+                        </span>
+                        ${distancia ? `<span class="trabajador-pedido__dato"><i class="bi bi-geo-alt" aria-hidden="true"></i> ${distancia}</span>` : ''}
+                        ${tipo === 'asignado' ? badgeEstado(pedido) : ''}
                     </div>
-                    <strong class="trabajador-pedido__total">${moneda(pedido.total_pedido)}</strong>
-                </header>
 
-                ${renderCliente(pedido)}
+                    <div class="trabajador-pedido__fila trabajador-pedido__fila--entrega">
+                        <span class="trabajador-pedido__direccion" title="${escapar(pedido?.direccion_entrega || 'Dirección por confirmar')}">
+                            <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                            <strong>${escapar(pedido?.direccion_entrega || 'Dirección por confirmar')}</strong>
+                            ${pedido?.referencia_entrega ? `<span class="trabajador-pedido__referencia">· ${escapar(pedido.referencia_entrega)}</span>` : ''}
+                        </span>
+                        ${mapa ? `<a class="trabajador-pedido__mapa" href="${escapar(mapa)}" target="_blank" rel="noopener noreferrer">
+                            <i class="bi bi-map" aria-hidden="true"></i> Mapa
+                        </a>` : ''}
+                        ${contacto.telefonoCliente || contacto.whatsappCliente ? `<span class="trabajador-pedido__contacto">
+                            ${contacto.telefonoCliente ? `<a href="tel:${escapar(contacto.telefonoCliente)}" aria-label="Llamar al cliente" title="Llamar al ${escapar(contacto.telefonoCliente)}"><i class="bi bi-telephone"></i></a>` : ''}
+                            ${contacto.whatsappCliente ? `<a href="https://wa.me/${escapar(contacto.whatsappCliente)}" target="_blank" rel="noopener noreferrer" aria-label="Escribir por WhatsApp" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>` : ''}
+                        </span>` : ''}
+                    </div>
 
-                <p class="trabajador-direccion">
-                    <i class="bi bi-geo-alt" aria-hidden="true"></i>
-                    <span>
-                        <strong>${escapar(pedido?.direccion_entrega || 'Dirección por confirmar')}</strong>
-                        ${pedido?.referencia_entrega ? `<span>${escapar(pedido.referencia_entrega)}</span>` : ''}
-                        ${distancia ? `<span class="trabajador-direccion__km">${distancia}</span>` : ''}
-                    </span>
-                    ${mapa ? `<a class="trabajador-mapa" href="${escapar(mapa)}" target="_blank" rel="noopener noreferrer">Ver mapa</a>` : ''}
-                </p>
+                    <div class="trabajador-pedido__desglose">
+                        <span class="trabajador-pago${cobro.clase}" title="${escapar(pago.texto)}">
+                            <i class="bi bi-wallet2" aria-hidden="true"></i> ${escapar(cobro.texto)}
+                        </span>
+                        <span>Productos <strong>${moneda(productos)}</strong></span>
+                        <span>Delivery <strong>${moneda(delivery)}</strong></span>
+                        <span class="trabajador-pedido__desglose-total">Total <strong>${moneda(pedido.total_pedido)}</strong></span>
+                    </div>
 
+                    <footer class="trabajador-pedido__pie">
+                        ${accionesPedido(pedido, tipo)}
+                    </footer>
+                </div>
+
+                <div class="trabajador-pedido__detalle">
+                    ${renderDetallePedido(pedido, tipo)}
+                </div>
+            </article>`;
+    }
+
+    function renderDetallePedido(pedido, tipo) {
+        const { pago, ganancia, fechas, numero } = datosPedido(pedido, tipo);
+
+        return `
+            <div class="trabajador-pedido__detalle-cabecera">
+                <span><i class="bi bi-receipt" aria-hidden="true"></i> Factura <strong>${escapar(numero)}</strong></span>
+                <span class="trabajador-pago${pago.clase}"><i class="bi bi-wallet2" aria-hidden="true"></i> ${escapar(pago.texto)}</span>
+            </div>
+
+            <div class="trabajador-pedido__detalle-cuerpo">
                 ${pedido?.nota_cliente ? `<p class="trabajador-nota"><i class="bi bi-chat-left-text" aria-hidden="true"></i><span>${escapar(pedido.nota_cliente)}</span></p>` : ''}
                 ${renderItems(pedido)}
 
@@ -403,47 +452,49 @@
                     : ''}
 
                 ${fechas.length ? `<div class="trabajador-pedido__fecha">${escapar(fechas.join(' · '))}</div>` : ''}
-
-                <footer class="trabajador-pedido__pie">
-                    <span class="trabajador-pago${pago.clase}"><i class="bi bi-wallet2" aria-hidden="true"></i> ${escapar(pago.texto)}</span>
-                    ${accion}
-                </footer>
-            </article>`;
+            </div>`;
     }
 
-    function renderPedidoCompacto(pedido) {
-        const numero = pedido?.numero_pedido || `VTA-${String(pedido?.id_pedido || '').padStart(5, '0')}`;
-        const cliente = pedido?.nombre_recibe || pedido?.cliente?.nombre || 'Cliente';
+    const filtrarDisponibles = (pedidos) => pedidos.filter((pedido) => {
+        const km = Number(pedido?.distancia_km);
+        const delivery = Number(pedido?.costo_envio_pedido);
 
-        return `
-            <details class="trabajador-pedido-mini" data-pedido="${Number(pedido.id_pedido)}">
-                <summary class="trabajador-pedido-mini__resumen">
-                    <span class="trabajador-pedido-mini__principal">
-                        <strong>${escapar(numero)}</strong>
-                        <span>${escapar(cliente)}</span>
-                    </span>
-                    <span class="trabajador-pedido-mini__lado">
-                        ${badgeEstado(pedido)}
-                        <strong>${moneda(pedido.total_pedido)}</strong>
-                    </span>
-                    <i class="bi bi-chevron-down trabajador-pedido-mini__chevron" aria-hidden="true"></i>
-                </summary>
-                ${renderPedido(pedido, 'asignado')}
-            </details>`;
-    }
+        if (filtroDistancia === 'cerca' && !(Number.isFinite(km) && km > 0 && km <= 3)) return false;
+        if (filtroDistancia === 'lejos' && !(Number.isFinite(km) && km > 3)) return false;
+        if (filtroDelivery === 'hasta30' && !(Number.isFinite(delivery) && delivery <= 30)) return false;
+        if (filtroDelivery === '31a60' && !(Number.isFinite(delivery) && delivery > 30 && delivery <= 60)) return false;
+        if (filtroDelivery === 'mas60' && !(Number.isFinite(delivery) && delivery > 60)) return false;
+
+        return true;
+    });
 
     function renderListas() {
         const disponibles = Array.isArray(pedidosActuales.disponibles) ? pedidosActuales.disponibles : [];
+        const disponiblesFiltrados = filtrarDisponibles(disponibles);
         const asignados = Array.isArray(pedidosActuales.asignados) ? pedidosActuales.asignados : [];
         const asignadosVisibles = rangoAsignados === 'hoy' ? asignados.filter(pedidoDeHoy) : asignados;
         const activos = asignados.filter((pedido) => ['aceptado', 'preparando', 'enviado'].includes(pedido.estado_pedido));
         const entregados = asignados.filter((pedido) => pedido.estado_pedido === 'entregado');
 
-        listaDisponibles.innerHTML = disponibles.map((pedido) => renderPedido(pedido, 'disponible')).join('');
-        listaAsignados.innerHTML = asignadosVisibles.map((pedido) => renderPedidoCompacto(pedido)).join('');
+        listaDisponibles.innerHTML = disponiblesFiltrados.map((pedido) => renderPedido(pedido, 'disponible')).join('');
+        listaAsignados.innerHTML = asignadosVisibles.map((pedido) => renderPedido(pedido, 'asignado')).join('');
 
-        vacioDisponibles.hidden = disponibles.length > 0;
+        vacioDisponibles.hidden = disponiblesFiltrados.length > 0;
         vacioAsignados.hidden = asignadosVisibles.length > 0;
+
+        const filtrosActivos = filtroDistancia !== 'todas' || filtroDelivery !== 'todos';
+        const tituloDisponibles = vacioDisponibles.querySelector('strong');
+        const textoDisponibles = vacioDisponibles.querySelector('span');
+
+        if (tituloDisponibles) {
+            tituloDisponibles.textContent = filtrosActivos ? 'Sin pedidos con esos filtros' : 'No hay pedidos disponibles';
+        }
+
+        if (textoDisponibles) {
+            textoDisponibles.textContent = filtrosActivos
+                ? 'Cambia la distancia o el precio de delivery.'
+                : 'Actualiza en unos minutos o activa tu disponibilidad.';
+        }
 
         if (!asignadosVisibles.length) {
             const hayAnteriores = rangoAsignados === 'hoy' && asignados.length > 0;
@@ -464,10 +515,10 @@
             boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
         });
 
-        porId('statDisponibles').textContent = disponibles.length;
+        porId('statDisponibles').textContent = disponiblesFiltrados.length;
         porId('statAsignados').textContent = activos.length;
         porId('statEntregados').textContent = entregados.length;
-        porId('badgeDisponibles').textContent = disponibles.length;
+        porId('badgeDisponibles').textContent = disponiblesFiltrados.length;
         porId('badgeAsignados').textContent = asignadosVisibles.length;
 
         actualizarDisponibilidadUI();
@@ -527,6 +578,9 @@
 
         porId('vistaDisponibles').hidden = vistaActual !== 'disponibles';
         porId('vistaAsignados').hidden = vistaActual !== 'asignados';
+
+        const filtrosDisponibles = porId('trabajadorFiltrosDisponibles');
+        if (filtrosDisponibles) filtrosDisponibles.hidden = vistaActual !== 'disponibles';
     }
 
     async function cambiarDisponibilidad() {
@@ -671,15 +725,20 @@
         if (!desde.value) {
             const inicio = new Date();
             inicio.setDate(inicio.getDate() - 6);
-            desde.value = fechaParaInput(inicio);
+            const valor = fechaParaInput(inicio);
+            desde.value = valor;
+            desde._flatpickr?.setDate(valor, false, 'Y-m-d');
         }
 
-        if (!hasta.value) hasta.value = fechaParaInput();
+        if (!hasta.value) {
+            const valor = fechaParaInput();
+            hasta.value = valor;
+            hasta._flatpickr?.setDate(valor, false, 'Y-m-d');
+        }
 
         modal.hidden = false;
         document.body.classList.add('trabajador-modal-abierto');
         cargarArqueo();
-        window.setTimeout(() => desde.focus(), 60);
     }
 
     function cerrarArqueo() {
@@ -801,6 +860,59 @@
             <h3 class="trabajador-arqueo__titulo">Historial de arqueos</h3>
             <div class="trabajador-arqueo__historial">${historialHtml}</div>
         `;
+    }
+
+    function localeEspanol() {
+        const base = window.flatpickr?.l10ns?.es;
+
+        if (!base) return 'es';
+
+        return {
+            ...base,
+            months: {
+                ...base.months,
+                longhand: base.months.longhand.map((mes) => mes.toLowerCase()),
+            },
+        };
+    }
+
+    function iniciarArqueoFechas() {
+        const desde = porId('arqueoDesde');
+        const hasta = porId('arqueoHasta');
+
+        if (!desde || !hasta) return;
+
+        if (typeof window.flatpickr !== 'function') {
+            desde.type = 'date';
+            hasta.type = 'date';
+            return;
+        }
+
+        const opciones = {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'd/m/Y',
+            altInputClass: 'trabajador-arqueo__campo-fecha',
+            allowInput: false,
+            maxDate: 'today',
+            locale: localeEspanol(),
+            disableMobile: true,
+            appendTo: document.body,
+        };
+
+        window.flatpickr(desde, opciones);
+        window.flatpickr(hasta, opciones);
+
+        [desde, hasta].forEach((input) => {
+            const visible = input._flatpickr?.altInput || input;
+
+            if (visible !== input) {
+                visible.readOnly = true;
+                visible.placeholder = 'dd/mm/aaaa';
+                visible.setAttribute('inputmode', 'none');
+                visible.setAttribute('aria-label', input.id === 'arqueoDesde' ? 'Desde' : 'Hasta');
+            }
+        });
     }
 
     async function cargarArqueo() {
@@ -943,6 +1055,29 @@
 
     switchDisponible?.addEventListener('change', cambiarDisponibilidad);
 
+    porId('filtroDistancia')?.addEventListener('change', (evento) => {
+        filtroDistancia = evento.target.value;
+        renderListas();
+    });
+
+    porId('filtroDelivery')?.addEventListener('change', (evento) => {
+        filtroDelivery = evento.target.value;
+        renderListas();
+    });
+
+    /* Al volver al modo cliente se desactiva el ingreso automático al panel. */
+    document.querySelector('.trabajador-modo-cliente')?.addEventListener('click', () => {
+        const id = window.clienteTienda?.id_cliente;
+
+        try {
+            localStorage.removeItem('tienda_modo_trabajador');
+
+            if (id) localStorage.removeItem(`tienda_modo_trabajador:${id}`);
+        } catch {
+            /* Sin almacenamiento local. */
+        }
+    });
+
     porId('btnMiArqueo')?.addEventListener('click', abrirArqueo);
     porId('btnFiltrarArqueo')?.addEventListener('click', cargarArqueo);
     porId('arqueoDesde')?.addEventListener('change', cargarArqueo);
@@ -953,7 +1088,9 @@
     });
 
     document.addEventListener('keydown', (evento) => {
-        if (evento.key === 'Escape' && !porId('trabajadorArqueo')?.hidden) {
+        if (evento.key !== 'Escape') return;
+
+        if (porId('trabajadorArqueo')?.hidden === false) {
             cerrarArqueo();
         }
     });
@@ -969,6 +1106,8 @@
             cargarPedidos(true);
         }
     }, 30000);
+
+    iniciarArqueoFechas();
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', iniciar, { once: true });

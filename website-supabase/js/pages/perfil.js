@@ -2278,7 +2278,7 @@ const METODOS_PAGO_WEB = {
     lafise: 'Transferencia Lafise',
 };
 
-const WHATSAPP_TIENDA = '50584774288';
+const WHATSAPP_TIENDA = '50589142260';
 
 const ESTADOS_PEDIDO_CANCELADOS = ['cancelado', 'rechazado', 'devuelto'];
 const ESTADOS_PEDIDO_SOLICITADOS = ['solicitado'];
@@ -2602,9 +2602,9 @@ function conectarPedidos() {
 
         const factura = boton.closest('.perfil-compra')?.querySelector('.perfil-compra__factura')?.textContent?.trim() || '';
         const confirmado = await tiendaConfirmar({
-            titulo: '?Cancelar este pedido?',
-            mensaje: `${factura ? `El pedido ${factura} quedar? cancelado. ` : 'El pedido quedar? cancelado. '}Esta acci?n no se puede revertir.`,
-            textoAceptar: 'S?, cancelar',
+            titulo: '¿Cancelar este pedido?',
+            mensaje: `${factura ? `El pedido ${factura} quedará cancelado. ` : 'El pedido quedará cancelado. '}Esta acción no se puede revertir.`,
+            textoAceptar: 'Sí, cancelar',
             textoCancelar: 'Volver',
             peligro: true,
         });
