@@ -38,6 +38,8 @@ Crear tokens independientes de los colores para poder trasladar el sistema:
 
 La hoja del ERP define tipografías de 10, 12, 14, 16 y 18 px, además de espacios de 8, 12 y 16 px. Algunos módulos compactos usan controles de 26–32 px. El valor de 36 px es una base recomendada para un nuevo sitio; debe comprobarse junto a la tipografía y la densidad elegidas.
 
+Para la escala compacta aplicada al panel administrativo y el detalle de padding, margin, alturas y scroll fino por componente, consulta [tamanios.md](./tamanios.md).
+
 ## 3. Layout y separación
 
 ### Página y paneles

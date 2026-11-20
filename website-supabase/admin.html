@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-utilidades.css?v=20261110a">
   <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114b">
   <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/admin.css?v=20261119e">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/admin.css?v=20261119r">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 </head>
 <body class="admin-pagina">
@@ -55,7 +55,7 @@
         </div>
         <div class="admin-vista__cabecera-acciones">
           <button class="admin-autoaceptar" id="btnAutoAceptar" type="button" aria-pressed="false" disabled title="Cargando configuración de aceptación automática">
-            <i class="bi bi-lightning-charge" aria-hidden="true"></i>
+            <i class="bi bi-broadcast" aria-hidden="true"></i>
             <span>Aceptación automática</span>
             <strong id="autoAceptarEstado">No</strong>
           </button>
@@ -77,11 +77,12 @@
           <input id="pedidosBuscar" type="search" placeholder="Buscar número, cliente o teléfono" autocomplete="off">
         </div>
         <label class="admin-filtro-dia" for="pedidosRangoDia">
-          <i class="bi bi-calendar3" aria-hidden="true"></i>
+          <i class="bi bi-clock" aria-hidden="true"></i>
           <select id="pedidosRangoDia" aria-label="Día del pedido">
             <option value="hoy">Hoy</option>
             <option value="ayer">Ayer</option>
             <option value="antier">Antier</option>
+            <option value="todos">Todos</option>
             <option value="otro">Otro día</option>
           </select>
         </label>
@@ -111,7 +112,7 @@
         </div>
         <div class="admin-vista__cabecera-acciones">
           <button class="admin-btn admin-btn--verde admin-btn--icono" type="button" id="btnNuevaPromo" aria-label="Nueva promoción" title="Nueva promoción">
-            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            <i class="bi bi-bag-plus" aria-hidden="true"></i>
           </button>
           <div class="admin-ayuda">
             <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaPromociones" aria-label="Más información sobre las promociones">
@@ -166,7 +167,7 @@
         </div>
         <div class="admin-vista__cabecera-acciones">
           <button class="admin-btn admin-btn--primario admin-btn--icono" type="button" id="btnNuevoCupon" aria-label="Nuevo cupón" title="Nuevo cupón">
-            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            <i class="bi bi-bag-plus" aria-hidden="true"></i>
           </button>
           <div class="admin-ayuda">
             <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaCupones" aria-label="Más información sobre los cupones">
@@ -276,11 +277,11 @@
       <div class="admin-cierre__fechas" role="group" aria-label="Periodo del cierre">
         <label for="cierreDesde">
           <span>Desde</span>
-          <input id="cierreDesde" type="date">
+          <input id="cierreDesde" type="text" placeholder="19 de noviembre del 2026" autocomplete="off">
         </label>
         <label for="cierreHasta">
           <span>Hasta</span>
-          <input id="cierreHasta" type="date">
+          <input id="cierreHasta" type="text" placeholder="19 de noviembre del 2026" autocomplete="off">
         </label>
       </div>
 
@@ -391,7 +392,7 @@
       <em id="navBadgeTrabajadores" hidden>0</em>
     </button>
     <button class="admin-nav__item" type="button" data-vista="cambios">
-      <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+      <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
       <span>Cambios</span>
       <em id="navBadgeCambios" hidden>0</em>
     </button>
@@ -439,6 +440,6 @@
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261110a" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js" defer></script>
-  <script src="/tienda/recursos/js/pages/admin.js?v=20261119e" defer></script>
+  <script src="/tienda/recursos/js/pages/admin.js?v=20261119r" defer></script>
 </body>
 </html>

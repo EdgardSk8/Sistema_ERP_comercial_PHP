@@ -39,6 +39,8 @@
     let resolverDialogo = null;
     let ultimoFoco = null;
     let selectorFechaPedidos = null;
+    let selectorCierreDesde = null;
+    let selectorCierreHasta = null;
 
     /* ───────────────────────── Utilidades ───────────────────────── */
 
@@ -57,6 +59,19 @@
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .trim();
+    }
+
+    /* Cada palabra debe aparecer en algún dato; los dígitos también coinciden
+       sin guiones ni espacios (teléfonos). */
+    function coincideBusqueda(consulta, valores) {
+        const terminos = normalizar(consulta).split(/\s+/).filter(Boolean);
+        if (!terminos.length) return true;
+
+        const texto = valores.filter(Boolean).join(' ');
+        const indice = normalizar(texto);
+        const digitos = soloDigitos(texto);
+
+        return terminos.every((parte) => indice.includes(parte) || (digitos && digitos.includes(parte)));
     }
 
     function moneda(valor) {
@@ -103,6 +118,26 @@
         if (!dato) return '—';
 
         return dato.toLocaleDateString('es-NI', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function fechaCompleta(valor) {
+        const texto = String(valor ?? '').trim();
+        let dato = null;
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+            const [anio, mes, dia] = texto.split('-').map(Number);
+            dato = new Date(anio, mes - 1, dia);
+        } else {
+            dato = fecha(valor);
+        }
+
+        if (!dato || Number.isNaN(dato.getTime())) return '—';
+
+        const dia = dato.getDate();
+        const mes = dato.toLocaleDateString('es-NI', { month: 'long' });
+        const anio = dato.getFullYear();
+
+        return `${dia} de ${mes} del ${anio}`;
     }
 
     function fechaISO(valor) {
@@ -275,8 +310,8 @@
         }
 
         const fechaTexto = fechaFin
-            ? `${escapar(fechaDia(promocion.fecha_inicio))} al ${escapar(fechaDia(promocion.fecha_fin))}`
-            : `${escapar(fechaDia(promocion.fecha_inicio))} · sin fecha final`;
+            ? `${escapar(fechaCompleta(promocion.fecha_inicio))} al ${escapar(fechaCompleta(promocion.fecha_fin))}`
+            : `${escapar(fechaCompleta(promocion.fecha_inicio))} · sin fecha final`;
 
         if (!fechaFin) {
             return {
@@ -304,9 +339,9 @@
         const fechaFin = fecha(promocion?.fecha_fin);
         const vencida = fechaFin ? new Date(fechaFin.getFullYear(), fechaFin.getMonth(), fechaFin.getDate(), 23, 59, 59).getTime() < Date.now() : false;
 
-        if (vencida) return { nombre: 'Vencida', icono: 'bi-clock-history', clase: 'estado-vencida', filtro: 'vencida' };
-        if (promocion?.activa === false || promocion?.estado === false) return { nombre: 'Pausada', icono: 'bi-pause-circle', clase: 'estado-pausada', filtro: 'pausada' };
-        return { nombre: 'Disponible', icono: 'bi-check-circle', clase: 'estado-disponible', filtro: 'disponible' };
+        if (vencida) return { nombre: 'Vencida', icono: 'bi-clock', clase: 'estado-vencida', filtro: 'vencida' };
+        if (promocion?.activa === false || promocion?.estado === false) return { nombre: 'Pausada', icono: 'bi-slash-circle', clase: 'estado-pausada', filtro: 'pausada' };
+        return { nombre: 'Disponible', icono: 'bi-check-circle-fill', clase: 'estado-disponible', filtro: 'disponible' };
     }
 
     /* ───────────────────────── Sesión y API ───────────────────────── */
@@ -608,7 +643,7 @@
     }
 
     function presetParaFecha(diaISO) {
-        if (!diaISO) return 'hoy';
+        if (!diaISO) return 'todos';
         if (diaISO === hoyISO()) return 'hoy';
         if (diaISO === fechaISO(fechaRelativa('ayer'))) return 'ayer';
         if (diaISO === fechaISO(fechaRelativa('antier'))) return 'antier';
@@ -626,6 +661,13 @@
         if (!window.flatpickr) {
             input.value = fechaDia(estado.filtros.pedidosDia);
             input.addEventListener('change', () => {
+                if (!input.value.trim()) {
+                    estado.filtros.pedidosDia = null;
+                    if (preset) preset.value = 'todos';
+                    renderPedidos();
+                    return;
+                }
+
                 const partes = input.value.split('/');
                 if (partes.length !== 3) return;
 
@@ -648,9 +690,8 @@
             defaultDate: fechaDesdeISO(estado.filtros.pedidosDia),
             onChange: (fechas) => {
                 if (!fechas.length) {
-                    estado.filtros.pedidosDia = hoyISO();
-                    if (preset) preset.value = 'hoy';
-                    selectorFechaPedidos.setDate(fechaDesdeISO(estado.filtros.pedidosDia), false);
+                    estado.filtros.pedidosDia = null;
+                    if (preset) preset.value = 'todos';
                     renderPedidos();
                     return;
                 }
@@ -664,6 +705,90 @@
                 if (preset) preset.value = presetParaFecha(estado.filtros.pedidosDia);
             },
         });
+    }
+
+    function iniciarFechasPromocion() {
+        if (!window.flatpickr) return;
+
+        ['promoInicio', 'promoFin'].forEach((id) => {
+            const input = document.getElementById(id);
+            if (!input || input._flatpickr) return;
+
+            const botonLimpiar = document.getElementById(`${id}Limpiar`);
+
+            const aplicarFormato = (fechas, _texto, instancia) => {
+                if (!instancia?.altInput) return;
+
+                instancia.altInput.value = fechas?.length
+                    ? fechaCompleta(instancia.formatDate(fechas[0], 'Y-m-d'))
+                    : '';
+
+                if (botonLimpiar) botonLimpiar.hidden = !fechas?.length;
+            };
+
+            const selector = window.flatpickr(input, {
+                locale: window.flatpickr.l10ns?.es || 'es',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'd/m/Y',
+                altInputClass: '',
+                allowInput: false,
+                disableMobile: true,
+                defaultDate: input.value || null,
+                onReady: aplicarFormato,
+                onClose: aplicarFormato,
+            });
+
+            botonLimpiar?.addEventListener('click', () => {
+                selector.clear(false);
+                if (selector.altInput) selector.altInput.value = '';
+                botonLimpiar.hidden = true;
+            });
+        });
+    }
+
+    function iniciarFechasCierre() {
+        if (!window.flatpickr) return;
+
+        const configuracion = {
+            locale: window.flatpickr.l10ns?.es || 'es',
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'd/m/Y',
+            altInputClass: '',
+            allowInput: false,
+            disableMobile: true,
+            maxDate: 'today',
+        };
+
+        const aplicarFormato = (fechas, _texto, instancia) => {
+            if (!instancia?.altInput) return;
+
+            instancia.altInput.value = fechas?.length
+                ? fechaCompleta(instancia.formatDate(fechas[0], 'Y-m-d'))
+                : '';
+        };
+
+        const desde = $('#cierreDesde');
+        const hasta = $('#cierreHasta');
+
+        if (desde) {
+            selectorCierreDesde = window.flatpickr(desde, {
+                ...configuracion,
+                defaultDate: desde.value || hoyISO(),
+                onReady: aplicarFormato,
+                onClose: aplicarFormato,
+            });
+        }
+
+        if (hasta) {
+            selectorCierreHasta = window.flatpickr(hasta, {
+                ...configuracion,
+                defaultDate: hasta.value || hoyISO(),
+                onReady: aplicarFormato,
+                onClose: aplicarFormato,
+            });
+        }
     }
 
     function pintarAutoAceptar() {
@@ -724,15 +849,22 @@
 
         const filtro = estado.filtros.pedidos;
         const dia = estado.filtros.pedidosDia;
-        const buscar = normalizar(estado.busquedas.pedidos);
 
         const lista = estado.pedidos.filter((pedido) => {
             if (dia && fechaISO(pedido.fecha) !== dia) return false;
-            if (filtro === 'en_camino') return ['enviado', 'listo_retiro'].includes(pedido.estado);
-            if (filtro !== 'todos' && pedido.estado !== filtro) return false;
-            if (!buscar) return true;
 
-            return normalizar(`${pedido.numero} ${pedido.cliente} ${pedido.telefono} ${pedido.recibe}`).includes(buscar);
+            if (filtro === 'en_camino') {
+                if (!['enviado', 'listo_retiro'].includes(pedido.estado)) return false;
+            } else if (filtro !== 'todos' && pedido.estado !== filtro) {
+                return false;
+            }
+
+            return coincideBusqueda(estado.busquedas.pedidos, [
+                pedido.numero,
+                pedido.cliente,
+                pedido.telefono,
+                pedido.recibe,
+            ]);
         });
 
         actualizarContador($('#pedidosContador'), lista.length);
@@ -1425,17 +1557,30 @@
                         </div>
                     </div>
 
-                    <div class="admin-form__fila admin-form__fila--dos-columnas">
+                    <p class="admin-form__calculo" id="promoCalculo" aria-live="polite" hidden></p>
+
+                    <label class="admin-form__check" id="promoMostrarPorcentajeFila" hidden>
+                        <input type="checkbox" id="promoMostrarPorcentaje" name="mostrar_porcentaje">
+                        Mostrar el descuento como porcentaje (%) en la tienda
+                    </label>
+
+                    <div class="admin-form__fila admin-form__fila--dos-columnas admin-form__fila--fechas">
                         <div class="admin-form__campo">
                             <label for="promoInicio">Inicio</label>
-                            <input id="promoInicio" name="inicio" type="date" required
+                            <input id="promoInicio" name="inicio" type="text" placeholder="19 de noviembre del 2026" autocomplete="off" required
                                 value="${escapar(promocion?.fecha_inicio || new Date().toISOString().slice(0, 10))}">
                         </div>
 
                         <div class="admin-form__campo">
                             <label for="promoFin">Fin (opcional)</label>
-                            <input id="promoFin" name="fin" type="date"
-                                value="${escapar(promocion?.fecha_fin || '')}">
+                            <div class="admin-form__fecha-campo">
+                                <input id="promoFin" name="fin" type="text" placeholder="19 de noviembre del 2026" autocomplete="off"
+                                    value="${escapar(promocion?.fecha_fin || '')}">
+                                <button class="admin-form__fecha-limpiar" type="button" id="promoFinLimpiar"
+                                    aria-label="Quitar fecha final" title="Quitar fecha final" hidden>
+                                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -1454,6 +1599,68 @@
             abrirSheet(promocion ? 'Editar promoción' : 'Nueva promoción', 'El precio de oferta se calcula automáticamente.', contenido);
 
             const selectProducto = $('#promoProducto');
+            const tipoControl = $('#promoTipo');
+            const valorControl = $('#promoValor');
+            const calculoControl = $('#promoCalculo');
+            const checkPorcentaje = $('#promoMostrarPorcentaje');
+            const checkPorcentajeFila = $('#promoMostrarPorcentajeFila');
+
+            const productoSeleccionado = () => productos.find((producto) => (
+                Number(producto.id_producto) === Number(selectProducto?.value)
+            ));
+
+            const calcularPromocion = () => {
+                if (!tipoControl || !valorControl || !calculoControl) return;
+
+                const tipo = tipoControl.value;
+                const numero = Number(valorControl.value);
+                const base = Number(productoSeleccionado()?.precio_venta) || 0;
+                const permitePorcentaje = tipo === 'monto' || tipo === 'precio';
+
+                if (checkPorcentajeFila) checkPorcentajeFila.hidden = !permitePorcentaje;
+                if (!permitePorcentaje && checkPorcentaje) checkPorcentaje.checked = false;
+
+                if (!tipo || !valorControl.value.trim() || !Number.isFinite(numero) || numero < 0 || base <= 0) {
+                    calculoControl.hidden = true;
+                    calculoControl.textContent = '';
+                    return;
+                }
+
+                let precioFinal = base;
+                if (tipo === 'porcentaje') precioFinal = base * (1 - numero / 100);
+                else if (tipo === 'monto') precioFinal = base - numero;
+                else if (tipo === 'precio') precioFinal = numero;
+
+                precioFinal = Math.max(0, Math.min(base, precioFinal));
+                const ahorro = Math.max(0, base - precioFinal);
+                const porcentaje = base > 0 ? (ahorro / base) * 100 : 0;
+                const partes = [`Precio final: ${moneda(precioFinal)}`];
+
+                if (tipo === 'porcentaje') {
+                    partes.push(`Ahorro: ${moneda(ahorro)}`);
+                    if (numero > 100) partes.push('El porcentaje no puede superar 100');
+                } else {
+                    partes.push(`Descuento: ${porcentaje.toFixed(2)}%`);
+                    if (tipo === 'precio') {
+                        partes.push(`Ahorro: ${moneda(ahorro)}`);
+                        if (numero > base) partes.push('El precio final no puede superar el precio del producto');
+                    }
+                }
+
+                if (permitePorcentaje && checkPorcentaje?.checked) {
+                    partes.push(`Se mostrará como ${porcentaje.toFixed(2)}%`);
+                }
+
+                calculoControl.textContent = `Cálculo: ${partes.join(' · ')}`;
+                calculoControl.hidden = false;
+            };
+
+            [selectProducto, tipoControl, checkPorcentaje].forEach((control) => {
+                control?.addEventListener('change', calcularPromocion);
+            });
+            valorControl?.addEventListener('input', calcularPromocion);
+            calcularPromocion();
+            iniciarFechasPromocion();
 
             $('#formPromocion')?.addEventListener('submit', async (evento) => {
                 evento.preventDefault();
@@ -1466,6 +1673,32 @@
                     return;
                 }
 
+                if (tipo === 'porcentaje' && Number(valor) > 100) {
+                    mostrarToast('El porcentaje no puede superar 100.', 'error');
+                    return;
+                }
+
+                const baseProducto = Number(productoSeleccionado()?.precio_venta) || 0;
+
+                if (tipo === 'precio' && baseProducto > 0 && Number(valor) > baseProducto) {
+                    mostrarToast('El precio final no puede superar el precio del producto.', 'error');
+                    return;
+                }
+
+                let tipoGuardado = tipo;
+                let valorGuardado = tipo ? Number(valor) : null;
+
+                if ((tipo === 'monto' || tipo === 'precio') && $('#promoMostrarPorcentaje')?.checked) {
+                    if (baseProducto > 0) {
+                        const numero = Number(valor) || 0;
+                        const precioFinal = tipo === 'monto' ? Math.max(baseProducto - numero, 0) : Math.max(numero, 0);
+                        const porcentaje = Math.min(100, Math.max(0, (1 - precioFinal / baseProducto) * 100));
+
+                        tipoGuardado = 'porcentaje';
+                        valorGuardado = Number(porcentaje.toFixed(2));
+                    }
+                }
+
                 const boton = $('#formPromocion button[type="submit"]');
                 if (boton) boton.disabled = true;
 
@@ -1473,8 +1706,8 @@
                     await adminRpc('web_admin_promocion_guardar', {
                         p_id: promocion?.id_promocion ? Number(promocion.id_promocion) : null,
                         p_id_producto: Number(selectProducto.value),
-                        p_tipo: tipo || null,
-                        p_valor: tipo ? Number(valor) : null,
+                        p_tipo: tipoGuardado || null,
+                        p_valor: tipoGuardado ? valorGuardado : null,
                         p_inicio: $('#promoInicio')?.value || null,
                         p_fin: $('#promoFin')?.value || null,
                         p_imagen: null,
@@ -1912,7 +2145,7 @@
         actualizarContador($('#cambiosContador'), lista.length);
 
         if (!lista.length) {
-            vacio(contenedor, 'bi-arrow-repeat', 'Sin solicitudes en este estado', 'Cuando un repartidor envíe un cambio aparecerá aquí.');
+            vacio(contenedor, 'bi-arrow-counterclockwise', 'Sin solicitudes en este estado', 'Cuando un repartidor envíe un cambio aparecerá aquí.');
             return;
         }
 
@@ -1939,8 +2172,8 @@
                     </div>
 
                     <div class="admin-acciones">
-                        ${foto ? `<a class="admin-btn admin-btn--suave" href="${escapar(foto)}" target="_blank" rel="noopener"><i class="bi bi-image"></i> Ver foto nueva</a>` : ''}
-                        ${foto && fotoActual ? `<a class="admin-btn admin-btn--ghost" href="${escapar(fotoActual)}" target="_blank" rel="noopener"><i class="bi bi-card-image"></i> Foto actual</a>` : ''}
+                        ${foto ? `<a class="admin-btn admin-btn--suave" href="${escapar(foto)}" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Ver foto nueva</a>` : ''}
+                        ${foto && fotoActual ? `<a class="admin-btn admin-btn--ghost" href="${escapar(fotoActual)}" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Foto actual</a>` : ''}
                         ${pendiente ? `<button class="admin-btn admin-btn--verde" type="button" data-accion="cambio-form" data-modo="aprobar" data-id="${Number(cambio.id_cambio)}"><i class="bi bi-check2"></i> Aprobar</button>
                         <button class="admin-btn admin-btn--peligro" type="button" data-accion="cambio-form" data-modo="rechazar" data-id="${Number(cambio.id_cambio)}"><i class="bi bi-x-circle"></i> Rechazar</button>` : ''}
                     </div>
@@ -2023,14 +2256,29 @@
         const hastaInput = $('#cierreHasta');
         const hoy = hoyISO();
 
-        if (desdeInput && !desdeInput.value) desdeInput.value = hoy;
-        if (hastaInput && !hastaInput.value) hastaInput.value = hoy;
+        if (desdeInput && !desdeInput.value) {
+            if (selectorCierreDesde) {
+                selectorCierreDesde.setDate(hoy, false);
+                if (selectorCierreDesde.altInput) selectorCierreDesde.altInput.value = fechaCompleta(hoy);
+            } else {
+                desdeInput.value = hoy;
+            }
+        }
+
+        if (hastaInput && !hastaInput.value) {
+            if (selectorCierreHasta) {
+                selectorCierreHasta.setDate(hoy, false);
+                if (selectorCierreHasta.altInput) selectorCierreHasta.altInput.value = fechaCompleta(hoy);
+            } else {
+                hastaInput.value = hoy;
+            }
+        }
 
         const desde = desdeInput?.value || hoy;
         const hasta = hastaInput?.value || hoy;
 
         if (hasta < desde) {
-            vacio(contenedor, 'bi-calendar-x', 'Fechas incorrectas', 'La fecha final no puede ser anterior a la inicial.');
+            vacio(contenedor, 'bi-exclamation-triangle', 'Fechas incorrectas', 'La fecha final no puede ser anterior a la inicial.');
             return;
         }
 
@@ -2054,13 +2302,13 @@
         if (!contenedor) return;
 
         const totales = estado.cierre.totales || {};
-        const buscar = normalizar(estado.busquedas.cierre);
         const listaBase = estado.cierre.repartidores.filter((repartidor) => (
             Number(repartidor.pedidos) > 0 || Number(repartidor.cerrados) > 0
         ));
-        const lista = buscar
-            ? listaBase.filter((repartidor) => normalizar(`${repartidor.nombre} ${repartidor.telefono}`).includes(buscar))
-            : listaBase;
+        const lista = listaBase.filter((repartidor) => coincideBusqueda(estado.busquedas.cierre, [
+            repartidor.nombre,
+            repartidor.telefono,
+        ]));
 
         actualizarContador($('#cierreContador'), lista.length);
         $('#cierrePedidos').textContent = String(Number(totales.pedidos) || 0);
@@ -2132,7 +2380,7 @@
                                             <button class="admin-btn admin-btn--primario admin-cierre__accion" type="button"
                                                 data-accion="cierre-detalle" data-modo="arquear" data-id="${Number(repartidor.id_trabajador)}"
                                                 aria-label="Arquear a ${escapar(nombre)}">
-                                                <i class="bi bi-calculator" aria-hidden="true"></i><span>Arquear</span>
+                                                <i class="bi bi-cash-coin" aria-hidden="true"></i><span>Arquear</span>
                                             </button>` : ''}
                                     </div>
                                 </td>
@@ -2254,7 +2502,7 @@
                 <div class="admin-cierre__historial-trabajador" id="cierreHistorialTrabajador"
                     data-id-trabajador="${Number(repartidor.id_trabajador)}" aria-live="polite">
                     <p class="admin-texto-suave admin-cierre__historial-aviso">
-                        <i class="bi bi-clock-history" aria-hidden="true"></i>
+                        <i class="bi bi-clock" aria-hidden="true"></i>
                         <span>Presiona <strong>Cargar</strong> para consultar los últimos cierres de este repartidor.</span>
                     </p>
                 </div>
@@ -2534,13 +2782,15 @@
         if (!contenedor) return;
 
         const filtro = estado.filtros.cobros;
-        const buscar = normalizar(estado.busquedas.cobros);
 
         const lista = estado.cuentas.filter((cuenta) => {
             if (filtro !== 'todas' && cuenta.estado !== filtro) return false;
-            if (!buscar) return true;
 
-            return normalizar(`${cuenta.cliente} ${cuenta.factura} ${cuenta.telefono}`).includes(buscar);
+            return coincideBusqueda(estado.busquedas.cobros, [
+                cuenta.cliente,
+                cuenta.factura,
+                cuenta.telefono,
+            ]);
         });
 
         if (!lista.length) {
@@ -2933,6 +3183,20 @@
                 return;
             }
 
+            if (valor === 'todos') {
+                estado.filtros.pedidosDia = null;
+
+                if (selectorFechaPedidos) {
+                    selectorFechaPedidos.clear();
+                } else {
+                    const input = $('#pedidosFechaEspecifica');
+                    if (input) input.value = '';
+                }
+
+                renderPedidos();
+                return;
+            }
+
             const fechaBase = fechaRelativa(valor);
             const diaISO = fechaISO(fechaBase);
             estado.filtros.pedidosDia = diaISO;
@@ -3127,6 +3391,7 @@
 
     iniciarEventos();
     iniciarFechaPedidos();
+    iniciarFechasCierre();
     cargarResumen();
     cargarBadgeCambios();
     cargarConfiguracionPedidos();
