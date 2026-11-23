@@ -1329,6 +1329,9 @@ async function cargarCatalogo() {
         const data = await cargarProductos();
         const productos = data.productos || [];
 
+        /* La rifa de apertura usa esta lista para mostrar un zapato del catálogo. */
+        document.dispatchEvent(new CustomEvent('tienda:productos', { detail: { productos } }));
+
         if (!productos.length) {
             if (grid) grid.innerHTML = '<p class="catalogo-vacio">Todavía no hay productos publicados.</p>';
             return;

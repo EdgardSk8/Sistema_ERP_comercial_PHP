@@ -1972,6 +1972,12 @@
                     return respuestaJson({ success: true, producto: data });
                 }
 
+                /* La ruleta consume datos protegidos del ERP: la petición
+                   debe llegar al servidor con la sesión del personal. */
+                if (url.pathname === '/tienda/api/ruleta/clientes') {
+                    return fetchOriginal(recurso, opciones);
+                }
+
                 /* Ruta del API sin controlador: responde JSON en vez de ir a la red. */
                 if (url.pathname.startsWith('/tienda/api/')) {
                     return respuestaJson({ success: false, mensaje: 'Ruta no disponible.' }, 404);

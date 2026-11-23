@@ -557,6 +557,11 @@ Route::get('/tienda/recursos/{archivo}', [WebsiteController::class, 'archivo'])
 Route::get('/tienda/api/productos', [WebsiteController::class, 'productos'])->name('tienda.api.productos');
 Route::get('/tienda/api/productos/{id}', [WebsiteController::class, 'productoDetalle'])->name('tienda.api.producto');
 
+// Ruleta del sorteo de apertura: solo personal con permiso de clientes.
+Route::get('/tienda/api/ruleta/clientes', [WebsiteController::class, 'clientesRuleta'])
+    ->middleware('permiso:mostrar_clientes')
+    ->name('tienda.api.ruleta.clientes');
+
 // Cuenta del cliente de la tienda
 Route::prefix('tienda/api')->group(function () {
     Route::post('/auth/registro', [ClienteWebController::class, 'registro'])->middleware('throttle:6,1');

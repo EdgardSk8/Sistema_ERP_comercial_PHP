@@ -1,0 +1,787 @@
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  TIENDA · rifa.css                                           ║
+   ║  Aviso de la rifa de apertura y ruleta del sorteo.           ║
+   ║  Se apoya en estilos-home.css (tokens) y navidad.css.        ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+
+/* ── 1. Sección (~50vh) ──────────────────────────────────────── */
+.rifa {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 50vh;
+  padding: var(--e-4) 0;
+  overflow: hidden;
+}
+
+.rifa::before {
+  content: "";
+  position: absolute;
+  inset: 6% -10% 18%;
+  background:
+    radial-gradient(circle at 16% 42%, rgba(193, 18, 31, .13), transparent 42%),
+    radial-gradient(circle at 84% 58%, rgba(227, 179, 65, .22), transparent 46%);
+  pointer-events: none;
+}
+
+.rifa__panel {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: 34px 16px 16px;
+  border: 1px solid rgba(193, 18, 31, .14);
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(227, 179, 65, .18), transparent 44%),
+    linear-gradient(135deg, #fffdf8 0%, #fff7e8 58%, #fdeaea 100%);
+  box-shadow: var(--sombra-media);
+  overflow: hidden;
+}
+
+.rifa__texto,
+.rifa__media {
+  position: relative;
+  z-index: 1;
+}
+
+.rifa__panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 46px rgba(227, 179, 65, .16);
+  pointer-events: none;
+}
+
+.rifa__icono {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+  vertical-align: -.125em;
+}
+
+.rifa__sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.rifa__fiesta {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ── 2.1. Adornos navideños ──────────────────────────────────── */
+.rifa__guirnalda {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 30px;
+  border-top: 2px solid var(--nav-dorado, #e3b341);
+  background:
+    radial-gradient(circle at 14px 12px, #e3b341 0 3px, transparent 3.5px) 0 0 / 44px 30px repeat-x,
+    radial-gradient(circle at 30px 12px, #c1121f 0 3px, transparent 3.5px) 0 0 / 44px 30px repeat-x,
+    radial-gradient(circle at 22px 0, #0e5a34 0 13px, transparent 13.5px) 0 0 / 44px 30px repeat-x;
+  opacity: .95;
+}
+
+.rifa__luces {
+  display: none;
+  position: absolute;
+  top: 90px;
+  bottom: 90px;
+  width: 22px;
+  background:
+    radial-gradient(circle at 11px 10px, #e3b341 0 3px, transparent 3.5px) 0 0 / 22px 48px repeat-y,
+    radial-gradient(circle at 11px 30px, #c1121f 0 3px, transparent 3.5px) 0 0 / 22px 48px repeat-y,
+    linear-gradient(180deg, rgba(227, 179, 65, .1), rgba(12, 61, 36, .22), rgba(227, 179, 65, .1)) center / 2px 100% no-repeat;
+  opacity: .8;
+}
+
+.rifa__luces--izq { left: 8px; }
+.rifa__luces--der { right: 8px; }
+
+.rifa__bola {
+  display: none;
+  position: absolute;
+  top: 34px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, .95) 0 3px, transparent 3.5px),
+    radial-gradient(circle at 50% 55%, var(--bola, #c1121f) 0 55%, var(--bola-hondo, #8f0d16) 100%);
+  box-shadow:
+    inset -3px -4px 6px rgba(0, 0, 0, .22),
+    0 4px 8px rgba(12, 61, 36, .16);
+  transform-origin: 50% -26px;
+  animation: rifa-sway 4.6s ease-in-out infinite;
+}
+
+.rifa__bola::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 2px;
+  height: 26px;
+  background: linear-gradient(180deg, rgba(227, 179, 65, .15), var(--nav-dorado, #e3b341));
+  transform: translateX(-50%);
+}
+
+.rifa__bola::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 7px;
+  height: 5px;
+  border-radius: 2px 2px 1px 1px;
+  background: linear-gradient(180deg, #f7e2a8, var(--nav-dorado, #e3b341));
+  transform: translateX(-50%);
+}
+
+.rifa__bola--roja {
+  --bola: #c1121f;
+  --bola-hondo: #8f0d16;
+  left: 2.5%;
+}
+
+.rifa__bola--dorada {
+  --bola: #e3b341;
+  --bola-hondo: #b08419;
+  top: 52px;
+  right: 2.5%;
+  animation-delay: -2.5s;
+}
+
+.rifa__bola--verde {
+  --bola: #177a47;
+  --bola-hondo: #0b4527;
+  top: 44px;
+  left: 68%;
+  animation-delay: -1.4s;
+}
+
+.rifa__adorno {
+  display: none;
+  position: absolute;
+  color: var(--nav-dorado, #e3b341);
+  pointer-events: none;
+}
+
+.rifa__adorno svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  fill: currentColor;
+}
+
+.rifa__adorno--estrella-1 {
+  display: block;
+  top: 36px;
+  right: 14px;
+  width: 18px;
+  opacity: .9;
+  animation: rifa-twinkle 5s ease-in-out infinite;
+}
+
+.rifa__adorno--estrella-2 {
+  bottom: 44px;
+  left: 22px;
+  width: 15px;
+  opacity: .7;
+  animation: rifa-twinkle 6.5s ease-in-out -2s infinite;
+}
+
+.rifa__adorno--copo-1 {
+  top: 108px;
+  left: 40px;
+  width: 30px;
+  color: var(--nav-verde-claro, #177a47);
+  opacity: .22;
+  animation: rifa-spin 30s linear infinite;
+}
+
+.rifa__adorno--copo-2 {
+  right: 20px;
+  bottom: 44px;
+  width: 34px;
+  color: var(--nav-verde, #0e5a34);
+  opacity: .18;
+  animation: rifa-spin 38s linear infinite reverse;
+}
+
+.rifa__adorno--arbol {
+  right: 20px;
+  bottom: 4px;
+  width: 30px;
+  color: var(--nav-verde, #0e5a34);
+  opacity: .3;
+}
+
+.rifa__adorno--regalo {
+  bottom: 4px;
+  left: 20px;
+  width: 26px;
+  color: var(--nav-rojo, #c1121f);
+  opacity: .32;
+  transform: rotate(-8deg);
+}
+
+.rifa__arbol-grande {
+  display: none;
+  position: absolute;
+  top: 90px;
+  right: 34px;
+  width: 100px;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 14px rgba(12, 61, 36, .18));
+}
+
+.rifa__arbol-grande svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@keyframes rifa-twinkle {
+  0%, 100% { opacity: .35; transform: scale(.9) rotate(-6deg); }
+  50% { opacity: .95; transform: scale(1.08) rotate(6deg); }
+}
+
+@keyframes rifa-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rifa-sway {
+  0%, 100% { transform: rotate(-7deg); }
+  50% { transform: rotate(7deg); }
+}
+
+/* ── 2. Texto del aviso ──────────────────────────────────────── */
+.rifa__etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  background: var(--nav-rojo, var(--acento));
+  color: #fff8ec;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.rifa__etiqueta .rifa__icono {
+  width: 14px;
+  height: 14px;
+}
+
+.rifa__titulo {
+  margin: 0 0 6px;
+  color: var(--secundario);
+  font-size: clamp(1.4rem, 6vw, 2.35rem);
+  line-height: 1.08;
+}
+
+.rifa__titulo::after {
+  content: "";
+  display: block;
+  width: 132px;
+  height: 4px;
+  margin-top: 10px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, transparent, var(--nav-dorado, #e3b341) 18%, var(--nav-rojo, #c1121f) 50%, var(--nav-dorado, #e3b341) 82%, transparent);
+}
+
+.rifa__descripcion {
+  max-width: none;
+  margin: 0 0 12px;
+  color: var(--texto-suave);
+  font-size: .94rem;
+}
+
+.rifa__descripcion strong {
+  color: var(--nav-rojo, var(--acento));
+}
+
+.rifa__datos {
+  display: none;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0 0 var(--e-5);
+  padding: 0;
+  list-style: none;
+}
+
+.rifa__dato {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: .9rem;
+}
+
+.rifa__dato i,
+.rifa__dato .rifa__icono {
+  color: var(--nav-rojo, var(--acento));
+  font-size: 1.05rem;
+}
+
+.rifa__dato .rifa__icono {
+  width: 18px;
+  height: 18px;
+}
+
+.rifa__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--r-pill);
+  background: var(--nav-rojo, var(--acento));
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 10px 22px rgba(193, 18, 31, .24);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.rifa__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(193, 18, 31, .3);
+}
+
+.rifa__redes {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(193, 18, 31, .22);
+}
+
+.rifa__redes-titulo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  color: var(--nav-rojo, var(--acento));
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.rifa__redes-titulo .rifa__icono {
+  width: 16px;
+  height: 16px;
+}
+
+.rifa__redes-texto {
+  margin: 0 0 10px;
+  color: var(--texto-suave);
+  font-size: .88rem;
+}
+
+.rifa__redes-enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rifa__redes-enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+  box-shadow: 0 6px 14px rgba(12, 61, 36, .16);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.rifa__redes-enlace:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(12, 61, 36, .22);
+}
+
+.rifa__redes-enlace .rifa__icono {
+  width: 16px;
+  height: 16px;
+}
+
+.rifa__redes-enlace--instagram {
+  background: linear-gradient(135deg, #f58529 0%, #dd2a7b 55%, #8134af 100%);
+}
+
+.rifa__redes-enlace--facebook {
+  background: #1877f2;
+}
+
+/* ── 3. Foto del premio ──────────────────────────────────────── */
+.rifa__media {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.rifa__premio {
+  margin: 0;
+}
+
+.rifa__premio-carrusel {
+  position: relative;
+  width: 88px;
+  max-width: 100%;
+  margin: 0 auto;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.rifa__premio-carrusel:focus-visible {
+  outline: none;
+}
+
+.rifa__premio-carrusel:focus-visible .rifa__premio-marco {
+  outline: 3px solid var(--nav-dorado, #e3b341);
+  outline-offset: 4px;
+}
+
+.rifa__premio-nav {
+  display: none;
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--borde);
+  border-radius: 50%;
+  background: rgba(255, 253, 248, .94);
+  color: var(--nav-rojo, var(--acento));
+  font-size: .95rem;
+  cursor: pointer;
+  box-shadow: var(--sombra-suave);
+  transform: translateY(-50%);
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+
+.rifa__premio-nav--prev { left: -12px; }
+.rifa__premio-nav--next { right: -12px; }
+
+.rifa__premio-nav:hover,
+.rifa__premio-nav:focus-visible {
+  background: var(--nav-rojo, var(--acento));
+  color: #fff;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.rifa__premio-nav:focus-visible {
+  outline: 2px solid var(--nav-dorado, #e3b341);
+  outline-offset: 2px;
+}
+
+.rifa__premio-marco {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0 3px var(--nav-dorado, #e3b341),
+    var(--sombra-suave);
+  overflow: hidden;
+}
+
+.rifa__premio-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity .8s ease;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.rifa__premio-img--activa {
+  opacity: 1;
+}
+
+.rifa__premio-texto {
+  display: none;
+  margin-top: 10px;
+  color: var(--texto-suave);
+  font-size: .8rem;
+}
+
+.rifa__premio-texto .rifa__icono {
+  width: 16px;
+  height: 16px;
+  color: var(--nav-rojo, var(--acento));
+}
+
+/* ── 4. Ruleta ───────────────────────────────────────────────── */
+.rifa__ruleta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-3);
+  min-width: 0;
+}
+
+.rifa__ruleta-titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--nav-rojo, var(--acento));
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.rifa__ruleta-titulo .rifa__icono {
+  width: 16px;
+  height: 16px;
+}
+
+.ruleta {
+  display: grid;
+  gap: var(--e-4);
+  justify-items: center;
+  justify-content: center;
+}
+
+.ruleta__aro {
+  position: relative;
+  width: min(220px, 56vw);
+  aspect-ratio: 1;
+  padding: 4px;
+  border-radius: 50%;
+  background: #fffdf8;
+  box-shadow:
+    0 0 0 3px var(--nav-dorado, #e3b341),
+    0 16px 30px rgba(12, 61, 36, .18);
+}
+
+.ruleta__lienzo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.ruleta__flecha {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  z-index: 2;
+  width: 0;
+  height: 0;
+  border-right: 11px solid transparent;
+  border-left: 11px solid transparent;
+  border-top: 22px solid var(--nav-rojo, #c1121f);
+  transform: translateX(-50%);
+  filter: drop-shadow(0 2px 2px rgba(12, 61, 36, .35));
+}
+
+.ruleta__controles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ruleta__mensaje {
+  min-height: 2.2em;
+  max-width: 36ch;
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: .82rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.ruleta__nota {
+  display: block;
+  max-width: 34ch;
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: .72rem;
+  text-align: center;
+}
+
+.ruleta__enlace-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--nav-rojo, var(--acento));
+  font-size: .76rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── 5. Responsive ───────────────────────────────────────────── */
+@media (min-width: 560px) {
+  .rifa__panel {
+    gap: var(--e-5);
+    padding: clamp(40px, 3.2vw, 52px) clamp(20px, 3.2vw, 40px) clamp(20px, 3.2vw, 40px);
+  }
+
+  .rifa__etiqueta {
+    margin-bottom: var(--e-3);
+    padding: 6px 14px;
+    font-size: .74rem;
+  }
+
+  .rifa__titulo {
+    margin-bottom: var(--e-3);
+  }
+
+  .rifa__datos {
+    display: flex;
+  }
+
+  .rifa__media {
+    grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+    align-items: center;
+  }
+
+  .rifa__premio {
+    align-self: center;
+    text-align: center;
+  }
+
+  .rifa__premio-marco {
+    margin: 0 auto;
+    border-width: 5px;
+  }
+
+  .rifa__premio-carrusel {
+    width: min(100%, 200px);
+  }
+
+  .rifa__premio-texto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .rifa__premio-nav {
+    display: inline-flex;
+  }
+
+  .ruleta__aro {
+    width: min(300px, 52vw);
+  }
+}
+
+@media (min-width: 992px) {
+  .rifa__panel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--e-5);
+  }
+
+  .rifa__texto {
+    width: 100%;
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  .rifa__media {
+    grid-template-columns: auto auto;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(24px, 4vw, 56px);
+  }
+
+  .ruleta {
+    grid-template-columns: auto minmax(150px, 190px);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ruleta__aro {
+    width: 340px;
+  }
+
+  .ruleta__controles {
+    align-items: flex-start;
+  }
+
+  .ruleta__mensaje,
+  .ruleta__nota {
+    text-align: left;
+  }
+
+  .rifa__bola {
+    display: block;
+  }
+
+  .rifa__luces {
+    display: block;
+  }
+
+  .rifa__adorno--estrella-1 {
+    top: 90px;
+    right: 40px;
+    width: 20px;
+  }
+
+  .rifa__adorno--estrella-2,
+  .rifa__adorno--copo-1,
+  .rifa__adorno--copo-2,
+  .rifa__adorno--arbol,
+  .rifa__adorno--regalo {
+    display: block;
+  }
+}
+
+@media (min-width: 1152px) {
+  .rifa__arbol-grande {
+    display: block;
+  }
+
+  .rifa__adorno--arbol,
+  .rifa__adorno--estrella-1 {
+    display: none;
+  }
+}
+
+/* Sin foto de premio, la ruleta ocupa todo el ancho disponible. */
+.rifa__media--sin-premio {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.rifa__media--sin-premio .rifa__ruleta {
+  grid-column: 1 / -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rifa__adorno,
+  .rifa__bola {
+    animation: none;
+  }
+}

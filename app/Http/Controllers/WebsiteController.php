@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cliente;
 use App\Models\Producto;
 use App\Models\ReseniaProducto;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class WebsiteController extends Controller
@@ -150,6 +152,27 @@ class WebsiteController extends Controller
         ]);
     }
 
+    /** Nombres de clientes activos para la ruleta del sorteo (solo personal con permiso). */
+    public function clientesRuleta(): JsonResponse
+    {
+        $clientes = Cliente::query()
+            ->where('estado_cliente', 1)
+            ->orderBy('nombre_cliente')
+            ->get(['id_cliente', 'nombre_cliente'])
+            ->map(fn (Cliente $cliente) => [
+                'nombre' => trim((string) $cliente->nombre_cliente),
+            ])
+            ->filter(fn (array $cliente) => $cliente['nombre'] !== ''
+                && strtolower(Str::ascii($cliente['nombre'])) !== 'cliente generico')
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'total' => $clientes->count(),
+            'clientes' => $clientes,
+        ])->header('Cache-Control', 'no-store');
+    }
+
     /*  ╔══════════════ Helpers ══════════════════════════╗
         ╚═════════════════════════════════════════════════╝ */
 
@@ -219,6 +242,7 @@ class WebsiteController extends Controller
             'calificacion' => $this->datosCalificacion($calificacion),
             'stock' => (int) $variaciones->flatMap->tallas->sum('stock'),
             'marca' => $producto->marca->nombre_marca ?? '',
+            'sin_tallas' => (bool) $producto->sin_tallas,
             'atributos' => $this->atributosProducto($producto),
         ];
     }
@@ -277,6 +301,7 @@ class WebsiteController extends Controller
             'calificacion' => $this->datosCalificacion($calificacion),
             'variaciones' => $variaciones,
             'marca' => $producto->marca->nombre_marca ?? '',
+            'sin_tallas' => (bool) $producto->sin_tallas,
             'atributos' => $this->atributosProducto($producto),
         ];
     }
