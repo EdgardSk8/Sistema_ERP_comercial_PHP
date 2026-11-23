@@ -240,7 +240,7 @@
         }
 
         if (!respuesta.ok) {
-            throw new Error(datos?.mensaje || datos?.message || 'No se pudieron cargar los clientes.');
+            throw new Error(datos?.mensaje || datos?.message || 'No se pudieron cargar los participantes.');
         }
 
         if (datos?.sesion === false) {
@@ -249,7 +249,7 @@
         }
 
         if (!datos?.success) {
-            throw new Error(datos?.mensaje || 'No se pudieron cargar los clientes.');
+            throw new Error(datos?.mensaje || 'No se pudieron cargar los participantes.');
         }
 
         return (datos.clientes || []).map((cliente) => cliente?.nombre).filter(Boolean);
@@ -294,7 +294,7 @@
     }
 
     async function cargarClientesReales() {
-        if (nota) nota.textContent = 'Cargando clientes…';
+        if (nota) nota.textContent = 'Cargando participantes…';
 
         mostrarEnlaceAdmin(false);
 
@@ -346,17 +346,17 @@
             }
 
             mostrarEnlaceAdmin(true);
-            console.warn('Ruleta: no se pudieron cargar los clientes reales.', ultimoError);
+            console.warn('Ruleta: no se pudieron cargar los participantes.', ultimoError);
             return;
         }
 
         if (!lista.length) {
-            aplicarNombres([], 'No hay clientes activos para sortear.');
+            aplicarNombres([], 'No hay participantes registrados para el sorteo.');
             return;
         }
 
         mostrarEnlaceAdmin(false);
-        aplicarNombres(lista, `${lista.length} clientes activos.`);
+        aplicarNombres(lista, `${lista.length} participantes registrados.`);
     }
 
     /* ╔══════════════════════════════════════════════════════════╗

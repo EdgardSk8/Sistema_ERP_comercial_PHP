@@ -675,8 +675,8 @@
   .rifa__titulo {
     order: 2;
     margin: 0 0 8px;
-    font-size: clamp(1.5rem, 6.2vw, 2rem);
-    line-height: 1.12;
+    font-size: clamp(1.2rem, 5.2vw, 1.4rem);
+    line-height: 1.15;
     text-wrap: balance;
   }
 
@@ -707,6 +707,7 @@
   .rifa__premio {
     order: 2;
     width: 100%;
+    text-align: center;
   }
 
   .rifa__btn {
@@ -727,23 +728,24 @@
   }
 
   .rifa__premio-carrusel {
-    width: 100%;
-    max-width: none;
+    width: min(260px, 100%);
+    max-width: 100%;
+    margin-inline: auto;
   }
 
   .rifa__premio-marco {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 1;
     border-width: 3px;
-    border-radius: 18px;
+    border-radius: 50%;
     box-shadow:
       0 0 0 2px var(--nav-dorado, #e3b341),
       0 10px 20px rgba(12, 61, 36, .14);
   }
 
   .rifa__premio-img {
-    border-radius: 14px;
-    object-fit: contain;
-    padding: 10px;
+    border-radius: 50%;
+    object-fit: cover;
+    padding: 0;
   }
 
   .rifa__premio-nav {
@@ -757,12 +759,15 @@
   .rifa__premio-nav--next { right: 8px; }
 
   .rifa__premio-texto {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
+    display: block;
     margin-top: 8px;
     font-size: .84rem;
+    text-align: center;
+  }
+
+  .rifa__premio-texto .rifa__icono {
+    margin-right: 4px;
+    vertical-align: -.15em;
   }
 
   .rifa__ruleta-titulo {
