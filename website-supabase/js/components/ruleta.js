@@ -51,6 +51,28 @@
         .toLowerCase()
         .trim();
 
+    /* El logo se preescala una sola vez para no dibujar la imagen
+       original de 1512 px en cada cuadro. */
+    const logoRuleta = new Image();
+    const logoCanvas = document.createElement('canvas');
+    let logoListo = false;
+
+    logoCanvas.width = 256;
+    logoCanvas.height = 256;
+
+    const logoCtx = logoCanvas.getContext('2d');
+
+    logoRuleta.addEventListener('load', () => {
+        if (!logoCtx) return;
+
+        logoCtx.clearRect(0, 0, 256, 256);
+        logoCtx.drawImage(logoRuleta, 0, 0, 256, 256);
+        logoListo = true;
+        dibujar();
+    });
+
+    logoRuleta.src = '/imagenes/logo/LOGOTIPO-SIN-FONDO.PNG';
+
     /* ╔══════════════════════════════════════════════════════════╗
        ║  Dibujo de la ruleta                                     ║
        ╚══════════════════════════════════════════════════════════╝ */
@@ -68,30 +90,27 @@
     }
 
     function dibujarCentro(centro, radio) {
+        const radioCentro = radio * 0.24;
+
         ctx.beginPath();
-        ctx.arc(centro, centro, radio * 0.16, 0, Math.PI * 2);
+        ctx.arc(centro, centro, radioCentro, 0, Math.PI * 2);
         ctx.fillStyle = '#fff8ec';
         ctx.fill();
         ctx.lineWidth = 3;
         ctx.strokeStyle = '#e3b341';
         ctx.stroke();
 
-        const texto = 'SORTEO';
-        const anchoMaximo = radio * 0.27;
-        let fuente = Math.max(7, radio * 0.09);
+        if (!logoListo) return;
 
-        ctx.font = `700 ${fuente}px Inter, system-ui, sans-serif`;
+        const ladoLogo = radio * 0.31;
 
-        const medida = ctx.measureText(texto).width;
-        if (medida > anchoMaximo) {
-            fuente = Math.max(6, fuente * (anchoMaximo / medida));
-            ctx.font = `700 ${fuente}px Inter, system-ui, sans-serif`;
-        }
-
-        ctx.fillStyle = '#c1121f';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(texto, centro, centro);
+        ctx.drawImage(
+            logoCanvas,
+            centro - ladoLogo / 2,
+            centro - ladoLogo / 2,
+            ladoLogo,
+            ladoLogo
+        );
     }
 
     function dibujar() {
