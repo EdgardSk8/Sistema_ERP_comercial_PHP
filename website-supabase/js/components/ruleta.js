@@ -1,6 +1,6 @@
 /* ╔══════════════════════════════════════════════════════════════╗
    ║  Tienda · Sorteo de apertura y ruleta                        ║
-   ║  Nombres reales: /tienda/api/ruleta/clientes (personal ERP)  ║
+   ║  Nombres reales: Supabase público o API del ERP              ║
    ╚══════════════════════════════════════════════════════════════╝ */
 
 (() => {
@@ -255,6 +255,44 @@
         return (datos.clientes || []).map((cliente) => cliente?.nombre).filter(Boolean);
     }
 
+    /* Participantes públicos de la ruleta (Supabase, sin sesión).
+       La función devuelve únicamente nombres de clientes activos. */
+    async function clientesPublicosDesdeSupabase() {
+        const config = window.SUPABASE_CONFIG;
+
+        if (!config?.url || !config?.key) {
+            throw new Error('Supabase no está configurado.');
+        }
+
+        let respuesta;
+
+        try {
+            respuesta = await fetch(`${String(config.url).replace(/\/+$/, '')}/rest/v1/rpc/web_clientes_ruleta`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: config.key,
+                    Authorization: `Bearer ${config.key}`,
+                },
+                body: JSON.stringify({}),
+            });
+        } catch {
+            throw new Error('No hay conexión con el servidor.');
+        }
+
+        const datos = await respuesta.json().catch(() => null);
+
+        if (respuesta.status === 404) {
+            throw new Error('Falta habilitar la consulta pública de participantes en Supabase.');
+        }
+
+        if (!respuesta.ok || !datos?.success) {
+            throw new Error(datos?.mensaje || datos?.message || 'No se pudieron cargar los participantes.');
+        }
+
+        return (datos.clientes || []).map((cliente) => cliente?.nombre).filter(Boolean);
+    }
+
     async function cargarClientesReales() {
         if (nota) nota.textContent = 'Cargando clientes…';
 
@@ -272,7 +310,16 @@
             }
         }
 
-        /* 2) API del ERP cuando la tienda corre bajo Laravel con sesión del personal. */
+        /* 2) Participantes públicos de Supabase, sin necesidad de sesión. */
+        if (lista === null) {
+            try {
+                lista = await clientesPublicosDesdeSupabase();
+            } catch (error) {
+                ultimoError = error;
+            }
+        }
+
+        /* 3) API del ERP cuando la tienda corre bajo Laravel con sesión del personal. */
         if (lista === null) {
             try {
                 const respuesta = await fetch(API_CLIENTES, {
@@ -292,13 +339,13 @@
         }
 
         if (lista === null) {
-            if (!leerSesionAdmin()) {
-                if (nota) nota.textContent = 'Inicia sesión en el panel administrativo para cargar los clientes reales.';
-                mostrarEnlaceAdmin(true);
-            } else if (nota) {
-                nota.textContent = ultimoError?.message || 'No se pudieron cargar los clientes.';
+            if (nota) {
+                nota.textContent = leerSesionAdmin()
+                    ? (ultimoError?.message || 'No se pudieron cargar los participantes.')
+                    : 'No se pudieron cargar los participantes. Intenta de nuevo en unos minutos.';
             }
 
+            mostrarEnlaceAdmin(true);
             console.warn('Ruleta: no se pudieron cargar los clientes reales.', ultimoError);
             return;
         }
