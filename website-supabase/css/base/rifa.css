@@ -431,6 +431,10 @@
   align-items: start;
 }
 
+.rifa__compra {
+  display: contents;
+}
+
 .rifa__premio {
   margin: 0;
 }
@@ -707,6 +711,22 @@
     text-align: center;
   }
 
+  .rifa__compra {
+    order: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .rifa__compra .rifa__premio {
+    order: 0;
+    flex: 0 0 clamp(140px, 48%, 160px);
+    width: auto;
+    min-width: 0;
+  }
+
   .rifa__btn {
     order: 5;
     width: 100%;
@@ -715,6 +735,21 @@
     justify-content: center;
     padding: 12px 18px;
     font-size: .95rem;
+  }
+
+  .rifa__btn--desktop {
+    display: none;
+  }
+
+  .rifa__compra .rifa__btn {
+    order: 1;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    margin: 0;
+    padding: 10px 10px;
+    gap: 4px;
+    font-size: .86rem;
   }
 
   .rifa__redes {
@@ -904,6 +939,12 @@
   }
 }
 
+@media (max-width: 359px) {
+  .rifa__compra .rifa__btn .bi {
+    display: none;
+  }
+}
+
 @media (min-width: 360px) and (max-width: 559px) {
   .rifa__arbol-grande {
     display: block;
@@ -957,6 +998,10 @@
   .rifa__premio-carrusel {
     width: 170px;
     max-width: 100%;
+  }
+
+  .rifa__compra .rifa__btn {
+    display: none;
   }
 
   .rifa__premio-texto {

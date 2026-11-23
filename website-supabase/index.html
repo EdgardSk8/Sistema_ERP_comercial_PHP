@@ -31,7 +31,7 @@
   <link rel="stylesheet" href="/tienda/recursos/css/base/estilos-home.css?v=20261116k">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.6/dist/driver.css">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/rifa.css?v=20261123i">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/rifa.css?v=20261123j">
 </head>
 <body>
 
@@ -290,7 +290,7 @@
             </li>
           </ul>
 
-          <a class="rifa__btn" href="?categoria=Zapatos#catalogo">
+          <a class="rifa__btn rifa__btn--desktop" href="?categoria=Zapatos#catalogo">
             Ver zapatos <i class="bi bi-arrow-right" aria-hidden="true"></i>
           </a>
 
@@ -326,7 +326,8 @@
         </div>
 
         <div class="rifa__media rifa__media--sin-premio">
-          <figure class="rifa__premio" id="rifaPremio" hidden>
+          <div class="rifa__compra">
+            <figure class="rifa__premio" id="rifaPremio" hidden>
             <div class="rifa__premio-carrusel" id="rifaPremioCarrusel" tabindex="0" role="group"
                  aria-label="Carrusel de zapatos del sorteo">
               <span class="rifa__premio-marco">
@@ -353,7 +354,12 @@
               </svg>
               3 pares de zapatos
             </figcaption>
-          </figure>
+            </figure>
+
+            <a class="rifa__btn" href="?categoria=Zapatos#catalogo">
+              Ver zapatos <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+          </div>
 
           <div class="rifa__ruleta" id="rifaRuleta">
             <p class="rifa__ruleta-titulo">
