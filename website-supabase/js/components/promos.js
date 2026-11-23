@@ -146,6 +146,15 @@
             </a>
         `;
 
+        /* El contenedor exclusivo queda fuera de #promos para que el aviso
+           siga visible cuando no hay promociones que mostrar. */
+        const contenedorAviso = document.getElementById('promosAvisoContenedor');
+
+        if (contenedorAviso) {
+            contenedorAviso.appendChild(aviso);
+            return;
+        }
+
         const ancla = carruselRaiz || contenedor;
         ancla.parentNode.insertBefore(aviso, ancla);
     }

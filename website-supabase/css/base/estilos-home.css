@@ -1200,6 +1200,10 @@ button { font-family: inherit; }
 .promo__cta i { transition: transform .18s ease; }
 
 /* ── Aviso de registro · 10% de bienvenida (solo visitantes) ──── */
+.promos-aviso-contenedor .promos-aviso {
+  margin-top: var(--e-6);
+}
+
 .promos-aviso {
   position: relative;
   display: flex;
