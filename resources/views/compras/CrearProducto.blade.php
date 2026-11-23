@@ -93,6 +93,22 @@
                             <div class="row g-2" id="crear_atributos_producto"></div>
                         </div>
 
+                        <!-- ================= TALLAS ================= -->
+
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="crear_sin_tallas">
+                                <label class="form-check-label small" for="crear_sin_tallas">
+                                    Este producto no usa tallas (llantas, accesorios, tecnología…)
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Sus colores se venden como talla única: el stock y el precio se manejan por color.
+                            </div>
+                        </div>
+
                         <!-- ================= PRECIOS ================= -->
 
                         <div class="col-md-3">

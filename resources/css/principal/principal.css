@@ -160,6 +160,37 @@ body{
     color:var(--bg) !important;
 }
 
+/* Etiquetas del Select2 multiple (atributos con varios valores). */
+[data-theme="dark"] .select2-container--default .select2-selection--multiple .select2-selection__choice{
+    background-color:var(--surface-hover);
+    border:1px solid var(--border-strong);
+    color:var(--text);
+}
+
+[data-theme="dark"] .select2-container--default .select2-selection--multiple .select2-selection__choice__display{
+    color:var(--text);
+}
+
+[data-theme="dark"] .select2-container--default .select2-selection--multiple .select2-selection__choice__remove{
+    border-right:1px solid var(--border-strong);
+    color:var(--text-soft);
+}
+
+[data-theme="dark"] .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover,
+[data-theme="dark"] .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:focus{
+    background-color:var(--surface-muted);
+    color:var(--verde);
+}
+
+[data-theme="dark"] .select2-container--default .select2-selection--multiple .select2-selection__clear{
+    color:var(--text-soft);
+}
+
+[data-theme="dark"] .select2-container--default .select2-selection--multiple .select2-selection__clear:hover,
+[data-theme="dark"] .select2-container--default .select2-selection--multiple .select2-selection__clear:focus{
+    color:var(--verde);
+}
+
 [data-theme="dark"] .modal-content,
 [data-theme="dark"] .card-responsive,
 [data-theme="dark"] .dropdown-menu,

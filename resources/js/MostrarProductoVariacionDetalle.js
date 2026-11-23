@@ -570,14 +570,19 @@ export default function initMostrarProductoVariacionDetalle() {
 
         const cantidadTallas = variacion.tallas.length;
         const unidades = variacion.tallas.reduce((total, talla) => total + (Number(talla.stock) || 0), 0);
+        const sinTallas = Boolean(variacion.producto?.sin_tallas);
 
         $('#detalle_variacion_titulo').text(`${variacion.nombre_producto} · ${variacion.color || 'Sin color'}`);
         $('#detalle_variacion_subtitulo').text(cantidadTallas
             ? `${cantidadTallas} ${cantidadTallas === 1 ? 'talla' : 'tallas'} · ${unidades} unidades · arrastra una imagen para cambiar el orden`
-            : 'Este color todavía no tiene tallas');
+            : (sinTallas
+                ? 'Este producto no usa tallas: agrega stock a este color'
+                : 'Este color todavía no tiene tallas'));
 
         $('#galeria_variacion_agregar').data('id', variacion.id_variacion);
-        $('#detalle_agregar_talla').data('id', variacion.id_variacion);
+        $('#detalle_agregar_talla')
+            .data('id', variacion.id_variacion)
+            .html(`<i class="ph ph-ruler"></i> ${sinTallas ? 'Agregar stock' : 'Agregar talla'}`);
 
         pintarTallasDetalle(variacion);
         pintarGaleriaDetalle(variacion);
@@ -589,7 +594,11 @@ export default function initMostrarProductoVariacionDetalle() {
         const impuesto = Number(variacion.producto?.impuesto?.porcentaje_impuesto || 0);
 
         if (!variacion.tallas.length) {
-            contenedor.html('<p class="detalle-variacion__vacio">Este color todavía no tiene tallas.</p>');
+            const mensajeVacio = variacion.producto?.sin_tallas
+                ? 'Este color todavía no tiene stock.'
+                : 'Este color todavía no tiene tallas.';
+
+            contenedor.html(`<p class="detalle-variacion__vacio">${mensajeVacio}</p>`);
             return;
         }
 
@@ -1275,7 +1284,12 @@ export default function initMostrarProductoVariacionDetalle() {
         $('#crear_talla_id_variacion').val(idVariacion);
         $('#crear_id_tipo_talla_var').val('').trigger('change');
         $('#crear_id_talla').val('').trigger('change.select2');
-        $('#crear_sin_talla').prop('checked', false);
+
+        // Producto marcado como "no usa tallas": la fila se crea sin talla.
+        const sinTallasProducto = Boolean(variacion?.producto?.sin_tallas);
+        $('#crear_sin_talla')
+            .prop('checked', sinTallasProducto)
+            .prop('disabled', sinTallasProducto);
         aplicarSinTallaCrear();
         $('#crear_precio_compra_variacion').val(numeroCorto(variacion?.producto?.precio_compra));
         $('#crear_precio_venta_variacion').val(numeroCorto(variacion?.producto?.precio_venta));
@@ -1377,10 +1391,16 @@ export default function initMostrarProductoVariacionDetalle() {
 
             const tallaEditada = tallas.find(talla => String(talla.id_talla) === String(response.variacion_talla.id_talla));
             const sinTalla = response.variacion_talla.id_talla == null;
-            $('#editar_sin_talla').prop('checked', sinTalla);
+            const sinTallasProducto = Boolean(variacion?.producto?.sin_tallas);
+
+            $('#editar_sin_talla')
+                .prop('checked', sinTalla || sinTallasProducto)
+                .prop('disabled', sinTallasProducto);
             aplicarSinTallaEditar();
-            $('#editar_id_tipo_talla_var').val(tallaEditada ? tallaEditada.id_tipo_talla : '').trigger('change');
-            $('#editar_id_talla').val(response.variacion_talla.id_talla).trigger('change.select2');
+
+            // Un producto sin tallas nunca conserva una talla asignada en la fila.
+            $('#editar_id_tipo_talla_var').val(sinTallasProducto || !tallaEditada ? '' : tallaEditada.id_tipo_talla).trigger('change');
+            $('#editar_id_talla').val(sinTallasProducto ? '' : response.variacion_talla.id_talla).trigger('change.select2');
 
             $('#editar_stock_variacion_talla').val(numeroCorto(response.variacion_talla.stock));
             $('#editar_sku_variacion').val(response.variacion_talla.sku);

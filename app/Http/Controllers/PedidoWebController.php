@@ -513,7 +513,7 @@ class PedidoWebController extends Controller
                 'id_producto' => $producto->id_producto,
                 'id_variacion_talla' => $variacionTalla?->id_variacion_talla,
                 'descripcion_variacion' => $variacionTalla
-                    ? trim(($variacionTalla->variacion->color ?? '').' · '.($variacionTalla->talla->talla ?? ''))
+                    ? trim(($variacionTalla->variacion->color ?? '').' · '.($variacionTalla->talla->talla ?? 'Única'))
                     : null,
                 'sku_variacion' => $variacionTalla?->sku,
                 'cantidad_venta' => $cantidad,

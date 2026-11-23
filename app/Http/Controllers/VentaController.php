@@ -186,7 +186,7 @@ class VentaController extends Controller
                     $variacionTalla->increment('stock', $detalle->cantidad_venta);
                     $producto->increment('stock_actual', $detalle->cantidad_venta);
                     $stockResultante = $producto->fresh()->stock_actual;
-                    $motivo = 'Anulación de venta - '.trim(($variacionTalla->variacion->color ?? '').' '.($variacionTalla->talla->talla ?? ''));
+                    $motivo = 'Anulación de venta - '.trim(($variacionTalla->variacion->color ?? '').' '.($variacionTalla->talla->talla ?? 'Única'));
                 } else {
                     $producto->increment('stock_actual', $detalle->cantidad_venta);
                     $stockResultante = $producto->fresh()->stock_actual;

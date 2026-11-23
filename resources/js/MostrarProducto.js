@@ -242,7 +242,7 @@ window.registrarFiltroDataTable('productos-inactivos', function (settings, data)
 
     /* ════════════════ ATRIBUTOS DEL PRODUCTO ════════════════ */
 
-    // Pinta un select por atributo y marca el valor que ya tiene el producto.
+    // Pinta un select por atributo y marca los valores que ya tiene el producto.
     function pintarAtributosProducto(atributos, seleccionados = []) {
 
         const contenedor = $('#editar_atributos_producto');
@@ -252,7 +252,13 @@ window.registrarFiltroDataTable('productos-inactivos', function (settings, data)
         const valoresPorAtributo = {};
 
         (seleccionados || []).forEach(item => {
-            valoresPorAtributo[Number(item.id_atributo)] = Number(item.id_valor);
+
+            if (!item || item.id_atributo == null || item.id_valor == null) return;
+
+            const idAtributo = Number(item.id_atributo);
+
+            valoresPorAtributo[idAtributo] = valoresPorAtributo[idAtributo] || [];
+            valoresPorAtributo[idAtributo].push(String(item.id_valor));
         });
 
         (atributos || []).forEach(atributo => {
@@ -269,32 +275,65 @@ window.registrarFiltroDataTable('productos-inactivos', function (settings, data)
                 <div class="col-md-3">
                     <label class="form-label">${atributo.nombre_atributo}</label>
                     <select class="form-select form-select-sm select-atributo-producto"
-                            data-id-atributo="${atributo.id_atributo}">
-                        <option value="">Sin especificar</option>
+                            data-id-atributo="${atributo.id_atributo}"
+                            multiple>
                         ${opciones}
                     </select>
                 </div>
             `);
 
-            const idValor = valoresPorAtributo[Number(atributo.id_atributo)];
+            const elegidos = valoresPorAtributo[Number(atributo.id_atributo)] || [];
 
-            if (idValor) {
-                contenedor.find(`select[data-id-atributo="${atributo.id_atributo}"]`).val(String(idValor));
+            if (elegidos.length) {
+                contenedor.find(`select[data-id-atributo="${atributo.id_atributo}"]`).val(elegidos);
             }
+        });
+    }
+
+    // Select2 múltiple para que un atributo admita varios valores (Tipo: Zapatos + Skate).
+    function inicializarSelectsAtributos() {
+
+        if (!$.fn.select2) return;
+
+        $('#editar_atributos_producto .select-atributo-producto').each(function () {
+
+            const $select = $(this);
+
+            if ($select.data('select2')) $select.select2('destroy');
+
+            $select.select2({
+                width: '100%',
+                placeholder: 'Sin especificar',
+                allowClear: true,
+                closeOnSelect: false,
+                dropdownParent: $('#modalEditarProducto'),
+                minimumResultsForSearch: Infinity,
+            });
         });
     }
 
     // Atributos elegidos en el formato que espera el controlador.
     function obtenerAtributosSeleccionados() {
 
-        return $('#editar_atributos_producto .select-atributo-producto').map(function () {
+        const seleccionados = [];
 
-            return {
-                id_atributo: Number($(this).data('id-atributo')),
-                id_valor: Number($(this).val()) || 0
-            };
+        $('#editar_atributos_producto .select-atributo-producto').each(function () {
 
-        }).get().filter(atributo => atributo.id_valor > 0);
+            const idAtributo = Number($(this).data('id-atributo'));
+            const valores = $(this).val();
+            const lista = Array.isArray(valores) ? valores : (valores ? [valores] : []);
+
+            lista.forEach(valor => {
+
+                const idValor = Number(valor) || 0;
+
+                if (idAtributo > 0 && idValor > 0) {
+                    seleccionados.push({ id_atributo: idAtributo, id_valor: idValor });
+                }
+            });
+        });
+
+        return seleccionados;
     }
 
 /* ════════════════ ACCIÓN: BTN DE ACTUALIZAR PRODUCTO EDITADO ════════════════ */
@@ -369,6 +408,7 @@ window.registrarFiltroDataTable('productos-inactivos', function (settings, data)
         formData.append('precio_venta', precio_venta);
         formData.append('stock_actual', stock);
         formData.append('id_medida', id_medida);
+        formData.append('sin_tallas', $('#editar_sin_tallas').is(':checked') ? 1 : 0);
         if(imagen) formData.append('imagen_producto', imagen);
         formData.append('motivo_movimiento',$('#editar_stock_motivo').val());
 
@@ -646,6 +686,7 @@ window.registrarFiltroDataTable('productos-inactivos', function (settings, data)
                 $('#editar_id_producto').val(producto.id_producto);
                 $('#editar_nombre_producto').val(producto.nombre_producto);
                 $('#editar_descripcion_producto').val(producto.descripcion_producto);
+                $('#editar_sin_tallas').prop('checked', Boolean(producto.sin_tallas));
                 $('#editar_precio_compra').val(producto.precio_compra);
                 $('#editar_precio_venta').val(producto.precio_venta);
                 // $('#editar_stock_actual').val(producto.stock_actual);
@@ -896,7 +937,7 @@ window.registrarFiltroDataTable('productos-inactivos', function (settings, data)
         checkRedondeo.on('click', function(e) { e.preventDefault(); redondearTotal(); checkRedondeo.prop('checked', false); });
 
         // MODAL
-        $('#modalEditarProducto').on('shown.bs.modal', function () { modoRedondeo = false; toggleInputs(); calcularTodo(); });
+        $('#modalEditarProducto').on('shown.bs.modal', function () { modoRedondeo = false; toggleInputs(); calcularTodo(); inicializarSelectsAtributos(); });
     }
 
     inicializarEdicionVenta();

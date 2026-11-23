@@ -173,7 +173,7 @@ class CompraController extends Controller
                     'id_producto' => $producto->id_producto,
                     'id_variacion_talla' => $variacionTalla?->id_variacion_talla,
                     'descripcion_variacion' => $variacionTalla
-                        ? trim(($variacionTalla->variacion->color ?? '').' · '.($variacionTalla->talla->talla ?? ''))
+                        ? trim(($variacionTalla->variacion->color ?? '').' · '.($variacionTalla->talla->talla ?? 'Única'))
                         : null,
                     'sku_variacion' => $variacionTalla?->sku,
                     'cantidad_compra' => $cantidad,
@@ -210,7 +210,7 @@ class CompraController extends Controller
                     'cantidad_movimiento' => $cantidad,
                     'stock_resultante' => $stockResultante,
                     'motivo_movimiento' => $variacionTalla
-                        ? 'Reabastecimiento - '.trim(($variacionTalla->variacion->color ?? '').' '.($variacionTalla->talla->talla ?? ''))
+                        ? 'Reabastecimiento - '.trim(($variacionTalla->variacion->color ?? '').' '.($variacionTalla->talla->talla ?? 'Única'))
                         : 'Reabastecimiento de productos',
                     'id_referencia' => $compra->id_compra,
                     'tipo_referencia' => 'COMPRA',
@@ -686,7 +686,7 @@ class CompraController extends Controller
                             'id' => $p->id_producto,
                             'id_variacion_talla' => $talla->id_variacion_talla,
                             'sku' => $talla->sku,
-                            'text' => $p->nombre_producto.' · '.$variacion->color.' · '.($talla->talla->talla ?? '').' ['.$talla->sku.']',
+                            'text' => $p->nombre_producto.' · '.$variacion->color.' · '.($talla->talla->talla ?? 'Única').' ['.$talla->sku.']',
                             'precio' => $talla->precio_compra ?? $p->precio_compra ?? 0,
                             'impuesto' => $impuesto,
                         ];
@@ -782,7 +782,7 @@ class CompraController extends Controller
                     }
                     $variacionTalla->decrement('stock', $detalle->cantidad_compra);
                     $stockResultante = $variacionTalla->fresh()->stock;
-                    $motivo = 'Anulación de compra - '.trim(($variacionTalla->variacion->color ?? '').' '.($variacionTalla->talla->talla ?? ''));
+                    $motivo = 'Anulación de compra - '.trim(($variacionTalla->variacion->color ?? '').' '.($variacionTalla->talla->talla ?? 'Única'));
                 } else {
                     if ($producto->stock_actual < $detalle->cantidad_compra) {
                         throw new \Exception('Stock insuficiente para revertir compra');

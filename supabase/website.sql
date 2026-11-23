@@ -223,7 +223,8 @@ with base as (
            p.imagen_producto,
            coalesce(i.porcentaje_impuesto, 0) as impuesto,
            coalesce(c.nombre_categoria, 'General') as categoria,
-           coalesce(m.nombre_marca, '') as marca
+           coalesce(m.nombre_marca, '') as marca,
+           coalesce(p.sin_tallas, false) as sin_tallas
     from public.productos p
     left join public.impuestos i on i.id_impuesto = p.id_impuesto
     left join public.categoria c on c.id_categoria = p.id_categoria
@@ -362,6 +363,7 @@ select coalesce(jsonb_agg(jsonb_build_object(
     ),
     'stock', coalesce(ca.stock, 0),
     'marca', b.marca,
+    'sin_tallas', b.sin_tallas,
     'atributos', coalesce(at.atributos, '[]'::jsonb),
     'promocion', case
         when pm.id_producto is null then null
@@ -390,7 +392,8 @@ with base as (
            p.imagen_producto,
            coalesce(i.porcentaje_impuesto, 0) as impuesto,
            coalesce(c.nombre_categoria, 'General') as categoria,
-           coalesce(m.nombre_marca, '') as marca
+           coalesce(m.nombre_marca, '') as marca,
+           coalesce(p.sin_tallas, false) as sin_tallas
     from public.productos p
     left join public.impuestos i on i.id_impuesto = p.id_impuesto
     left join public.categoria c on c.id_categoria = p.id_categoria
@@ -490,6 +493,7 @@ select jsonb_build_object(
     ),
     'variaciones', (select variaciones from vars_json),
     'marca', b.marca,
+    'sin_tallas', b.sin_tallas,
     'atributos', coalesce((select atributos from atributos_agg), '[]'::jsonb)
 )
 from base b;

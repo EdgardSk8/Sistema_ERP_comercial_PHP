@@ -25,7 +25,12 @@ class Producto extends Model
         'precio_venta',
         'stock_actual',
         'estado_producto',
+        'sin_tallas',
         'fecha_creacion_producto',
+    ];
+
+    protected $casts = [
+        'sin_tallas' => 'boolean',
     ];
 
     // 🔗 Relaciones

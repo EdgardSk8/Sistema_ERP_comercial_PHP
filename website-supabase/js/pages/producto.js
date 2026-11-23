@@ -56,7 +56,7 @@ function datosParaCarrito() {
     if (!producto || !variacionActual) return null;
 
     if (!tallaActual) {
-        tiendaToast('Selecciona una talla disponible.', 'aviso');
+        tiendaToast(producto?.sin_tallas ? 'Este producto está agotado.' : 'Selecciona una talla disponible.', 'aviso');
         return null;
     }
 
@@ -284,10 +284,11 @@ function pintarTallas() {
     if (titulo) titulo.textContent = etiqueta;
     if (guia) guia.hidden = normalizar(tipo) !== 'calzado';
 
-    // Productos que no son ropa: una sola "talla" genérica → no se muestra el selector.
+    // Sin tallas (o una sola talla genérica): no se muestra el selector.
+    const sinTallas = Boolean(producto?.sin_tallas);
     const bloqueTallas = contenedor?.closest('.opcion--tallas');
-    const soloTallaUnica = tallas.length === 1
-        && ['unica', 'unico', 'sin talla'].includes(normalizar(tallas[0].nombre));
+    const soloTallaUnica = sinTallas || (tallas.length === 1
+        && ['unica', 'unico', 'sin talla'].includes(normalizar(tallas[0].nombre)));
 
     if (bloqueTallas) bloqueTallas.hidden = soloTallaUnica;
 
@@ -635,9 +636,21 @@ async function cargarProducto() {
 
         const atributosProducto = $('productoAtributos');
         if (atributosProducto) {
-            const listaAtributos = (producto.atributos || [])
-                .filter(atributo => atributo?.atributo && atributo?.valor)
-                .map(atributo => `${atributo.atributo}: ${atributo.valor}`);
+            // Varios valores del mismo atributo se muestran juntos: "Tipo: Zapatos / Skate".
+            const gruposAtributos = (producto.atributos || []).reduce((grupos, atributo) => {
+                if (!atributo?.atributo || !atributo?.valor) return grupos;
+
+                grupos[atributo.atributo] = grupos[atributo.atributo] || [];
+
+                if (!grupos[atributo.atributo].includes(atributo.valor)) {
+                    grupos[atributo.atributo].push(atributo.valor);
+                }
+
+                return grupos;
+            }, {});
+
+            const listaAtributos = Object.entries(gruposAtributos)
+                .map(([atributo, valores]) => `${atributo}: ${valores.join(' / ')}`);
 
             atributosProducto.textContent = listaAtributos.join(' · ');
             atributosProducto.hidden = !listaAtributos.length;

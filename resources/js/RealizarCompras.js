@@ -873,6 +873,7 @@ export default function initCompras() {
                 modoRedondeo = false;
                 toggleInputs();
                 calcularTodo();
+                inicializarSelectsAtributosCrear();
             });
         }
 
@@ -903,8 +904,8 @@ export default function initCompras() {
                     <div class="col-md-3">
                         <label class="form-label">${atributo.nombre_atributo}</label>
                         <select class="form-select form-select-sm select-atributo-producto"
-                                data-id-atributo="${atributo.id_atributo}">
-                            <option value="">Sin especificar</option>
+                                data-id-atributo="${atributo.id_atributo}"
+                                multiple>
                             ${opciones}
                         </select>
                     </div>
@@ -912,17 +913,50 @@ export default function initCompras() {
             });
         }
 
+        // Select2 múltiple: un atributo puede tener varios valores (Tipo: Zapatos + Skate).
+        function inicializarSelectsAtributosCrear() {
+
+            if (!$.fn.select2) return;
+
+            $('#crear_atributos_producto .select-atributo-producto').each(function () {
+
+                const $select = $(this);
+
+                if ($select.data('select2')) $select.select2('destroy');
+
+                $select.select2({
+                    width: '100%',
+                    placeholder: 'Sin especificar',
+                    allowClear: true,
+                    closeOnSelect: false,
+                    dropdownParent: $('#modalCrearProducto'),
+                    minimumResultsForSearch: Infinity,
+                });
+            });
+        }
+
         // Atributos elegidos en el formato que espera el controlador.
         function obtenerAtributosCrearProducto() {
 
-            return $('#crear_atributos_producto .select-atributo-producto').map(function () {
+            const seleccionados = [];
 
-                return {
-                    id_atributo: Number($(this).data('id-atributo')),
-                    id_valor: Number($(this).val()) || 0
-                };
+            $('#crear_atributos_producto .select-atributo-producto').each(function () {
 
-            }).get().filter(atributo => atributo.id_valor > 0);
+                const idAtributo = Number($(this).data('id-atributo'));
+                const valores = $(this).val();
+                const lista = Array.isArray(valores) ? valores : (valores ? [valores] : []);
+
+                lista.forEach(valor => {
+
+                    const idValor = Number(valor) || 0;
+
+                    if (idAtributo > 0 && idValor > 0) {
+                        seleccionados.push({ id_atributo: idAtributo, id_valor: idValor });
+                    }
+                });
+            });
+
+            return seleccionados;
         }
 
         /* form.reset() no limpia los Select2: hay que vaciarlos y refrescar su vista. */
@@ -933,7 +967,7 @@ export default function initCompras() {
             $('#formCrearProducto').find('select').each(function () {
                 const $select = $(this);
 
-                $select.val('');
+                $select.val($select.prop('multiple') ? [] : '');
 
                 if ($select.hasClass('select2-hidden-accessible')) {
                     $select.trigger('change.select2');
@@ -1007,6 +1041,7 @@ export default function initCompras() {
             formData.append('precio_venta', precioVenta);
             formData.append('stock_actual', stock);
             formData.append('id_medida', medida);
+            formData.append('sin_tallas', $('#crear_sin_tallas').is(':checked') ? 1 : 0);
 
             if(imagen){ formData.append('imagen_producto', imagen); }
 

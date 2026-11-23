@@ -301,6 +301,7 @@ class ProductoVariacionController extends Controller
                         'p.precio_compra',
                         'p.precio_venta',
                         'p.stock_actual',
+                        'p.sin_tallas',
                         'i.porcentaje_impuesto',
                     ])
                     ->orderBy('p.nombre_producto')
@@ -317,6 +318,7 @@ class ProductoVariacionController extends Controller
                             'precio_compra' => $fila->precio_compra,
                             'precio_venta' => $fila->precio_venta,
                             'stock_actual' => (int) $fila->stock_actual,
+                            'sin_tallas' => (bool) $fila->sin_tallas,
                             'impuesto' => [
                                 'porcentaje_impuesto' => (float) ($fila->porcentaje_impuesto ?? 0),
                             ],

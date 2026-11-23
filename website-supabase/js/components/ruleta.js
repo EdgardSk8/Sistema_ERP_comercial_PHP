@@ -22,7 +22,7 @@
 
     const API_CLIENTES = '/tienda/api/ruleta/clientes';
     const CLAVE_SESION_ADMIN = 'tienda_admin_sesion';
-    const VELOCIDAD_GIRO = (Math.PI * 2) / 50000; // Una vuelta cada 50 segundos.
+    const VELOCIDAD_GIRO = (Math.PI * 2) / 20000; // Una vuelta cada 50 segundos.
     const INTERVALO_CARRUSEL = 4200;
 
     /* Paleta oscura: el texto blanco se lee en todos los segmentos. */

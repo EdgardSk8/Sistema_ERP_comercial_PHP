@@ -64,6 +64,12 @@ class VariacionTallaController extends Controller
 
             $variacion = \App\Models\ProductoVariacion::with('producto')->findOrFail($request->id_variacion);
             $idTalla = $request->filled('id_talla') ? (int) $request->id_talla : null;
+
+            // Producto marcado como "no usa tallas": siempre se guarda sin talla.
+            if ($variacion->producto?->sin_tallas) {
+                $idTalla = null;
+            }
+
             $talla = $idTalla ? Talla::findOrFail($idTalla) : null;
             $stockNuevo = (int) $request->stock;
 
@@ -211,8 +217,14 @@ class VariacionTallaController extends Controller
             $variacion_talla->load('variacion.producto', 'talla');
             $tallaAnterior = $variacion_talla->talla;
             $idTalla = $request->filled('id_talla') ? (int) $request->id_talla : null;
-            $tallaNueva = $idTalla ? Talla::findOrFail($idTalla) : null;
             $producto = $variacion_talla->variacion->producto;
+
+            // Producto marcado como "no usa tallas": la fila se mantiene sin talla.
+            if ($producto?->sin_tallas) {
+                $idTalla = null;
+            }
+
+            $tallaNueva = $idTalla ? Talla::findOrFail($idTalla) : null;
 
             // Postgres no compara dos NULL en el índice único: se valida aquí.
             $duplicada = VariacionTalla::where('id_variacion', $variacion_talla->id_variacion)

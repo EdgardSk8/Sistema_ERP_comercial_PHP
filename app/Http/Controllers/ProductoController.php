@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MovimientoInventario;
 use App\Models\Producto;
 use App\Models\VariacionTalla;
+use App\Support\CacheVariaciones;
 use App\Support\DataTableServidor;
 use App\Support\ImagenOptimizada;
 use App\Support\ImagenWeb;
@@ -130,6 +131,7 @@ class ProductoController extends Controller
                     'precio_venta' => $request->precio_venta,
                     'stock_actual' => 0,
                     'id_medida' => $idMedida,
+                    'sin_tallas' => $request->boolean('sin_tallas'),
 
                 ]);
 
@@ -195,6 +197,7 @@ class ProductoController extends Controller
                     'p.precio_venta',
                     'p.stock_actual',
                     'p.estado_producto',
+                    'p.sin_tallas',
                     'p.fecha_creacion_producto',
 
                     'c.nombre_categoria',
@@ -352,6 +355,7 @@ class ProductoController extends Controller
                 'precio_venta' => $fila->precio_venta,
                 'stock_actual' => $fila->stock_actual,
                 'estado_producto' => $fila->estado_producto,
+                'sin_tallas' => (bool) $fila->sin_tallas,
                 'fecha_creacion_producto' => $fila->fecha_creacion_producto,
                 'id_marca' => $fila->id_marca,
 
@@ -645,7 +649,14 @@ class ProductoController extends Controller
             $producto->stock_actual = $request->stock_actual ?? $producto->stock_actual;
             $producto->id_medida = $idMedida;
 
+            $sinTallasAnterior = (bool) $producto->sin_tallas;
+            $producto->sin_tallas = $request->boolean('sin_tallas');
+
             $producto->save();
+
+            if ($sinTallasAnterior !== (bool) $producto->sin_tallas) {
+                CacheVariaciones::olvidarDetalle();
+            }
 
             $this->sincronizarAtributos($producto, $request->input('atributos'));
 
@@ -791,6 +802,7 @@ class ProductoController extends Controller
                     'precio_venta',
                     'stock_actual',
                     'estado_producto',
+                    'sin_tallas',
                 ])
                 ->with([
                     'categoria:id_categoria,nombre_categoria',
@@ -981,7 +993,7 @@ class ProductoController extends Controller
                 continue;
             }
 
-            $filas[$idAtributo] = [
+            $filas[$idAtributo.'-'.$idValor] = [
                 'id_producto' => $producto->id_producto,
                 'id_atributo' => $idAtributo,
                 'id_valor' => $idValor,

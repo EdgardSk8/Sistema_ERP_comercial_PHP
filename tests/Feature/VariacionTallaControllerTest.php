@@ -2,19 +2,19 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\VariacionTallaController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\VariacionImagenController;
+use App\Http\Controllers\VariacionTallaController;
 use App\Models\MovimientoInventario;
 use App\Models\Producto;
 use App\Models\ProductoVariacion;
 use App\Models\Talla;
-use App\Models\VariacionTalla;
 use App\Models\VariacionImagen;
+use App\Models\VariacionTalla;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Http\Request;
 use Tests\TestCase;
 
 class VariacionTallaControllerTest extends TestCase
@@ -40,6 +40,7 @@ class VariacionTallaControllerTest extends TestCase
             $table->decimal('precio_compra', 10, 2)->default(0);
             $table->decimal('precio_venta', 10, 2)->default(0);
             $table->boolean('estado_producto')->default(true);
+            $table->boolean('sin_tallas')->default(false);
             $table->dateTime('fecha_creacion_producto')->nullable();
         });
 
@@ -75,7 +76,7 @@ class VariacionTallaControllerTest extends TestCase
         Schema::create('variacion_tallas', function (Blueprint $table) {
             $table->increments('id_variacion_talla');
             $table->unsignedInteger('id_variacion');
-            $table->unsignedInteger('id_talla');
+            $table->unsignedInteger('id_talla')->nullable();
             $table->unsignedInteger('stock')->default(0);
             $table->string('sku')->nullable()->unique();
             $table->decimal('precio_compra', 10, 2)->nullable();
@@ -310,5 +311,48 @@ class VariacionTallaControllerTest extends TestCase
         $this->assertSame(3, (int) $variante40->fresh()->stock);
         $this->assertSame($variante39->id_variacion_talla, (int) $movimiento->id_variacion_talla);
         $this->assertSame(5, (int) $movimiento->stock_resultante);
+    }
+
+    public function test_producto_sin_tallas_guarda_su_fila_sin_talla(): void
+    {
+        $producto = Producto::create([
+            'nombre_producto' => 'Llantas 55MM',
+            'stock_actual' => 5,
+            'precio_compra' => 500,
+            'precio_venta' => 750,
+            'sin_tallas' => true,
+        ]);
+        $variacion = ProductoVariacion::create([
+            'id_producto' => $producto->id_producto,
+            'color' => 'Naranja',
+            'estado_variacion' => true,
+        ]);
+        $talla = Talla::create(['talla' => '40', 'estado_talla' => true]);
+        $controller = app(VariacionTallaController::class);
+
+        // Aunque llegue una talla, el producto marcado como "sin tallas" la ignora.
+        $response = $controller->CrearVariacionTalla(new Request([
+            'id_variacion' => $variacion->id_variacion,
+            'id_talla' => $talla->id_talla,
+            'stock' => 5,
+            'precio_compra' => 500,
+            'precio_venta' => 750,
+        ]));
+
+        $fila = VariacionTalla::where('id_variacion', $variacion->id_variacion)->firstOrFail();
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertNull($fila->id_talla);
+        $this->assertSame(5, (int) $fila->stock);
+        $this->assertSame('LLANTAS-55MM-NARANJA-UNICA', $fila->sku);
+
+        // Al editar la fila se conserva sin talla.
+        $edicion = $controller->ActualizarVariacionTalla(new Request([
+            'id_talla' => $talla->id_talla,
+            'stock' => 4,
+        ]), $fila->id_variacion_talla);
+
+        $this->assertSame(200, $edicion->getStatusCode());
+        $this->assertNull($fila->fresh()->id_talla);
     }
 }
