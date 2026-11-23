@@ -563,6 +563,63 @@
   height: 16px;
 }
 
+.rifa__ruleta-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  width: 100%;
+}
+
+.rifa__fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 0 auto;
+  padding: 4px 9px;
+  border-radius: var(--r-pill);
+  background: rgba(193, 18, 31, .09);
+  color: var(--nav-rojo, var(--acento));
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.rifa__fecha .rifa__icono {
+  width: 14px;
+  height: 14px;
+}
+
+.rifa__fecha-corta {
+  display: none;
+}
+
+@media (max-width: 359px) {
+  .rifa__ruleta-cabecera {
+    flex-wrap: nowrap;
+  }
+
+  .rifa__ruleta-titulo {
+    font-size: .72rem;
+  }
+
+  .rifa__fecha {
+    gap: 4px;
+    padding: 3px 6px;
+    font-size: .66rem;
+  }
+
+  .rifa__fecha-larga {
+    display: none;
+  }
+
+  .rifa__fecha-corta {
+    display: inline;
+  }
+}
+
 .ruleta {
   display: grid;
   gap: var(--e-4);

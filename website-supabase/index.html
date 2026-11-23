@@ -31,7 +31,7 @@
   <link rel="stylesheet" href="/tienda/recursos/css/base/estilos-home.css?v=20261123a">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.6/dist/driver.css">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/rifa.css?v=20261123j">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/rifa.css?v=20261123l">
 </head>
 <body>
 
@@ -268,7 +268,7 @@
             <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
               <use href="#rifa-icono-estrella"></use>
             </svg>
-            Gran apertura · 15 de diciembre
+            Gran apertura
           </p>
 
           <h2 class="rifa__titulo" id="rifaTitulo">Sorteo de apertura</h2>
@@ -279,12 +279,6 @@
           </p>
 
           <ul class="rifa__datos">
-            <li class="rifa__dato">
-              <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
-                <use href="#rifa-icono-calendario"></use>
-              </svg>
-              <span><strong>Fecha:</strong> 15 de diciembre</span>
-            </li>
             <li class="rifa__dato">
               <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
                 <use href="#rifa-icono-regalo"></use>
@@ -365,12 +359,21 @@
           </div>
 
           <div class="rifa__ruleta" id="rifaRuleta">
-            <p class="rifa__ruleta-titulo">
-              <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
-                <use href="#rifa-icono-copo"></use>
-              </svg>
-              Ruleta del sorteo
-            </p>
+            <div class="rifa__ruleta-cabecera">
+              <p class="rifa__ruleta-titulo">
+                <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
+                  <use href="#rifa-icono-copo"></use>
+                </svg>
+                Ruleta del sorteo
+              </p>
+              <p class="rifa__fecha" aria-label="15 de diciembre">
+                <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
+                  <use href="#rifa-icono-calendario"></use>
+                </svg>
+                <span class="rifa__fecha-larga">15 de diciembre</span>
+                <span class="rifa__fecha-corta" aria-hidden="true">15 dic</span>
+              </p>
+            </div>
 
             <div class="ruleta">
               <div class="ruleta__aro">
