@@ -270,11 +270,14 @@
 
 /* ── 2. Texto del aviso ──────────────────────────────────────── */
 .rifa__etiqueta {
-  display: inline-flex;
+  display: flex;
+  width: fit-content;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  margin: 0 0 8px;
+  margin: 0 auto 8px;
   padding: 5px 12px;
+  text-align: center;
   border-radius: var(--r-pill);
   background: var(--nav-rojo, var(--acento));
   color: #fff8ec;
@@ -302,6 +305,7 @@
   margin: 0 0 12px;
   color: var(--texto-suave);
   font-size: .94rem;
+  text-align: center;
 }
 
 .rifa__descripcion strong {
@@ -659,8 +663,8 @@
 
   .rifa__etiqueta {
     order: 1;
-    justify-self: start;
-    margin: 0 0 10px;
+    justify-self: center;
+    margin: 0 auto 10px;
     padding: 6px 11px;
     font-size: .72rem;
   }
@@ -721,7 +725,7 @@
   }
 
   .rifa__premio-carrusel {
-    width: min(260px, 100%);
+    width: min(190px, 100%);
     max-width: 100%;
     margin-inline: auto;
   }
@@ -740,16 +744,6 @@
     object-fit: cover;
     padding: 0;
   }
-
-  .rifa__premio-nav {
-    display: inline-flex;
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
-  }
-
-  .rifa__premio-nav--prev { left: 8px; }
-  .rifa__premio-nav--next { right: 8px; }
 
   .rifa__premio-texto {
     display: block;
@@ -961,7 +955,7 @@
   }
 
   .rifa__premio-carrusel {
-    width: 200px;
+    width: 170px;
     max-width: 100%;
   }
 
@@ -970,10 +964,6 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-  }
-
-  .rifa__premio-nav {
-    display: inline-flex;
   }
 
   .ruleta__aro {
