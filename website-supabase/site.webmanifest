@@ -1,0 +1,33 @@
+{
+  "id": "/",
+  "name": "Tellez Nic Store",
+  "short_name": "Tellez Store",
+  "description": "Calzado, ropa, tecnología y accesorios en Nicaragua.",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5EEDE",
+  "theme_color": "#F5EEDE",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
