@@ -1,18 +1,13 @@
 /* ╔══════════════════════════════════════════════════════════════╗
-   ║  Tienda · Sorteo de apertura y ruleta                        ║
+   ║  Tienda · Sorteo de zapatos y ruleta                         ║
    ║  Nombres reales: Supabase público o API del ERP              ║
    ╚══════════════════════════════════════════════════════════════╝ */
 
 (() => {
     const seccion = document.getElementById('rifa');
-    const canvas = document.getElementById('ruletaLienzo');
 
-    if (!seccion || !canvas) return;
+    if (!seccion) return;
 
-    const ctx = canvas.getContext('2d');
-    const mensaje = document.getElementById('ruletaMensaje');
-    const nota = document.getElementById('ruletaNota');
-    const enlaceAdmin = document.getElementById('ruletaEnlaceAdmin');
     const premio = document.getElementById('rifaPremio');
     const premioCarrusel = document.getElementById('rifaPremioCarrusel');
     const premioAnterior = document.getElementById('rifaPremioAnterior');
@@ -21,6 +16,7 @@
     const premioImagenSiguiente = document.getElementById('rifaPremioImagenSiguiente');
 
     const API_CLIENTES = '/tienda/api/ruleta/clientes';
+    const API_INSTAGRAM = '/tienda/recursos/data/ruleta-instagram.json';
     const CLAVE_SESION_ADMIN = 'tienda_admin_sesion';
     const VELOCIDAD_GIRO = (Math.PI * 2) / 20000; // Una vuelta cada 50 segundos.
     const INTERVALO_CARRUSEL = 4200;
@@ -32,13 +28,12 @@
     const finSorteo = new Date(seccion.dataset.finSorteo || '');
     const sorteoFinalizado = !Number.isNaN(finSorteo.getTime()) && Date.now() >= finSorteo.getTime();
 
-    let nombres = [];
-    let angulo = 0;
-    let lado = 320;
+    /* Una entrada por bloque [data-ruleta]: clientes e Instagram. */
+    const ruletas = [];
+
     let reducido = movimientoReducido.matches;
     let seccionVisible = true;
     let ultimoCuadro = performance.now();
-    let ultimoDibujo = 0;
     let imagenesPremio = [];
     let indicePremio = 0;
     let capaVisible = premioImagen;
@@ -68,7 +63,7 @@
         logoCtx.clearRect(0, 0, 256, 256);
         logoCtx.drawImage(logoRuleta, 0, 0, 256, 256);
         logoListo = true;
-        dibujar();
+        ruletas.forEach((ruleta) => dibujar(ruleta));
     });
 
     logoRuleta.src = '/imagenes/logo/LOGOTIPO-SIN-FONDO.PNG';
@@ -77,7 +72,8 @@
        ║  Dibujo de la ruleta                                     ║
        ╚══════════════════════════════════════════════════════════╝ */
 
-    function ajustarLienzo() {
+    function ajustarLienzo(ruleta) {
+        const { canvas, ctx } = ruleta;
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const ancho = Math.max(160, Math.round(canvas.clientWidth || 320));
 
@@ -85,11 +81,12 @@
         canvas.height = Math.round(ancho * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        lado = ancho;
-        dibujar();
+        ruleta.lado = ancho;
+        dibujar(ruleta);
     }
 
-    function dibujarCentro(centro, radio) {
+    function dibujarCentro(ruleta, centro, radio) {
+        const { ctx } = ruleta;
         const radioCentro = radio * 0.24;
 
         ctx.beginPath();
@@ -113,11 +110,12 @@
         );
     }
 
-    function dibujar() {
-        const centro = lado / 2;
+    function dibujar(ruleta) {
+        const { ctx, nombres } = ruleta;
+        const centro = ruleta.lado / 2;
         const radio = centro - 6;
 
-        ctx.clearRect(0, 0, lado, lado);
+        ctx.clearRect(0, 0, ruleta.lado, ruleta.lado);
         ctx.save();
         ctx.translate(centro, centro);
 
@@ -127,13 +125,13 @@
             ctx.fillStyle = '#efe6d4';
             ctx.fill();
             ctx.restore();
-            dibujarCentro(centro, radio);
+            dibujarCentro(ruleta, centro, radio);
             return;
         }
 
         const porcion = (Math.PI * 2) / nombres.length;
 
-        ctx.rotate(angulo);
+        ctx.rotate(ruleta.angulo);
 
         nombres.forEach((nombre, indice) => {
             const inicio = indice * porcion;
@@ -170,7 +168,7 @@
         }
 
         ctx.restore();
-        dibujarCentro(centro, radio);
+        dibujarCentro(ruleta, centro, radio);
     }
 
     /* ╔══════════════════════════════════════════════════════════╗
@@ -182,33 +180,84 @@
         const delta = Math.min(ahora - ultimoCuadro, 100);
         ultimoCuadro = ahora;
 
-        if (!reducido && !sorteoFinalizado && !document.hidden && seccionVisible) {
-            angulo += VELOCIDAD_GIRO * delta;
+        if (!reducido && !document.hidden && seccionVisible) {
+            ruletas.forEach((ruleta) => {
+                if (ruleta.finalizada) return;
 
-            /* ~30 fps: suficiente para un giro lento y menos consumo. */
-            if (ahora - ultimoDibujo > 32) {
-                dibujar();
-                ultimoDibujo = ahora;
-            }
+                ruleta.angulo += VELOCIDAD_GIRO * delta;
+
+                /* ~30 fps: suficiente para un giro lento y menos consumo. */
+                if (ahora - ruleta.ultimoDibujo > 32) {
+                    dibujar(ruleta);
+                    ruleta.ultimoDibujo = ahora;
+                }
+            });
         }
 
         requestAnimationFrame(animar);
     }
 
     /* ╔══════════════════════════════════════════════════════════╗
+       ║  Instancias: una ruleta por bloque [data-ruleta]         ║
+       ╚══════════════════════════════════════════════════════════╝ */
+
+    function crearRuleta(bloque) {
+        const canvas = bloque.querySelector('.ruleta__lienzo');
+
+        if (!canvas) return null;
+
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) return null;
+
+        const limite = new Date(bloque.dataset.finSorteo || seccion.dataset.finSorteo || '');
+
+        const ruleta = {
+            bloque,
+            fuente: bloque.dataset.fuente === 'instagram' ? 'instagram' : 'clientes',
+            canvas,
+            ctx,
+            mensaje: bloque.querySelector('.ruleta__mensaje'),
+            nota: bloque.querySelector('.ruleta__nota'),
+            enlaceAdmin: bloque.querySelector('.ruleta__enlace-admin'),
+            enlaceRed: bloque.querySelector('.ruleta__enlace-red'),
+            finalizada: !Number.isNaN(limite.getTime()) && Date.now() >= limite.getTime(),
+            nombres: [],
+            angulo: 0,
+            lado: 320,
+            ultimoDibujo: 0,
+        };
+
+        if (ruleta.finalizada && ruleta.mensaje) {
+            ruleta.mensaje.textContent = 'Sorteo finalizado. ¡Gracias por participar!';
+        }
+
+        if ('ResizeObserver' in window) {
+            new ResizeObserver(() => ajustarLienzo(ruleta)).observe(canvas);
+        } else {
+            window.addEventListener('resize', () => ajustarLienzo(ruleta));
+        }
+
+        ajustarLienzo(ruleta);
+        ruletas.push(ruleta);
+
+        return ruleta;
+    }
+
+    /* ╔══════════════════════════════════════════════════════════╗
        ║  Datos: clientes reales                                  ║
        ╚══════════════════════════════════════════════════════════╝ */
 
-    function aplicarNombres(lista, etiqueta) {
-        nombres = (lista || [])
+    function aplicarNombres(ruleta, lista, etiqueta) {
+        ruleta.nombres = (lista || [])
             .map((nombre) => String(nombre ?? '').trim())
             .filter(Boolean);
 
-        canvas.setAttribute('aria-label', `Ruleta con ${nombres.length} nombres participantes`);
+        ruleta.canvas.setAttribute('aria-label', `Ruleta con ${ruleta.nombres.length} nombres participantes`);
 
-        if (nota) nota.textContent = etiqueta;
+        if (ruleta.nota) ruleta.nota.textContent = etiqueta;
 
-        ajustarLienzo();
+        ajustarLienzo(ruleta);
     }
 
     function leerSesionAdmin() {
@@ -220,8 +269,8 @@
         }
     }
 
-    function mostrarEnlaceAdmin(mostrar) {
-        if (enlaceAdmin) enlaceAdmin.hidden = !mostrar;
+    function mostrarEnlaceAdmin(ruleta, mostrar) {
+        if (ruleta.enlaceAdmin) ruleta.enlaceAdmin.hidden = !mostrar;
     }
 
     /* Clientes del panel administrativo de la tienda (Supabase).
@@ -312,10 +361,10 @@
         return (datos.clientes || []).map((cliente) => cliente?.nombre).filter(Boolean);
     }
 
-    async function cargarClientesReales() {
-        if (nota) nota.textContent = 'Cargando participantes…';
+    async function cargarClientes(ruleta) {
+        if (ruleta.nota) ruleta.nota.textContent = 'Cargando participantes…';
 
-        mostrarEnlaceAdmin(false);
+        mostrarEnlaceAdmin(ruleta, false);
 
         let lista = null;
         let ultimoError = null;
@@ -358,24 +407,93 @@
         }
 
         if (lista === null) {
-            if (nota) {
-                nota.textContent = leerSesionAdmin()
+            if (ruleta.nota) {
+                ruleta.nota.textContent = leerSesionAdmin()
                     ? (ultimoError?.message || 'No se pudieron cargar los participantes.')
                     : 'No se pudieron cargar los participantes. Intenta de nuevo en unos minutos.';
             }
 
-            mostrarEnlaceAdmin(true);
+            mostrarEnlaceAdmin(ruleta, true);
             console.warn('Ruleta: no se pudieron cargar los participantes.', ultimoError);
             return;
         }
 
         if (!lista.length) {
-            aplicarNombres([], 'No hay participantes registrados para el sorteo.');
+            aplicarNombres(ruleta, [], 'No hay participantes registrados para el sorteo.');
             return;
         }
 
-        mostrarEnlaceAdmin(false);
-        aplicarNombres(lista, `${lista.length} participantes registrados.`);
+        mostrarEnlaceAdmin(ruleta, false);
+        aplicarNombres(ruleta, lista, `${lista.length} participantes registrados.`);
+    }
+
+    /* Participantes de Instagram: lista curada en data/ruleta-instagram.json.
+       El bloque se oculta mientras no haya nombres cargados. */
+    async function cargarInstagram(ruleta) {
+        let datos = null;
+
+        try {
+            const respuesta = await fetch(API_INSTAGRAM, {
+                headers: { Accept: 'application/json' },
+                cache: 'no-cache',
+            });
+
+            if (respuesta.ok) datos = await respuesta.json();
+        } catch {
+            datos = null;
+        }
+
+        const lista = (datos?.participantes || [])
+            .map((nombre) => String(nombre ?? '').trim().replace(/^@+/, ''))
+            .filter(Boolean);
+
+        if (!lista.length) {
+            ocultarRuleta(ruleta);
+            return;
+        }
+
+        mostrarRuleta(ruleta);
+        aplicarNombres(ruleta, lista, etiquetaInstagram(lista.length, datos?.actualizado));
+        mostrarPublicacion(ruleta, datos?.publicacion);
+    }
+
+    function mostrarRuleta(ruleta) {
+        const panel = ruleta.bloque.closest('.rifa__instagram');
+
+        if (panel) panel.hidden = false;
+
+        ajustarLienzo(ruleta);
+    }
+
+    function ocultarRuleta(ruleta) {
+        const panel = ruleta.bloque.closest('.rifa__instagram');
+
+        if (panel) panel.hidden = true;
+    }
+
+    function etiquetaInstagram(total, actualizado) {
+        const participantes = total === 1
+            ? '1 seguidor de Instagram'
+            : `${total} seguidores de Instagram`;
+        const fecha = new Date(actualizado || '');
+
+        if (Number.isNaN(fecha.getTime())) return `${participantes}.`;
+
+        const corta = fecha.toLocaleDateString('es-NI', { day: 'numeric', month: 'short' });
+
+        return `${participantes} · lista del ${corta}.`;
+    }
+
+    function mostrarPublicacion(ruleta, publicacion) {
+        if (!ruleta.enlaceRed) return;
+
+        if (!/^https:\/\/(www\.)?instagram\.com\//i.test(String(publicacion || ''))) {
+            ruleta.enlaceRed.hidden = true;
+            return;
+        }
+
+        ruleta.enlaceRed.href = publicacion;
+        ruleta.enlaceRed.hidden = false;
     }
 
     /* ╔══════════════════════════════════════════════════════════╗
@@ -501,10 +619,6 @@
        ║  Arranque                                                ║
        ╚══════════════════════════════════════════════════════════╝ */
 
-    if (sorteoFinalizado && mensaje) {
-        mensaje.textContent = 'Sorteo finalizado. ¡Gracias por participar!';
-    }
-
     premioAnterior?.addEventListener('click', () => mostrarPremio(-1));
     premioSiguiente?.addEventListener('click', () => mostrarPremio(1));
 
@@ -560,15 +674,13 @@
         if (!document.hidden) programarCarrusel();
     });
 
-    if ('ResizeObserver' in window) {
-        new ResizeObserver(() => ajustarLienzo()).observe(canvas);
-    } else {
-        window.addEventListener('resize', ajustarLienzo);
-    }
+    document.querySelectorAll('#rifa [data-ruleta]').forEach((bloque) => {
+        const ruleta = crearRuleta(bloque);
 
-    ajustarLienzo();
+        if (!ruleta) return;
 
-    void cargarClientesReales();
+        void (ruleta.fuente === 'instagram' ? cargarInstagram(ruleta) : cargarClientes(ruleta));
+    });
 
     requestAnimationFrame(animar);
 })();

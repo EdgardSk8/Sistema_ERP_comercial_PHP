@@ -47,7 +47,7 @@
   <link rel="stylesheet" href="/tienda/recursos/css/base/estilos-home.css?v=20261123a">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.6/dist/driver.css">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/rifa.css?v=20261123l">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/rifa.css?v=20261124a">
 </head>
 <body>
 
@@ -173,8 +173,8 @@
     </div>
   </section>
 
-  <!-- ── Sorteo de apertura + ruleta (arriba de las categorías) ── -->
-  <section class="rifa" id="rifa" data-fin-sorteo="2026-12-15T23:59:59-06:00"
+  <!-- ── Sorteo de zapatos + ruleta (arriba de las categorías) ── -->
+  <section class="rifa" id="rifa" data-fin-sorteo="2026-12-24T23:59:59-06:00"
            aria-labelledby="rifaTitulo">
     <div class="contenedor">
       <div class="rifa__panel">
@@ -287,11 +287,12 @@
             Gran apertura
           </p>
 
-          <h2 class="rifa__titulo" id="rifaTitulo">Sorteo de apertura</h2>
+          <h2 class="rifa__titulo" id="rifaTitulo">Sorteo de zapatos</h2>
 
           <p class="rifa__descripcion">
-            Celebra la apertura de nuestra tienda y participa por
-            <strong>3 pares</strong> de zapatos.
+            Sorteo de zapatos: el 15 de diciembre regalamos
+            <strong>3 pares</strong> entre los clientes registrados y el 24 de diciembre,
+            <strong>1 par</strong> entre nuestros seguidores de Instagram.
           </p>
 
           <ul class="rifa__datos">
@@ -299,7 +300,13 @@
               <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
                 <use href="#rifa-icono-regalo"></use>
               </svg>
-              <span><strong>Premio:</strong> 3 pares de zapatos</span>
+              <span><strong>15 de diciembre:</strong> 3 pares entre clientes registrados</span>
+            </li>
+            <li class="rifa__dato">
+              <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
+                <use href="#rifa-icono-instagram"></use>
+              </svg>
+              <span><strong>24 de diciembre:</strong> 1 par entre seguidores de Instagram</span>
             </li>
           </ul>
 
@@ -310,12 +317,13 @@
           <div class="rifa__redes">
             <p class="rifa__redes-titulo">
               <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
-                <use href="#rifa-icono-regalo"></use>
+                <use href="#rifa-icono-instagram"></use>
               </svg>
-              Próximo sorteo · 24 de diciembre de 2026
+              Cómo participar
             </p>
             <p class="rifa__redes-texto">
-              Síguenos en Instagram y Facebook para reclamar tu próximo regalo navideño.
+              Regístrate en la tienda para el sorteo del 15 de diciembre y síguenos en Instagram
+              para el del 24.
             </p>
             <div class="rifa__redes-enlaces">
               <a class="rifa__redes-enlace rifa__redes-enlace--instagram"
@@ -324,7 +332,7 @@
                 <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
                   <use href="#rifa-icono-instagram"></use>
                 </svg>
-                Instagram
+                Seguir en Instagram
               </a>
               <a class="rifa__redes-enlace rifa__redes-enlace--facebook"
                  href="https://www.facebook.com/profile.php?id=61594097712925"
@@ -332,7 +340,7 @@
                 <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
                   <use href="#rifa-icono-facebook"></use>
                 </svg>
-                Facebook
+                También en Facebook
               </a>
             </div>
           </div>
@@ -365,7 +373,7 @@
               <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
                 <use href="#rifa-icono-regalo"></use>
               </svg>
-              3 pares de zapatos
+              Zapatos del sorteo
             </figcaption>
             </figure>
 
@@ -380,7 +388,7 @@
                 <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
                   <use href="#rifa-icono-copo"></use>
                 </svg>
-                Ruleta del sorteo
+                Ruleta de clientes
               </p>
               <p class="rifa__fecha" aria-label="15 de diciembre">
                 <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
@@ -391,25 +399,66 @@
               </p>
             </div>
 
-            <div class="ruleta">
+            <div class="ruleta" data-ruleta data-fuente="clientes"
+                 data-fin-sorteo="2026-12-15T23:59:59-06:00">
               <div class="ruleta__aro">
-                <canvas class="ruleta__lienzo" id="ruletaLienzo" width="320" height="320"
-                        role="img" aria-label="Ruleta con los nombres participantes"></canvas>
+                <canvas class="ruleta__lienzo" width="320" height="320"
+                        role="img" aria-label="Ruleta con los nombres de los clientes registrados"></canvas>
                 <span class="ruleta__flecha" aria-hidden="true"></span>
               </div>
 
               <div class="ruleta__controles">
-                <p class="ruleta__mensaje" id="ruletaMensaje">
-                  El ganador se dará a conocer el 15 de diciembre.
-                </p>
+                <p class="ruleta__mensaje">Se anuncian 3 ganadores el 15 de diciembre.</p>
 
-                <p class="ruleta__nota" id="ruletaNota">Cargando participantes…</p>
+                <p class="ruleta__nota">Cargando participantes…</p>
 
-                <a class="ruleta__enlace-admin" id="ruletaEnlaceAdmin" href="/tienda/admin-login" hidden>
+                <a class="ruleta__enlace-admin" href="/tienda/admin-login" hidden>
                   <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
                   Iniciar sesión en el panel
                 </a>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rifa__instagram" id="rifaInstagram" hidden>
+          <div class="rifa__ruleta-cabecera">
+            <p class="rifa__ruleta-titulo">
+              <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
+                <use href="#rifa-icono-instagram"></use>
+              </svg>
+              Ruleta de Instagram
+            </p>
+            <p class="rifa__fecha" aria-label="24 de diciembre">
+              <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
+                <use href="#rifa-icono-calendario"></use>
+              </svg>
+              <span class="rifa__fecha-larga">24 de diciembre</span>
+              <span class="rifa__fecha-corta" aria-hidden="true">24 dic</span>
+            </p>
+          </div>
+
+          <div class="ruleta" data-ruleta data-fuente="instagram"
+               data-fin-sorteo="2026-12-24T23:59:59-06:00">
+            <div class="ruleta__aro">
+              <canvas class="ruleta__lienzo" width="320" height="320"
+                      role="img" aria-label="Ruleta con los seguidores de Instagram"></canvas>
+              <span class="ruleta__flecha" aria-hidden="true"></span>
+            </div>
+
+            <div class="ruleta__controles">
+              <p class="ruleta__mensaje">
+                Se anuncia 1 ganador el 24 de diciembre entre nuestros seguidores de Instagram.
+              </p>
+
+              <p class="ruleta__nota">Cargando participantes…</p>
+
+              <a class="ruleta__enlace-red" hidden target="_blank" rel="noopener noreferrer">
+                <svg class="rifa__icono" viewBox="0 0 16 16" aria-hidden="true">
+                  <use href="#rifa-icono-instagram"></use>
+                </svg>
+                Ver publicación del sorteo
+              </a>
             </div>
           </div>
         </div>
@@ -640,7 +689,7 @@
   <script src="/tienda/recursos/js/core/categorias.js?v=20261109a" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.6/dist/driver.js.iife.js" defer></script>
 <script src="/tienda/recursos/js/pages/tienda.js?v=20261123a" defer></script>
-  <script src="/tienda/recursos/js/components/ruleta.js?v=20261123e" defer></script>
+  <script src="/tienda/recursos/js/components/ruleta.js?v=20261124a" defer></script>
   <script src="/tienda/recursos/js/components/promos.js?v=20261123a" defer></script>
   <script src="/tienda/recursos/js/components/mapa.js?v=20261102d" defer></script>
 </body>

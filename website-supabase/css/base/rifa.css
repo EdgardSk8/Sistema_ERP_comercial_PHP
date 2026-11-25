@@ -689,7 +689,8 @@
   text-align: center;
 }
 
-.ruleta__enlace-admin {
+.ruleta__enlace-admin,
+.ruleta__enlace-red {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -700,7 +701,29 @@
   text-underline-offset: 2px;
 }
 
-/* ── 5. Móvil: ruleta primero, premio y redes después ───────── */
+.ruleta__enlace-red .rifa__icono {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── 5. Segunda ruleta: seguidores de Instagram ─────────────── */
+.rifa__instagram {
+  position: relative;
+  z-index: 1;
+  order: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-3);
+  width: 100%;
+  max-width: 720px;
+  justify-self: center;
+  margin-top: var(--e-4);
+  padding-top: var(--e-4);
+  border-top: 1px dashed rgba(193, 18, 31, .22);
+}
+
+/* ── 6. Móvil: ruleta primero, premio y redes después ───────── */
 @media (max-width: 559px) {
   .rifa {
     padding: 12px 0 20px;
@@ -1016,7 +1039,7 @@
   }
 }
 
-/* ── 6. Tablet y escritorio ─────────────────────────────────── */
+/* ── 7. Tablet y escritorio ─────────────────────────────────── */
 @media (min-width: 560px) {
   .rifa__panel {
     gap: var(--e-5);

@@ -94,6 +94,20 @@ En el panel de Supabase:
   la usa en local.
 - **Imágenes**: las fotos de productos y promociones se optimizaron (máx. 1000 px, WebP 78-80).
   Guarda una copia de los originales antes de reemplazarlas si necesitas más calidad.
+- **Sorteo de zapatos**: son dos sorteos y cada ruleta tiene su propia fecha en `index.html`
+  (`data-fin-sorteo`), así se detiene sola al terminar.
+  - **15 de diciembre, 3 pares:** ruleta de clientes registrados. Los nombres salen de
+    `web_clientes_ruleta` (o `web_admin_clientes` si hay sesión del panel) y de la API del ERP.
+  - **24 de diciembre, 1 par:** ruleta de seguidores de Instagram. Lee
+    `data/ruleta-instagram.json`; si `participantes` está vacío, el bloque no se muestra.
+  - Para cargar participantes de Instagram: `node scripts/importar-comentarios-instagram.mjs
+    comentarios.json --publicacion=https://www.instagram.com/p/XXXX/` desde la raíz del ERP.
+    Acepta la respuesta de la API (`{ "data": [{ "username": "…" }] }`), un arreglo de textos o
+    un archivo plano con un comentario por línea; deduplica y ordena los nombres.
+  - **Límite de Instagram:** la API oficial no lista seguidores ni quién compartió una
+    publicación (solo devuelve `followers_count` y los contadores `shares`/`reposts`). Lo único
+    verificable por API son los **comentarios** de tus publicaciones, con `instagram_manage_comments`
+    (requiere app de Meta y cuenta profesional).
 
 ## 6. Avatar del cliente (colores e ilustraciones)
 
