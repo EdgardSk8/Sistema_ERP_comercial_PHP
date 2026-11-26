@@ -3752,28 +3752,50 @@
     }
 
     function aplicarTipoAviso(tipo) {
-        estado.avisos.tipo = tipo === 'promocion' ? 'promocion' : 'mensaje';
+        const nuevo = tipo === 'promocion' ? 'promocion' : 'mensaje';
+        const cambio = nuevo !== estado.avisos.tipo;
 
-        $$('#avisoTipo .admin-chip').forEach((chip) => chip.classList.toggle('is-activo', chip.dataset.tipo === estado.avisos.tipo));
+        estado.avisos.tipo = nuevo;
+
+        $$('#avisoTipo .admin-chip').forEach((chip) => chip.classList.toggle('is-activo', chip.dataset.tipo === nuevo));
 
         const caja = $('#avisoPromocionCaja');
-        if (caja) caja.hidden = estado.avisos.tipo !== 'promocion';
+        if (caja) caja.hidden = nuevo !== 'promocion';
 
-        if (estado.avisos.tipo === 'promocion') {
+        /* Al cambiar de tipo se empieza de cero para no mezclar un mensaje con una promoción. */
+        if (cambio) {
+            limpiarAviso();
+            return;
+        }
+
+        if (nuevo === 'promocion') {
             const select = $('#avisoPromocion');
             if (select?.value) aplicarPromocion(select.value);
-        } else {
-            const oculto = $('#avisoUrlImagen');
-            if (oculto) oculto.value = '';
-
-            const nota = $('#avisoPromocionNota');
-            if (nota) {
-                nota.hidden = true;
-                nota.textContent = '';
-            }
-
-            pintarPreviaAviso();
         }
+    }
+
+    function limpiarAviso() {
+        ['avisoTitulo', 'avisoMensaje', 'avisoUrl', 'avisoUrlImagen'].forEach((id) => {
+            const campo = $('#' + id);
+            if (campo) campo.value = '';
+        });
+
+        const selectPromocion = $('#avisoPromocion');
+        if (selectPromocion) selectPromocion.value = '';
+
+        if ($('#avisoTituloCuenta')) $('#avisoTituloCuenta').textContent = '0';
+        if ($('#avisoMensajeCuenta')) $('#avisoMensajeCuenta').textContent = '0';
+
+        const nota = $('#avisoPromocionNota');
+        if (nota) {
+            nota.hidden = true;
+            nota.textContent = '';
+        }
+
+        const resultado = $('#avisoResultado');
+        if (resultado) resultado.hidden = true;
+
+        pintarPreviaAviso();
     }
 
     function aplicarPromocion(id) {
@@ -3890,19 +3912,16 @@
 
             const exito = datos?.mensaje || 'Aviso enviado.';
 
-            avisar(exito);
-            mostrarToast(exito);
-
             $('#formAviso')?.reset();
             estado.avisos.destino = 'todos';
             $$('#avisoDestino .admin-chip').forEach((chip) => chip.classList.toggle('is-activo', chip.dataset.destino === 'todos'));
             if ($('#avisoCliente')) $('#avisoCliente').hidden = true;
-            if ($('#avisoUrlImagen')) $('#avisoUrlImagen').value = '';
-            if ($('#avisoTituloCuenta')) $('#avisoTituloCuenta').textContent = '0';
-            if ($('#avisoMensajeCuenta')) $('#avisoMensajeCuenta').textContent = '0';
 
             aplicarTipoAviso('mensaje');
-            pintarPreviaAviso();
+            limpiarAviso();
+
+            avisar(exito);
+            mostrarToast(exito);
 
             estado.cargada.avisos = false;
             await cargarAvisos();
