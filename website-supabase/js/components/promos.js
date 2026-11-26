@@ -211,11 +211,13 @@
                 <div class="promos-aviso__redes">
                     <a class="promos-aviso__red" href="https://www.instagram.com/tellez.store.nic/" target="_blank" rel="noopener noreferrer">
                         <i class="bi bi-instagram" aria-hidden="true"></i>
-                        Seguir en Instagram
+                        <span class="promos-aviso__red-largo">Seguir en Instagram</span>
+                        <span class="promos-aviso__red-corto">Instagram</span>
                     </a>
                     <a class="promos-aviso__red promos-aviso__red--facebook" href="https://www.facebook.com/profile.php?id=61594097712925" target="_blank" rel="noopener noreferrer">
                         <i class="bi bi-facebook" aria-hidden="true"></i>
-                        Seguir en Facebook
+                        <span class="promos-aviso__red-largo">Seguir en Facebook</span>
+                        <span class="promos-aviso__red-corto">Facebook</span>
                     </a>
                 </div>` : ''}
             </div>

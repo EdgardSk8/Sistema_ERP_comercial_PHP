@@ -423,6 +423,9 @@
   background: #1877f2;
 }
 
+/* En móvil se usa la etiqueta corta para que quepan las dos redes en una fila. */
+.rifa__redes-corto { display: none; }
+
 /* ── 3. Foto del premio ──────────────────────────────────────── */
 .rifa__media {
   display: grid;
@@ -834,8 +837,8 @@
 
   .rifa__redes {
     order: 6;
-    margin: 20px 0 0;
-    padding-top: 16px;
+    margin: 14px 0 0;
+    padding-top: 12px;
     text-align: center;
   }
 
@@ -923,14 +926,24 @@
   .rifa__redes-enlaces {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
   }
 
   .rifa__redes-enlace {
     justify-content: center;
-    min-height: 44px;
-    padding: 10px 12px;
-    font-size: .86rem;
+    min-height: 36px;
+    padding: 8px;
+    gap: 4px;
+    font-size: .68rem;
+    white-space: nowrap;
+  }
+
+  .rifa__redes-largo { display: none; }
+  .rifa__redes-corto { display: inline; }
+
+  .rifa__redes-enlace .rifa__icono {
+    width: 13px;
+    height: 13px;
   }
 
   /* Decoración de escritorio, reducida para móvil. */
