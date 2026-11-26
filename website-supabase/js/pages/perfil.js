@@ -787,6 +787,7 @@ const SECCIONES_PERFIL = [
     ['pedidos', 'Mis pedidos', 'En esta sección ves cómo va cada pedido: si ya lo aceptamos, si está en camino o si se canceló.'],
     ['historial', 'Historial de compras', 'En esta sección queda todo lo que ya compraste, con el detalle y el total, por si necesitas revisarlo.'],
     ['descuentos', 'Descuentos y cupones', 'En esta sección encuentras tu descuento de bienvenida, tus cupones y lo que llevas para el cupón de fidelidad.'],
+    ['notificaciones', 'Notificaciones', 'En esta sección activas los avisos de la tienda en tu celular o en tu computadora: pares que llegan, promociones y novedades.'],
     ['configuracion', 'Contraseñas', 'En esta sección cambias tu contraseña y cierras la sesión de tu cuenta.'],
     ['trabajo', 'Trabaja con nosotros', 'En esta sección puedes enviar tu solicitud para formar parte de nuestro equipo y consultar su estado.'],
 ];
