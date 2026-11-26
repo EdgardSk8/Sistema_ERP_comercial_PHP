@@ -1644,6 +1644,56 @@
         return data || { success: true };
     }
 
+    /* ── Notificaciones push ─────────────────────────────────── */
+
+    async function pushEstadoApi() {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const { data, error } = await supabase.rpc('web_push_estado');
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudieron cargar tus dispositivos.'), 400);
+
+        return data || { success: true, dispositivos: [] };
+    }
+
+    async function pushGuardarApi(cuerpo) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const endpoint = String(cuerpo?.endpoint || '').trim();
+        const p256dh = String(cuerpo?.p256dh || '').trim();
+        const auth = String(cuerpo?.auth || '').trim();
+
+        if (!endpoint || !p256dh || !auth) {
+            throw errorApi('No se pudo identificar este dispositivo.', 422);
+        }
+
+        const { data, error } = await supabase.rpc('web_push_guardar', {
+            p_endpoint: endpoint,
+            p_p256dh: p256dh,
+            p_auth: auth,
+            p_plataforma: cuerpo?.plataforma || null,
+            p_navegador: cuerpo?.navegador || null,
+        });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudieron activar las notificaciones.'), 400);
+
+        return data || { success: true };
+    }
+
+    async function pushEliminarApi(cuerpo) {
+        if (!clienteActual) throw errorApi('Inicia sesión para continuar.', 401);
+
+        const endpoint = String(cuerpo?.endpoint || '').trim();
+
+        if (!endpoint) throw errorApi('No se pudo identificar este dispositivo.', 422);
+
+        const { data, error } = await supabase.rpc('web_push_eliminar', { p_endpoint: endpoint });
+
+        if (error) throw errorApi(mensajeRpc(error, 'No se pudieron desactivar las notificaciones.'), 400);
+
+        return data || { success: true };
+    }
+
     /* ── Reseñas ────────────────────────────────────────────── */
 
     async function reseniasApi(idProducto, limite = 0) {
@@ -1843,6 +1893,12 @@
             'GET /tienda/api/deseos/opciones': () => deseosOpcionesApi(),
 
             'POST /tienda/api/deseos': () => crearDeseoApi(cuerpo),
+
+            'GET /tienda/api/push': () => pushEstadoApi(),
+
+            'POST /tienda/api/push': () => pushGuardarApi(cuerpo),
+
+            'POST /tienda/api/push/desactivar': () => pushEliminarApi(cuerpo),
 
             'POST /tienda/api/resenias': () => guardarReseniaApi(cuerpo),
         };

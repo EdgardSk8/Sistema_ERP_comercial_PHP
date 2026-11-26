@@ -75,6 +75,65 @@
        ║  Aviso de registro para visitantes sin sesión            ║
        ╚══════════════════════════════════════════════════════════╝ */
 
+    /* Días que faltan para la fecha de apertura (TIENDA_APERTURA.fecha). */
+    function diasParaApertura() {
+        const fecha = String(window.TIENDA_APERTURA?.fecha || '').trim();
+
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+
+        const [anio, mes, dia] = fecha.split('-').map(Number);
+        const objetivo = new Date(anio, mes - 1, dia);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        const dias = Math.round((objetivo - hoy) / 86400000);
+
+        return Number.isFinite(dias) ? dias : null;
+    }
+
+    /* Cuenta atrás del aviso: «Faltan 19 días», «Falta 1 día», «Es hoy»… */
+    function cuentaAtras() {
+        const dias = diasParaApertura();
+
+        if (dias === null) return 'Próxima apertura';
+        if (dias > 1) return `Faltan ${dias} días`;
+        if (dias === 1) return 'Falta 1 día';
+        if (dias === 0) return '¡Es hoy!';
+
+        return 'Ya abrimos';
+    }
+
+    /* Textos del aviso para quien no tiene sesión. Con `TIENDA_APERTURA.activa`
+       se pide esperar la gran apertura del 15 de diciembre. */
+    function avisoVisitante() {
+        if (window.TIENDA_APERTURA && window.TIENDA_APERTURA.activa) {
+            return {
+                cifra: '15',
+                unidad: 'Diciembre',
+                etiqueta: cuentaAtras(),
+                titulo: 'GRAN APERTURA',
+                detalle: 'Te esperamos el 15 de diciembre con el 10% de bienvenida y el sorteo de 3 pares de zapatos.',
+                boton: 'Crear mi cuenta',
+                /* El registro está cerrado hasta la apertura. */
+                mostrarBoton: false,
+                lazo: true,
+                redes: true,
+            };
+        }
+
+        return {
+            cifra: '10%',
+            unidad: 'Descuento',
+            etiqueta: 'Solo por registrarte',
+            titulo: 'Regístrate y obtén 10% de descuento',
+            detalle: 'Tu descuento de bienvenida se aplica en tu primera compra de zapatos.',
+            boton: 'Crear mi cuenta',
+            mostrarBoton: true,
+            lazo: false,
+            redes: false,
+        };
+    }
+
     /*
        Arranca oculto: solo se muestra cuando la sesión ya se resolvió y no
        hay cliente, para no enseñar la invitación a quien ya tiene cuenta.
@@ -99,14 +158,20 @@
         const titulo = aviso.querySelector('.promos-aviso__titulo');
         const detalle = aviso.querySelector('.promos-aviso__detalle');
         const boton = aviso.querySelector('.promos-aviso__btn');
+        const selloCifra = aviso.querySelector('.promos-aviso__sello-cifra');
+        const selloUnidad = aviso.querySelector('.promos-aviso__sello-unidad');
 
         if (!cliente) {
-            if (etiqueta) etiqueta.textContent = 'Solo por registrarte';
-            if (titulo) titulo.textContent = 'Regístrate y obtén 10% de descuento';
-            if (detalle) detalle.textContent = 'Tu descuento de bienvenida se aplica en tu primera compra de zapatos.';
+            const texto = avisoVisitante();
+            if (selloCifra) selloCifra.textContent = texto.cifra;
+            if (selloUnidad) selloUnidad.textContent = texto.unidad;
+            if (etiqueta) etiqueta.textContent = texto.etiqueta;
+            if (titulo) titulo.textContent = texto.titulo;
+            if (detalle) detalle.textContent = texto.detalle;
             if (boton) {
                 boton.href = window.urlTienda ? window.urlTienda('login') : '/login';
-                boton.innerHTML = 'Crear mi cuenta <i class="bi bi-arrow-right" aria-hidden="true"></i>';
+                boton.innerHTML = `${texto.boton} <i class="bi bi-arrow-right" aria-hidden="true"></i>`;
+                boton.hidden = texto.mostrarBoton === false;
             }
             return;
         }
@@ -118,6 +183,7 @@
             const destino = window.urlTienda ? window.urlTienda('perfil') : '/perfil';
             boton.href = `${destino}#descuentos`;
             boton.innerHTML = 'Activar mi 10% <i class="bi bi-arrow-right" aria-hidden="true"></i>';
+            boton.hidden = false;
         }
     }
 
@@ -125,6 +191,7 @@
         if (document.getElementById('promosAviso')) return;
 
         const destino = window.urlTienda ? window.urlTienda('login') : '/login';
+        const texto = avisoVisitante();
 
         const aviso = document.createElement('div');
         aviso.className = 'promos-aviso';
@@ -133,17 +200,29 @@
 
         aviso.innerHTML = `
             <span class="promos-aviso__sello" aria-hidden="true">
-                <strong>10%</strong>
-                <small>Descuento</small>
+                <strong class="promos-aviso__sello-cifra">${texto.cifra}</strong>
+                <small class="promos-aviso__sello-unidad">${texto.unidad}</small>
             </span>
             <div class="promos-aviso__texto">
-                <span class="promos-aviso__etiqueta">Solo por registrarte</span>
-                <p class="promos-aviso__titulo">Regístrate y obtén 10% de descuento</p>
-                <p class="promos-aviso__detalle">Tu descuento de bienvenida se aplica en tu primera compra de zapatos.</p>
+                <span class="promos-aviso__etiqueta">${texto.etiqueta}</span>
+                <p class="promos-aviso__titulo">${texto.titulo}</p>
+                <p class="promos-aviso__detalle">${texto.detalle}</p>
+                ${texto.redes ? `
+                <div class="promos-aviso__redes">
+                    <a class="promos-aviso__red" href="https://www.instagram.com/tellez.store.nic/" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-instagram" aria-hidden="true"></i>
+                        Seguir en Instagram
+                    </a>
+                    <a class="promos-aviso__red promos-aviso__red--facebook" href="https://www.facebook.com/profile.php?id=61594097712925" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-facebook" aria-hidden="true"></i>
+                        Seguir en Facebook
+                    </a>
+                </div>` : ''}
             </div>
-            <a class="promos-aviso__btn" href="${escapar(destino)}">
-                Crear mi cuenta <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            <a class="promos-aviso__btn" href="${escapar(destino)}"${texto.mostrarBoton === false ? ' hidden' : ''}>
+                ${texto.boton} <i class="bi bi-arrow-right" aria-hidden="true"></i>
             </a>
+            ${texto.lazo ? `<img class="promos-aviso__lazo" src="/tienda/recursos/img/lazo.png?v=20261126b" alt="" width="300" height="300" decoding="async">` : ''}
         `;
 
         /* El contenedor exclusivo queda fuera de #promos para que el aviso

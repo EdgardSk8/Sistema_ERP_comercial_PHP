@@ -40,8 +40,8 @@
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261112g">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261119a">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261126k">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/perfil.css?v=20261126a">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
   <link rel="stylesheet" href="/tienda/recursos/css/base/chiky.css?v=20261115b">
 </head>
@@ -111,6 +111,7 @@
               <li id="menuModoTrabajador" data-menu-trabajador hidden><a class="perfil__item" href="/tienda/trabajador"><i class="bi bi-truck"></i> Modo trabajador</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#historial"><i class="bi bi-receipt"></i> Historial de compras</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#descuentos"><i class="bi bi-ticket-perforated"></i> Descuentos y cupones</a></li>
+        <li><a class="perfil__item" href="/tienda/perfil#notificaciones"><i class="bi bi-broadcast"></i> Notificaciones</a></li>
               <li><a class="perfil__item" href="/tienda/perfil#configuracion"><i class="bi bi-key"></i> Contraseñas</a></li>
             </ul>
 
@@ -220,7 +221,7 @@
             <div class="perfil-vacio">
               <i class="bi bi-person"></i>
               <p>Inicia sesión para ver y editar tu perfil.</p>
-              <a class="btn-primario" href="/tienda/login">Iniciar sesión</a>
+              <a class="btn-primario" href="/tienda/login" data-acceso-cuenta>Iniciar sesión</a>
             </div>
           </div>
 
@@ -655,6 +656,44 @@
         </div>
       </section>
 
+      <!-- Sección: Notificaciones -->
+      <section class="perfil-seccion" id="notificaciones">
+        <header class="perfil-seccion__cabecera">
+          <span class="perfil-seccion__etiqueta">Mi cuenta</span>
+          <h2 class="perfil-seccion__titulo">Notificaciones</h2>
+          <p class="perfil-seccion__texto">Recibe en tu celular y en tu computadora los avisos de la tienda: pares que llegan, promociones y novedades.</p>
+        </header>
+
+        <div class="perfil-seccion__cuerpo">
+          <div id="notificacionesContenido" hidden>
+            <div class="perfil-card perfil-push">
+              <div class="perfil-push__texto">
+                <strong class="perfil-push__titulo">Avisos en este dispositivo</strong>
+                <p class="perfil-push__estado" id="perfilPushEstado">Revisando…</p>
+              </div>
+
+              <label class="perfil-switch" id="perfilPushSwitchCaja">
+                <input type="checkbox" id="perfilPushSwitch" role="switch"
+                       aria-label="Activar las notificaciones en este dispositivo">
+                <span class="perfil-switch__pista" aria-hidden="true"><span class="perfil-switch__bola"></span></span>
+              </label>
+            </div>
+
+            <p class="perfil-push__nota" id="perfilPushNota" hidden></p>
+
+            <p class="perfil-push__ayuda">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+              <span id="perfilPushAyuda"></span>
+            </p>
+
+            <div class="perfil-grupo" id="perfilPushDispositivosCaja" hidden>
+              <h3 class="perfil-subtitulo">Dispositivos con avisos</h3>
+              <div class="perfil-lista" id="perfilPushDispositivos"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Sección: Contraseñas -->
       <section class="perfil-seccion" id="configuracion">
         <header class="perfil-seccion__cabecera">
@@ -843,8 +882,9 @@
   <script src="/tienda/recursos/js/core/carrito-store.js?v=20261109d" defer></script>
   <script src="/tienda/recursos/js/core/utilidades.js?v=20261116e" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-config.js?v=20261107c" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261116a" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-config.js?v=20261126e" defer></script>
+  <script src="/tienda/recursos/js/components/notificaciones.js?v=20261126a" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261126a" defer></script>
   <script src="/tienda/recursos/js/core/menu-trabajador.js?v=20261119a" defer></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
@@ -852,7 +892,7 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js" defer></script>
   <script src="/tienda/recursos/js/core/cedula-nicaragua.js" defer></script>
   <script src="/tienda/recursos/js/components/chiky.js?v=20261116e" defer></script>
-  <script src="/tienda/recursos/js/pages/perfil.js?v=20261116f" defer></script>
+  <script src="/tienda/recursos/js/pages/perfil.js?v=20261126a" defer></script>
   <script src="/tienda/recursos/js/pages/perfil-trabajador-acceso.js?v=20261119a" defer></script>
 </body>
 </html>

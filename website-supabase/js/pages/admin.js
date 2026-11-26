@@ -20,7 +20,7 @@
 
     const estado = {
         vista: 'pedidos',
-        cargada: { pedidos: false, promociones: false, cupones: false, trabajadores: false, cambios: false, cierre: false, cobros: false },
+        cargada: { pedidos: false, promociones: false, cupones: false, trabajadores: false, cambios: false, cierre: false, cobros: false, sorteo: false, avisos: false },
         pedidos: [],
         promociones: [],
         cupones: [],
@@ -28,9 +28,11 @@
         cambios: [],
         cierre: { repartidores: [], totales: {} },
         cuentas: [],
+        sorteo: [],
+        avisos: { dispositivos: 0, clientes: 0, historial: [], lista: [], destino: 'todos', tipo: 'mensaje', promociones: [], enviando: false },
         productos: null,
-        filtros: { pedidos: 'solicitado', pedidosDia: hoyISO(), promociones: '', trabajadores: 'pendiente', cambios: 'pendiente', cobros: 'todas' },
-        busquedas: { pedidos: '', cobros: '', cierre: '' },
+        filtros: { pedidos: 'solicitado', pedidosDia: hoyISO(), promociones: '', trabajadores: 'pendiente', cambios: 'pendiente', cobros: 'todas', sorteo: 'todos' },
+        busquedas: { pedidos: '', cobros: '', cierre: '', sorteo: '' },
         resumenCobros: {},
         config: { autoAceptar: false, cargada: false },
     };
@@ -578,7 +580,7 @@
     /* ───────────────────────── Navegación ───────────────────────── */
 
     function mostrarVista(vista) {
-        if (!['pedidos', 'promociones', 'cupones', 'trabajadores', 'cambios', 'cierre', 'cobros'].includes(vista)) vista = 'pedidos';
+        if (!['pedidos', 'promociones', 'cupones', 'trabajadores', 'cambios', 'cierre', 'cobros', 'sorteo', 'avisos'].includes(vista)) vista = 'pedidos';
 
         cerrarAyudas();
         estado.vista = vista;
@@ -608,6 +610,8 @@
             case 'cambios': return cargarCambios();
             case 'cierre': return cargarCierre();
             case 'cobros': return cargarCobros();
+            case 'sorteo': return cargarSorteo();
+            case 'avisos': return cargarAvisos();
             default: return cargarPedidos();
         }
     }
@@ -3139,6 +3143,165 @@
         }
     }
 
+    /* ───────────────────────── Sorteo (temporal) ───────────────────────── */
+
+    async function cargarSorteo() {
+        const contenedor = $('#listaSorteo');
+        cargando(contenedor);
+
+        try {
+            const datos = await adminRpc('web_admin_sorteo_lista');
+            estado.sorteo = Array.isArray(datos.participantes) ? datos.participantes : [];
+            estado.cargada.sorteo = true;
+            renderSorteo();
+        } catch (error) {
+            const mensaje = String(error.message || '');
+            const faltaSql = /could not find the function|function .* does not exist/i.test(mensaje);
+
+            vacio(
+                contenedor,
+                'bi-exclamation-triangle',
+                faltaSql ? 'Falta preparar el sorteo en Supabase' : 'No se pudo cargar el sorteo',
+                faltaSql
+                    ? 'Ejecuta supabase/ruleta-participantes.sql en el SQL Editor de Supabase y vuelve a intentar.'
+                    : mensaje
+            );
+        }
+    }
+
+    function sorteoFiltrado() {
+        const filtro = estado.filtros.sorteo;
+
+        return estado.sorteo.filter((fila) => {
+            if (filtro === 'aprobados' && !fila.aprobado) return false;
+            if (filtro === 'pendientes' && fila.aprobado) return false;
+
+            return coincideBusqueda(estado.busquedas.sorteo, [fila.nombre, fila.correo, fila.instagram, fila.usuario]);
+        });
+    }
+
+    function renderSorteo() {
+        const contenedor = $('#listaSorteo');
+        if (!contenedor) return;
+
+        const aprobados = estado.sorteo.filter((fila) => fila.aprobado).length;
+
+        actualizarContador($('#sorteoContador'), aprobados);
+
+        const badge = $('#navBadgeSorteo');
+
+        if (badge) {
+            badge.textContent = aprobados > 9 ? '9+' : String(aprobados);
+            badge.hidden = aprobados <= 0;
+        }
+
+        if (!estado.sorteo.length) {
+            vacio(contenedor, 'bi-star', 'Sin cuentas registradas', 'Cuando alguien cree su cuenta en la tienda aparecerá aquí para aprobarla.');
+            return;
+        }
+
+        const lista = sorteoFiltrado();
+
+        if (!lista.length) {
+            vacio(contenedor, 'bi-search', 'Sin resultados', 'Prueba con otro filtro o cambia la búsqueda.');
+            return;
+        }
+
+        contenedor.innerHTML = lista.map((fila) => {
+            const id = Number(fila.id_cliente);
+            const nombre = escapar(fila.nombre);
+            const correo = fila.correo ? escapar(fila.correo) : 'Sin correo';
+            const usuario = fila.instagram ? `@${escapar(fila.instagram)}` : '';
+
+            return `
+                <article class="admin-card admin-sorteo">
+                    <div class="admin-ficha">
+                        <div class="admin-ficha__media"><i class="bi bi-person" aria-hidden="true"></i></div>
+
+                        <div class="admin-ficha__cuerpo">
+                            <h2>${nombre}</h2>
+                            <div class="admin-datos">
+                                <span>${correo}</span>
+                                ${fila.alta ? `<span>Cuenta creada el ${escapar(fechaDia(fila.alta))}</span>` : ''}
+                                <span class="admin-badge ${fila.aprobado ? 'admin-badge--verde' : 'admin-badge--ambar'}">${fila.aprobado ? 'Aprobado' : 'Pendiente'}</span>
+                            </div>
+                        </div>
+
+                        <label class="admin-switch" title="${fila.aprobado ? 'Quitar del sorteo' : 'Aprobar para el sorteo'}">
+                            <input type="checkbox" data-accion="sorteo-estado" data-id="${id}" ${fila.aprobado ? 'checked' : ''}
+                                aria-label="${fila.aprobado ? 'Quitar del sorteo a' : 'Aprobar para el sorteo a'} ${nombre}">
+                            <span></span>
+                        </label>
+                    </div>
+
+                    <div class="admin-sorteo__ig">
+                        <label for="sorteoIg${id}">Instagram</label>
+                        <div class="admin-campo__control">
+                            <i class="bi bi-instagram" aria-hidden="true"></i>
+                            <input id="sorteoIg${id}" type="text" value="${usuario}" placeholder="@usuario"
+                                maxlength="60" autocomplete="off" spellcheck="false"
+                                data-accion="sorteo-instagram" data-id="${id}"
+                                aria-label="Usuario de Instagram de ${nombre}">
+                        </div>
+                    </div>
+                </article>
+            `;
+        }).join('');
+    }
+
+    async function cambiarSorteo(id, aprobado, control) {
+        const fila = estado.sorteo.find((item) => Number(item.id_cliente) === Number(id));
+
+        control.disabled = true;
+
+        try {
+            await adminRpc('web_admin_sorteo_participante', {
+                p_id_cliente: Number(id),
+                p_aprobado: Boolean(aprobado),
+                p_instagram: fila?.instagram || '',
+            });
+
+            if (fila) fila.aprobado = Boolean(aprobado);
+
+            mostrarToast(aprobado ? 'Cuenta aprobada para el sorteo.' : 'Cuenta retirada del sorteo.');
+            renderSorteo();
+        } catch (error) {
+            control.checked = !aprobado;
+            mostrarToast(error.message, 'error');
+        } finally {
+            control.disabled = false;
+        }
+    }
+
+    async function guardarInstagramSorteo(id, control) {
+        const fila = estado.sorteo.find((item) => Number(item.id_cliente) === Number(id));
+        if (!fila) return;
+
+        const actual = fila.instagram ? `@${fila.instagram}` : '';
+        const valor = control.value.trim();
+
+        if (valor === actual) return;
+
+        control.disabled = true;
+
+        try {
+            const datos = await adminRpc('web_admin_sorteo_participante', {
+                p_id_cliente: Number(id),
+                p_aprobado: Boolean(fila.aprobado),
+                p_instagram: valor,
+            });
+
+            fila.instagram = datos.instagram || '';
+            control.value = fila.instagram ? `@${fila.instagram}` : '';
+            mostrarToast('Usuario de Instagram guardado.');
+        } catch (error) {
+            control.value = actual;
+            mostrarToast(error.message, 'error');
+        } finally {
+            control.disabled = false;
+        }
+    }
+
     /* ───────────────────────── Eventos globales ───────────────────────── */
 
     function iniciarEventos() {
@@ -3147,6 +3310,8 @@
         });
 
         $('#adminRefrescar')?.addEventListener('click', refrescar);
+
+        conectarAvisos();
 
         $('#adminSalir')?.addEventListener('click', async () => {
             const confirmado = await confirmar('¿Cerrar la sesión del panel en este dispositivo?', 'Cerrar sesión');
@@ -3241,6 +3406,24 @@
             renderCobros();
         });
 
+        /* Filtros del sorteo */
+        $('#sorteoFiltros')?.addEventListener('click', (evento) => {
+            const chip = evento.target.closest('[data-filtro]');
+            if (!chip) return;
+
+            estado.filtros.sorteo = chip.dataset.filtro;
+            $$('#sorteoFiltros .admin-chip').forEach((boton) => boton.classList.toggle('is-activo', boton === chip));
+            renderSorteo();
+        });
+
+        $('#sorteoBuscar')?.addEventListener('input', (evento) => {
+            clearTimeout(temporizadorBusqueda);
+            temporizadorBusqueda = setTimeout(() => {
+                estado.busquedas.sorteo = evento.target.value;
+                renderSorteo();
+            }, 220);
+        });
+
         /* Búsquedas con retardo */
         $('#pedidosBuscar')?.addEventListener('input', (evento) => {
             clearTimeout(temporizadorBusqueda);
@@ -3331,6 +3514,14 @@
             if (control.dataset.accion === 'cupon-estado') {
                 cambiarEstadoCupon(control.dataset.id, control.checked, control);
             }
+
+            if (control.dataset.accion === 'sorteo-estado') {
+                cambiarSorteo(control.dataset.id, control.checked, control);
+            }
+
+            if (control.dataset.accion === 'sorteo-instagram') {
+                guardarInstagramSorteo(control.dataset.id, control);
+            }
         });
 
         /* Botones de creación */
@@ -3373,6 +3564,389 @@
         });
     }
 
+    /* ───────────────────────── Avisos push ───────────────────────── */
+
+    async function cargarAvisos() {
+        const lista = $('#listaEnvios');
+        cargando(lista);
+
+        cargarPromocionesAvisos();
+
+        try {
+            const datos = await adminRpc('web_admin_push_resumen');
+
+            estado.avisos.dispositivos = Number(datos.dispositivos || 0);
+            estado.avisos.clientes = Number(datos.clientes || 0);
+            estado.avisos.historial = Array.isArray(datos.historial) ? datos.historial : [];
+            estado.avisos.lista = Array.isArray(datos.lista) ? datos.lista : [];
+            estado.cargada.avisos = true;
+
+            renderAvisos();
+        } catch (error) {
+            const mensaje = String(error.message || '');
+            const faltaSql = /could not find the function|function .* does not exist/i.test(mensaje);
+
+            actualizarContador($('#avisosContador'), 0);
+
+            vacio(
+                lista,
+                'bi-exclamation-triangle',
+                faltaSql ? 'Falta preparar las notificaciones en Supabase' : 'No se pudieron cargar los avisos',
+                faltaSql
+                    ? 'Ejecuta supabase/notificaciones-push.sql en el SQL Editor de Supabase y vuelve a intentar.'
+                    : mensaje
+            );
+        }
+    }
+
+    function renderAvisos() {
+        actualizarContador($('#avisosContador'), estado.avisos.dispositivos);
+
+        const select = $('#avisoCliente');
+
+        if (select) {
+            const anterior = select.value;
+
+            select.innerHTML = estado.avisos.lista.length
+                ? estado.avisos.lista
+                    .map((fila) => `<option value="${Number(fila.id_cliente)}">${escapar(fila.nombre || fila.correo)} · ${Number(fila.dispositivos)} dispositivo${Number(fila.dispositivos) === 1 ? '' : 's'}</option>`)
+                    .join('')
+                : '<option value="">Ningún cliente tiene avisos activados</option>';
+
+            if (anterior) select.value = anterior;
+        }
+
+        pintarSelectPromociones();
+
+        const lista = $('#listaEnvios');
+        if (!lista) return;
+
+        if (!estado.avisos.historial.length) {
+            vacio(lista, 'bi-broadcast', 'Sin envíos todavía', 'Cuando envíes tu primer aviso aparecerá aquí con el resultado.');
+            return;
+        }
+
+        lista.innerHTML = estado.avisos.historial.map((fila) => {
+            const imagen = urlImagenPromocion(fila.imagen);
+            const esPromo = fila.tipo === 'promocion';
+
+            return `
+            <article class="admin-card admin-envio">
+                <div class="admin-envio__cabecera">
+                    <strong>${escapar(fila.titulo)}</strong>
+                    <span>${fechaCorta(fila.fecha)}</span>
+                </div>
+                <div class="admin-envio__cuerpo">
+                    ${imagen ? `<img class="admin-envio__imagen" src="${escapar(imagen)}" alt="" loading="lazy">` : ''}
+                    <p class="admin-envio__mensaje">${escapar(fila.mensaje)}</p>
+                </div>
+                <div class="admin-envio__datos">
+                    <span><i class="bi ${esPromo ? 'bi-tag' : 'bi-phone'}" aria-hidden="true"></i> ${esPromo ? 'Promoción' : 'Mensaje'}</span>
+                    <span><i class="bi bi-broadcast" aria-hidden="true"></i> ${Number(fila.dispositivos)} dispositivo${Number(fila.dispositivos) === 1 ? '' : 's'}</span>
+                    <span><i class="bi bi-check2" aria-hidden="true"></i> ${Number(fila.enviados)} entregado${Number(fila.enviados) === 1 ? '' : 's'}</span>
+                    ${Number(fila.errores) ? `<span class="admin-envio__error"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> ${Number(fila.errores)} con error</span>` : ''}
+                    <span>${fila.destino === 'cliente' ? 'Un cliente' : 'Todos los suscritos'}</span>
+                </div>
+            </article>`;
+        }).join('');
+    }
+
+    /* ── Tipo de aviso y promociones ── */
+
+    async function cargarPromocionesAvisos() {
+        try {
+            const promos = await adminRpc('web_admin_promociones');
+            estado.avisos.promociones = Array.isArray(promos.promociones) ? promos.promociones : [];
+        } catch {
+            estado.avisos.promociones = [];
+        }
+
+        pintarSelectPromociones();
+    }
+
+    /* Se listan todas (activas, programadas, pausadas y vencidas), con su estado. */
+    function pintarSelectPromociones() {
+        const select = $('#avisoPromocion');
+        if (!select) return;
+
+        const anterior = select.value;
+        const peso = { activa: 0, programada: 1, pausada: 2, vencida: 3 };
+        const ordenadas = [...estado.avisos.promociones].sort((uno, otro) => (
+            (peso[situacionPromocion(uno).clave] ?? 4) - (peso[situacionPromocion(otro).clave] ?? 4)
+            || String(uno.producto || '').localeCompare(String(otro.producto || ''), 'es')
+        ));
+
+        select.innerHTML = ordenadas.length
+            ? '<option value="">Elige una promoción…</option>' + ordenadas
+                .map((fila) => `<option value="${Number(fila.id_promocion)}">${escapar(fila.producto)} · ${moneda(fila.precio_oferta)} · ${situacionPromocion(fila).texto}</option>`)
+                .join('')
+            : '<option value="">No hay promociones creadas</option>';
+
+        if (anterior) select.value = anterior;
+    }
+
+    function situacionPromocion(promo) {
+        const hoy = new Date();
+        const hoyISO = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+        const inicio = String(promo?.fecha_inicio || '').slice(0, 10);
+        const fin = String(promo?.fecha_fin || '').slice(0, 10);
+
+        if (promo?.estado === false) return { clave: 'pausada', texto: 'Pausada' };
+        if (fin && fin < hoyISO) return { clave: 'vencida', texto: 'Vencida' };
+        if (inicio && inicio > hoyISO) return { clave: 'programada', texto: 'Programada' };
+
+        return { clave: 'activa', texto: 'Activa' };
+    }
+
+    function imagenAbsoluta(ruta) {
+        const url = urlImagenPromocion(ruta);
+        if (!url) return '';
+        if (/^https?:\/\//i.test(url)) return url;
+        return `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
+    }
+
+    function textoPromocion(promo) {
+        const oferta = Number(promo?.precio_oferta) || 0;
+        const base = Number(promo?.precio_venta) || 0;
+        const producto = String(promo?.producto || '').trim() || 'este producto';
+
+        const mensaje = base > oferta
+            ? `Ahora ${producto} a ${moneda(oferta)} (antes ${moneda(base)}). Solo por tiempo limitado.`
+            : `Aprovecha ${producto} a ${moneda(oferta)}. Solo por tiempo limitado.`;
+
+        return {
+            titulo: `¡Oferta en ${producto}!`.slice(0, 80),
+            mensaje: mensaje.slice(0, 240),
+            url: `/producto?p=${Number(promo?.id_producto) || 0}`,
+            imagen: imagenAbsoluta(promo?.imagen),
+        };
+    }
+
+    function pintarPreviaAviso() {
+        const titulo = $('#avisoPreviaTitulo');
+        const mensaje = $('#avisoPreviaMensaje');
+        const imagen = $('#avisoPreviaImagen');
+
+        if (titulo) titulo.textContent = ($('#avisoTitulo')?.value || '').trim() || 'Título del aviso';
+        if (mensaje) mensaje.textContent = ($('#avisoMensaje')?.value || '').trim() || 'Aquí se verá el mensaje que reciban tus clientes.';
+
+        const ruta = ($('#avisoUrlImagen')?.value || '').trim();
+        const url = ruta ? imagenAbsoluta(ruta) : '';
+
+        if (imagen) {
+            if (url) {
+                imagen.src = url;
+                imagen.hidden = false;
+            } else {
+                imagen.removeAttribute('src');
+                imagen.hidden = true;
+            }
+        }
+    }
+
+    function aplicarTipoAviso(tipo) {
+        estado.avisos.tipo = tipo === 'promocion' ? 'promocion' : 'mensaje';
+
+        $$('#avisoTipo .admin-chip').forEach((chip) => chip.classList.toggle('is-activo', chip.dataset.tipo === estado.avisos.tipo));
+
+        const caja = $('#avisoPromocionCaja');
+        if (caja) caja.hidden = estado.avisos.tipo !== 'promocion';
+
+        if (estado.avisos.tipo === 'promocion') {
+            const select = $('#avisoPromocion');
+            if (select?.value) aplicarPromocion(select.value);
+        } else {
+            const oculto = $('#avisoUrlImagen');
+            if (oculto) oculto.value = '';
+
+            const nota = $('#avisoPromocionNota');
+            if (nota) {
+                nota.hidden = true;
+                nota.textContent = '';
+            }
+
+            pintarPreviaAviso();
+        }
+    }
+
+    function aplicarPromocion(id) {
+        const promo = estado.avisos.promociones.find((fila) => String(fila.id_promocion) === String(id));
+
+        if (!promo) return;
+
+        const datos = textoPromocion(promo);
+
+        if ($('#avisoTitulo')) $('#avisoTitulo').value = datos.titulo;
+        if ($('#avisoMensaje')) $('#avisoMensaje').value = datos.mensaje;
+        if ($('#avisoUrl')) $('#avisoUrl').value = datos.url;
+        if ($('#avisoUrlImagen')) $('#avisoUrlImagen').value = datos.imagen;
+
+        if ($('#avisoTituloCuenta')) $('#avisoTituloCuenta').textContent = String(datos.titulo.length);
+        if ($('#avisoMensajeCuenta')) $('#avisoMensajeCuenta').textContent = String(datos.mensaje.length);
+
+        const nota = $('#avisoPromocionNota');
+
+        if (nota) {
+            const mensajes = {
+                programada: 'Esta promoción empieza más adelante: en la tienda todavía no se ve.',
+                pausada: 'Esta promoción está pausada: en la tienda no se está mostrando.',
+                vencida: 'Esta promoción ya venció: en la tienda no se está mostrando.',
+            };
+            const texto = mensajes[situacionPromocion(promo).clave] || '';
+
+            nota.textContent = texto;
+            nota.hidden = !texto;
+        }
+
+        pintarPreviaAviso();
+    }
+
+    async function enviarAviso(evento) {
+        evento.preventDefault();
+
+        if (estado.avisos.enviando) return;
+
+        const sesion = leerSesion();
+
+        if (!sesion) {
+            cerrarSesionLocal('expirada');
+            return;
+        }
+
+        const titulo = ($('#avisoTitulo')?.value || '').trim();
+        const mensaje = ($('#avisoMensaje')?.value || '').trim();
+        const url = ($('#avisoUrl')?.value || '').trim();
+        const imagen = ($('#avisoUrlImagen')?.value || '').trim();
+        const tipo = estado.avisos.tipo;
+        const destino = estado.avisos.destino;
+        const idCliente = destino === 'cliente' ? Number($('#avisoCliente')?.value || 0) : null;
+        const resultado = $('#avisoResultado');
+        const boton = $('#btnEnviarAviso');
+
+        const avisar = (texto, esError = false) => {
+            if (!resultado) return;
+
+            resultado.hidden = false;
+            resultado.textContent = texto;
+            resultado.classList.toggle('admin-aviso__resultado--error', esError);
+        };
+
+        if (titulo.length < 3 || mensaje.length < 3) {
+            avisar('Escribe un título y un mensaje de al menos 3 letras.', true);
+            return;
+        }
+
+        if (destino === 'cliente' && !idCliente) {
+            avisar('Elige el cliente que recibirá el aviso.', true);
+            return;
+        }
+
+        if (!config.url) {
+            avisar('Supabase no está configurado.', true);
+            return;
+        }
+
+        estado.avisos.enviando = true;
+        if (boton) boton.disabled = true;
+        avisar('Enviando…');
+
+        try {
+            const funcion = window.PUSH_CONFIG?.funcion || 'enviar-push';
+            const respuesta = await fetch(`${String(config.url).replace(/\/+$/, '')}/functions/v1/${funcion}`, {
+                method: 'POST',
+                headers: {
+                    apikey: config.key,
+                    Authorization: `Bearer ${config.key}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token: sesion.token,
+                    titulo,
+                    mensaje,
+                    url,
+                    tipo,
+                    imagen,
+                    destino,
+                    id_cliente: idCliente,
+                }),
+            });
+
+            const datos = await respuesta.json().catch(() => null);
+
+            if (!respuesta.ok) {
+                if (respuesta.status === 404) {
+                    throw new Error('La función enviar-push todavía no está desplegada en Supabase.');
+                }
+
+                throw new Error(datos?.mensaje || 'No se pudo enviar el aviso.');
+            }
+
+            const exito = datos?.mensaje || 'Aviso enviado.';
+
+            avisar(exito);
+            mostrarToast(exito);
+
+            $('#formAviso')?.reset();
+            estado.avisos.destino = 'todos';
+            $$('#avisoDestino .admin-chip').forEach((chip) => chip.classList.toggle('is-activo', chip.dataset.destino === 'todos'));
+            if ($('#avisoCliente')) $('#avisoCliente').hidden = true;
+            if ($('#avisoUrlImagen')) $('#avisoUrlImagen').value = '';
+            if ($('#avisoTituloCuenta')) $('#avisoTituloCuenta').textContent = '0';
+            if ($('#avisoMensajeCuenta')) $('#avisoMensajeCuenta').textContent = '0';
+
+            aplicarTipoAviso('mensaje');
+            pintarPreviaAviso();
+
+            estado.cargada.avisos = false;
+            await cargarAvisos();
+        } catch (error) {
+            avisar(error.message, true);
+            mostrarToast(error.message, 'error');
+        } finally {
+            estado.avisos.enviando = false;
+            if (boton) boton.disabled = false;
+        }
+    }
+
+    function conectarAvisos() {
+        $('#formAviso')?.addEventListener('submit', enviarAviso);
+
+        $('#avisoDestino')?.addEventListener('click', (evento) => {
+            const chip = evento.target.closest('[data-destino]');
+            if (!chip) return;
+
+            estado.avisos.destino = chip.dataset.destino;
+
+            $$('#avisoDestino .admin-chip').forEach((boton) => boton.classList.toggle('is-activo', boton === chip));
+
+            const select = $('#avisoCliente');
+            if (select) select.hidden = estado.avisos.destino !== 'cliente';
+        });
+
+        $('#avisoTitulo')?.addEventListener('input', (evento) => {
+            const cuenta = $('#avisoTituloCuenta');
+            if (cuenta) cuenta.textContent = String(evento.target.value.length);
+            pintarPreviaAviso();
+        });
+
+        $('#avisoMensaje')?.addEventListener('input', (evento) => {
+            const cuenta = $('#avisoMensajeCuenta');
+            if (cuenta) cuenta.textContent = String(evento.target.value.length);
+            pintarPreviaAviso();
+        });
+
+        $('#avisoTipo')?.addEventListener('click', (evento) => {
+            const chip = evento.target.closest('[data-tipo]');
+            if (!chip) return;
+
+            aplicarTipoAviso(chip.dataset.tipo);
+        });
+
+        $('#avisoPromocion')?.addEventListener('change', (evento) => {
+            if (evento.target.value) aplicarPromocion(evento.target.value);
+        });
+    }
+
     /* ───────────────────────── Arranque ───────────────────────── */
 
     const sesion = leerSesion();
@@ -3397,5 +3971,5 @@
     cargarConfiguracionPedidos();
 
     const vistaInicial = (window.location.hash || '').replace('#', '');
-    mostrarVista(['pedidos', 'promociones', 'cupones', 'trabajadores', 'cambios', 'cierre', 'cobros'].includes(vistaInicial) ? vistaInicial : 'pedidos');
+    mostrarVista(['pedidos', 'promociones', 'cupones', 'trabajadores', 'cambios', 'cierre', 'cobros', 'sorteo', 'avisos'].includes(vistaInicial) ? vistaInicial : 'pedidos');
 })();

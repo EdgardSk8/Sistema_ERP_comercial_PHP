@@ -361,10 +361,56 @@
         return (datos.clientes || []).map((cliente) => cliente?.nombre).filter(Boolean);
     }
 
+    /* Participantes aprobados desde el panel de administración.
+       Devuelve null cuando la función aún no existe en Supabase (falta ejecutar
+       supabase/ruleta-participantes.sql) para seguir con el flujo anterior. */
+    async function participantesAprobadosDesdeSupabase() {
+        const config = window.SUPABASE_CONFIG;
+
+        if (!config?.url || !config?.key) return null;
+
+        let respuesta;
+
+        try {
+            respuesta = await fetch(`${String(config.url).replace(/\/+$/, '')}/rest/v1/rpc/web_ruleta_participantes`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: config.key,
+                    Authorization: `Bearer ${config.key}`,
+                },
+                body: JSON.stringify({}),
+            });
+        } catch {
+            return null;
+        }
+
+        if (respuesta.status === 404) return null;
+
+        const datos = await respuesta.json().catch(() => null);
+
+        if (!respuesta.ok || !datos?.success) return null;
+
+        return (datos.clientes || []).map((cliente) => cliente?.nombre).filter(Boolean);
+    }
+
     async function cargarClientes(ruleta) {
         if (ruleta.nota) ruleta.nota.textContent = 'Cargando participantes…';
 
         mostrarEnlaceAdmin(ruleta, false);
+
+        /* 0) Participantes aprobados en el panel del sorteo. */
+        const aprobados = await participantesAprobadosDesdeSupabase();
+
+        if (aprobados !== null) {
+            if (!aprobados.length) {
+                aplicarNombres(ruleta, [], 'Aún no hay participantes aprobados para el sorteo.');
+                return;
+            }
+
+            aplicarNombres(ruleta, aprobados, `${aprobados.length} participantes en el sorteo.`);
+            return;
+        }
 
         let lista = null;
         let ultimoError = null;

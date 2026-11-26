@@ -204,7 +204,7 @@ function tarjetaProducto(variante, indice = 0) {
                     </span>
                     ${agotado ? '' : `
                     <button type="button" class="card-producto__agregar"
-                        data-agregar-carrito data-producto="${variante.id}"
+                        data-agregar-carrito data-producto="${variante.id}" data-compra-online
                         data-color="${escapar(variante.color || '')}"
                         aria-label="Agregar ${escapar(variante.nombre)} al carrito"
                         aria-haspopup="dialog" aria-expanded="false"

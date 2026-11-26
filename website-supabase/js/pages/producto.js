@@ -281,6 +281,8 @@ function pintarTallas() {
     const titulo = $('productoTallasTitulo');
     const guia = $('guiaTallas');
 
+    pintarPedidoTalla();
+
     if (titulo) titulo.textContent = etiqueta;
     if (guia) guia.hidden = normalizar(tipo) !== 'calzado';
 
@@ -337,6 +339,124 @@ function pintarEquivalencias() {
     caja.textContent = datos.length
         ? `Talla ${tallaActual.nombre} · ${datos.join(' · ')}`
         : `Talla ${tallaActual.nombre}`;
+}
+
+/* ── Lista de deseos: pedir la talla que no está ─────────────── */
+
+const CATEGORIA_DESEOS = 'zapatos';
+const TALLAS_PEDIDO = ['36', '37', '38', '39', '40', '41', '42', '43', '44'];
+const TALLA_MINIMA = 36;
+const TALLA_MAXIMA = 44;
+
+let deseosPedidos = new Set();
+let guardandoDeseo = false;
+
+function claveDeseo(idVariacion, talla) {
+    return `${idVariacion}:${normalizar(talla)}`;
+}
+
+function puedePedirTalla() {
+    return Boolean(producto && variacionActual
+        && !producto.sin_tallas
+        && normalizar(producto.categoria) === CATEGORIA_DESEOS);
+}
+
+/* Tallas que se pueden pedir: las del calzado que este color no tiene disponibles. */
+function tallasParaPedir() {
+    const disponibles = new Set((variacionActual?.tallas || [])
+        .filter((talla) => Number(talla.stock) > 0)
+        .map((talla) => normalizar(talla.nombre)));
+
+    const referencia = (tallasReferencia?.tallas || [])
+        .map((fila) => Number(fila.eu))
+        .filter((eu) => eu >= TALLA_MINIMA && eu <= TALLA_MAXIMA)
+        .map((eu) => String(eu));
+
+    const propias = (variacionActual?.tallas || [])
+        .filter((talla) => Number(talla.stock) <= 0)
+        .map((talla) => String(talla.nombre));
+
+    return [...new Set([...(referencia.length ? referencia : TALLAS_PEDIDO), ...propias])]
+        .filter((nombre) => !disponibles.has(normalizar(nombre)))
+        .sort((uno, otro) => (Number(uno) || 0) - (Number(otro) || 0));
+}
+
+function pintarPedidoTalla() {
+    const boton = $('btnSinTalla');
+    const panel = $('tallasPedido');
+    const opciones = $('tallasPedidoOpciones');
+
+    if (!boton || !panel || !opciones) return;
+
+    const tallas = puedePedirTalla() ? tallasParaPedir() : [];
+
+    boton.hidden = !tallas.length;
+
+    if (!tallas.length) {
+        panel.hidden = true;
+        boton.setAttribute('aria-expanded', 'false');
+        return;
+    }
+
+    opciones.innerHTML = tallas.map((talla) => {
+        const pedida = deseosPedidos.has(claveDeseo(variacionActual.id, talla));
+
+        return `
+            <button class="tallas__pedido-opcion${pedida ? ' is-pedida' : ''}" type="button"
+                    data-talla-pedido="${escapar(talla)}" ${pedida ? 'disabled' : ''}
+                    aria-label="${pedida ? 'Talla ' + escapar(talla) + ' ya pedida' : 'Pedir la talla ' + escapar(talla)}">
+                ${pedida ? '<i class="bi bi-check2" aria-hidden="true"></i>' : ''}
+                <span>${escapar(talla)}</span>
+            </button>`;
+    }).join('');
+}
+
+function cerrarPedidoTalla() {
+    const panel = $('tallasPedido');
+    const boton = $('btnSinTalla');
+
+    if (panel) panel.hidden = true;
+    if (boton) boton.setAttribute('aria-expanded', 'false');
+}
+
+async function pedirTalla(talla) {
+    if (guardandoDeseo || !producto || !variacionActual) return;
+
+    const sesion = await window.sesionTiendaPromise;
+
+    if (!sesion?.autenticado) {
+        const cuentasCerradas = document.documentElement.classList.contains('apertura-cerrada');
+
+        tiendaToast(cuentasCerradas
+            ? 'Podrás pedir tu talla cuando abramos, el 15 de diciembre.'
+            : 'Inicia sesión para guardarlo en tu lista de deseos.', 'aviso');
+
+        if (!cuentasCerradas) window.location.href = `${urlTienda('perfil')}#perfil`;
+        return;
+    }
+
+    const variacionTalla = (variacionActual.tallas || [])
+        .find((fila) => normalizar(fila.nombre) === normalizar(talla));
+
+    guardandoDeseo = true;
+
+    try {
+        const datos = await window.TiendaAPI.post('/tienda/api/deseos', {
+            id_producto: Number(producto.id),
+            id_variacion: Number(variacionActual.id),
+            id_variacion_talla: variacionTalla?.id ?? null,
+            talla,
+            nota: '',
+        });
+
+        deseosPedidos.add(claveDeseo(variacionActual.id, talla));
+        pintarPedidoTalla();
+        tiendaToast(datos?.mensaje || 'Agregado a tu lista de deseos.', 'exito');
+    } catch (error) {
+        tiendaToast(error.message, 'aviso');
+    } finally {
+        guardandoDeseo = false;
+    }
 }
 
 /* ── Promoción del producto y aviso de registro ─────────────── */
@@ -413,6 +533,13 @@ function pintarAvisoDescuento() {
     const cliente = window.clienteTienda;
     const descuento = cliente?.descuento || null;
     const usado = Boolean(cliente?.descuento_primera_compra_usado);
+
+    /* Con la apertura activa el registro está cerrado: no se invita a crear cuenta. */
+    if (!cliente && window.TIENDA_APERTURA?.activa) {
+        caja.hidden = true;
+        caja.innerHTML = '';
+        return;
+    }
 
     if (cliente && (descuento || usado)) {
         caja.hidden = true;
@@ -529,6 +656,8 @@ function seleccionarVariacion(id) {
 
     variacionActual = variacion;
     tallaActual = variacion.tallas.find(t => Number(t.stock) > 0) || null;
+
+    cerrarPedidoTalla();
 
     pintarGaleria(variacion.imagenes);
     pintarColores();
@@ -1016,6 +1145,26 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarTallasReferencia();
     cargarProducto();
 
+    $('btnSinTalla')?.addEventListener('click', () => {
+        const panel = $('tallasPedido');
+        const boton = $('btnSinTalla');
+
+        if (!panel || !boton) return;
+
+        const abrir = panel.hidden;
+
+        panel.hidden = !abrir;
+        boton.setAttribute('aria-expanded', String(abrir));
+    });
+
+    $('tallasPedidoOpciones')?.addEventListener('click', (evento) => {
+        const opcion = evento.target.closest('[data-talla-pedido]');
+
+        if (!opcion || opcion.disabled) return;
+
+        pedirTalla(opcion.dataset.tallaPedido);
+    });
+
     window.sesionTiendaPromise.then(async (sesion) => {
         if (!sesion?.autenticado) return;
 
@@ -1027,6 +1176,21 @@ document.addEventListener('DOMContentLoaded', () => {
             actualizarBotonFavorito();
         } catch (error) {
             console.error('No se pudieron cargar los favoritos.', error);
+        }
+    });
+
+    window.sesionTiendaPromise.then(async (sesion) => {
+        if (!sesion?.autenticado) return;
+
+        try {
+            const datos = await window.TiendaAPI.get('/tienda/api/deseos');
+            deseosPedidos = new Set((datos.deseos || [])
+                .filter((deseo) => deseo.estado === 'pendiente')
+                .map((deseo) => claveDeseo(deseo.id_variacion, deseo.talla)));
+
+            pintarPedidoTalla();
+        } catch (error) {
+            console.error('No se pudieron cargar los deseos.', error);
         }
     });
 });

@@ -219,6 +219,7 @@ function iniciarCuenta() {
     conectarPedidos();
     conectarMenuPerfil();
     conectarSesion();
+    conectarNotificaciones();
     cargarCuenta();
 }
 
@@ -358,6 +359,7 @@ async function cargarCuenta() {
 
     mostrarDescuento(cliente);
     pintarMarcoPerfil();
+    pintarNotificaciones();
 }
 
 function alternarCuenta(autenticado) {
@@ -376,6 +378,7 @@ function alternarCuenta(autenticado) {
         contenidoDescuento: autenticado,
         configuracionInvitado: !autenticado,
         configuracionContenido: autenticado,
+        notificacionesContenido: autenticado,
     };
 
     Object.entries(visibilidad).forEach(([id, visible]) => {
@@ -3428,4 +3431,126 @@ function conectarSesion() {
             mostrarError(error);
         }
     });
+}
+
+/* ── Notificaciones push ─────────────────────────────────────── */
+
+let pushCambiando = false;
+
+function descripcionDispositivo(dispositivo) {
+    const navegador = dispositivo?.navegador || 'Navegador';
+    const plataforma = String(dispositivo?.plataforma || '').toLowerCase();
+
+    if (plataforma === 'android') return `${navegador} en Android`;
+    if (plataforma === 'ios') return `${navegador} en iPhone o iPad`;
+
+    return `${navegador} en computadora`;
+}
+
+function ayudaNotificaciones(info) {
+    if (info.requiereInstalacion) {
+        return 'Ábrela desde el ícono de tu pantalla de inicio para poder activar los avisos.';
+    }
+
+    if (info.permiso === 'denied') {
+        return 'Toca el candado junto a la dirección del sitio, permite las notificaciones y vuelve a intentar.';
+    }
+
+    return 'Te llegan aunque tengas la tienda cerrada. Puedes desactivarlas cuando quieras con este mismo interruptor.';
+}
+
+async function pintarNotificaciones() {
+    const estado = porId('perfilPushEstado');
+    const interruptor = porId('perfilPushSwitch');
+    const nota = porId('perfilPushNota');
+    const ayuda = porId('perfilPushAyuda');
+    const lista = porId('perfilPushDispositivos');
+    const cajaLista = porId('perfilPushDispositivosCaja');
+
+    if (!estado || !interruptor) return;
+
+    const componente = window.NotificacionesPush;
+
+    if (!componente || !componente.activo()) {
+        estado.textContent = 'Las notificaciones no están disponibles por ahora.';
+        interruptor.disabled = true;
+        return;
+    }
+
+    const info = await componente.estado();
+
+    interruptor.checked = Boolean(info.suscrito);
+    interruptor.disabled = !info.soportado || info.requiereInstalacion || info.permiso === 'denied';
+
+    if (!info.soportado) {
+        estado.textContent = 'Este navegador no admite notificaciones.';
+    } else if (info.requiereInstalacion) {
+        estado.textContent = 'Primero añade la tienda a la pantalla de inicio.';
+    } else if (info.permiso === 'denied') {
+        estado.textContent = 'Están bloqueadas para este sitio.';
+    } else if (info.suscrito) {
+        estado.textContent = `Activadas en ${descripcionDispositivo(info)}.`;
+    } else {
+        estado.textContent = 'Desactivadas en este dispositivo.';
+    }
+
+    if (nota) {
+        nota.hidden = !info.nota;
+        nota.textContent = info.nota || '';
+    }
+
+    if (ayuda) ayuda.textContent = ayudaNotificaciones(info);
+
+    if (!lista || !cajaLista) return;
+
+    try {
+        const datos = await window.TiendaAPI.get('/tienda/api/push');
+        const dispositivos = datos?.dispositivos || [];
+
+        cajaLista.hidden = !dispositivos.length;
+        lista.innerHTML = dispositivos.map((dispositivo) => `
+            <article class="perfil-push-item">
+                <i class="bi bi-broadcast" aria-hidden="true"></i>
+                <div>
+                    <strong>${escapar(descripcionDispositivo(dispositivo))}</strong>
+                    <span>Activado el ${formatearFecha(dispositivo.creado)}</span>
+                </div>
+            </article>`).join('');
+    } catch (error) {
+        cajaLista.hidden = true;
+        console.warn('No se pudieron cargar los dispositivos con notificaciones.', error);
+    }
+}
+
+function conectarNotificaciones() {
+    const interruptor = porId('perfilPushSwitch');
+    if (!interruptor) return;
+
+    interruptor.addEventListener('change', async () => {
+        const componente = window.NotificacionesPush;
+        if (pushCambiando || !componente) return;
+
+        const activar = interruptor.checked;
+
+        pushCambiando = true;
+        interruptor.disabled = true;
+
+        try {
+            if (activar) {
+                await componente.activar();
+                tiendaToast('Notificaciones activadas en este dispositivo.', 'exito');
+            } else {
+                await componente.desactivar();
+                tiendaToast('Notificaciones desactivadas en este dispositivo.');
+            }
+        } catch (error) {
+            interruptor.checked = !activar;
+            mostrarError(error);
+        } finally {
+            pushCambiando = false;
+            await pintarNotificaciones();
+        }
+    });
+
+    window.NotificacionesPush?.sincronizar();
 }

@@ -13,6 +13,22 @@ window.TIENDA_MODO_PRUEBA = false;
 /* Tema navideño: pon false para apagarlo sin tocar el HTML ni reconstruir. */
 window.TEMA_NAVIDAD = true;
 
+/*
+   Aviso de apertura: mientras `activa` sea true, la portada pide esperar la
+   gran apertura del 15 de diciembre en lugar de ofrecer el 10% de registro.
+   Ponlo en false el día de la apertura para volver al mensaje normal.
+*/
+window.TIENDA_APERTURA = {
+    activa: true,
+    fecha: '2026-12-15',
+};
+
+/* Mientras la apertura esté activa, se ocultan los accesos de cliente
+   (iniciar sesión y crear cuenta). Las cuentas se abren el 15. */
+if (window.TIENDA_APERTURA.activa) {
+    document.documentElement.classList.add('apertura-cerrada');
+}
+
 /* Delivery de la tienda: precio por km, redondeo a la baja y tarifa mínima. */
 window.TIENDA_DELIVERY = {
     precioPorKm: 15,
@@ -23,5 +39,16 @@ window.TIENDA_DELIVERY = {
         lat: 12.423534455595828,
         lng: -86.84733917589323,
     },
+};
+
+/*
+   Notificaciones push (celular y PC). `clavePublica` es la llave VAPID pública
+   del proyecto; la privada vive como secreto en la Edge Function enviar-push.
+   Pon `activo: false` para ocultar el interruptor sin borrar suscripciones.
+*/
+window.PUSH_CONFIG = {
+    activo: true,
+    clavePublica: 'BObAC5IM_UuniK-pf8fnfx_KmxFBFDFtTaQLbgBfstSR60V9qG4vELiRmtwABGuABciM-rvKr34BzscBwwmW9Go',
+    funcion: 'enviar-push',
 };
 

@@ -1201,33 +1201,32 @@ button { font-family: inherit; }
 
 /* ── Aviso de registro · 10% de bienvenida (solo visitantes) ──── */
 .promos-aviso-contenedor .promos-aviso {
-  margin-top: var(--e-6);
+  margin-top: var(--e-5);
 }
 
 .promos-aviso {
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--e-5);
-  margin-bottom: var(--e-4);
+  gap: var(--e-4);
+  margin-bottom: var(--e-3);
   padding: 22px 26px;
-  overflow: hidden;
   border-radius: var(--r-lg);
-  background: linear-gradient(135deg, var(--nav-verde, var(--secundario)) 0%, var(--nav-verde-claro, var(--secundario)) 100%);
+  background:
+    radial-gradient(320px circle at 96% -30%, color-mix(in srgb, var(--nav-dorado, var(--acento)) 60%, transparent), transparent 72%),
+    linear-gradient(135deg, var(--nav-verde, var(--secundario)) 0%, var(--nav-verde-claro, var(--secundario)) 100%);
   box-shadow: var(--sombra-media);
 }
 
-/* Resplandor dorado decorativo */
-.promos-aviso::after {
-  content: "";
+/* Lazo del contenedor (solo durante la apertura) */
+.promos-aviso__lazo {
   position: absolute;
-  top: -40%;
-  right: -6%;
-  width: 340px;
-  height: 340px;
-  border-radius: var(--r-pill);
-  background: radial-gradient(circle, color-mix(in srgb, var(--nav-dorado, var(--acento)) 60%, transparent), transparent 70%);
-  opacity: .38;
+  top: -34px;
+  right: 12px;
+  z-index: 3;
+  width: 84px;
+  height: auto;
+  transform: rotate(-6deg);
   pointer-events: none;
 }
 
@@ -1253,29 +1252,66 @@ button { font-family: inherit; }
 
 .promos-aviso__etiqueta {
   display: inline-block;
-  font-size: .64rem;
+  font-size: .8rem;
   font-weight: 700;
-  letter-spacing: .2em;
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--nav-dorado, var(--acento));
 }
 
 .promos-aviso__titulo {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   font-family: var(--fuente-titulo);
-  font-size: 1.42rem;
+  font-size: clamp(1.65rem, 3.2vw, 2.4rem);
   font-weight: 700;
-  line-height: 1.18;
+  line-height: 1.08;
+  letter-spacing: -.02em;
   color: var(--nav-crema, #ffffff);
 }
 
 .promos-aviso__detalle {
-  margin: 7px 0 0;
-  max-width: 46ch;
+  margin: 4px 0 0;
+  max-width: none;
   font-size: .82rem;
   line-height: 1.4;
   color: color-mix(in srgb, var(--nav-crema, #ffffff) 82%, transparent);
 }
+
+/* Redes del aviso: seguir en Instagram y Facebook */
+.promos-aviso__redes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2);
+  margin-top: var(--e-3);
+}
+
+.promos-aviso__red {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(135deg, #f58529 0%, #dd2a7b 55%, #8134af 100%);
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .18);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+
+.promos-aviso__red--facebook { background: #1877f2; }
+
+.promos-aviso__red i { font-size: .95rem; line-height: 1; }
+
+.promos-aviso__red:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, .24);
+}
+
+.promos-aviso__red:focus-visible { outline: 2px solid var(--nav-crema, #ffffff); outline-offset: 2px; }
 
 .promos-aviso__btn {
   position: relative;
@@ -1319,12 +1355,14 @@ button { font-family: inherit; }
     padding: 18px;
   }
 
-  .promos-aviso::after { right: -30%; }
+  .promos-aviso__lazo { top: auto; right: auto; bottom: -4px; left: 34px; width: 56px; }
   .promos-aviso__sello { width: 76px; height: 76px; }
   .promos-aviso__sello strong { font-size: 1.6rem; }
   .promos-aviso__sello small { font-size: .52rem; }
-  .promos-aviso__titulo { margin-top: 4px; font-size: 1.1rem; }
+  .promos-aviso__titulo { margin-top: 4px; font-size: 1.55rem; }
   .promos-aviso__detalle { font-size: .76rem; }
+  .promos-aviso__redes { gap: 6px; margin-top: 10px; }
+  .promos-aviso__red { flex: 1 1 auto; min-height: 44px; padding: 0 10px; font-size: .74rem; }
   .promos-aviso__btn { grid-column: 1 / -1; width: 100%; height: 48px; }
 }
 
@@ -2692,5 +2730,16 @@ button { font-family: inherit; }
   .btn-primario, .btn-secundario { min-height: 40px; }
   .chiky__cerrar { min-width: 38px; min-height: 38px; }
   select.form-select { min-height: 38px; }
+}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  Apertura · acceso de clientes cerrado hasta el 15           ║
+   ║  La clase la pone js/core/supabase-config.js con             ║
+   ║  window.TIENDA_APERTURA.activa. Al pasar a false, todo vuelve.║
+   ╚══════════════════════════════════════════════════════════════╝ */
+html.apertura-cerrada #menuInvitado,
+html.apertura-cerrada [data-acceso-cuenta],
+html.apertura-cerrada [data-compra-online] {
+  display: none !important;
 }
 

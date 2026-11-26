@@ -43,7 +43,7 @@
   <link rel="preconnect" href="https://tnzuicefxwowpbjtjdnx.supabase.co" crossorigin>
   <link href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114a" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261116n">
+  <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261126k">
   <link rel="stylesheet" href="/tienda/recursos/css/base/navidad.css?v=20261108j">
 </head>
 <body class="pagina-producto">
@@ -178,6 +178,19 @@
         <p class="opcion__titulo" id="productoTallasTitulo">Tallas</p>
         <div class="tallas" id="productoTallas"></div>
         <label class="tallas__equiv" id="tallasEquiv" aria-live="polite"></label>
+
+        <!-- La talla pedida queda en la lista de deseos y se avisa cuando llegue -->
+        <button class="tallas__pedir" type="button" id="btnSinTalla" hidden
+                aria-expanded="false" aria-controls="tallasPedido">
+          <i class="bi bi-heart" aria-hidden="true"></i>
+          <span>¿No está tu talla? Pídela</span>
+        </button>
+
+        <div class="tallas__pedido" id="tallasPedido" hidden>
+          <p class="tallas__pedido-titulo">Elige tu talla y la guardamos en tu lista de deseos</p>
+          <div class="tallas__pedido-opciones" id="tallasPedidoOpciones"
+               role="group" aria-label="Tallas para pedir"></div>
+        </div>
       </div>
 
       <!-- Color (después de las tallas) -->
@@ -204,10 +217,10 @@
 
       <!-- Acciones (estilo Amazon: debajo del detalle) -->
       <div class="producto__acciones">
-        <button class="btn-primario" type="button" id="btnComprar">
+        <button class="btn-primario" type="button" id="btnComprar" data-compra-online>
           Comprar ahora
         </button>
-        <button class="btn-secundario" type="button" id="btnAgregar">
+        <button class="btn-secundario" type="button" id="btnAgregar" data-compra-online>
           <i class="bi bi-bag-plus me-2"></i> Añadir al carrito
         </button>
         <a class="btn-whatsapp" id="btnWhatsapp" href="https://wa.me/50589142260" target="_blank" rel="noopener">
@@ -260,7 +273,7 @@
             <p class="resenias__invitado-texto">
               <strong>Inicia sesión</strong> para calificar y opinar sobre este producto.
             </p>
-            <a class="btn-secundario" href="/tienda/login">Iniciar sesión</a>
+            <a class="btn-secundario" href="/tienda/login" data-acceso-cuenta>Iniciar sesión</a>
           </div>
 
           <!-- Acciones de opiniones -->
@@ -510,12 +523,13 @@
   <script src="/tienda/recursos/js/core/carrito-store.js?v=20261109d" defer></script>
   <script src="/tienda/recursos/js/core/utilidades.js?v=20261116e" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-config.js?v=20261107c" defer></script>
-  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261116a" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-config.js?v=20261126e" defer></script>
+  <script src="/tienda/recursos/js/components/notificaciones.js?v=20261126a" defer></script>
+  <script src="/tienda/recursos/js/core/supabase-api.js?v=20261126a" defer></script>
   <script src="/tienda/recursos/js/core/menu-trabajador.js?v=20261119a" defer></script>
-  <script src="/tienda/recursos/js/pages/producto.js?v=20261116j" defer></script>
+  <script src="/tienda/recursos/js/pages/producto.js?v=20261126c" defer></script>
   <script src="/tienda/recursos/js/components/resenias.js?v=20261116a" defer></script>
-  <script src="/tienda/recursos/js/components/promos.js?v=20261116b" defer></script>
+  <script src="/tienda/recursos/js/components/promos.js?v=20261126f" defer></script>
   <script src="/tienda/recursos/js/components/mapa.js?v=20261102d" defer></script>
 </body>
 </html>

@@ -26,6 +26,8 @@ function servir(string $archivo): bool
         'ico' => 'image/x-icon',
         'woff' => 'font/woff',
         'woff2' => 'font/woff2',
+        'webmanifest' => 'application/manifest+json; charset=UTF-8',
+        'xml' => 'application/xml; charset=UTF-8',
     ];
 
     $tipo = $extensiones[strtolower(pathinfo($archivo, PATHINFO_EXTENSION))] ?? 'application/octet-stream';
@@ -39,6 +41,9 @@ $rutas = [
     '/' => 'index.html',
     '/tienda' => 'index.html',
     '/tienda/' => 'index.html',
+    '/sw.js' => 'sw.js',
+    '/site.webmanifest' => 'site.webmanifest',
+    '/browserconfig.xml' => 'browserconfig.xml',
     '/producto' => 'producto.html',
     '/login' => 'login.html',
     '/carrito' => 'carrito.html',

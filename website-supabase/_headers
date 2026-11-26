@@ -1,4 +1,13 @@
 # Cloudflare Pages: los assets llevan ?v= para invalidar caché.
+
+# El service worker nunca se cachea: si no, los avisos push quedan viejos.
+/sw.js
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff
+
+/site.webmanifest
+  Cache-Control: no-cache
+
 /css/*
   Cache-Control: public, max-age=31536000, immutable
   X-Content-Type-Options: nosniff

@@ -313,7 +313,7 @@
 }
 
 .rifa__datos {
-  display: none;
+  display: flex;
   flex-wrap: wrap;
   gap: 8px 18px;
   margin: 0 0 var(--e-5);
@@ -769,7 +769,7 @@
   }
 
   .rifa__datos {
-    display: none;
+    order: 3;
   }
 
   .rifa__media {

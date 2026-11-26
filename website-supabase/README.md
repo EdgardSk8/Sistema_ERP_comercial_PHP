@@ -87,6 +87,23 @@ En el panel de Supabase:
 - La categoría «Descuentos» solo lista productos con una **promoción activa del ERP**
   (`promociones`); el 10 % de bienvenida del cliente **no** cuenta ahí. Si no hay promociones,
   la categoría no se muestra.
+- **Aviso de apertura (temporal):** `window.TIENDA_APERTURA` en `js/core/supabase-config.js`
+  cambia el aviso de registro por «Te esperamos el 15 de diciembre» y el sello del 10% por la
+  fecha. Ponlo en `false` el día de la apertura para recuperar el mensaje de bienvenida.
+- **Acceso de clientes cerrado hasta la apertura:** con `TIENDA_APERTURA.activa` el `<html>`
+  recibe la clase `apertura-cerrada`, que oculta el menú de invitado (`#menuInvitado`) y todo
+  lo marcado con `data-acceso-cuenta` (botones de iniciar sesión y crear cuenta del header,
+  del carrito, del producto, del perfil y de ayuda). Para reabrir, basta con poner
+  `activa: false`; no hay que tocar el HTML.
+- **Aviso de gran apertura:** el contenedor verde de la portada (`#promosAviso`, lo inyecta
+  `js/components/promos.js`) muestra «Gran apertura» en grande, el sello «15 · Diciembre», la
+  cuenta atrás, el beneficio y el lazo `img/lazo.png` (300×300 optimizado), más los botones de
+  Instagram y Facebook. Estilos en `css/base/estilos.css` y `css/base/estilos-home.css`.
+  En escritorio el lazo va en la esquina superior derecha; en móvil, abajo a la izquierda.
+  Con `prefers-reduced-motion: reduce` no hay animación.
+- **Protocolo del día de la inauguración:** [`PROTOCOLO-INAUGURACION.md`](./PROTOCOLO-INAUGURACION.md)
+  con el paso a paso para abrir la tienda (`node scripts/tienda-apertura.mjs abrir`), qué
+  mensajes se muestran u ocultan y el acta del sorteo.
 - **Modo prueba de pedidos**: en `js/core/supabase-config.js`, `window.TIENDA_MODO_PRUEBA = true`
   simula el checkout (`PRUEBA-XXXXXX`) sin escribir en Supabase y muestra un aviso en el carrito.
   Déjalo en `false` en producción.
@@ -96,8 +113,17 @@ En el panel de Supabase:
   Guarda una copia de los originales antes de reemplazarlas si necesitas más calidad.
 - **Sorteo de zapatos**: son dos sorteos y cada ruleta tiene su propia fecha en `index.html`
   (`data-fin-sorteo`), así se detiene sola al terminar.
-  - **15 de diciembre, 3 pares:** ruleta de clientes registrados. Los nombres salen de
-    `web_clientes_ruleta` (o `web_admin_clientes` si hay sesión del panel) y de la API del ERP.
+  - **15 de diciembre, 3 pares:** participan los clientes registrados que **comenten la
+    publicación de apertura**. La ruleta sigue tomando los nombres de `web_clientes_ruleta`
+    (o `web_admin_clientes` si hay sesión del panel) y de la API del ERP; el comentario se
+    comprueba al anunciar a los ganadores.
+  - **Panel temporal Sorteo** (`/tienda/admin` → Sorteo): lista las cuentas de la tienda para
+    aprobarlas o quitarlas del sorteo y guardar su usuario de Instagram (opcional, para
+    comprobar el comentario). Solo las cuentas aprobadas aparecen en la ruleta del 15.
+    SQL: `supabase/ruleta-participantes.sql` (tabla `ruleta_participantes` y RPC
+    `web_admin_sorteo_lista`, `web_admin_sorteo_participante` y `web_ruleta_participantes`).
+    Mientras el SQL no esté ejecutado, la ruleta mantiene el comportamiento anterior (todos
+    los clientes registrados).
   - **24 de diciembre, 1 par:** ruleta de seguidores de Instagram. Lee
     `data/ruleta-instagram.json`; si `participantes` está vacío, el bloque no se muestra.
   - Para cargar participantes de Instagram: `node scripts/importar-comentarios-instagram.mjs
@@ -108,6 +134,14 @@ En el panel de Supabase:
     publicación (solo devuelve `followers_count` y los contadores `shares`/`reposts`). Lo único
     verificable por API son los **comentarios** de tus publicaciones, con `instagram_manage_comments`
     (requiere app de Meta y cuenta profesional).
+- **Pedir una talla que no está disponible:** en la ficha del producto, debajo del selector de
+  tallas, el botón «¿No está tu talla? Pídela» abre las tallas que ese color no tiene y las
+  guarda en la **Lista de deseos** del cliente (`POST /tienda/api/deseos` → RPC
+  `web_crear_deseo`). Necesita sesión iniciada; con `TIENDA_APERTURA.activa` solo muestra el
+  aviso de esperar al 15 de diciembre. Las tallas ya pedidas se marcan con un check.
+  Solo aparece en la categoría **Zapatos**, igual que la lista de deseos del perfil, porque
+  `web_crear_deseo` rechaza las demás; para sumar «Chinelas» o «Zapatos Segunda Mano» hay que
+  ampliar los RPC de `supabase/lista-deseos.sql`.
 
 ## 6. Avatar del cliente (colores e ilustraciones)
 
@@ -163,7 +197,7 @@ En el panel de Supabase:
 
 - **Rutas:** `/tienda/admin` (panel) y `/tienda/admin-login` (acceso). También funcionan `/admin` y `/admin-login` en local.
 - **Acceso:** usuario y contraseña del ERP (`usuarios` + `roles`). Solo entra un usuario con rol **Administrador** y cuenta activa. En el perfil de la tienda hay un enlace **Login administrador** debajo de «Trabaja con nosotros».
-- **SQL:** ejecutar `supabase/admin-web.sql` en el SQL Editor de Supabase antes de usar el panel. Crea las tablas `admin_web_sesiones`, `admin_web_intentos`, `pedidos_web_pagos`, `repartidor_cierres` y `repartidor_cierre_pedidos`, las RPC `web_admin_*` y ajusta el trigger `web_proteger_rol_cliente` para que el panel pueda aprobar repartidores. Si ya ejecutaste una versión anterior, vuelve a ejecutar el archivo para crear `web_admin_cierres_trabajador` (historial por repartidor). Después ejecutar `supabase/arqueos-trabajador.sql` para el arqueo del panel del repartidor. Para la aceptación automática de pedidos ejecutar `supabase/autoaceptar-pedidos.sql` (tabla `tienda_config`, RPC `web_admin_configuracion*` y triggers de aceptación). Para la ruleta del sorteo de apertura ejecutar `supabase/ruleta-clientes.sql` (RPC `web_admin_clientes`, con sesión del panel, y `web_clientes_ruleta`, pública para que los visitantes vean los participantes sin iniciar sesión; ambas devuelven únicamente nombres de clientes activos, sin datos de contacto).
+- **SQL:** ejecutar `supabase/admin-web.sql` en el SQL Editor de Supabase antes de usar el panel. Crea las tablas `admin_web_sesiones`, `admin_web_intentos`, `pedidos_web_pagos`, `repartidor_cierres` y `repartidor_cierre_pedidos`, las RPC `web_admin_*` y ajusta el trigger `web_proteger_rol_cliente` para que el panel pueda aprobar repartidores. Si ya ejecutaste una versión anterior, vuelve a ejecutar el archivo para crear `web_admin_cierres_trabajador` (historial por repartidor). Después ejecutar `supabase/arqueos-trabajador.sql` para el arqueo del panel del repartidor. Para la aceptación automática de pedidos ejecutar `supabase/autoaceptar-pedidos.sql` (tabla `tienda_config`, RPC `web_admin_configuracion*` y triggers de aceptación). Para la ruleta del sorteo de apertura ejecutar `supabase/ruleta-clientes.sql` (RPC `web_admin_clientes`, con sesión del panel, y `web_clientes_ruleta`, pública para que los visitantes vean los participantes sin iniciar sesión; ambas devuelven únicamente nombres de clientes activos, sin datos de contacto). Para el panel temporal de aprobación del sorteo ejecutar después `supabase/ruleta-participantes.sql` (tabla `ruleta_participantes` y RPC `web_admin_sorteo_lista`, `web_admin_sorteo_participante` y `web_ruleta_participantes`).
 - **Sesión:** token aleatorio de 256 bits; en la base solo se guarda su hash SHA-256. Dura **12 horas**, se borra al cerrar sesión y el login se bloquea 15 minutos tras 5 intentos fallidos.
 - **Seguridad:** el navegador solo usa la `publishable key`; nunca la `service_role`. Las RPC administrativas validan el token y están concedidas a `anon`/`authenticated`; las tablas de sesiones e intentos tienen RLS sin políticas. El token se guarda en `localStorage` para no pedir la clave en cada visita; el botón de salir lo elimina. La contraseña se verifica con **bcrypt** (`$2y$`/`$2a$`) usando `pgcrypto`; si el ERP cambia a Argon2, hay que ajustar `web_admin_login`.
 - **Pedidos:** lista y detalle con cliente, artículos, totales, pagos e historial. El listado se filtra por **día** con el selector **Hoy / Ayer / Antier / Otro día** y el campo **Fecha** con Flatpickr para una fecha específica; usa tarjetas compactas con la acción a la derecha. La preferencia **Aceptación automática** se guarda en `tienda_config`; al activarla, los pedidos nuevos entran como **aceptados** sin pasar por «Solicitados». Requiere ejecutar `supabase/autoaceptar-pedidos.sql` en instalaciones nuevas. Acciones permitidas:
@@ -185,8 +219,13 @@ En el panel de Supabase:
     - **Total a entregar a la empresa** = productos + comisión de la empresa por el envío.
   - Al confirmar el **monto entregado**, guarda el cierre con la diferencia (cuadra, falta o sobra), marca los pedidos como pagados y los excluye del siguiente cierre. RPC: `web_admin_cierre_delivery`, `web_admin_cierre_delivery_guardar`, `web_admin_cierres_delivery` y `web_admin_cierres_trabajador`.
 - **Cuentas por cobrar:** consulta de saldo, cuotas, vencimientos y pagos, con botón de WhatsApp y llamada. **Pagar** abre el formulario de abono: permite abonar una parte o el saldo total (`web_admin_cuenta_pagar`), con máximo dos decimales y sin superar el saldo. En efectivo exige una **caja abierta**; también se puede elegir una **cuenta activa**. El abono se aplica a las cuotas más antiguas, se registra en `pagos_venta`, `aplicaciones_pago_cuota` y el movimiento de caja/cuenta, y actualiza el historial al instante. Los pedidos web en línea se cobran desde **Pedidos**.
+- **Sorteo (panel temporal):** pestaña **Sorteo**. Lista las cuentas activas de la tienda con correo, fecha de alta, estado **Pendiente/Aprobado** y un campo para el usuario de Instagram (opcional, sirve para comprobar el comentario de la publicación). El interruptor aprueba o retira la cuenta del sorteo del 15 de diciembre y solo las aprobadas aparecen en la ruleta pública. Tiene filtros **Todos / Aprobados / Pendientes**, buscador y contador de aprobados en la barra inferior. RPC: `web_admin_sorteo_lista` y `web_admin_sorteo_participante` (con sesión) y `web_ruleta_participantes` (pública, solo nombres). Requiere `supabase/ruleta-participantes.sql`; si no está ejecutado, la pestaña lo indica y la ruleta mantiene el comportamiento anterior.
 - **Interfaz compacta:** las notas de ayuda se abren con el icono de información junto al título (flotante, sin ocupar espacio), el contador con su etiqueta (por ejemplo, «3 pedidos») va al lado del título, se quitaron los encabezados de sección y las acciones de las tarjetas usan botones compactos. El buscador y las acciones son más pequeños en móvil.
 - **Caché:** al modificar `css/pages/admin.css`, `js/pages/admin.js` o `js/pages/admin-login.js`, sube el `?v=` en `admin.html`/`admin-login.html`. Al modificar `js/components/promos.js`, sube su versión en `index.html` y `producto.html`.
+- **Avisos (notificaciones push):** pestaña **Avisos**. Muestra cuántos dispositivos tienen los avisos activados y un formulario con dos tipos:
+  - **Mensaje:** título, mensaje y enlace opcional.
+  - **Promoción:** eliges una promoción de la lista (aparecen **todas**, con su estado: activa, programada, pausada o vencida) y el aviso se arma solo con el producto, el precio de oferta, el enlace a la ficha y **la imagen de la promoción** (`/imagenes/promociones/...`); el título y el mensaje quedan editables. Si la promoción no está activa, el panel avisa de que en la tienda todavía no se ve.
+  Debajo hay una **vista previa** de cómo se verá la notificación y el historial de los últimos envíos con imagen, entregados y errores. Se puede enviar a **todos los suscritos** o a **un cliente** concreto. Requiere ejecutar `supabase/notificaciones-push.sql` y desplegar la Edge Function `enviar-push` (ver sección 12). RPC: `web_admin_push_resumen` y `web_admin_promociones`.
 - **Rutas de hosting:** `_redirects`, `vercel.json` y `dev-server.php` ya incluyen `/tienda/admin`, `/tienda/admin-login` y sus variantes.
 - **Pruebas realizadas:** login real con un usuario temporal (borrado después), lectura de pedidos/promociones/cupones/repartidores/cuentas, creación de cupones y promociones de prueba (eliminados), detalle de pedido/cuenta, navegación, cierre de sesión y diseño a 390 px, 320 px y 268 px sin desbordamiento horizontal, con ayuda flotante, contador con etiqueta junto al título y acciones compactas. Se probó de punta a punta: aceptar/facturar efectivo con pago pendiente, aceptar/facturar online pagado, cobrar online pendiente, cancelar un aceptado sin factura, rollback por falta de stock, cierre de delivery con varios repartidores, los tres métodos y diferencia de arqueo, repartidores ya cerrados visibles en la tabla, panel **Detalles** con historial por repartidor, arqueo del repartidor con filtro de fechas y desglose diario, respuesta del arqueo en el ERP, vista compacta del repartidor y transición a enviado; los datos temporales se eliminaron y el saldo/caja quedaron restaurados.
 
@@ -201,3 +240,15 @@ En el panel de Supabase:
 - En móvil, el resumen **Disponibles / Activas / Entregadas** permanece en una sola fila con sus iconos, y el selector de disponibilidad es más pequeño. En escritorio se redujeron espacios, ancho y altura del encabezado.
 - **Mi arqueo:** botón en la barra de pedidos que abre un modal con rango **Desde/Hasta** (calendario Flatpickr en formato `dd/mm/aaaa`), total pendiente por entregar a la empresa, productos, delivery, ganancia y desglose por efectivo, billetera y Lafise. Incluye el pendiente agrupado por día y el **historial de cierres** ya registrados por el administrador.
 - La vista compacta se actualiza con `trabajador.js`, `trabajador-perfil.js` y `trabajador.css`; recuerda subir sus `?v=` al modificarlos. El arqueo usa `supabase/arqueos-trabajador.sql`.
+
+## 12. Notificaciones push (celular y computadora)
+
+- **Qué hace:** el cliente activa los avisos en **Perfil → Notificaciones** y desde el panel se envían avisos con título, mensaje y enlace opcional a **todos los suscritos** o a **un cliente**. Hay dos tipos: **mensaje** libre y **promoción** (toma el producto, el precio de oferta, el enlace a la ficha y la imagen de cualquier promoción, esté activa o no; el aviso se muestra con foto grande en Android y Windows). Llegan como notificación del sistema en Android, iPhone/iPad, Windows, macOS y Linux, incluso con la tienda cerrada.
+- **Archivos:** `sw.js` (service worker, en la raíz del sitio para que cubra todas las rutas), `js/components/notificaciones.js` (permiso, suscripción y guardado), `js/pages/perfil.js` (interruptor y lista de dispositivos) y la pestaña **Avisos** de `admin.html`/`js/pages/admin.js`.
+- **Configuración:** `window.PUSH_CONFIG` en `js/core/supabase-config.js` guarda la **clave pública VAPID** y el nombre de la función. La privada **nunca** va en el repositorio.
+- **Paso 1 — SQL:** ejecutar `supabase/notificaciones-push.sql` en el SQL Editor. Crea `push_suscripciones`, `push_envios`, las RPC `web_push_guardar`, `web_push_eliminar`, `web_push_estado` (cliente) y `web_admin_push_resumen` (panel).
+- **Paso 2 — Edge Function:** crear la función `enviar-push` en Supabase (Edge Functions → Deploy a new function) pegando `supabase/functions/enviar-push/index.ts` y **desactivar «Verify JWT»** (la función valida el token del panel por su cuenta).
+- **Paso 3 — Secretos:** en Edge Functions → Secrets agregar `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT` (`mailto:tellezstorenic@gmail.com`). Para generar un par nuevo: `node scripts/generar-claves-push.mjs`; si cambias las claves, todos deben volver a activar los avisos.
+- **Cómo se envía:** el panel llama a `POST /functions/v1/enviar-push` con el token de la sesión administrativa. La función lo valida contra `admin_web_sesiones`, lee los dispositivos activos, envía con `web-push` y guarda el resultado en `push_envios`. Las suscripciones caducadas (404/410) se borran solas.
+- **Límites por plataforma:** en **iPhone/iPad** solo funcionan con iOS 16.4 o superior y con la tienda **añadida a la pantalla de inicio**; en el resto basta con aceptar el permiso. Requiere HTTPS (Cloudflare Pages, Netlify y Vercel lo dan).
+- **Caché:** `_headers` marca `/sw.js` como `no-cache`. Al modificar `notificaciones.js`, `perfil.js`, `admin.js` o sus CSS, sube el `?v=` correspondiente. Si algún día cambias el contenido del service worker, cambia también su nombre de archivo o versión para forzar la actualización.
