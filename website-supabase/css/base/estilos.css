@@ -4559,12 +4559,12 @@ button { font-family: inherit; }
 }
 
 /* ╔══════════════════════════════════════════════════════════════╗
-   ║  Apertura · acceso de clientes cerrado hasta el 15           ║
-   ║  La clase la pone js/core/supabase-config.js con             ║
-   ║  window.TIENDA_APERTURA.activa. Al pasar a false, todo vuelve.║
+   ║  Apertura · compra online cerrada hasta el 15                ║
+   ║  Las cuentas SÍ se pueden abrir: el cliente entra a activar  ║
+   ║  sus notificaciones y a guardar favoritos/deseos. Solo se    ║
+   ║  oculta la compra online. La clase la pone                 ║
+   ║  js/core/supabase-config.js con window.TIENDA_APERTURA.activa║
    ╚══════════════════════════════════════════════════════════════╝ */
-html.apertura-cerrada #menuInvitado,
-html.apertura-cerrada [data-acceso-cuenta],
 html.apertura-cerrada [data-compra-online] {
   display: none !important;
 }

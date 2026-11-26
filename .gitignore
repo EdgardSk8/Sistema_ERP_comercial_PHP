@@ -27,3 +27,6 @@ Thumbs.db
 ngrok.exe
 
 /public/imagenes/productosvariaciones/miniaturas
+
+# Estado local del CLI de Supabase (link del proyecto)
+/supabase/.temp

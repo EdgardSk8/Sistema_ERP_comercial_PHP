@@ -425,13 +425,8 @@ async function pedirTalla(talla) {
     const sesion = await window.sesionTiendaPromise;
 
     if (!sesion?.autenticado) {
-        const cuentasCerradas = document.documentElement.classList.contains('apertura-cerrada');
-
-        tiendaToast(cuentasCerradas
-            ? 'Podrás pedir tu talla cuando abramos, el 15 de diciembre.'
-            : 'Inicia sesión para guardarlo en tu lista de deseos.', 'aviso');
-
-        if (!cuentasCerradas) window.location.href = `${urlTienda('perfil')}#perfil`;
+        tiendaToast('Inicia sesión para guardarlo en tu lista de deseos.', 'aviso');
+        window.location.href = `${urlTienda('perfil')}#perfil`;
         return;
     }
 

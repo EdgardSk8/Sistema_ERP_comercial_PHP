@@ -242,12 +242,15 @@ begin
                      'id_cliente', c.id_cliente,
                      'nombre', btrim(c.nombre_cliente),
                      'correo', coalesce(c.correo_cliente, ''),
-                     'dispositivos', count(*)
+                     'usuario', coalesce(c.usuario_cliente, ''),
+                     'dispositivos', count(s.id_suscripcion) filter (where s.activo)
                  ) as fila
-            from public.push_suscripciones s
-            join public.clientes c on c.id_cliente = s.id_cliente
-           where s.activo
-           group by c.id_cliente, c.nombre_cliente, c.correo_cliente
+            from public.clientes c
+            left join public.push_suscripciones s on s.id_cliente = c.id_cliente
+           where c.estado_cliente = true
+             and btrim(coalesce(c.nombre_cliente, '')) <> ''
+             and lower(translate(btrim(c.nombre_cliente), 'áéíóúÁÉÍÓÚ', 'aeiouAEIOU')) <> 'cliente generico'
+           group by c.id_cliente, c.nombre_cliente, c.correo_cliente, c.usuario_cliente
       ) clientes;
 
     return jsonb_build_object(

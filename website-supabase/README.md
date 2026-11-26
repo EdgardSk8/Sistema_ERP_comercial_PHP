@@ -90,11 +90,13 @@ En el panel de Supabase:
 - **Aviso de apertura (temporal):** `window.TIENDA_APERTURA` en `js/core/supabase-config.js`
   cambia el aviso de registro por «Te esperamos el 15 de diciembre» y el sello del 10% por la
   fecha. Ponlo en `false` el día de la apertura para recuperar el mensaje de bienvenida.
-- **Acceso de clientes cerrado hasta la apertura:** con `TIENDA_APERTURA.activa` el `<html>`
-  recibe la clase `apertura-cerrada`, que oculta el menú de invitado (`#menuInvitado`) y todo
-  lo marcado con `data-acceso-cuenta` (botones de iniciar sesión y crear cuenta del header,
-  del carrito, del producto, del perfil y de ayuda). Para reabrir, basta con poner
-  `activa: false`; no hay que tocar el HTML.
+- **Compra online cerrada hasta la apertura:** con `TIENDA_APERTURA.activa` el `<html>`
+  recibe la clase `apertura-cerrada`, que oculta **solo lo marcado con `data-compra-online`**:
+  «Comprar ahora», «Añadir al carrito», «Agregar» de las tarjetas y «Finalizar compra». El
+  pedido por WhatsApp sigue disponible. Las **cuentas de cliente siguen abiertas** (menú de
+  invitado y accesos de `data-acceso-cuenta` visibles) para que puedan entrar a activar las
+  notificaciones y guardar favoritos y deseos. Para reabrir la compra basta con poner
+  `activa: false` (`node scripts/tienda-apertura.mjs abrir`); no hay que tocar el HTML.
 - **Aviso de gran apertura:** el contenedor verde de la portada (`#promosAviso`, lo inyecta
   `js/components/promos.js`) muestra «Gran apertura» en grande, el sello «15 · Diciembre», la
   cuenta atrás, el beneficio y el lazo `img/lazo.png` (300×300 optimizado), más los botones de
@@ -247,8 +249,9 @@ En el panel de Supabase:
 - **Archivos:** `sw.js` (service worker, en la raíz del sitio para que cubra todas las rutas), `js/components/notificaciones.js` (permiso, suscripción y guardado), `js/pages/perfil.js` (interruptor y lista de dispositivos) y la pestaña **Avisos** de `admin.html`/`js/pages/admin.js`.
 - **Configuración:** `window.PUSH_CONFIG` en `js/core/supabase-config.js` guarda la **clave pública VAPID** y el nombre de la función. La privada **nunca** va en el repositorio.
 - **Paso 1 — SQL:** ejecutar `supabase/notificaciones-push.sql` en el SQL Editor. Crea `push_suscripciones`, `push_envios`, las RPC `web_push_guardar`, `web_push_eliminar`, `web_push_estado` (cliente) y `web_admin_push_resumen` (panel).
-- **Paso 2 — Edge Function:** crear la función `enviar-push` en Supabase (Edge Functions → Deploy a new function) pegando `supabase/functions/enviar-push/index.ts` y **desactivar «Verify JWT»** (la función valida el token del panel por su cuenta).
-- **Paso 3 — Secretos:** en Edge Functions → Secrets agregar `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT` (`mailto:tellezstorenic@gmail.com`). Para generar un par nuevo: `node scripts/generar-claves-push.mjs`; si cambias las claves, todos deben volver a activar los avisos.
+- **Paso 2 — Edge Function:** crear la función `enviar-push` en Supabase (Edge Functions → Deploy a new function) pegando `supabase/functions/enviar-push/index.ts` y **desactivar «Verify JWT»** (la función valida el token del panel por su cuenta). Por CLI es más rápido:
+  `npx supabase functions deploy enviar-push --project-ref <ref> --no-verify-jwt --yes`
+- **Paso 3 — Secretos:** `npx supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:tellezstorenic@gmail.com --project-ref <ref> --yes` (o en Edge Functions → Secrets). Para generar un par nuevo: `node scripts/generar-claves-push.mjs`; si cambias las claves, todos deben volver a activar los avisos.
 - **Cómo se envía:** el panel llama a `POST /functions/v1/enviar-push` con el token de la sesión administrativa. La función lo valida contra `admin_web_sesiones`, lee los dispositivos activos, envía con `web-push` y guarda el resultado en `push_envios`. Las suscripciones caducadas (404/410) se borran solas.
 - **Límites por plataforma:** en **iPhone/iPad** solo funcionan con iOS 16.4 o superior y con la tienda **añadida a la pantalla de inicio**; en el resto basta con aceptar el permiso. Requiere HTTPS (Cloudflare Pages, Netlify y Vercel lo dan).
 - **Caché:** `_headers` marca `/sw.js` como `no-cache`. Al modificar `notificaciones.js`, `perfil.js`, `admin.js` o sus CSS, sube el `?v=` correspondiente. Si algún día cambias el contenido del service worker, cambia también su nombre de archivo o versión para forzar la actualización.

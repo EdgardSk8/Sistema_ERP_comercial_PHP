@@ -3609,9 +3609,16 @@
 
             select.innerHTML = estado.avisos.lista.length
                 ? estado.avisos.lista
-                    .map((fila) => `<option value="${Number(fila.id_cliente)}">${escapar(fila.nombre || fila.correo)} · ${Number(fila.dispositivos)} dispositivo${Number(fila.dispositivos) === 1 ? '' : 's'}</option>`)
+                    .map((fila) => {
+                        const dispositivos = Number(fila.dispositivos) || 0;
+                        const detalle = dispositivos
+                            ? `${dispositivos} dispositivo${dispositivos === 1 ? '' : 's'}`
+                            : 'sin avisos activados';
+
+                        return `<option value="${Number(fila.id_cliente)}">${escapar(fila.nombre || fila.correo)} · ${detalle}</option>`;
+                    })
                     .join('')
-                : '<option value="">Ningún cliente tiene avisos activados</option>';
+                : '<option value="">Todavía no hay clientes registrados</option>';
 
             if (anterior) select.value = anterior;
         }

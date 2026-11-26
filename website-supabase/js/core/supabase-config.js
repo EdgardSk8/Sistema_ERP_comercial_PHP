@@ -14,17 +14,17 @@ window.TIENDA_MODO_PRUEBA = false;
 window.TEMA_NAVIDAD = true;
 
 /*
-   Aviso de apertura: mientras `activa` sea true, la portada pide esperar la
-   gran apertura del 15 de diciembre en lugar de ofrecer el 10% de registro.
-   Ponlo en false el día de la apertura para volver al mensaje normal.
+   Apertura: mientras `activa` sea true se oculta la compra online
+   (botones marcados con data-compra-online) y la portada muestra el
+   aviso de la gran apertura. Las cuentas de cliente SÍ están abiertas
+   para que puedan activar sus notificaciones y guardar favoritos.
+   Ponlo en false el día de la apertura para habilitar la compra.
 */
 window.TIENDA_APERTURA = {
     activa: true,
     fecha: '2026-12-15',
 };
 
-/* Mientras la apertura esté activa, se ocultan los accesos de cliente
-   (iniciar sesión y crear cuenta). Las cuentas se abren el 15. */
 if (window.TIENDA_APERTURA.activa) {
     document.documentElement.classList.add('apertura-cerrada');
 }
