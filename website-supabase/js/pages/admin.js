@@ -3636,6 +3636,8 @@
         lista.innerHTML = estado.avisos.historial.map((fila) => {
             const imagen = urlImagenPromocion(fila.imagen);
             const esPromo = fila.tipo === 'promocion';
+            const reenvios = Number(fila.reenvios) || 0;
+            const ultimo = fila.ultimo_reenvio ? fechaCorta(fila.ultimo_reenvio) : '';
 
             return `
             <article class="admin-card admin-envio">
@@ -3654,8 +3656,80 @@
                     ${Number(fila.errores) ? `<span class="admin-envio__error"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> ${Number(fila.errores)} con error</span>` : ''}
                     <span>${fila.destino === 'cliente' ? 'Un cliente' : 'Todos los suscritos'}</span>
                 </div>
+                <div class="admin-envio__acciones">
+                    <span class="admin-envio__reenvios">
+                        ${reenvios
+                            ? `<i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Reenviado ${reenvios} ${reenvios === 1 ? 'vez' : 'veces'}${ultimo ? ` · último ${escapar(ultimo)}` : ''}`
+                            : 'Sin reenvíos'}
+                    </span>
+                    <button class="admin-btn admin-btn--suave admin-btn--mini" type="button"
+                            data-accion="reenviar-aviso" data-id="${Number(fila.id_envio)}"
+                            title="Reenviar este aviso a los mismos destinatarios">
+                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Reenviar
+                    </button>
+                </div>
             </article>`;
         }).join('');
+    }
+
+    async function reenviarAviso(id, boton) {
+        const fila = estado.avisos.historial.find((item) => Number(item.id_envio) === Number(id));
+
+        if (!fila) return;
+
+        const destinatarios = fila.destino === 'cliente' ? 'ese cliente' : 'todos los suscritos';
+        const confirmado = await confirmar(`¿Reenviar «${fila.titulo}» a ${destinatarios}?`, 'Reenviar');
+
+        if (!confirmado) return;
+
+        const sesion = leerSesion();
+
+        if (!sesion) {
+            cerrarSesionLocal('expirada');
+            return;
+        }
+
+        const textoOriginal = boton.innerHTML;
+
+        boton.disabled = true;
+        boton.textContent = 'Enviando…';
+
+        try {
+            const funcion = window.PUSH_CONFIG?.funcion || 'enviar-push';
+            const respuesta = await fetch(`${String(config.url).replace(/\/+$/, '')}/functions/v1/${funcion}`, {
+                method: 'POST',
+                headers: {
+                    apikey: config.key,
+                    Authorization: `Bearer ${config.key}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token: sesion.token,
+                    titulo: fila.titulo,
+                    mensaje: fila.mensaje,
+                    url: fila.url || '',
+                    tipo: fila.tipo || 'mensaje',
+                    imagen: fila.imagen || '',
+                    destino: fila.destino === 'cliente' ? 'cliente' : 'todos',
+                    id_cliente: fila.id_cliente || null,
+                    reenvio_de: Number(fila.id_envio),
+                }),
+            });
+
+            const datos = await respuesta.json().catch(() => null);
+
+            if (!respuesta.ok) {
+                throw new Error(datos?.mensaje || 'No se pudo reenviar el aviso.');
+            }
+
+            mostrarToast(datos?.mensaje || 'Aviso reenviado.');
+            estado.cargada.avisos = false;
+            await cargarAvisos();
+        } catch (error) {
+            mostrarToast(error.message, 'error');
+            boton.disabled = false;
+            boton.innerHTML = textoOriginal;
+        }
     }
 
     /* ── Tipo de aviso y promociones ── */
@@ -3936,6 +4010,14 @@
 
     function conectarAvisos() {
         $('#formAviso')?.addEventListener('submit', enviarAviso);
+
+        $('#listaEnvios')?.addEventListener('click', (evento) => {
+            const boton = evento.target.closest('[data-accion="reenviar-aviso"]');
+
+            if (!boton || boton.disabled) return;
+
+            reenviarAviso(boton.dataset.id, boton);
+        });
 
         $('#avisoDestino')?.addEventListener('click', (evento) => {
             const chip = evento.target.closest('[data-destino]');

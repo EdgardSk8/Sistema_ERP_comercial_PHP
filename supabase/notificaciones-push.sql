@@ -35,6 +35,8 @@ create table if not exists public.push_envios (
     dispositivos integer not null default 0,
     enviados integer not null default 0,
     errores integer not null default 0,
+    reenvios integer not null default 0,
+    ultimo_reenvio timestamptz,
     id_admin integer,
     fecha timestamptz not null default now()
 );
@@ -42,6 +44,8 @@ create table if not exists public.push_envios (
 /* Instalaciones que ya tenían la tabla sin estos campos. */
 alter table public.push_envios add column if not exists tipo varchar(20) not null default 'mensaje';
 alter table public.push_envios add column if not exists imagen text;
+alter table public.push_envios add column if not exists reenvios integer not null default 0;
+alter table public.push_envios add column if not exists ultimo_reenvio timestamptz;
 
 create index if not exists idx_push_envios_fecha
     on public.push_envios(fecha desc);
@@ -225,9 +229,13 @@ begin
                      'tipo', coalesce(e.tipo, 'mensaje'),
                      'imagen', coalesce(e.imagen, ''),
                      'destino', e.destino,
+                     'id_cliente', e.id_cliente,
                      'dispositivos', e.dispositivos,
                      'enviados', e.enviados,
                      'errores', e.errores,
+                     'reenvios', coalesce(e.reenvios, 0),
+                     'ultimo_reenvio', case when e.ultimo_reenvio is null then null
+                                            else to_char(e.ultimo_reenvio, 'YYYY-MM-DD"T"HH24:MI:SS') end,
                      'fecha', to_char(e.fecha, 'YYYY-MM-DD"T"HH24:MI:SS')
                  ) as fila
             from public.push_envios e
@@ -266,3 +274,32 @@ $$;
 
 revoke all on function public.web_admin_push_resumen(text) from public;
 grant execute on function public.web_admin_push_resumen(text) to anon, authenticated;
+
+-- ----------------------------------------------------------------------------
+-- Reenvíos: la Edge Function marca +1 cada vez que se reenvía un aviso
+-- ----------------------------------------------------------------------------
+
+create or replace function public.web_admin_push_marcar_reenvio(p_id integer)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_total integer;
+begin
+    update public.push_envios e
+       set reenvios = coalesce(e.reenvios, 0) + 1,
+           ultimo_reenvio = now()
+     where e.id_envio = p_id
+    returning e.reenvios into v_total;
+
+    if v_total is null then
+        return jsonb_build_object('success', false, 'mensaje', 'Envío no encontrado.');
+    end if;
+
+    return jsonb_build_object('success', true, 'reenvios', v_total);
+end;
+$$;
+
+revoke all on function public.web_admin_push_marcar_reenvio(integer) from public, anon, authenticated;

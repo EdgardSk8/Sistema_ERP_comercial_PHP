@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
     const destino = texto(cuerpo.destino, 20) === 'cliente' ? 'cliente' : 'todos';
     const tipo = texto(cuerpo.tipo, 20) === 'promocion' ? 'promocion' : 'mensaje';
     const idCliente = Number(cuerpo.id_cliente || 0) || null;
+    const reenvioDe = Number(cuerpo.reenvio_de || 0) || null;
 
     if (titulo.length < 3) return responder({ mensaje: 'Escribe un título de al menos 3 letras.' }, 422);
     if (mensaje.length < 3) return responder({ mensaje: 'Escribe un mensaje de al menos 3 letras.' }, 422);
@@ -180,30 +181,46 @@ Deno.serve(async (req) => {
         await BASE.from('push_suscripciones').delete().in('id_suscripcion', caducados);
     }
 
-    const { error: errorHistorial } = await BASE.from('push_envios').insert({
-        titulo,
-        mensaje,
-        url,
-        tipo,
-        imagen: imagen || null,
-        destino,
-        id_cliente: destino === 'cliente' ? idCliente : null,
-        dispositivos: lista.length,
-        enviados,
-        errores,
-        id_admin: sesion.id_usuario,
-    });
+    let reenvios = 0;
 
-    if (errorHistorial) console.warn('No se pudo guardar el historial', errorHistorial.message);
+    if (reenvioDe) {
+        /* Reenvío: no se crea otro envío, solo se suma al contador del original. */
+        const { data: marcado, error: errorReenvio } = await BASE.rpc('web_admin_push_marcar_reenvio', { p_id: reenvioDe });
+
+        if (errorReenvio) {
+            console.warn('No se pudo marcar el reenvío', errorReenvio.message);
+        } else {
+            reenvios = Number(marcado?.reenvios || 0);
+        }
+    } else {
+        const { error: errorHistorial } = await BASE.from('push_envios').insert({
+            titulo,
+            mensaje,
+            url,
+            tipo,
+            imagen: imagen || null,
+            destino,
+            id_cliente: destino === 'cliente' ? idCliente : null,
+            dispositivos: lista.length,
+            enviados,
+            errores,
+            id_admin: sesion.id_usuario,
+        });
+
+        if (errorHistorial) console.warn('No se pudo guardar el historial', errorHistorial.message);
+    }
+
+    const plural = (cantidad: number, uno: string, varios: string) => `${cantidad} ${cantidad === 1 ? uno : varios}`;
 
     return responder({
         success: true,
         mensaje: enviados
-            ? `Aviso enviado a ${enviados} dispositivo${enviados === 1 ? '' : 's'}.`
+            ? `${reenvioDe ? 'Aviso reenviado' : 'Aviso enviado'} a ${plural(enviados, 'dispositivo', 'dispositivos')}.`
             : 'No se pudo entregar el aviso. Revisa los dispositivos suscritos.',
         dispositivos: lista.length,
         enviados,
         errores,
         eliminados: caducados.length,
+        reenvios,
     });
 });
