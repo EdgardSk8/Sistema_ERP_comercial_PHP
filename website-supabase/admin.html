@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-utilidades.css?v=20261110a">
   <link rel="stylesheet" href="/tienda/recursos/css/base/bootstrap-icons-subset.css?v=20261114b">
   <link rel="stylesheet" href="/tienda/recursos/css/base/estilos.css?v=20261126m">
-  <link rel="stylesheet" href="/tienda/recursos/css/pages/admin.css?v=20261126f">
+  <link rel="stylesheet" href="/tienda/recursos/css/pages/admin.css?v=20261126j">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 </head>
 <body class="admin-pagina">
@@ -206,6 +206,11 @@
           <p>Revisa solicitudes, aprueba, suspende y ajusta comisiones.</p>
         </div>
         <div class="admin-vista__cabecera-acciones">
+          <button class="admin-btn admin-btn--ghost admin-btn--notif" type="button" id="btnCambios" aria-haspopup="dialog" aria-controls="modalCambios" aria-expanded="false">
+            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+            <span>Cambios</span>
+            <em class="admin-btn__badge" id="badgeCambios" aria-hidden="true" hidden>0</em>
+          </button>
           <div class="admin-ayuda">
             <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaTrabajadores" aria-label="Más información sobre los repartidores">
               <i class="bi bi-info-circle" aria-hidden="true"></i>
@@ -229,38 +234,7 @@
       <div class="admin-lista" id="listaTrabajadores"></div>
     </section>
 
-    <!-- ───────────── SOLICITUDES DE CAMBIO ───────────── -->
-    <section class="admin-vista" id="vistaCambios" data-vista="cambios" aria-labelledby="tituloCambios" hidden>
-      <header class="admin-vista__cabecera">
-        <div>
-          <div class="admin-vista__titulo">
-            <h1 id="tituloCambios">Solicitudes de cambio</h1>
-            <span class="admin-contador" id="cambiosContador" data-singular="solicitud" data-plural="solicitudes" aria-live="polite" aria-label="0 solicitudes">0 solicitudes</span>
-          </div>
-          <p>Revisa cambios de vehículo, fotos, bajas y otras consultas de los repartidores.</p>
-        </div>
-        <div class="admin-vista__cabecera-acciones">
-          <div class="admin-ayuda">
-            <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaCambios" aria-label="Más información sobre las solicitudes de cambio">
-              <i class="bi bi-info-circle" aria-hidden="true"></i>
-            </button>
-            <div class="admin-ayuda__panel" id="ayudaCambios" role="note" tabindex="-1" hidden>
-              <strong>Cómo funciona</strong>
-              <p>El repartidor envía la solicitud y queda pendiente. Al aprobar una foto de vehículo o circulación, se actualiza en su perfil. Para cambios de vehículo o baja, usa el detalle para actualizar sus datos.</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div class="admin-chips" id="cambiosFiltros" role="group" aria-label="Filtrar solicitudes">
-        <button class="admin-chip is-activo" type="button" data-estado="pendiente">Pendientes</button>
-        <button class="admin-chip" type="button" data-estado="aprobado">Aprobadas</button>
-        <button class="admin-chip" type="button" data-estado="rechazado">Rechazadas</button>
-        <button class="admin-chip" type="button" data-estado="todas">Todas</button>
-      </div>
-
-      <div class="admin-lista" id="listaCambios"></div>
-    </section>
+    <!-- Las solicitudes de cambio viven dentro de Reparto, en un modal: ver #modalCambios -->
 
     <!-- ───────────── CIERRE DE DELIVERY ───────────── -->
     <section class="admin-vista" id="vistaCierre" data-vista="cierre" aria-labelledby="tituloCierre" hidden>
@@ -524,13 +498,162 @@
       <div class="admin-lista" id="listaEnvios"></div>
     </section>
 
+    <!-- ───────────── FACTURAR (MOSTRADOR) ───────────── -->
+    <section class="admin-vista" id="vistaFacturacion" data-vista="facturacion" aria-labelledby="tituloFacturacion" hidden>
+      <header class="admin-vista__cabecera">
+        <div>
+          <div class="admin-vista__titulo">
+            <h1 id="tituloFacturacion">Facturar</h1>
+            <span class="admin-contador" id="facturasContador" data-singular="factura" data-plural="facturas" aria-live="polite" aria-label="0 facturas">0 facturas</span>
+          </div>
+          <p>Cobra en el mostrador y emite el ticket igual que el ERP.</p>
+        </div>
+        <div class="admin-vista__cabecera-acciones">
+          <button class="admin-btn admin-btn--ghost admin-btn--icono" type="button" id="btnFacturaLimpiar" title="Empezar una factura nueva" aria-label="Empezar una factura nueva">
+            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+          </button>
+          <div class="admin-ayuda">
+            <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaFacturacion" aria-label="Más información sobre la facturación">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+            </button>
+            <div class="admin-ayuda__panel" id="ayudaFacturacion" role="note" tabindex="-1" hidden>
+              <strong>Cómo funciona</strong>
+              <p>Busca el producto, ajusta la cantidad y cobra. La venta se guarda en la misma base del ERP: descuenta stock, consume lotes FIFO y registra el cobro en caja o cuenta.</p>
+              <p>El ticket de 58 mm se imprime con el diálogo del teléfono: elige la impresora Bluetooth o «Guardar como PDF».</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-factura">
+        <div class="admin-factura__bloque">
+          <div class="admin-factura__fila">
+            <div>
+              <span class="admin-factura__etiqueta">Cliente</span>
+              <strong id="facturaCliente">Consumidor final</strong>
+            </div>
+            <button class="admin-btn admin-btn--ghost" type="button" id="btnFacturaCliente">
+              <i class="bi bi-person" aria-hidden="true"></i> Cambiar
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-buscador">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input id="facturaBuscar" type="search" placeholder="Buscar producto por nombre" autocomplete="off" aria-label="Buscar producto para facturar">
+        </div>
+
+        <div class="admin-factura__panel">
+          <div class="admin-factura__panel-cabecera">
+            <span id="facturaResultadosCuenta">Resultados</span>
+            <span class="admin-factura__panel-pista" id="facturaResultadosPista" hidden>Desliza para ver más</span>
+          </div>
+
+          <div class="admin-factura__scroll" id="facturaResultadosScroll">
+            <div class="admin-lista admin-factura__resultados" id="facturaResultados"></div>
+          </div>
+        </div>
+
+        <div class="admin-factura__bloque">
+          <h2 class="admin-factura__titulo">Productos de la factura</h2>
+          <div class="admin-factura__scroll admin-factura__scroll--carrito">
+            <div class="admin-lista" id="facturaCarrito"></div>
+          </div>
+          <div class="admin-factura__totales" id="facturaTotales"></div>
+        </div>
+
+        <div class="admin-factura__bloque">
+          <h2 class="admin-factura__titulo">Pago</h2>
+
+          <div class="admin-chips admin-chips--mini" id="facturaMetodos" role="group" aria-label="Método de pago"></div>
+
+          <div class="admin-form admin-factura__pago">
+            <div class="admin-form__campo" id="facturaCuentaCampo" hidden>
+              <label for="facturaCuenta">Cuenta destino</label>
+              <select id="facturaCuenta"></select>
+            </div>
+
+            <div class="admin-form__campo" id="facturaRecibidoCampo">
+              <label for="facturaRecibido">Efectivo recibido</label>
+              <input id="facturaRecibido" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+              <small id="facturaVuelto">Vuelto: C$ 0.00</small>
+            </div>
+
+            <div class="admin-form__campo">
+              <label for="facturaDescuento">Descuento (opcional)</label>
+              <input id="facturaDescuento" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+            </div>
+          </div>
+
+          <p class="admin-factura__aviso" id="facturaAviso" hidden></p>
+
+          <button class="admin-btn admin-btn--primario admin-btn--bloque" type="button" id="btnFacturar">
+            <i class="bi bi-receipt" aria-hidden="true"></i> Facturar e imprimir
+          </button>
+        </div>
+
+        <div class="admin-factura__bloque">
+          <h2 class="admin-factura__titulo">Facturas de hoy</h2>
+          <div class="admin-factura__scroll admin-factura__scroll--facturas">
+            <div class="admin-lista" id="listaFacturasHoy"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
+
+  <!-- Modal · Solicitudes de cambio (se abre desde Reparto) -->
+  <div class="admin-modal" id="modalCambios" hidden>
+    <div class="admin-modal__fondo" data-cerrar-cambios></div>
+    <section class="admin-modal__panel" role="dialog" aria-modal="true" aria-labelledby="tituloCambios" aria-describedby="descCambios">
+      <header class="admin-modal__cabecera">
+        <div class="admin-modal__titulos">
+          <div class="admin-vista__titulo">
+            <h2 id="tituloCambios">Solicitudes de cambio</h2>
+            <span class="admin-contador" id="cambiosContador" data-singular="solicitud" data-plural="solicitudes" aria-live="polite" aria-label="0 solicitudes">0 solicitudes</span>
+          </div>
+          <p id="descCambios">Revisa cambios de vehículo, fotos, bajas y otras consultas de los repartidores.</p>
+        </div>
+
+        <div class="admin-modal__acciones">
+          <div class="admin-ayuda">
+            <button class="admin-ayuda__boton" type="button" data-ayuda-boton aria-expanded="false" aria-controls="ayudaCambios" aria-label="Más información sobre las solicitudes de cambio">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+            </button>
+            <div class="admin-ayuda__panel" id="ayudaCambios" role="note" tabindex="-1" hidden>
+              <strong>Cómo funciona</strong>
+              <p>El repartidor envía la solicitud y queda pendiente. Al aprobar una foto de vehículo o circulación, se actualiza en su perfil. Para cambios de vehículo o baja, usa el detalle para actualizar sus datos.</p>
+            </div>
+          </div>
+          <button class="admin-sheet__cerrar" type="button" data-cerrar-cambios aria-label="Cerrar solicitudes de cambio">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="admin-modal__contenido">
+        <div class="admin-chips" id="cambiosFiltros" role="group" aria-label="Filtrar solicitudes">
+          <button class="admin-chip is-activo" type="button" data-estado="pendiente">Pendientes</button>
+          <button class="admin-chip" type="button" data-estado="aprobado">Aprobadas</button>
+          <button class="admin-chip" type="button" data-estado="rechazado">Rechazadas</button>
+          <button class="admin-chip" type="button" data-estado="todas">Todas</button>
+        </div>
+
+        <div class="admin-lista" id="listaCambios"></div>
+      </div>
+    </section>
+  </div>
 
   <nav class="admin-nav" aria-label="Secciones del panel">
     <button class="admin-nav__item is-activo" type="button" data-vista="pedidos">
       <i class="bi bi-bag" aria-hidden="true"></i>
       <span>Pedidos</span>
       <em id="navBadgePedidos" hidden>0</em>
+    </button>
+    <button class="admin-nav__item" type="button" data-vista="facturacion">
+      <i class="bi bi-receipt" aria-hidden="true"></i>
+      <span>Facturar</span>
     </button>
     <button class="admin-nav__item" type="button" data-vista="promociones">
       <i class="bi bi-tag" aria-hidden="true"></i>
@@ -544,11 +667,6 @@
       <i class="bi bi-truck" aria-hidden="true"></i>
       <span>Reparto</span>
       <em id="navBadgeTrabajadores" hidden>0</em>
-    </button>
-    <button class="admin-nav__item" type="button" data-vista="cambios">
-      <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-      <span>Cambios</span>
-      <em id="navBadgeCambios" hidden>0</em>
     </button>
     <button class="admin-nav__item" type="button" data-vista="cierre">
       <i class="bi bi-clipboard" aria-hidden="true"></i>
@@ -598,11 +716,14 @@
     </div>
   </div>
 
+  <!-- Ticket de 58 mm: solo se ve al imprimir (misma factura que el ERP) -->
+  <section class="admin-ticket" id="adminTicket" aria-hidden="true"></section>
+
   <div class="admin-toast" id="adminToast" role="status" aria-live="polite" hidden></div>
 
   <script src="/tienda/recursos/js/core/supabase-config.js?v=20261126e" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js" defer></script>
-  <script src="/tienda/recursos/js/pages/admin.js?v=20261126h" defer></script>
+  <script src="/tienda/recursos/js/pages/admin.js?v=20261126l" defer></script>
 </body>
 </html>

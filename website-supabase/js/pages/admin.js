@@ -12,6 +12,7 @@
 
     const CLAVE_SESION = 'tienda_admin_sesion';
     const RUTA_LOGIN = '/tienda/admin-login';
+    const VISTAS = ['pedidos', 'facturacion', 'promociones', 'cupones', 'trabajadores', 'cierre', 'cobros', 'sorteo', 'avisos'];
     const config = window.SUPABASE_CONFIG || {};
     const API = config.url ? `${String(config.url).replace(/\/+$/, '')}/rest/v1/rpc/` : '';
 
@@ -20,7 +21,7 @@
 
     const estado = {
         vista: 'pedidos',
-        cargada: { pedidos: false, promociones: false, cupones: false, trabajadores: false, cambios: false, cierre: false, cobros: false, sorteo: false, avisos: false },
+        cargada: { pedidos: false, facturacion: false, promociones: false, cupones: false, trabajadores: false, cambios: false, cierre: false, cobros: false, sorteo: false, avisos: false },
         pedidos: [],
         promociones: [],
         cupones: [],
@@ -30,6 +31,19 @@
         cuentas: [],
         sorteo: [],
         avisos: { dispositivos: 0, clientes: 0, historial: [], lista: [], destino: 'todos', tipo: 'mensaje', promociones: [], enviando: false },
+        facturacion: {
+            cargada: false,
+            datos: null,
+            cliente: null,
+            items: [],
+            metodo: null,
+            cuenta: null,
+            resultados: [],
+            filas: [],
+            facturas: [],
+            cantidad: 0,
+            enviando: false,
+        },
         productos: null,
         filtros: { pedidos: 'solicitado', pedidosDia: hoyISO(), promociones: '', trabajadores: 'pendiente', cambios: 'pendiente', cobros: 'todas', sorteo: 'todos' },
         busquedas: { pedidos: '', cobros: '', cierre: '', sorteo: '' },
@@ -38,8 +52,11 @@
     };
 
     let temporizadorBusqueda = null;
+    let temporizadorFactura = null;
+    let temporizadorFacturaCliente = null;
     let resolverDialogo = null;
     let ultimoFoco = null;
+    let ultimoFocoCambios = null;
     let selectorFechaPedidos = null;
     let selectorCierreDesde = null;
     let selectorCierreHasta = null;
@@ -580,7 +597,14 @@
     /* ───────────────────────── Navegación ───────────────────────── */
 
     function mostrarVista(vista) {
-        if (!['pedidos', 'promociones', 'cupones', 'trabajadores', 'cambios', 'cierre', 'cobros', 'sorteo', 'avisos'].includes(vista)) vista = 'pedidos';
+        /* Cambios ya no es una sección propia: abre el modal dentro de Reparto. */
+        if (vista === 'cambios') {
+            mostrarVista('trabajadores');
+            abrirCambios();
+            return;
+        }
+
+        if (!VISTAS.includes(vista)) vista = 'pedidos';
 
         cerrarAyudas();
         estado.vista = vista;
@@ -604,10 +628,10 @@
 
     function cargarVista(vista = estado.vista) {
         switch (vista) {
+            case 'facturacion': return cargarFacturacion();
             case 'promociones': return cargarPromociones();
             case 'cupones': return cargarCupones();
             case 'trabajadores': return cargarTrabajadores();
-            case 'cambios': return cargarCambios();
             case 'cierre': return cargarCierre();
             case 'cobros': return cargarCobros();
             case 'sorteo': return cargarSorteo();
@@ -618,7 +642,12 @@
 
     async function refrescar() {
         estado.cargada[estado.vista] = false;
-        await Promise.all([cargarResumen(), cargarVista(), cargarConfiguracionPedidos()]);
+
+        const tareas = [cargarResumen(), cargarVista(), cargarConfiguracionPedidos(), cargarBadgeCambios()];
+
+        if (esModalCambiosAbierto()) tareas.push(cargarCambios(true));
+
+        await Promise.all(tareas);
         mostrarToast('Datos actualizados.');
     }
 
@@ -2109,11 +2138,11 @@
         }[valor] || valor || 'Solicitud';
     }
 
-    async function cargarCambios() {
+    async function cargarCambios(silencioso = false) {
         const contenedor = $('#listaCambios');
         if (!contenedor) return;
 
-        cargando(contenedor);
+        if (!silencioso) cargando(contenedor);
 
         try {
             const datos = await adminRpc('web_admin_trabajador_cambios', { p_estado: 'todas' });
@@ -2122,21 +2151,73 @@
             renderCambios();
             cargarBadgeCambios();
         } catch (error) {
-            vacio(contenedor, 'bi-exclamation-triangle', 'No se pudieron cargar las solicitudes', error.message);
+            const mensaje = String(error.message || '');
+            const faltaSql = /could not find the function|function .* does not exist/i.test(mensaje);
+
+            vacio(
+                contenedor,
+                'bi-exclamation-triangle',
+                faltaSql ? 'Falta preparar las solicitudes en Supabase' : 'No se pudieron cargar las solicitudes',
+                faltaSql
+                    ? 'Ejecuta supabase/cambios-trabajador.sql en el SQL Editor de Supabase y vuelve a intentar.'
+                    : mensaje
+            );
+        }
+    }
+
+    function esModalCambiosAbierto() {
+        const modal = $('#modalCambios');
+        return Boolean(modal) && !modal.hidden;
+    }
+
+    async function abrirCambios() {
+        const modal = $('#modalCambios');
+        if (!modal || !modal.hidden) return;
+
+        ultimoFocoCambios = document.activeElement;
+        modal.hidden = false;
+        $('#btnCambios')?.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('admin-modal-abierto');
+
+        setTimeout(() => {
+            $('.admin-modal__panel [data-cerrar-cambios]', modal)?.focus({ preventScroll: true });
+        }, 30);
+
+        /* Si ya se cargaron antes, se refresca sin esqueletos para no parpadear. */
+        await cargarCambios(estado.cargada.cambios);
+    }
+
+    function cerrarCambios() {
+        const modal = $('#modalCambios');
+        if (!modal || modal.hidden) return;
+
+        cerrarAyudas();
+        modal.hidden = true;
+        $('#btnCambios')?.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('admin-modal-abierto');
+
+        if (ultimoFocoCambios && typeof ultimoFocoCambios.focus === 'function') {
+            setTimeout(() => ultimoFocoCambios.focus(), 10);
         }
     }
 
     async function cargarBadgeCambios() {
-        const badge = $('#navBadgeCambios');
-        if (!badge) return;
+        const boton = $('#btnCambios');
+        const badge = $('#badgeCambios');
+        if (!boton || !badge) return;
 
         try {
             const datos = await adminRpc('web_admin_trabajador_cambios', { p_estado: 'pendiente' });
             const total = Array.isArray(datos.cambios) ? datos.cambios.length : 0;
+
             badge.textContent = total > 9 ? '9+' : String(total);
             badge.hidden = total <= 0;
+            boton.setAttribute('aria-label', total > 0
+                ? `Cambios, ${total} ${total === 1 ? 'solicitud pendiente' : 'solicitudes pendientes'}`
+                : 'Cambios, sin solicitudes pendientes');
         } catch {
             badge.hidden = true;
+            boton.setAttribute('aria-label', 'Cambios');
         }
     }
 
@@ -2238,16 +2319,731 @@
                 });
 
                 mostrarToast(esRechazo ? 'Solicitud rechazada.' : 'Solicitud aprobada.');
-                estado.cargada.cambios = false;
                 cerrarSheet();
-                await cargarCambios();
-                await cargarBadgeCambios();
+                await cargarCambios(true);
             } catch (error) {
                 mostrarToast(error.message, 'error');
             } finally {
                 if (boton) boton.disabled = false;
             }
         });
+    }
+
+    /* ───────────────────── Facturación de mostrador ───────────────────── */
+
+    const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const MESES_ANIO = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+    function claveFactura(item) {
+        return `${Number(item.id_producto)}-${Number(item.id_variacion_talla) || 0}`;
+    }
+
+    function impuestoUnitarioFactura(precioFinal, iva) {
+        const porcentaje = Number(iva) || 0;
+        const factor = 1 + (porcentaje / 100);
+
+        return factor > 0 ? Number((Number(precioFinal) * (porcentaje / 100) / factor).toFixed(2)) : 0;
+    }
+
+    /* El ticket usa el mismo formato numérico que el ERP: entero si no hay centavos. */
+    function montoTicket(valor) {
+        const numero = Number(valor) || 0;
+        return Number.isInteger(numero) ? String(numero) : numero.toFixed(2);
+    }
+
+    function monedaTicket(valor) {
+        return `C$ ${montoTicket(valor)}`;
+    }
+
+    function totalesFactura() {
+        const items = estado.facturacion.items;
+        const bruto = items.reduce((suma, item) => suma + item.precio * item.cantidad, 0);
+        const base = items.reduce((suma, item) => suma + item.base * item.cantidad, 0);
+        const impuesto = items.reduce((suma, item) => suma + item.impuesto * item.cantidad, 0);
+        const descuento = Math.min(Math.max(Number($('#facturaDescuento')?.value) || 0, 0), bruto);
+
+        return {
+            bruto: Number(bruto.toFixed(2)),
+            base: Number(base.toFixed(2)),
+            impuesto: Number(impuesto.toFixed(2)),
+            descuento: Number(descuento.toFixed(2)),
+            total: Number(Math.max(bruto - descuento, 0).toFixed(2)),
+        };
+    }
+
+    async function cargarFacturacion() {
+        if (!$('#facturaMetodos')) return;
+
+        try {
+            const [config, dia] = await Promise.all([
+                adminRpc('web_admin_factura_datos'),
+                adminRpc('web_admin_facturas_dia'),
+            ]);
+
+            estado.facturacion.datos = config;
+            estado.facturacion.cantidad = Number(dia.cantidad) || 0;
+            estado.facturacion.facturas = Array.isArray(dia.facturas) ? dia.facturas : [];
+            estado.facturacion.cargada = true;
+            estado.cargada.facturacion = true;
+
+            if (!estado.facturacion.cliente) {
+                estado.facturacion.cliente = config.cliente || null;
+            }
+
+            const metodos = Array.isArray(config.metodos) ? config.metodos : [];
+            const actual = estado.facturacion.metodo;
+
+            if (!actual || !metodos.some((metodo) => Number(metodo.id_metodo_pago) === Number(actual.id_metodo_pago))) {
+                estado.facturacion.metodo = metodos[0] || null;
+                estado.facturacion.cuenta = estado.facturacion.metodo?.cuentas?.[0]?.id_cuenta ?? null;
+            }
+
+            pintarClienteFactura();
+            renderFacturaMetodos();
+            renderFacturasHoy();
+            renderFacturaCarrito();
+
+            if (!estado.facturacion.items.length && !estado.facturacion.filas.length) {
+                buscarFacturaProductos($('#facturaBuscar')?.value || '');
+            }
+        } catch (error) {
+            estado.cargada.facturacion = false;
+
+            const mensaje = String(error.message || '');
+            const faltaSql = /could not find the function|function .* does not exist/i.test(mensaje);
+
+            vacio(
+                $('#facturaResultados'),
+                'bi-exclamation-triangle',
+                faltaSql ? 'Falta preparar la facturación en Supabase' : 'No se pudo cargar la facturación',
+                faltaSql
+                    ? 'Ejecuta supabase/facturacion-web.sql en el SQL Editor de Supabase y vuelve a intentar.'
+                    : mensaje
+            );
+        }
+    }
+
+    /* El catálogo se dibuja en un contenedor con scroll y tope de filas:
+       así una búsqueda amplia no alarga la página sin límite. */
+    const MAX_RESULTADOS_FACTURA = 60;
+
+    function actualizarPistaResultados(total, visibles) {
+        const cuenta = $('#facturaResultadosCuenta');
+        const pista = $('#facturaResultadosPista');
+        const scroll = $('#facturaResultadosScroll');
+
+        if (cuenta) {
+            cuenta.textContent = total === 1 ? '1 resultado' : `${total} resultados`;
+        }
+
+        if (!pista || !scroll) return;
+
+        if (total > visibles) {
+            pista.hidden = false;
+            pista.textContent = `Mostrando ${visibles} de ${total} · refina la búsqueda`;
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            pista.textContent = 'Desliza para ver más';
+            pista.hidden = scroll.scrollHeight <= scroll.clientHeight + 2;
+        });
+    }
+
+    async function buscarFacturaProductos(consulta = '') {
+        const contenedor = $('#facturaResultados');
+        if (!contenedor) return;
+
+        cargando(contenedor, 2);
+
+        const cuenta = $('#facturaResultadosCuenta');
+        const pista = $('#facturaResultadosPista');
+
+        if (cuenta) cuenta.textContent = 'Buscando…';
+        if (pista) pista.hidden = true;
+
+        try {
+            const datos = await adminRpc('web_admin_factura_productos', { p_buscar: consulta || null });
+            estado.facturacion.resultados = Array.isArray(datos.productos) ? datos.productos : [];
+            renderFacturaResultados();
+        } catch (error) {
+            actualizarPistaResultados(0, 0);
+            vacio(contenedor, 'bi-exclamation-triangle', 'No se pudieron cargar los productos', error.message);
+        }
+    }
+
+    function renderFacturaResultados() {
+        const contenedor = $('#facturaResultados');
+        if (!contenedor) return;
+
+        const filas = [];
+
+        estado.facturacion.resultados.forEach((producto) => {
+            const variantes = Array.isArray(producto.variantes) ? producto.variantes : [];
+
+            if (variantes.length) {
+                variantes.forEach((variante) => {
+                    filas.push({
+                        id_producto: Number(producto.id_producto),
+                        id_variacion_talla: Number(variante.id_variacion_talla),
+                        nombre: `${producto.nombre} · ${variante.etiqueta}`,
+                        precio: Number(variante.precio_final) || 0,
+                        iva: Number(producto.iva) || 0,
+                        stock: Number(variante.stock) || 0,
+                    });
+                });
+                return;
+            }
+
+            filas.push({
+                id_producto: Number(producto.id_producto),
+                id_variacion_talla: null,
+                nombre: producto.nombre,
+                precio: Number(producto.precio_final) || 0,
+                iva: Number(producto.iva) || 0,
+                stock: Number(producto.stock) || 0,
+            });
+        });
+
+        estado.facturacion.filas = filas;
+
+        if (!filas.length) {
+            actualizarPistaResultados(0, 0);
+            vacio(contenedor, 'bi-bag', 'Sin productos', 'Prueba con otro nombre.');
+            return;
+        }
+
+        /* Los productos agotados van al final, después de los disponibles. */
+        filas.sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));
+
+        const visibles = filas.slice(0, MAX_RESULTADOS_FACTURA);
+
+        contenedor.innerHTML = visibles.map((fila) => {
+            const agotado = fila.stock < 1;
+
+            return `
+            <article class="admin-factura__resultado${agotado ? ' admin-factura__resultado--agotado' : ''}">
+                <div>
+                    <strong>${escapar(fila.nombre)}</strong>
+                    <small>${moneda(fila.precio)} · ${agotado ? 'Sin stock' : `${fila.stock} en stock`}</small>
+                </div>
+                <button class="admin-btn admin-btn--suave admin-btn--icono" type="button"
+                    data-accion="factura-agregar" data-producto="${fila.id_producto}"
+                    data-variacion="${fila.id_variacion_talla ?? ''}" ${agotado ? 'disabled' : ''}
+                    aria-label="Agregar ${escapar(fila.nombre)}">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                </button>
+            </article>`;
+        }).join('');
+
+        const scroll = $('#facturaResultadosScroll');
+        if (scroll) scroll.scrollTop = 0;
+
+        actualizarPistaResultados(filas.length, visibles.length);
+    }
+
+    function agregarFacturaItem(idProducto, idVariacion) {
+        const fila = estado.facturacion.filas.find((item) => (
+            Number(item.id_producto) === Number(idProducto)
+            && (Number(item.id_variacion_talla) || 0) === (Number(idVariacion) || 0)
+        ));
+
+        if (!fila) return;
+
+        const clave = claveFactura(fila);
+        const existente = estado.facturacion.items.find((item) => claveFactura(item) === clave);
+
+        if (existente) {
+            if (existente.cantidad >= existente.stock) {
+                mostrarToast('No hay más existencias de ese producto.', 'error');
+                return;
+            }
+
+            existente.cantidad += 1;
+            renderFacturaCarrito();
+            return;
+        }
+
+        if (fila.stock < 1) {
+            mostrarToast('Ese producto no tiene existencias.', 'error');
+            return;
+        }
+
+        const impuesto = impuestoUnitarioFactura(fila.precio, fila.iva);
+
+        estado.facturacion.items.push({
+            id_producto: fila.id_producto,
+            id_variacion_talla: fila.id_variacion_talla,
+            nombre: fila.nombre,
+            precio: fila.precio,
+            base: Number((fila.precio - impuesto).toFixed(2)),
+            impuesto,
+            stock: fila.stock,
+            cantidad: 1,
+        });
+
+        renderFacturaCarrito();
+    }
+
+    function cambiarCantidadFactura(clave, delta) {
+        const item = estado.facturacion.items.find((fila) => claveFactura(fila) === clave);
+        if (!item) return;
+
+        const nueva = item.cantidad + Number(delta);
+
+        if (nueva < 1) return;
+
+        if (nueva > item.stock) {
+            mostrarToast('No hay más existencias de ese producto.', 'error');
+            return;
+        }
+
+        item.cantidad = nueva;
+        renderFacturaCarrito();
+    }
+
+    function quitarFacturaItem(clave) {
+        estado.facturacion.items = estado.facturacion.items.filter((item) => claveFactura(item) !== clave);
+        renderFacturaCarrito();
+    }
+
+    function renderFacturaCarrito() {
+        const contenedor = $('#facturaCarrito');
+        if (!contenedor) return;
+
+        const items = estado.facturacion.items;
+
+        if (!items.length) {
+            vacio(contenedor, 'bi-receipt', 'Sin productos', 'Busca arriba y agrega el primero.');
+            renderFacturaTotales();
+            return;
+        }
+
+        contenedor.innerHTML = items.map((item) => {
+            const clave = claveFactura(item);
+
+            return `
+                <article class="admin-factura__linea">
+                    <div>
+                        <strong>${escapar(item.nombre)}</strong>
+                        <small>${moneda(item.precio)} c/u · ${moneda(item.precio * item.cantidad)}</small>
+                    </div>
+                    <div class="admin-factura__acciones">
+                        <div class="admin-factura__qty">
+                            <button type="button" data-accion="factura-cantidad" data-clave="${clave}" data-delta="-1"
+                                aria-label="Quitar una unidad de ${escapar(item.nombre)}">−</button>
+                            <span>${item.cantidad}</span>
+                            <button type="button" data-accion="factura-cantidad" data-clave="${clave}" data-delta="1"
+                                aria-label="Agregar una unidad de ${escapar(item.nombre)}">+</button>
+                        </div>
+                        <button class="admin-btn admin-btn--peligro admin-btn--icono" type="button"
+                            data-accion="factura-quitar" data-clave="${clave}"
+                            aria-label="Quitar ${escapar(item.nombre)} de la factura">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </article>`;
+        }).join('');
+
+        renderFacturaTotales();
+    }
+
+    function renderFacturaTotales() {
+        const contenedor = $('#facturaTotales');
+        if (!contenedor) return;
+
+        const totales = totalesFactura();
+
+        contenedor.innerHTML = `
+            <div class="admin-linea"><span>Subtotal</span><strong>${moneda(totales.base)}</strong></div>
+            <div class="admin-linea"><span>IVA</span><strong>${moneda(totales.impuesto)}</strong></div>
+            <div class="admin-linea"><span>Descuento</span><strong>${totales.descuento > 0 ? `-${moneda(totales.descuento)}` : moneda(0)}</strong></div>
+            <div class="admin-linea admin-linea--total"><span>Total</span><strong>${moneda(totales.total)}</strong></div>
+        `;
+
+        actualizarVuelto();
+    }
+
+    function actualizarVuelto() {
+        const texto = $('#facturaVuelto');
+        if (!texto) return;
+
+        const total = totalesFactura().total;
+        const recibido = Number($('#facturaRecibido')?.value);
+
+        if (!Number.isFinite(recibido) || recibido <= 0) {
+            texto.textContent = `Vuelto: ${moneda(0)}`;
+            texto.classList.remove('admin-factura__vuelto--falta');
+            return;
+        }
+
+        const diferencia = Number((recibido - total).toFixed(2));
+
+        texto.textContent = diferencia >= 0
+            ? `Vuelto: ${moneda(diferencia)}`
+            : `Faltan: ${moneda(Math.abs(diferencia))}`;
+
+        texto.classList.toggle('admin-factura__vuelto--falta', diferencia < 0);
+    }
+
+    function renderFacturaMetodos() {
+        const contenedor = $('#facturaMetodos');
+        if (!contenedor) return;
+
+        const metodos = estado.facturacion.datos?.metodos || [];
+        const actual = estado.facturacion.metodo?.id_metodo_pago;
+
+        contenedor.innerHTML = metodos.map((metodo) => `
+            <button class="admin-chip ${Number(metodo.id_metodo_pago) === Number(actual) ? 'is-activo' : ''}" type="button"
+                data-accion="factura-metodo" data-id="${Number(metodo.id_metodo_pago)}">
+                ${escapar(metodo.nombre)}
+            </button>
+        `).join('');
+
+        const esEfectivo = Boolean(estado.facturacion.metodo?.es_efectivo);
+
+        const cuentaCampo = $('#facturaCuentaCampo');
+        const recibidoCampo = $('#facturaRecibidoCampo');
+
+        if (cuentaCampo) cuentaCampo.hidden = esEfectivo;
+        if (recibidoCampo) recibidoCampo.hidden = !esEfectivo;
+
+        renderFacturaCuentas();
+        actualizarAvisoCaja();
+    }
+
+    function renderFacturaCuentas() {
+        const select = $('#facturaCuenta');
+        if (!select) return;
+
+        const cuentas = estado.facturacion.metodo?.cuentas || [];
+
+        select.innerHTML = cuentas.map((cuenta) => `
+            <option value="${Number(cuenta.id_cuenta)}">${escapar(cuenta.nombre_cuenta)}</option>
+        `).join('');
+
+        if (cuentas.length && !cuentas.some((cuenta) => Number(cuenta.id_cuenta) === Number(estado.facturacion.cuenta))) {
+            estado.facturacion.cuenta = cuentas[0].id_cuenta;
+        }
+
+        if (estado.facturacion.cuenta) {
+            select.value = String(estado.facturacion.cuenta);
+        }
+    }
+
+    function cambiarMetodoFactura(id) {
+        const metodos = estado.facturacion.datos?.metodos || [];
+        const metodo = metodos.find((fila) => Number(fila.id_metodo_pago) === Number(id));
+
+        if (!metodo) return;
+
+        estado.facturacion.metodo = metodo;
+        estado.facturacion.cuenta = metodo.cuentas?.[0]?.id_cuenta ?? null;
+        renderFacturaMetodos();
+    }
+
+    function actualizarAvisoCaja() {
+        const aviso = $('#facturaAviso');
+        if (!aviso) return;
+
+        const sinCaja = estado.facturacion.datos?.caja_abierta === false;
+        const esEfectivo = Boolean(estado.facturacion.metodo?.es_efectivo);
+
+        if (sinCaja && esEfectivo) {
+            aviso.hidden = false;
+            aviso.textContent = 'No hay caja abierta: el cobro en efectivo se registrará en la primera cuenta activa. Ábrela en el ERP si quieres que entre al arqueo.';
+        } else {
+            aviso.hidden = true;
+            aviso.textContent = '';
+        }
+    }
+
+    function pintarClienteFactura() {
+        const texto = $('#facturaCliente');
+        if (!texto) return;
+
+        texto.textContent = estado.facturacion.cliente?.nombre_cliente || 'Consumidor final';
+    }
+
+    function abrirClienteFactura() {
+        const contenido = `
+            <div class="admin-buscador">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input id="facturaClienteBuscar" type="search" placeholder="Buscar por nombre o teléfono" autocomplete="off" aria-label="Buscar cliente">
+            </div>
+
+            <div class="admin-lista" id="facturaClientesLista"></div>
+
+            <div class="admin-form__acciones" style="margin-top: 14px;">
+                <button class="admin-btn admin-btn--ghost" type="button" data-cerrar-sheet>Cancelar</button>
+                <button class="admin-btn admin-btn--primario" type="button" data-accion="factura-cliente-generico">Cliente genérico</button>
+            </div>
+        `;
+
+        abrirSheet('Cliente de la factura', 'Solo cambia el nombre que sale en el ticket.', contenido);
+        cargarClientesFactura('');
+
+        $('#facturaClienteBuscar')?.addEventListener('input', (evento) => {
+            clearTimeout(temporizadorFacturaCliente);
+            temporizadorFacturaCliente = setTimeout(() => cargarClientesFactura(evento.target.value.trim()), 280);
+        });
+    }
+
+    async function cargarClientesFactura(consulta) {
+        const lista = $('#facturaClientesLista');
+        if (!lista) return;
+
+        cargando(lista, 2);
+
+        try {
+            const datos = await adminRpc('web_admin_factura_clientes', { p_buscar: consulta || null });
+            const clientes = Array.isArray(datos.clientes) ? datos.clientes : [];
+
+            if (!clientes.length) {
+                vacio(lista, 'bi-person', 'Sin coincidencias', 'Prueba con otro nombre o usa el cliente genérico.');
+                return;
+            }
+
+            lista.innerHTML = clientes.map((cliente) => `
+                <button class="admin-btn admin-btn--ghost admin-btn--bloque" type="button"
+                    data-accion="factura-cliente" data-id="${Number(cliente.id_cliente)}"
+                    data-nombre="${escapar(cliente.nombre)}">
+                    ${escapar(cliente.nombre)}${cliente.telefono ? ` · ${escapar(cliente.telefono)}` : ''}
+                </button>
+            `).join('');
+        } catch (error) {
+            vacio(lista, 'bi-exclamation-triangle', 'No se pudieron cargar los clientes', error.message);
+        }
+    }
+
+    function elegirClienteFactura(id, nombre) {
+        estado.facturacion.cliente = id
+            ? { id_cliente: Number(id), nombre_cliente: nombre }
+            : (estado.facturacion.datos?.cliente || null);
+
+        pintarClienteFactura();
+        cerrarSheet();
+    }
+
+    function renderFacturasHoy() {
+        const contenedor = $('#listaFacturasHoy');
+        if (!contenedor) return;
+
+        const facturas = estado.facturacion.facturas || [];
+        actualizarContador($('#facturasContador'), Number(estado.facturacion.cantidad) || 0);
+
+        if (!facturas.length) {
+            vacio(contenedor, 'bi-receipt', 'Sin facturas hoy', 'Cuando factures aparecerán aquí para reimprimir.');
+            return;
+        }
+
+        contenedor.innerHTML = facturas.map((factura) => `
+            <article class="admin-factura__factura ${factura.anulada ? 'admin-factura__factura--anulada' : ''}">
+                <div>
+                    <strong>${escapar(factura.numero_factura)}</strong>
+                    <small>${escapar(factura.cliente)}</small>
+                    <small>${moneda(factura.total)} · ${escapar(factura.hora)} · ${escapar(factura.metodo)}${factura.anulada ? ' · Anulada' : ''}</small>
+                </div>
+                <button class="admin-btn admin-btn--ghost" type="button"
+                    data-accion="factura-reimprimir" data-id="${Number(factura.id_venta)}"
+                    aria-label="Reimprimir la factura ${escapar(factura.numero_factura)}">
+                    <i class="bi bi-receipt" aria-hidden="true"></i> Reimprimir
+                </button>
+            </article>
+        `).join('');
+    }
+
+    async function facturarMostrador() {
+        if (estado.facturacion.enviando) return;
+
+        if (!estado.facturacion.items.length) {
+            mostrarToast('Agrega al menos un producto a la factura.', 'error');
+            return;
+        }
+
+        if (!estado.facturacion.metodo) {
+            mostrarToast('Selecciona un método de pago.', 'error');
+            return;
+        }
+
+        const totales = totalesFactura();
+        const esEfectivo = Boolean(estado.facturacion.metodo.es_efectivo);
+        const recibido = Number($('#facturaRecibido')?.value);
+
+        if (esEfectivo) {
+            if (!Number.isFinite(recibido) || recibido + 0.001 < totales.total) {
+                mostrarToast('El efectivo recibido no cubre el total.', 'error');
+                return;
+            }
+        }
+
+        const boton = $('#btnFacturar');
+        estado.facturacion.enviando = true;
+        if (boton) boton.disabled = true;
+
+        try {
+            const datos = await adminRpc('web_admin_factura_crear', {
+                p_id_cliente: estado.facturacion.cliente?.id_cliente ?? null,
+                p_id_metodo_pago: Number(estado.facturacion.metodo.id_metodo_pago),
+                p_id_cuenta: esEfectivo ? null : (estado.facturacion.cuenta ? Number(estado.facturacion.cuenta) : null),
+                p_items: estado.facturacion.items.map((item) => ({
+                    id_producto: Number(item.id_producto),
+                    id_variacion_talla: item.id_variacion_talla ? Number(item.id_variacion_talla) : null,
+                    cantidad: Number(item.cantidad),
+                })),
+                p_descuento: totales.descuento,
+                p_recibido: esEfectivo ? Number(recibido.toFixed(2)) : null,
+                p_referencia: null,
+            });
+
+            if (!datos.factura) {
+                throw new Error(datos.mensaje || 'No se pudo registrar la factura.');
+            }
+
+            mostrarToast(datos.mensaje || 'Factura registrada.');
+
+            if (datos.factura.aviso) {
+                mostrarToast(datos.factura.aviso, 'error');
+            }
+
+            imprimirTicket(datos.factura);
+            limpiarFacturaFormulario();
+
+            await cargarFacturacion();
+
+            if (estado.facturacion.cargada) {
+                buscarFacturaProductos($('#facturaBuscar')?.value || '');
+            }
+        } catch (error) {
+            mostrarToast(error.message, 'error');
+        } finally {
+            estado.facturacion.enviando = false;
+            if (boton) boton.disabled = false;
+        }
+    }
+
+    function limpiarFacturaFormulario() {
+        estado.facturacion.items = [];
+
+        const recibido = $('#facturaRecibido');
+        const descuento = $('#facturaDescuento');
+
+        if (recibido) recibido.value = '';
+        if (descuento) descuento.value = '';
+
+        renderFacturaCarrito();
+    }
+
+    function limpiarFactura() {
+        estado.facturacion.cliente = estado.facturacion.datos?.cliente || null;
+
+        const buscar = $('#facturaBuscar');
+        if (buscar) buscar.value = '';
+
+        pintarClienteFactura();
+        limpiarFacturaFormulario();
+        buscarFacturaProductos('');
+        mostrarToast('Factura nueva lista.');
+    }
+
+    async function reimprimirFactura(id) {
+        try {
+            const datos = await adminRpc('web_admin_factura_detalle', { p_id_venta: Number(id) });
+
+            if (!datos.factura) {
+                throw new Error(datos.mensaje || 'Factura no encontrada.');
+            }
+
+            imprimirTicket(datos.factura);
+        } catch (error) {
+            mostrarToast(error.message, 'error');
+        }
+    }
+
+    function imprimirTicket(factura) {
+        const ticket = $('#adminTicket');
+        if (!ticket || !factura) return;
+
+        const empresa = estado.facturacion.datos?.empresa || {};
+        const items = Array.isArray(factura.items) ? factura.items : [];
+        const fechaVenta = fecha(factura.fecha) || new Date();
+        const hora = `${String(fechaVenta.getHours() % 12 || 12).padStart(2, '0')}:${String(fechaVenta.getMinutes()).padStart(2, '0')} ${fechaVenta.getHours() < 12 ? 'AM' : 'PM'}`;
+        const fechaLarga = `${DIAS_SEMANA[fechaVenta.getDay()]} ${fechaVenta.getDate()} de ${MESES_ANIO[fechaVenta.getMonth()]} del ${fechaVenta.getFullYear()}`;
+        const subtotal = Number(factura.subtotal) || 0;
+        const impuesto = Number(factura.impuesto) || 0;
+        const descuento = Number(factura.descuento) || 0;
+        const total = Number(factura.total) || 0;
+        const recibido = Number(factura.recibido) || 0;
+        const vuelto = Number(factura.vuelto) || 0;
+
+        const filas = items.map((item) => `
+            <div class="admin-ticket__producto">
+                <span class="admin-ticket__cant">${Number(item.cantidad) || 0}</span>
+                <span class="admin-ticket__desc">${escapar(item.nombre)}</span>
+                <span class="admin-ticket__importe">${montoTicket(item.total)}</span>
+                <span class="admin-ticket__unitario">a ${montoTicket(item.precio)} c/u</span>
+            </div>
+        `).join('');
+
+        ticket.innerHTML = `
+            <div class="admin-ticket__logo"><img src="/tienda/recursos/img/minilogo.png" alt=""></div>
+
+            <header class="admin-ticket__centro">
+                <div class="admin-ticket__empresa">${escapar(empresa.nombre_empresa || 'MI NEGOCIO')}</div>
+                ${empresa.ruc_empresa ? `<div class="admin-ticket__fiscal">RUC: ${escapar(empresa.ruc_empresa)}</div>` : ''}
+                ${empresa.direccion_empresa ? `<div class="admin-ticket__fiscal admin-ticket__fiscal-chico">Dirección: ${escapar(empresa.direccion_empresa)}</div>` : ''}
+                ${empresa.telefono_empresa ? `<div class="admin-ticket__fiscal admin-ticket__fiscal-chico">Teléfono: ${escapar(empresa.telefono_empresa)}</div>` : ''}
+            </header>
+
+            <hr>
+
+            <section class="admin-ticket__datos">
+                <div>Fecha: ${escapar(fechaLarga)} a las ${escapar(hora)}</div>
+                <div>Factura: ${escapar(factura.numero_factura || '')}</div>
+                <div>Cliente: ${escapar(factura.cliente || 'Consumidor final')}</div>
+                ${factura.usuario ? `<div>Facturó: ${escapar(factura.usuario)}</div>` : ''}
+                ${factura.metodo ? `<div>Pago: ${escapar(factura.metodo)}</div>` : ''}
+            </section>
+
+            <hr>
+
+            <div class="admin-ticket__encabezado">
+                <span>Nº</span>
+                <span class="admin-ticket__desc">INFO</span>
+                <span class="admin-ticket__importe">TOTAL</span>
+            </div>
+
+            <section>${filas}</section>
+
+            <section class="admin-ticket__resumen">
+                <div class="admin-ticket__linea"><span>Subtotal</span><span>${monedaTicket(subtotal)}</span></div>
+                ${descuento > 0 ? `<div class="admin-ticket__linea"><span>Descuento</span><span>-${monedaTicket(descuento)}</span></div>` : ''}
+                ${impuesto > 0 ? `<div class="admin-ticket__linea"><span>Impuesto</span><span>${monedaTicket(impuesto)}</span></div>` : ''}
+                <div class="admin-ticket__linea admin-ticket__total"><span>TOTAL</span><span>${monedaTicket(total)}</span></div>
+            </section>
+
+            <hr>
+
+            <section class="admin-ticket__datos">
+                <div class="admin-ticket__linea"><span>Recibido</span><span>${monedaTicket(recibido)}</span></div>
+                <div class="admin-ticket__linea"><span>Vuelto</span><span>${monedaTicket(vuelto)}</span></div>
+            </section>
+
+            <footer class="admin-ticket__pie">
+                <div>¡Gracias por su compra!</div>
+                <div class="admin-ticket__mensaje">Para nosotros, tu experiencia es lo más importante</div>
+                <div class="admin-ticket__guia">·</div>
+                <div class="admin-ticket__guia">·</div>
+            </footer>
+        `;
+
+        setTimeout(() => {
+            try {
+                window.print();
+            } catch {
+                mostrarToast('No se pudo abrir el diálogo de impresión.', 'error');
+            }
+        }, 80);
     }
 
     /* ───────────────────────── Cierre de delivery ───────────────────────── */
@@ -3309,6 +4105,31 @@
             boton.addEventListener('click', () => mostrarVista(boton.dataset.vista));
         });
 
+        $('#btnCambios')?.addEventListener('click', () => abrirCambios());
+
+        /* Facturación de mostrador */
+        $('#facturaBuscar')?.addEventListener('input', (evento) => {
+            clearTimeout(temporizadorFactura);
+            temporizadorFactura = setTimeout(() => buscarFacturaProductos(evento.target.value.trim()), 300);
+        });
+
+        $('#facturaMetodos')?.addEventListener('click', (evento) => {
+            const chip = evento.target.closest('[data-accion="factura-metodo"]');
+            if (!chip) return;
+
+            cambiarMetodoFactura(Number(chip.dataset.id));
+        });
+
+        $('#facturaCuenta')?.addEventListener('change', (evento) => {
+            estado.facturacion.cuenta = Number(evento.target.value) || null;
+        });
+
+        $('#facturaRecibido')?.addEventListener('input', actualizarVuelto);
+        $('#facturaDescuento')?.addEventListener('input', renderFacturaTotales);
+        $('#btnFacturar')?.addEventListener('click', facturarMostrador);
+        $('#btnFacturaCliente')?.addEventListener('click', abrirClienteFactura);
+        $('#btnFacturaLimpiar')?.addEventListener('click', limpiarFactura);
+
         $('#adminRefrescar')?.addEventListener('click', refrescar);
 
         conectarAvisos();
@@ -3465,6 +4286,7 @@
 
             if (!boton) {
                 if (evento.target.closest('[data-cerrar-sheet]')) cerrarSheet();
+                else if (evento.target.closest('[data-cerrar-cambios]')) cerrarCambios();
                 return;
             }
 
@@ -3496,6 +4318,13 @@
             if (accion === 'cierre-detalle') return abrirCierre(Number(boton.dataset.id), boton.dataset.modo || 'detalle');
             if (accion === 'cuenta-detalle') return abrirCuenta(Number(boton.dataset.id));
             if (accion === 'cuenta-pagar') return abrirPagoCuenta(Number(boton.dataset.id));
+            if (accion === 'factura-agregar') return agregarFacturaItem(boton.dataset.producto, boton.dataset.variacion);
+            if (accion === 'factura-cantidad') return cambiarCantidadFactura(boton.dataset.clave, boton.dataset.delta);
+            if (accion === 'factura-quitar') return quitarFacturaItem(boton.dataset.clave);
+            if (accion === 'factura-reimprimir') return reimprimirFactura(Number(boton.dataset.id));
+            if (accion === 'factura-cliente') return elegirClienteFactura(boton.dataset.id, boton.dataset.nombre);
+            if (accion === 'factura-cliente-generico') return elegirClienteFactura(null, null);
+            if (accion === 'factura-metodo') return;
         });
 
         document.addEventListener('change', (evento) => {
@@ -3560,7 +4389,10 @@
 
             if (!$('#adminSheet')?.hidden) {
                 cerrarSheet();
+                return;
             }
+
+            if (esModalCambiosAbierto()) cerrarCambios();
         });
     }
 
@@ -4095,5 +4927,5 @@
     cargarConfiguracionPedidos();
 
     const vistaInicial = (window.location.hash || '').replace('#', '');
-    mostrarVista(['pedidos', 'promociones', 'cupones', 'trabajadores', 'cambios', 'cierre', 'cobros', 'sorteo', 'avisos'].includes(vistaInicial) ? vistaInicial : 'pedidos');
+    mostrarVista(VISTAS.includes(vistaInicial) || vistaInicial === 'cambios' ? vistaInicial : 'pedidos');
 })();
