@@ -3448,3 +3448,26 @@
 }
 
 .admin-btn--mini i { font-size: .8rem; }
+
+/* Precio resaltado de la promoción elegida */
+.admin-aviso__precio {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 2px 0 0;
+    padding: 7px 11px;
+    border-radius: 10px;
+    background: var(--admin-verde-suave, #e7f4ec);
+    color: var(--admin-verde-hondo, #17603c);
+    font-size: .88rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.admin-aviso__precio[hidden] { display: none; }
+
+.admin-aviso__precio s {
+    font-size: .74rem;
+    font-weight: 600;
+    color: var(--texto-suave);
+}

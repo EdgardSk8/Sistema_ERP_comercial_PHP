@@ -3606,21 +3606,21 @@
 
         if (select) {
             const anterior = select.value;
+            const conAvisos = estado.avisos.lista.filter((fila) => Number(fila.dispositivos) > 0);
 
-            select.innerHTML = estado.avisos.lista.length
-                ? estado.avisos.lista
+            select.innerHTML = conAvisos.length
+                ? conAvisos
                     .map((fila) => {
                         const dispositivos = Number(fila.dispositivos) || 0;
-                        const detalle = dispositivos
-                            ? `${dispositivos} dispositivo${dispositivos === 1 ? '' : 's'}`
-                            : 'sin avisos activados';
 
-                        return `<option value="${Number(fila.id_cliente)}">${escapar(fila.nombre || fila.correo)} · ${detalle}</option>`;
+                        return `<option value="${Number(fila.id_cliente)}">${escapar(fila.nombre || fila.correo)} · ${dispositivos} dispositivo${dispositivos === 1 ? '' : 's'}</option>`;
                     })
                     .join('')
-                : '<option value="">Todavía no hay clientes registrados</option>';
+                : '<option value="">Ningún cliente tiene avisos activados</option>';
 
-            if (anterior) select.value = anterior;
+            if (anterior && conAvisos.some((fila) => String(fila.id_cliente) === anterior)) {
+                select.value = anterior;
+            }
         }
 
         pintarSelectPromociones();
@@ -3745,23 +3745,21 @@
         pintarSelectPromociones();
     }
 
-    /* Se listan todas (activas, programadas, pausadas y vencidas), con su estado. */
+    /* Solo las promociones activas (vigentes y encendidas). */
     function pintarSelectPromociones() {
         const select = $('#avisoPromocion');
         if (!select) return;
 
         const anterior = select.value;
-        const peso = { activa: 0, programada: 1, pausada: 2, vencida: 3 };
-        const ordenadas = [...estado.avisos.promociones].sort((uno, otro) => (
-            (peso[situacionPromocion(uno).clave] ?? 4) - (peso[situacionPromocion(otro).clave] ?? 4)
-            || String(uno.producto || '').localeCompare(String(otro.producto || ''), 'es')
-        ));
+        const activas = estado.avisos.promociones
+            .filter((fila) => situacionPromocion(fila).clave === 'activa')
+            .sort((uno, otro) => String(uno.producto || '').localeCompare(String(otro.producto || ''), 'es'));
 
-        select.innerHTML = ordenadas.length
-            ? '<option value="">Elige una promoción…</option>' + ordenadas
-                .map((fila) => `<option value="${Number(fila.id_promocion)}">${escapar(fila.producto)} · ${moneda(fila.precio_oferta)} · ${situacionPromocion(fila).texto}</option>`)
+        select.innerHTML = activas.length
+            ? '<option value="">Elige una promoción…</option>' + activas
+                .map((fila) => `<option value="${Number(fila.id_promocion)}">${moneda(fila.precio_oferta)} · ${escapar(fila.producto)}</option>`)
                 .join('')
-            : '<option value="">No hay promociones creadas</option>';
+            : '<option value="">No hay promociones activas</option>';
 
         if (anterior) select.value = anterior;
     }
@@ -3866,6 +3864,12 @@
             nota.textContent = '';
         }
 
+        const precio = $('#avisoPromocionPrecio');
+        if (precio) {
+            precio.hidden = true;
+            precio.textContent = '';
+        }
+
         const resultado = $('#avisoResultado');
         if (resultado) resultado.hidden = true;
 
@@ -3886,6 +3890,18 @@
 
         if ($('#avisoTituloCuenta')) $('#avisoTituloCuenta').textContent = String(datos.titulo.length);
         if ($('#avisoMensajeCuenta')) $('#avisoMensajeCuenta').textContent = String(datos.mensaje.length);
+
+        const precio = $('#avisoPromocionPrecio');
+
+        if (precio) {
+            const oferta = Number(promo.precio_oferta) || 0;
+            const base = Number(promo.precio_venta) || 0;
+
+            precio.innerHTML = base > oferta
+                ? `${moneda(oferta)} <s>${moneda(base)}</s>`
+                : moneda(oferta);
+            precio.hidden = false;
+        }
 
         const nota = $('#avisoPromocionNota');
 
